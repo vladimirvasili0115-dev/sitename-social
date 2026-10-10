@@ -1,0 +1,25 @@
+kind = "web"
+previewPath = "/"
+title = "SITENAME Social Network"
+description = "A dark-themed, frontend-only social network skeleton with a responsive feed, mock stories and posts, translated navigation, and five-language switching."
+version = "1.0.0"
+id = "artifacts/sitename-social"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21501
+
+[services.development]
+run = "pnpm --filter @workspace/sitename-social run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/sitename-social", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/sitename-social/dist/public"
+
+
+[services.env]
+PORT = "21501"
+BASE_PATH = "/"

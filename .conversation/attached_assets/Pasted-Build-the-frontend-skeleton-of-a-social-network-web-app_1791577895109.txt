@@ -1,0 +1,89 @@
+Build the frontend skeleton of a social network web app (working name: "SITENAME"). Frontend only for now: no backend, no database, no auth. All content comes from mock data files.
+
+STACK
+- Next.js 14 (App Router), TypeScript (strict), Tailwind CSS
+- Icons: lucide-react only
+- No UI kits (no shadcn, MUI, etc.), no state libraries, no i18n libraries, no extra dependencies unless truly required
+
+LAYOUT (desktop, centered container ~1160px max)
+1. Sticky top header: logo on the left, search input, then on the right: Feed, Messages, Notifications (with icons), username, language switcher dropdown.
+2. Left sidebar (~220px, rounded card, sticky): vertical nav with icon + label, in this order:
+   Feed, Profile, Friends, Messages, Groups, Photos, Videos, Games, Music, Guests, Saved, Invisible mode, Settings, Online users, Gifts
+3. Main column (~620px):
+   - Stories row: first item is "Add story" with a plus badge, then circular avatars with a colored ring and a truncated name below, horizontally scrollable.
+   - Post composer card: user avatar + rounded input with a "What's on your mind?" placeholder.
+   - Feed of post cards: author avatar, name, relative time, three-dot menu, image (centered, max height ~420px), reactions summary row (emoji icons left, reactions count right), action row with buttons: Like, comment count, Share.
+4. Mobile (<768px): sidebar hidden, replaced by a bottom tab bar with 5 main items; header collapses to logo + icons.
+
+LANGUAGES (i18n)
+- 5 languages: Azerbaijani (az, default), Turkish (tr), Russian (ru), English (en), Georgian (ka).
+- Custom lightweight implementation, no library:
+  - src/i18n/locales/az.ts, tr.ts, ru.ts, en.ts, ka.ts -> one dictionary object per language
+  - az.ts is the source of truth; the other four must be typed against it so a missing key is a TypeScript error
+  - src/i18n/config.ts -> list of locales (code, native name, flag emoji), default locale
+  - src/i18n/LanguageProvider.tsx -> React context, stores the selected locale in localStorage, sets <html lang>
+  - src/i18n/useTranslation.ts -> hook returning t("key") and the current locale
+- Keys are grouped by area: nav.*, header.*, feed.*, post.*, common.*
+- Every visible UI string must come from the dictionaries, including nav labels, placeholders, button labels, relative time ("2 minutes ago") and placeholder page titles. No hardcoded text in components.
+- All 5 dictionaries must be fully translated with natural wording, not left in English.
+- Language switcher in the header shows the flag + code, and the dropdown lists the native names: Azərbaycan, Türkçe, Русский, English, ქართული. Switching updates the UI instantly without a page reload.
+- Mock user content (post text, user names) is not translated.
+
+DESIGN
+- Dark theme. Do NOT use purple or orange.
+- Palette (define as CSS variables in globals.css and map them in tailwind.config.ts, never hardcode hex values in components):
+  --bg: #0B1215
+  --surface: #121C21
+  --surface-2: #1A272E
+  --border: #22333B
+  --text: #E6EEF0
+  --text-muted: #8FA3AB
+  --accent: #14B8A6
+  --accent-2: #38BDF8
+  --danger: #F43F5E
+- Cards: 16px radius, 1px border, no heavy shadows. Story ring: gradient from --accent to --accent-2.
+- Fonts via next/font: Inter (latin, latin-ext, cyrillic subsets) with Noto Sans Georgian as fallback so Georgian text renders correctly.
+
+FILE STRUCTURE (follow exactly, do not add other top-level folders)
+src/
+  app/
+    layout.tsx            -> root layout, wraps pages in LanguageProvider + AppShell
+    page.tsx              -> redirects to /feed
+    globals.css           -> CSS variables + base styles only
+    feed/page.tsx
+    profile/page.tsx
+    friends/page.tsx
+    messages/page.tsx
+    groups/page.tsx
+    photos/page.tsx
+    videos/page.tsx
+    games/page.tsx
+    music/page.tsx
+    guests/page.tsx
+    saved/page.tsx
+    settings/page.tsx
+    online/page.tsx
+    gifts/page.tsx
+  components/
+    layout/   -> AppShell.tsx, Header.tsx, Sidebar.tsx, MobileNav.tsx, LanguageSwitcher.tsx
+    feed/     -> StoriesBar.tsx, StoryItem.tsx, PostComposer.tsx, PostCard.tsx, PostActions.tsx
+    ui/       -> Avatar.tsx, Button.tsx, Card.tsx, IconButton.tsx
+  i18n/       -> config.ts, LanguageProvider.tsx, useTranslation.ts, locales/{az,tr,ru,en,ka}.ts
+  data/       -> users.ts, posts.ts, stories.ts (mock data)
+  config/     -> navigation.ts (nav items: translation key, href, icon), site.ts (SITE_NAME)
+  types/      -> index.ts (User, Post, Story, NavItem, Locale)
+  lib/        -> utils.ts (cn helper, relative time formatter)
+
+RULES
+- One component per file, PascalCase file names, named exports, each file under ~150 lines.
+- The site name is defined once in src/config/site.ts (export const SITE_NAME = "SITENAME") and imported everywhere it is shown. Never hardcode it.
+- Sidebar and MobileNav must both render from config/navigation.ts. No duplicated nav lists.
+- Only the /feed page is fully built. Every other route is a simple placeholder page showing its translated title inside a Card, using the same AppShell.
+- Active nav item is highlighted based on the current route.
+- Tailwind classes only: no inline styles, no CSS modules, no styled-components.
+- No "any" types. No unused files, no demo/boilerplate leftovers, no commented-out code.
+- Images: use placeholder images from picsum.photos and configure the domain in next.config.
+- Like button toggles locally with useState; everything else is static.
+- Do not add features I did not ask for.
+
+When finished, print the final file tree and confirm the app runs without errors or warnings, and that switching between all 5 languages works.

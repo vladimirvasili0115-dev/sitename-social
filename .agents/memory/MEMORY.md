@@ -1,0 +1,1 @@
+- [Next.js on Replit preview](nextjs-replit-preview.md) — Next dev HMR needs the proxied Replit host allowlisted in `allowedDevOrigins`.
