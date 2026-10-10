@@ -17,6 +17,7 @@ import { resetRemoteGifts } from "@/lib/giftsSync";
 import { resetRemoteVideos } from "@/lib/videosSync";
 import { resetRemoteMusic } from "@/lib/musicSync";
 import { startSettingsSync } from "@/lib/settingsSync";
+import { checkBan, clearBan } from "@/lib/banSync";
 import type { TranslationKey } from "@/i18n/LanguageProvider";
 
 export type AuthResult = TranslationKey | null;
@@ -74,7 +75,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!supabase || !accountId) return;
     void sendHeartbeat();
-    const timer = window.setInterval(() => void sendHeartbeat(), 60_000);
+    void checkBan();
+    const timer = window.setInterval(() => {
+      void sendHeartbeat();
+      void checkBan();
+    }, 60_000);
     const stopRealtime = startRealtime(accountId);
     const stopSettings = startSettingsSync(accountId);
     return () => {
@@ -134,6 +139,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     resetRemoteGroups();
     resetRemoteStories();
     resetRemoteGifts();
+    clearBan();
     resetRemoteVideos();
     resetRemoteMusic();
     clearSession();

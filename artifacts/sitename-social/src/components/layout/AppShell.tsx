@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useSyncExternalStore, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { isAuthRoute, isPublicRoute } from "@/lib/auth";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -10,6 +10,8 @@ import { MobileNav } from "./MobileNav";
 import { Footer } from "./Footer";
 import { FlashNotice } from "./FlashNotice";
 import { SiteNotice } from "./SiteNotice";
+import { BannedScreen } from "./BannedScreen";
+import { banStore } from "@/lib/banSync";
 import { ReportHost } from "@/components/report/ReportHost";
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -19,6 +21,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const authRoute = isAuthRoute(pathname);
   const publicRoute = isPublicRoute(pathname);
   const { settings } = useSettings();
+  const ban = useSyncExternalStore(banStore.subscribe, banStore.get, banStore.getServer);
 
   useEffect(() => {
     document.documentElement.dataset.theme = settings.theme;
@@ -32,6 +35,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   if (authRoute || publicRoute) return <>{children}</>;
   if (!ready || !user) return <div className="min-h-[100dvh] bg-bg" />;
+  if (ban) return <BannedScreen ban={ban} />;
 
   return <div className="min-h-[100dvh] bg-bg text-text">
     <Header />
