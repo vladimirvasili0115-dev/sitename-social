@@ -64,5 +64,6 @@ const az = {
   "bottle.title":"Butulka","bottle.tryDemo":"Nümunəyə bax","bottle.yourTurn":"Növbə səndədir!","bottle.spins":"fırladır…","bottle.spinning":"Butulka fırlanır…","bottle.deciding":"Qərar verirlər…","bottle.kissed":"Öpüşdülər! 💋","bottle.declined":"Bu dəfə alınmadı","bottle.spin":"Fırlat","bottle.ask":"Öpürsən:","bottle.yes":"Öp","bottle.no":"İmtina et","bottle.table":"Masa","bottle.leave":"Masadan çıx","bottle.myKisses":"Öpüşlərin","bottle.demoNote":"Nümunə rejim: digər oyunçular kompüterdir.","bottle.giftHint":"Hədiyyə göndərmək üçün oyunçunun şəklinə vur",
   "bottle.fullscreen":"Tam ekran","bottle.videoLink":"YouTube linkini yapışdır","bottle.videoPlay":"Oxut","bottle.videoShared":"musiqi qoydu",
   "bottle.yourChoice":"Sənin seçimin",
+  "bottle.kissBack":"Öpüşə öpüşlə cavab verəcək?",
 } as const;
 export default az;

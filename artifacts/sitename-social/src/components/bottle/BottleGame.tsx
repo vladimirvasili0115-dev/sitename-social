@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } fro
 import Link from "next/link";
 import { Heart, Maximize, Minimize, SendHorizontal, Volume2, VolumeX, X, Music2 } from "lucide-react";
 import type { GiftId } from "@/types";
-import { initialsAvatar } from "@/lib/avatar";
+import { cartoonAvatar } from "./avatarArt";
 import { useTranslation } from "@/i18n/useTranslation";
 import { GiftArt } from "@/components/gifts/GiftArt";
 import { useProfile } from "@/components/profile/useProfile";
@@ -39,7 +39,7 @@ export function BottleGame() {
   const { user } = useProfile();
   const players = useMemo<Player[]>(() => {
     const me: Player = { id: "me", name: user.name.split(" ")[0], age: 25, female: false, avatar: user.avatar, me: true };
-    const others = bots.map((bot) => ({ ...bot, avatar: initialsAvatar(bot.name) }));
+    const others = bots.map((bot, index) => ({ ...bot, avatar: cartoonAvatar(index + 1, bot.female) }));
     return [...others.slice(0, 7), me, ...others.slice(7)];
   }, [user.name, user.avatar]);
   const meIndex = 7;
@@ -176,11 +176,27 @@ export function BottleGame() {
     if (document.fullscreenElement) void document.exitFullscreen();
     else void rootRef.current?.requestFullscreen?.().catch(() => undefined);
   }
-  const stageCard = (player: Player, answer: boolean | null) => (
-    <div className="flex w-[23cqmin] flex-col items-center">
+  // A curved arrow from the player who answered to the other one: green with lips for a kiss, red for a refusal.
+  const arrow = (answer: boolean | null, leftToRight: boolean, drop: number) => {
+    if (answer === null) return null;
+    const color = answer ? "#7AC143" : "#E2401F";
+    const [from, to] = leftToRight ? [150, 440] : [440, 150];
+    const tip = leftToRight ? "M452 4l-46 6 28 36z" : "M138 4l46 6-28 36z";
+    const path = `M${from} ${18 + drop} Q295 ${118 + drop} ${to} ${18 + drop}`;
+    return (
+      <g>
+        <path d={path} fill="none" stroke="#FFFFFF" strokeWidth="24" strokeLinecap="round" />
+        <path d={tip} transform={`translate(0 ${drop})`} fill={color} stroke="#FFFFFF" strokeWidth="6" strokeLinejoin="round" />
+        <path d={path} fill="none" stroke={color} strokeWidth="15" strokeLinecap="round" />
+        <circle cx="295" cy={68 + drop} r="24" fill={color} stroke="#FFFFFF" strokeWidth="5" />
+        <text x="295" y={78 + drop} textAnchor="middle" fontSize="28">{answer ? "💋" : "✋"}</text>
+      </g>
+    );
+  };
+  const stageCard = (player: Player) => (
+    <div className="flex w-[21cqmin] flex-col items-center">
       <div className="relative aspect-square w-full overflow-hidden rounded-[12%] bg-surface-2 shadow-[0_6px_16px_rgba(0,0,0,0.45)]">
         <img src={player.avatar} alt="" className="h-full w-full object-cover" />
-        {answer !== null ? <span className={cn("absolute inset-0 flex items-center justify-center text-[11cqmin]", answer ? "bg-[#E5334B]/45" : "bg-black/55")}>{answer ? "💋" : "✋"}</span> : null}
       </div>
       <p className="mt-1 max-w-full truncate text-[3cqmin] font-semibold text-white [text-shadow:0_2px_4px_rgba(0,0,0,0.8)]">{player.me ? t("common.you") : player.name}, {player.age}</p>
     </div>
@@ -229,18 +245,22 @@ export function BottleGame() {
         ) : null}
 
         {staged && target !== null ? (
-          <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-[2.4cqmin]">
-            <p role="status" className="max-w-[60cqmin] text-center text-[5cqmin] font-bold leading-tight text-white [text-shadow:0_2px_6px_rgba(0,0,0,0.75)]">
-              {phase === "kissed" ? t("bottle.kissed") : phase === "declined" ? t("bottle.declined") : myRole ? t("bottle.yourChoice") : t("bottle.deciding")}
+          <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-[2cqmin] pt-[9cqmin]">
+            <p role="status" className="max-w-[44cqmin] text-center text-[4.2cqmin] font-bold leading-tight text-white [text-shadow:0_2px_6px_rgba(0,0,0,0.75)]">
+              {phase === "kissed" ? t("bottle.kissed") : phase === "declined" ? t("bottle.declined") : myRole && answers[myRole] === null ? t("bottle.yourChoice") : answers.spinner || answers.target ? t("bottle.kissBack") : t("bottle.deciding")}
             </p>
             <div className="flex items-center gap-[2.5cqmin]">
-              {stageCard(players[turn], answers.spinner)}
+              {stageCard(players[turn])}
               {phase === "choice"
                 ? <span aria-label={`${seconds}`} className="w-[8cqmin] text-center text-[8cqmin] font-bold tabular-nums text-white [text-shadow:0_2px_6px_rgba(0,0,0,0.75)]">{seconds}</span>
                 : <Heart className="h-[8cqmin] w-[8cqmin] shrink-0" fill={phase === "kissed" ? "#FF4D6A" : "none"} stroke="#FFFFFF" strokeWidth={1.8} />}
-              {stageCard(players[target], answers.target)}
+              {stageCard(players[target])}
             </div>
-            <div className={cn("flex gap-[3cqmin]", !(myRole && answers[myRole] === null) && "invisible")}>
+            <svg viewBox="0 0 590 130" aria-hidden="true" className="-mt-[1.5cqmin] h-[12cqmin] w-[55cqmin] overflow-visible">
+              {arrow(answers.spinner, true, 0)}
+              {arrow(answers.target, false, answers.spinner === null ? 0 : 34)}
+            </svg>
+            <div className={cn("-mt-[3cqmin] flex gap-[3cqmin]", !(myRole && answers[myRole] === null) && "invisible")}>
               <button onClick={() => myRole && setAnswers((value) => ({ ...value, [myRole]: false }))} className="h-[10cqmin] w-[23cqmin] rounded-[2cqmin] bg-[#E2401F] text-[3.4cqmin] font-bold text-white shadow-lg hover:brightness-110">{t("bottle.no")}</button>
               <button onClick={() => myRole && setAnswers((value) => ({ ...value, [myRole]: true }))} className="h-[10cqmin] w-[23cqmin] rounded-[2cqmin] bg-[#8CC63F] text-[3.4cqmin] font-bold text-white shadow-lg hover:brightness-110">{t("bottle.yes")}</button>
             </div>

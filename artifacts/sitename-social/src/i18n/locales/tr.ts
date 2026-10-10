@@ -55,5 +55,6 @@ const tr: Record<keyof typeof az, string> = {
   "bottle.title":"Şişe Çevirmece","bottle.tryDemo":"Örneğe bak","bottle.yourTurn":"Sıra sende!","bottle.spins":"çeviriyor…","bottle.spinning":"Şişe dönüyor…","bottle.deciding":"Karar veriyorlar…","bottle.kissed":"Öpüştüler! 💋","bottle.declined":"Bu sefer olmadı","bottle.spin":"Çevir","bottle.ask":"Öpüyor musun:","bottle.yes":"Öp","bottle.no":"Reddet","bottle.table":"Masa","bottle.leave":"Masadan çık","bottle.myKisses":"Öpücüklerin","bottle.demoNote":"Örnek mod: diğer oyuncular bilgisayar.","bottle.giftHint":"Hediye göndermek için oyuncunun fotoğrafına dokun",
   "bottle.fullscreen":"Tam ekran","bottle.videoLink":"YouTube bağlantısını yapıştır","bottle.videoPlay":"Oynat","bottle.videoShared":"müzik açtı",
   "bottle.yourChoice":"Senin seçimin",
+  "bottle.kissBack":"Öpücüğe öpücükle karşılık verecek mi?",
 };
 export default tr;
