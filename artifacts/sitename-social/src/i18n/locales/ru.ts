@@ -54,5 +54,6 @@ const ru: Record<keyof typeof az, string> = {
   "verified.badge":"Подтверждённый аккаунт","verified.official":"Официальный аккаунт","admin.verify":"Подтвердить","admin.unverify":"Снять подтверждение",
   "bottle.title":"Бутылочка","bottle.tryDemo":"Посмотреть пример","bottle.yourTurn":"Ваш ход!","bottle.spins":"крутит…","bottle.spinning":"Бутылочка крутится…","bottle.deciding":"Решают…","bottle.kissed":"Поцеловались! 💋","bottle.declined":"В этот раз не вышло","bottle.spin":"Крутить","bottle.ask":"Поцеловать:","bottle.yes":"Поцеловать","bottle.no":"Отказаться","bottle.table":"Стол","bottle.leave":"Выйти из-за стола","bottle.myKisses":"Ваши поцелуи","bottle.demoNote":"Демо-режим: остальные игроки — компьютер.","bottle.giftHint":"Нажмите на фото игрока, чтобы отправить подарок",
   "bottle.fullscreen":"Во весь экран","bottle.videoLink":"Вставьте ссылку YouTube","bottle.videoPlay":"Включить","bottle.videoShared":"включил музыку",
+  "bottle.yourChoice":"Ваш выбор",
 };
 export default ru;

@@ -177,12 +177,12 @@ export function BottleGame() {
     else void rootRef.current?.requestFullscreen?.().catch(() => undefined);
   }
   const stageCard = (player: Player, answer: boolean | null) => (
-    <div className="flex w-[30cqmin] flex-col items-center">
-      <div className="relative aspect-square w-full overflow-hidden rounded-[14%] bg-surface-2 shadow-[0_8px_24px_rgba(0,0,0,0.5)] ring-4 ring-white">
+    <div className="flex w-[23cqmin] flex-col items-center">
+      <div className="relative aspect-square w-full overflow-hidden rounded-[12%] bg-surface-2 shadow-[0_6px_16px_rgba(0,0,0,0.45)]">
         <img src={player.avatar} alt="" className="h-full w-full object-cover" />
-        {answer !== null ? <span className={cn("absolute inset-0 flex items-center justify-center text-[13cqmin]", answer ? "bg-[#E5334B]/50" : "bg-black/60")}>{answer ? "💋" : "✋"}</span> : null}
+        {answer !== null ? <span className={cn("absolute inset-0 flex items-center justify-center text-[11cqmin]", answer ? "bg-[#E5334B]/45" : "bg-black/55")}>{answer ? "💋" : "✋"}</span> : null}
       </div>
-      <p className="mt-1 max-w-full truncate text-[3.4cqmin] font-bold text-white [text-shadow:0_2px_4px_rgba(0,0,0,0.8)]">{player.me ? t("common.you") : player.name}, {player.age}</p>
+      <p className="mt-1 max-w-full truncate text-[3cqmin] font-semibold text-white [text-shadow:0_2px_4px_rgba(0,0,0,0.8)]">{player.me ? t("common.you") : player.name}, {player.age}</p>
     </div>
   );
 
@@ -201,14 +201,14 @@ export function BottleGame() {
         </div>
 
         <div className="pointer-events-none absolute left-1/2 top-1/2 h-[40cqmin] transition-transform duration-[3200ms] ease-[cubic-bezier(0.15,0.6,0.2,1)] motion-reduce:duration-0" style={{ transform: `translate(-50%, -50%) rotate(${rotation}deg)` }}>
-          <BottleSvg className={cn("h-full drop-shadow-[0_6px_10px_rgba(0,0,0,0.45)] transition-opacity duration-300", staged && "opacity-25")} />
+          <BottleSvg className={cn("h-full drop-shadow-[0_6px_10px_rgba(0,0,0,0.45)] transition-opacity duration-300", staged && "opacity-0")} />
         </div>
         {status ? <p role="status" className="pointer-events-none absolute left-1/2 top-1/2 w-[52cqmin] -translate-x-1/2 -translate-y-1/2 text-center text-[4.4cqmin] font-bold leading-tight text-white [text-shadow:0_2px_6px_rgba(0,0,0,0.75)]">{status}</p> : null}
 
         {players.map((player, index) => {
           const active = index === turn || index === target;
           return (
-            <div key={player.id} className={cn("absolute w-[17cqmin] -translate-x-1/2 -translate-y-1/2 transition-opacity", staged && !active && "opacity-60")} style={{ left: `${seats[index][0]}%`, top: `${seats[index][1]}%` }}>
+            <div key={player.id} className={cn("absolute w-[17cqmin] -translate-x-1/2 -translate-y-1/2 transition-opacity", staged && active && "pointer-events-none opacity-0")} style={{ left: `${seats[index][0]}%`, top: `${seats[index][1]}%` }}>
               <button type="button" disabled={player.me} onClick={(event) => { event.stopPropagation(); setPicked(picked === index ? null : index); }} aria-label={`${player.name}, ${player.age}`} className={cn("relative block aspect-square w-full rounded-[14%] bg-surface-2 shadow-[0_4px_10px_rgba(0,0,0,0.4)]", index === turn && phase === "waiting" ? "ring-4 ring-white" : active && phase !== "waiting" ? "ring-4 ring-white" : player.me ? "ring-2 ring-white/80" : "")}>
                 <img src={player.avatar} alt="" className="h-full w-full rounded-[14%] object-cover" />
                 {kisses[player.id] ? <span className="absolute -right-[1.2cqmin] -top-[1.2cqmin] flex h-[4.6cqmin] min-w-[4.6cqmin] items-center justify-center rounded-full bg-[#E5334B] px-1 text-[2.4cqmin] font-bold tabular-nums text-white shadow">{kisses[player.id]}</span> : null}
@@ -229,20 +229,21 @@ export function BottleGame() {
         ) : null}
 
         {staged && target !== null ? (
-          <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-[2.5cqmin] bg-black/35">
-            <div className="flex items-center gap-[4cqmin]">
+          <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-[2.4cqmin]">
+            <p role="status" className="max-w-[60cqmin] text-center text-[5cqmin] font-bold leading-tight text-white [text-shadow:0_2px_6px_rgba(0,0,0,0.75)]">
+              {phase === "kissed" ? t("bottle.kissed") : phase === "declined" ? t("bottle.declined") : myRole ? t("bottle.yourChoice") : t("bottle.deciding")}
+            </p>
+            <div className="flex items-center gap-[2.5cqmin]">
               {stageCard(players[turn], answers.spinner)}
-              <Heart className={cn("h-[9cqmin] w-[9cqmin] shrink-0", phase === "kissed" && "animate-pulse")} fill={phase === "declined" ? "none" : "#FF4D6A"} stroke="#FFFFFF" strokeWidth={1.5} />
+              {phase === "choice"
+                ? <span aria-label={`${seconds}`} className="w-[8cqmin] text-center text-[8cqmin] font-bold tabular-nums text-white [text-shadow:0_2px_6px_rgba(0,0,0,0.75)]">{seconds}</span>
+                : <Heart className="h-[8cqmin] w-[8cqmin] shrink-0" fill={phase === "kissed" ? "#FF4D6A" : "none"} stroke="#FFFFFF" strokeWidth={1.8} />}
               {stageCard(players[target], answers.target)}
             </div>
-            {phase === "kissed" || phase === "declined" ? <p role="status" className="text-[5cqmin] font-bold text-white [text-shadow:0_2px_6px_rgba(0,0,0,0.8)]">{t(phase === "kissed" ? "bottle.kissed" : "bottle.declined")}</p> : null}
-            {myRole && answers[myRole] === null ? (
-              <div className="flex items-center gap-[4cqmin]">
-                <button onClick={() => setAnswers((value) => ({ ...value, [myRole]: false }))} aria-label={t("bottle.no")} title={t("bottle.no")} className="flex h-[14cqmin] w-[14cqmin] items-center justify-center rounded-full bg-white text-[7cqmin] shadow-xl hover:scale-105">✋</button>
-                <span aria-label={`${seconds}`} className="flex h-[9cqmin] w-[9cqmin] items-center justify-center rounded-full bg-black/55 text-[4.4cqmin] font-bold tabular-nums text-white">{seconds}</span>
-                <button onClick={() => setAnswers((value) => ({ ...value, [myRole]: true }))} aria-label={t("bottle.yes")} title={t("bottle.yes")} className="flex h-[14cqmin] w-[14cqmin] items-center justify-center rounded-full bg-[#E5334B] text-[7cqmin] shadow-xl hover:scale-105">💋</button>
-              </div>
-            ) : phase === "choice" ? <p className="text-[3.6cqmin] font-semibold text-white [text-shadow:0_2px_4px_rgba(0,0,0,0.8)]">{t("bottle.deciding")} {seconds}</p> : null}
+            <div className={cn("flex gap-[3cqmin]", !(myRole && answers[myRole] === null) && "invisible")}>
+              <button onClick={() => myRole && setAnswers((value) => ({ ...value, [myRole]: false }))} className="h-[10cqmin] w-[23cqmin] rounded-[2cqmin] bg-[#E2401F] text-[3.4cqmin] font-bold text-white shadow-lg hover:brightness-110">{t("bottle.no")}</button>
+              <button onClick={() => myRole && setAnswers((value) => ({ ...value, [myRole]: true }))} className="h-[10cqmin] w-[23cqmin] rounded-[2cqmin] bg-[#8CC63F] text-[3.4cqmin] font-bold text-white shadow-lg hover:brightness-110">{t("bottle.yes")}</button>
+            </div>
           </div>
         ) : null}
       </div>

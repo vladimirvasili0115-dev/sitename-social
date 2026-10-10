@@ -54,5 +54,6 @@ const en: Record<keyof typeof az, string> = {
   "verified.badge":"Verified account","verified.official":"Official account","admin.verify":"Verify","admin.unverify":"Remove verification",
   "bottle.title":"Spin the Bottle","bottle.tryDemo":"Try the demo","bottle.yourTurn":"Your turn!","bottle.spins":"is spinning…","bottle.spinning":"The bottle is spinning…","bottle.deciding":"They are deciding…","bottle.kissed":"They kissed! 💋","bottle.declined":"Not this time","bottle.spin":"Spin","bottle.ask":"Kiss","bottle.yes":"Kiss","bottle.no":"Decline","bottle.table":"Table","bottle.leave":"Leave the table","bottle.myKisses":"Your kisses","bottle.demoNote":"Demo mode: the other players are computer-controlled.","bottle.giftHint":"Tap a player's photo to send a gift",
   "bottle.fullscreen":"Full screen","bottle.videoLink":"Paste a YouTube link","bottle.videoPlay":"Play","bottle.videoShared":"put on some music",
+  "bottle.yourChoice":"Your choice",
 };
 export default en;
