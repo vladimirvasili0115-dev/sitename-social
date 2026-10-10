@@ -14,7 +14,7 @@ const labels: Record<string, TranslationKey> = {
   ban: "admin.logBan", unban: "admin.logUnban", coins: "admin.logCoins", delete_user: "admin.logDeleteUser", delete_post: "admin.logDeletePost",
   delete_comment: "admin.logDeleteComment", delete_video: "admin.logDeleteVideo", delete_track: "admin.logDeleteTrack", delete_group: "admin.logDeleteGroup",
   dismiss_report: "admin.logDismiss", moderator_on: "admin.makeModerator", moderator_off: "admin.removeModerator", notice_on: "admin.logNoticeOn",
-  notice_off: "admin.logNoticeOff", word_add: "admin.logWordAdd", word_remove: "admin.logWordRemove", price: "admin.logPrice",
+  notice_off: "admin.logNoticeOff", word_add: "admin.logWordAdd", word_remove: "admin.logWordRemove", price: "admin.logPrice", welcome_on: "admin.logWelcomeOn", welcome_off: "admin.logWelcomeOff",
 };
 
 export function AdminLog() {

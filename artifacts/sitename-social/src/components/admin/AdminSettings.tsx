@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { X } from "lucide-react";
-import { fetchNotice, fetchPriceTables, fetchWords, saveNotice, setPrice, setWord, type SiteNotice } from "@/lib/adminSync";
+import { fetchNotice, fetchPriceTables, fetchWelcome, fetchWords, saveNotice, saveWelcome, setPrice, setWord, type SiteNotice, type Welcome } from "@/lib/adminSync";
 import { priceColumn, refreshPrices, type PriceTable } from "@/lib/pricesSync";
 import { useTranslation } from "@/i18n/useTranslation";
 import type { TranslationKey } from "@/i18n/LanguageProvider";
@@ -32,6 +32,8 @@ export function AdminSettings() {
   const { t } = useTranslation();
   const [notice, setNotice] = useState<SiteNotice>({ body: "", kind: "info", active: false, updatedAt: "" });
   const [noticeState, setNoticeState] = useState<"idle" | "saved" | "failed">("idle");
+  const [welcome, setWelcome] = useState<Welcome>({ enabled: false, text: "" });
+  const [welcomeState, setWelcomeState] = useState<"idle" | "saved" | "failed">("idle");
   const [words, setWords] = useState<string[]>([]);
   const [word, setWordDraft] = useState("");
   const [tables, setTables] = useState<{ gifts: PriceTable; packages: PriceTable } | null>(null);
@@ -41,6 +43,7 @@ export function AdminSettings() {
   const loadPrices = useCallback(() => void fetchPriceTables().then(setTables), []);
   useEffect(() => {
     void fetchNotice().then((value) => { if (value) setNotice(value); });
+    void fetchWelcome().then((value) => { if (value) setWelcome(value); });
     loadWords();
     loadPrices();
   }, [loadWords, loadPrices]);
@@ -48,6 +51,10 @@ export function AdminSettings() {
   async function handleNotice(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setNoticeState((await saveNotice(notice.body.trim(), notice.kind, notice.active && Boolean(notice.body.trim()))) ? "saved" : "failed");
+  }
+  async function handleWelcome(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setWelcomeState((await saveWelcome(welcome.text.trim(), welcome.enabled && Boolean(welcome.text.trim()))) ? "saved" : "failed");
   }
   async function handleWord(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -83,6 +90,19 @@ export function AdminSettings() {
             <Button type="submit" className="ml-auto h-10 px-4 text-xs">{t("profile.save")}</Button>
           </div>
           {noticeState !== "idle" ? <p role="status" className={cn("mt-2 text-xs", noticeState === "saved" ? "text-accent" : "text-danger")}>{t(noticeState === "saved" ? "admin.saved" : "report.failed")}</p> : null}
+        </form>
+      </Card>
+
+      <h2 className={heading}>{t("admin.welcome")}</h2>
+      <Card className="mb-6 p-4">
+        <p className="mb-3 text-xs leading-5 text-muted">{t("admin.welcomeHint")}</p>
+        <form onSubmit={handleWelcome}>
+          <textarea value={welcome.text} onChange={(event) => { setWelcome({ ...welcome, text: event.target.value }); setWelcomeState("idle"); }} maxLength={1500} rows={9} aria-label={t("admin.welcome")} className="w-full resize-y rounded-xl border border-border bg-surface-2 px-3.5 py-3 text-sm leading-6 text-text outline-none focus:border-accent" />
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <label className="flex items-center gap-2 text-sm"><Switch checked={welcome.enabled} onChange={(enabled) => setWelcome({ ...welcome, enabled })} label={t("admin.welcomeActive")} />{t("admin.welcomeActive")}</label>
+            <Button type="submit" className="ml-auto h-10 px-4 text-xs">{t("profile.save")}</Button>
+          </div>
+          {welcomeState !== "idle" ? <p role="status" className={cn("mt-2 text-xs", welcomeState === "saved" ? "text-accent" : "text-danger")}>{t(welcomeState === "saved" ? "admin.saved" : "report.failed")}</p> : null}
         </form>
       </Card>
 

@@ -100,3 +100,10 @@ export async function fetchPriceTables(): Promise<{ gifts: import("./pricesSync"
   const data = await call<{ gifts: import("./pricesSync").PriceTable; packages: import("./pricesSync").PriceTable }>("price_list");
   return data && typeof data === "object" && "gifts" in data ? data : null;
 }
+
+export type Welcome = { enabled: boolean; text: string };
+export async function fetchWelcome(): Promise<Welcome | null> {
+  const data = await call<Welcome>("admin_welcome_get");
+  return data && typeof data === "object" ? data : null;
+}
+export const saveWelcome = async (body: string, enabled: boolean) => (await call("admin_welcome_set", { body, enabled })) !== null;
