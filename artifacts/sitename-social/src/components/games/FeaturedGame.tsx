@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { Sparkles, Users } from "lucide-react";
 import type { Game } from "@/types";
 import { useTranslation } from "@/i18n/useTranslation";
@@ -17,7 +18,7 @@ export function FeaturedGame({ game }: { game: Game }) {
           <p className="mt-1.5 max-w-lg text-sm leading-6 text-muted">{t("games.butulkaText")}</p>
         </div>
         <div className="flex shrink-0 items-center gap-3 sm:flex-col sm:items-end">
-          <span className="rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text">{t("common.soon")}</span>
+          <Link href="/bottle" className="rounded-full bg-accent px-4 py-2 text-xs font-bold text-bg hover:brightness-110">{t("bottle.tryDemo")}</Link>
           <span className="flex items-center gap-1.5 text-xs text-muted"><Users size={13} />{game.players} {t("games.playing")}</span>
         </div>
       </div>

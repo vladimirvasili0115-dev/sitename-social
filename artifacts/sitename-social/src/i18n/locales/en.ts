@@ -52,5 +52,6 @@ const en: Record<keyof typeof az, string> = {
   "admin.searchUsersMod":"Search by name or username","admin.moderatorNote":"As a moderator you can review reports, delete content and ban an account for up to 30 days. Deleting accounts, giving coins, prices and the other settings belong to the site owner only.",
   "gifts.paySoon":"Online payment will be available soon. For now, write to us through the Contact page to get coins.","privacy.rateLimit":"You are posting too fast. Wait a moment and try again.","settings.secWrongCurrent":"The current password is wrong.","admin.typeVideoComment":"Video comment",
   "verified.badge":"Verified account","verified.official":"Official account","admin.verify":"Verify","admin.unverify":"Remove verification",
+  "bottle.title":"Spin the Bottle","bottle.tryDemo":"Try the demo","bottle.yourTurn":"Your turn!","bottle.spins":"is spinning…","bottle.spinning":"The bottle is spinning…","bottle.deciding":"They are deciding…","bottle.kissed":"They kissed! 💋","bottle.declined":"Not this time","bottle.spin":"Spin","bottle.ask":"Kiss","bottle.yes":"Kiss","bottle.no":"Decline","bottle.table":"Table","bottle.leave":"Leave the table","bottle.myKisses":"Your kisses","bottle.demoNote":"Demo mode: the other players are computer-controlled.","bottle.giftHint":"Tap a player's photo to send a gift",
 };
 export default en;

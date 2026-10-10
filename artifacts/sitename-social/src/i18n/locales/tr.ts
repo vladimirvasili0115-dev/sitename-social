@@ -52,5 +52,6 @@ const tr: Record<keyof typeof az, string> = {
   "admin.searchUsersMod":"Ad veya kullanıcı adıyla ara","admin.moderatorNote":"Moderatör olarak şikâyetleri inceleyebilir, içerik silebilir ve bir hesabı en fazla 30 gün engelleyebilirsin. Hesap silme, puan verme, fiyatlar ve diğer ayarlar yalnızca site sahibine aittir.",
   "gifts.paySoon":"Çevrimiçi ödeme yakında açılacak. Şimdilik puan almak için İletişim sayfasından bize yaz.","privacy.rateLimit":"Çok sık yazıyorsun. Biraz bekleyip tekrar dene.","settings.secWrongCurrent":"Mevcut şifre yanlış.","admin.typeVideoComment":"Video yorumu",
   "verified.badge":"Doğrulanmış hesap","verified.official":"Resmî hesap","admin.verify":"Doğrula","admin.unverify":"Doğrulamayı kaldır",
+  "bottle.title":"Şişe Çevirmece","bottle.tryDemo":"Örneğe bak","bottle.yourTurn":"Sıra sende!","bottle.spins":"çeviriyor…","bottle.spinning":"Şişe dönüyor…","bottle.deciding":"Karar veriyorlar…","bottle.kissed":"Öpüştüler! 💋","bottle.declined":"Bu sefer olmadı","bottle.spin":"Çevir","bottle.ask":"Öpüyor musun:","bottle.yes":"Öp","bottle.no":"Reddet","bottle.table":"Masa","bottle.leave":"Masadan çık","bottle.myKisses":"Öpücüklerin","bottle.demoNote":"Örnek mod: diğer oyuncular bilgisayar.","bottle.giftHint":"Hediye göndermek için oyuncunun fotoğrafına dokun",
 };
 export default tr;
