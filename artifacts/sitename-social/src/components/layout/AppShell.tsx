@@ -9,6 +9,7 @@ import { Sidebar } from "./Sidebar";
 import { MobileNav } from "./MobileNav";
 import { Footer } from "./Footer";
 import { FlashNotice } from "./FlashNotice";
+import { ReportHost } from "@/components/report/ReportHost";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -40,5 +41,6 @@ export function AppShell({ children }: { children: ReactNode }) {
     <Footer />
     <MobileNav />
     <FlashNotice />
+    <ReportHost />
   </div>;
 }

@@ -12,6 +12,7 @@ import { IconButton } from "@/components/ui/IconButton";
 import { cn } from "@/lib/utils";
 import type { Chat, MessageInput } from "./useMessages";
 import { VoiceRecorder } from "./VoiceRecorder";
+import { ImageViewer } from "@/components/ui/ImageViewer";
 
 type Props = { chat: Chat; onBack: () => void; onSend: (input: MessageInput) => void; onDelete: (id: string) => void; className?: string };
 const tool = "flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-xl text-muted hover:bg-surface-2 hover:text-text";
@@ -22,6 +23,7 @@ export function ChatPane({ chat, onBack, onSend, onDelete, className }: Props) {
   const [image, setImage] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [recording, setRecording] = useState(false);
+  const [viewing, setViewing] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const { user } = chat.person;
   const count = chat.messages.length;
@@ -75,7 +77,7 @@ export function ChatPane({ chat, onBack, onSend, onDelete, className }: Props) {
               <div className={cn("flex items-center gap-2", mine ? "justify-end" : "justify-start")}>
                 {mine && active ? <button onClick={() => { onDelete(message.id); setSelected(null); }} className="flex h-8 items-center gap-1.5 rounded-lg border border-border px-2.5 text-xs font-medium text-danger hover:bg-surface-2"><Trash2 size={13} />{t("post.delete")}</button> : null}
                 <div onClick={mine ? () => setSelected(active ? null : message.id) : undefined} className={cn("max-w-[78%] overflow-hidden rounded-2xl", mine ? "cursor-pointer rounded-br-md bg-accent text-bg" : "rounded-bl-md bg-surface-2 text-text", active && "opacity-80")}>
-                  {message.image ? <img src={message.image} alt="" className="max-h-[260px] w-full object-cover" /> : null}
+                  {message.image ? <button type="button" onClick={(event) => { event.stopPropagation(); setViewing(message.image ?? null); }} aria-label={t("photos.view")} className="block w-full cursor-zoom-in"><img src={message.image} alt="" className="max-h-[260px] w-full object-cover" /></button> : null}
                   {message.audio ? <audio src={message.audio} controls preload="metadata" onClick={(event) => event.stopPropagation()} className="mx-2 mt-2 h-10 w-[230px] max-w-full" /> : null}
                   <div className="px-3.5 py-2">
                     {message.text ? <p className="whitespace-pre-wrap break-words text-sm leading-5">{message.text}</p> : null}
@@ -100,6 +102,7 @@ export function ChatPane({ chat, onBack, onSend, onDelete, className }: Props) {
         {recording ? null : <><input value={text} onChange={(event) => setText(event.target.value)} aria-label={t("messages.placeholder")} placeholder={t("messages.placeholder")} autoComplete="off" className="ml-1 h-11 min-w-0 flex-1 rounded-xl border border-border bg-surface-2 px-4 text-sm text-text outline-none placeholder:text-muted focus:border-accent" />
         <button type="submit" disabled={!ready} aria-label={t("messages.send")} className="ml-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent text-bg disabled:opacity-40"><SendHorizontal size={18} /></button></>}
       </form>
+      {viewing ? <ImageViewer src={viewing} onClose={() => setViewing(null)} /> : null}
     </div>
   );
 }

@@ -36,7 +36,7 @@ export default function MusicPage() {
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState<TranslationKey | null>(null);
   const mine = useMemo(() => (online ? remote.tracks.filter((track) => track.mine) : localMine), [remote, localMine]);
-  const all = useMemo(() => [...(online ? remote.tracks : localMine), ...tracks], [remote, localMine]);
+  const all = useMemo(() => (online ? remote.tracks : [...localMine, ...tracks]), [remote, localMine]);
   const favorites = useMemo(() => [...remote.favorites, ...localFavorites], [remote, localFavorites]);
   const toggleFavorite = (id: string) => (isRemoteId(id) ? void toggleTrackFavorite(id) : toggleLocalFavorite(id));
   const favoriteList = all.filter((track) => favorites.includes(track.id));
@@ -83,7 +83,7 @@ export default function MusicPage() {
             ))}
           </ul>
         </Card>
-      ) : <Card className="p-8 text-center text-sm text-muted">{needle ? t("friends.noResults") : t(tab === "mine" ? "music.emptyMine" : "music.empty")}</Card>}
+      ) : <Card className="p-8 text-center text-sm text-muted">{needle ? t("friends.noResults") : t(tab === "mine" ? "music.emptyMine" : tab === "favorites" ? "music.empty" : "music.emptyAll")}</Card>}
       <audio {...player.audioProps} src={current?.src} className="hidden" />
       {current ? <PlayerBar track={current} playing={player.playing} position={player.position} shuffle={player.shuffle} repeat={player.repeat} onToggle={player.toggle} onPrev={() => player.step(-1)} onNext={() => player.step(1)} onSeek={player.seek} onShuffle={player.toggleShuffle} onRepeat={player.toggleRepeat} /> : null}
     </div>

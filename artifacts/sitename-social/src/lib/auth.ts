@@ -3,7 +3,7 @@ import type { AuthUser } from "@/types";
 const STORAGE_KEY = "sitename-auth";
 export const AUTH_ROUTES = ["/login", "/register", "/forgot-password"];
 
-export const PUBLIC_ROUTES = ["/terms", "/privacy", "/reset-password"];
+export const PUBLIC_ROUTES = ["/terms", "/privacy", "/reset-password", "/about", "/help", "/contact"];
 export const isPublicRoute = (pathname: string) => PUBLIC_ROUTES.includes(pathname.length > 1 ? pathname.replace(/\/$/, "") : pathname);
 
 export function isAuthRoute(pathname: string) {

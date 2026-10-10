@@ -36,8 +36,8 @@ export function useVideos() {
 
   return useMemo(() => {
     const mineVideos = online ? remote.videos.filter((video) => video.mine) : localVideos;
-    const videos = [...(online ? remote.videos : localVideos), ...sampleVideos];
-    const reels = [...(online ? remote.reels : localReels), ...sampleReels];
+    const videos = online ? remote.videos : [...localVideos, ...sampleVideos];
+    const reels = online ? remote.reels : [...localReels, ...sampleReels];
     const liked = [...remote.liked, ...localLiked];
     const saved = [...remote.saved, ...localSaved];
     return {

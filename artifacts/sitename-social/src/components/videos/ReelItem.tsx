@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { Bookmark, Check, Heart, MessageCircle, Play, Send, Trash2, Volume2, VolumeX, X } from "lucide-react";
+import { Bookmark, Check, Flag, Heart, MessageCircle, Play, Send, Trash2, Volume2, VolumeX, X } from "lucide-react";
+import { openReport } from "@/lib/reportsSync";
 import { PostComments } from "@/components/feed/PostComments";
 import type { PostComment, Video } from "@/types";
 import { formatCount } from "@/lib/format";
@@ -72,6 +73,7 @@ export function ReelItem({ reel, liked, saved, onLike, onSave, comments, onComme
         <button onClick={() => setShowComments(true)} aria-label={t("post.comment")} className={action}><span className={bubble}><MessageCircle size={19} /></span>{formatCount((reel.comments ?? 0) + comments.length)}</button>
         <button onClick={onSave} aria-pressed={saved} aria-label={t("videos.save")} className={action}><span className={cn(bubble, saved && "text-accent")}><Bookmark size={19} fill={saved ? "currentColor" : "none"} /></span></button>
         <button onClick={share} aria-label={t("post.share")} className={action}><span className={cn(bubble, copied && "text-accent")}>{copied ? <Check size={18} /> : <Send size={18} />}</span></button>
+        {reel.src && !reel.mine ? <button onClick={() => openReport({ type: "video", id: reel.id })} aria-label={t("report.action")} title={t("report.action")} className={action}><span className={bubble}><Flag size={17} /></span></button> : null}
         {onDelete ? <button onClick={onDelete} aria-label={t("post.delete")} title={t("post.delete")} className={action}><span className={cn(bubble, "text-danger")}><Trash2 size={18} /></span></button> : null}
       </div>
       {showComments ? (

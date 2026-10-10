@@ -7,12 +7,15 @@ import { Card } from "@/components/ui/Card";
 import { cn } from "@/lib/utils";
 import { useNavBadges } from "./useNavBadges";
 import { useInvisible } from "@/components/invisible/useInvisible";
+import { ShieldAlert } from "lucide-react";
+import { useIsAdmin } from "@/components/report/useIsAdmin";
 
 export function Sidebar() {
   const pathname = usePathname();
   const { t } = useTranslation();
   const { state: invisible } = useInvisible();
   const badges = useNavBadges();
+  const admin = useIsAdmin();
   return (
     <aside className="sticky top-[96px] hidden h-fit w-[220px] shrink-0 lg:block">
       <Card className="overflow-hidden p-2">
@@ -29,6 +32,7 @@ export function Sidebar() {
               ? <span key={`${key}-${index}`} aria-disabled="true" className={className}>{content}</span>
               : <Link key={`${key}-${index}`} href={href} aria-current={active ? "page" : undefined} className={className}>{content}</Link>;
           })}
+          {admin ? <Link href="/admin" aria-current={pathname === "/admin" ? "page" : undefined} className={cn("flex h-10 items-center gap-3 rounded-xl px-3 text-[13px] font-medium transition-colors", pathname === "/admin" ? "bg-accent/10 text-accent" : "text-muted hover:bg-surface-2 hover:text-text")}><ShieldAlert size={17} /><span className="flex-1 truncate">{t("nav.admin")}</span></Link> : null}
         </nav>
       </Card>
     </aside>

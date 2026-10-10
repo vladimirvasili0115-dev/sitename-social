@@ -51,7 +51,7 @@ export default function VideosPage() {
       </div>
       {failure ? <p role="alert" className="mb-3 rounded-xl border border-danger px-4 py-2.5 text-sm text-danger">{t(failure)}</p> : null}
       <Tabs<VideosTab> active={tab} onChange={setTab} tabs={[{ id: "all", label: t("common.all"), count: all.length }, { id: "reels", label: t("videos.tabReels"), count: allReels.length }, { id: "saved", label: t("nav.saved"), count: savedList.length }, { id: "mine", label: t("videos.tabMine"), count: mine.length }]} />
-      {tab === "reels" ? <ReelsFeed reels={allReels} liked={liked} saved={saved} onLike={toggleLike} onSave={toggleSave} commentsFor={commentsFor} onComment={addComment} onRemoveComment={removeComment} onDelete={remove} /> : visible.length ? (
+      {tab === "reels" ? !allReels.length ? <Card className="p-8 text-center text-sm text-muted">{t("videos.emptyReels")}</Card> : <ReelsFeed reels={allReels} liked={liked} saved={saved} onLike={toggleLike} onSave={toggleSave} commentsFor={commentsFor} onComment={addComment} onRemoveComment={removeComment} onDelete={remove} /> : visible.length ? (
         <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {visible.map((video) => <li key={video.id}><VideoCard video={video} onOpen={() => setOpenId(video.id)} /></li>)}
         </ul>

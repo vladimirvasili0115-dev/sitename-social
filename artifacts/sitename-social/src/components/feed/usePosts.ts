@@ -36,12 +36,13 @@ export function usePosts() {
     const created = state.created.map(toPost);
     const wall = online ? [] : created.filter((post) => !post.groupId);
     const own = online ? [] : profilePosts.map((post): Post => ({ ...post, author: user, mine: true }));
+    const samples = online ? [] : posts;
     const patch = (change: (current: PostsState) => PostsState) => update(change);
     return {
-      feed: visible([...real, ...wall, ...posts]),
+      feed: visible([...real, ...wall, ...samples]),
       mine: visible([...real.filter((post) => post.mine), ...wall, ...own]),
-      all: visible([...real, ...created, ...posts, ...own]),
-      byAuthor: (id: string) => visible([...real, ...posts].filter((post) => post.author.id === id)),
+      all: visible([...real, ...created, ...samples, ...own]),
+      byAuthor: (id: string) => visible([...real, ...samples].filter((post) => post.author.id === id)),
       inGroup: (groupId: string) => (isRemoteId(groupId)
         ? visible((remote.groups[groupId] ?? []).map(asMine))
         : visible([...created.filter((post) => post.groupId === groupId), ...mockGroupPosts(groupId)])),

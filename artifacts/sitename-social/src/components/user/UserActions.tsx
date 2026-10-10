@@ -1,12 +1,13 @@
 "use client";
 import Link from "next/link";
-import { Ban, Check, Clock, Gift, MessageCircle, MoreHorizontal, UserMinus, UserPlus } from "lucide-react";
+import { Ban, Check, Clock, Flag, Gift, MessageCircle, MoreHorizontal, UserMinus, UserPlus } from "lucide-react";
 import { useTranslation } from "@/i18n/useTranslation";
 import { Button } from "@/components/ui/Button";
 import { Dropdown, menuItem } from "@/components/ui/Dropdown";
 import { cn } from "@/lib/utils";
 import { useFriends } from "@/components/friends/useFriends";
 import { fullAccess, type Access } from "@/lib/access";
+import { openReport } from "@/lib/reportsSync";
 
 const box = "inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-border text-sm font-semibold text-text hover:bg-surface-2";
 const link = `${box} px-3.5`;
@@ -30,6 +31,7 @@ export function UserActions({ userId, onBlock, access = fullAccess }: { userId: 
         {(close) => <>
           {isFriend ? <button role="menuitem" onClick={() => { close(); actions.remove(userId); }} className={menuItem}><UserMinus size={16} className="text-muted" />{t("friends.remove")}</button> : null}
           <button role="menuitem" onClick={() => { close(); onBlock(); }} className={cn(menuItem, "text-danger")}><Ban size={16} />{t("settings.blkBlock")}</button>
+          <button role="menuitem" onClick={() => { close(); openReport({ type: "user", id: userId }); }} className={cn(menuItem, "text-danger")}><Flag size={16} />{t("report.action")}</button>
         </>}
       </Dropdown>
     </div>

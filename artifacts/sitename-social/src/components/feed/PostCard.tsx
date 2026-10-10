@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { Bookmark, EyeOff, MoreHorizontal, Pencil, Trash2, UserRound } from "lucide-react";
+import { Bookmark, EyeOff, Flag, MoreHorizontal, Pencil, Trash2, UserRound } from "lucide-react";
 import type { Post } from "@/types";
 import { userHref } from "@/lib/links";
 import { cn, relativeTime } from "@/lib/utils";
@@ -16,6 +16,8 @@ import { IconButton } from "@/components/ui/IconButton";
 import { PostActions } from "./PostActions";
 import { PostComments } from "./PostComments";
 import { usePosts } from "./usePosts";
+import { ImageViewer } from "@/components/ui/ImageViewer";
+import { openReport } from "@/lib/reportsSync";
 
 export function PostCard({ post }: { post: Post }) {
   const { t } = useTranslation();
@@ -23,6 +25,7 @@ export function PostCard({ post }: { post: Post }) {
   const { isLiked, toggleLike, commentsFor, addComment, removeComment, remove, edit } = usePosts();
   const [draft, setDraft] = useState<string | null>(null);
   const [showComments, setShowComments] = useState(false);
+  const [viewing, setViewing] = useState(false);
   const saved = savedPosts.includes(post.id);
   const liked = isLiked(post.id);
   const comments = commentsFor(post.id);
@@ -43,6 +46,7 @@ export function PostCard({ post }: { post: Post }) {
           {post.mine
             ? <button role="menuitem" onClick={() => { close(); remove(post.id, true); }} className={cn(menuItem, "text-danger")}><Trash2 size={16} />{t("post.delete")}</button>
             : <button role="menuitem" onClick={() => { close(); remove(post.id); }} className={menuItem}><EyeOff size={16} className="text-muted" />{t("post.hide")}</button>}
+          {post.mine ? null : <button role="menuitem" onClick={() => { close(); openReport({ type: "post", id: post.id }); }} className={cn(menuItem, "text-danger")}><Flag size={16} />{t("report.action")}</button>}
         </>}
       </Dropdown>
     </div>
@@ -55,7 +59,8 @@ export function PostCard({ post }: { post: Post }) {
         </div>
       </div>
     ) : post.text ? <p className="whitespace-pre-wrap break-words px-4 pb-3 text-[13px] leading-6 text-text/90">{post.text}</p> : null}
-    {post.image && <img src={post.image} alt="" className={post.kind === "avatar" ? "mx-auto mb-1 aspect-square w-full max-w-[320px] rounded-2xl object-cover" : "max-h-[420px] w-full object-cover"} />}
+    {post.image ? <button type="button" onClick={() => setViewing(true)} aria-label={t("photos.view")} className="block w-full cursor-zoom-in"><img src={post.image} alt="" className={post.kind === "avatar" ? "mx-auto mb-1 aspect-square w-full max-w-[320px] rounded-2xl object-cover" : "max-h-[420px] w-full object-cover"} /></button> : null}
+    {viewing && post.image ? <ImageViewer src={post.image} onClose={() => setViewing(false)} /> : null}
     <div className="flex items-center justify-between px-4 py-3 text-xs text-muted">
       <div className="flex items-center gap-1.5">{post.reactions.length ? <span className="text-sm tracking-[-5px]">{post.reactions.join(" ")}</span> : null}<span className={post.reactions.length ? "ml-1" : ""}>{likes} {t("post.likesCount")}</span></div>
       <button onClick={() => setShowComments((value) => !value)} className="hover:text-text hover:underline">{comments.length} {t("post.comments")}</button>

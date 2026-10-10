@@ -11,7 +11,7 @@ const columns: Column[] = [
   { title: "footer.site", links: [{ href: "/feed", label: "nav.feed" }, { href: "/friends", label: "nav.friends" }, { href: "/groups", label: "nav.groups" }, { href: "/online", label: "nav.online" }] },
   { title: "footer.fun", links: [{ href: "/games", label: "nav.games" }, { href: "/videos", label: "nav.videos" }, { href: "/music", label: "nav.music" }, { href: "/gifts", label: "nav.gifts" }] },
   { title: "footer.account", links: [{ href: "/profile", label: "nav.profile" }, { href: "/settings", label: "nav.settings" }, { href: "/notifications", label: "header.notifications" }, { href: "/invisible", label: "nav.invisible" }] },
-  { title: "footer.info", links: [{ href: "/terms", label: "auth.termsLink" }, { href: "/privacy", label: "auth.privacyLink" }] },
+  { title: "footer.info", links: [{ href: "/about", label: "footer.about" }, { href: "/help", label: "footer.help" }, { href: "/contact", label: "footer.contact" }, { href: "/terms", label: "auth.termsLink" }, { href: "/privacy", label: "auth.privacyLink" }] },
 ];
 
 export function Footer() {

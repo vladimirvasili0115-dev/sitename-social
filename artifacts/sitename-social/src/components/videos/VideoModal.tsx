@@ -1,6 +1,7 @@
 "use client";
 import { useEffect } from "react";
-import { Bookmark, Heart, Trash2, X } from "lucide-react";
+import { Bookmark, Flag, Heart, Trash2, X } from "lucide-react";
+import { openReport } from "@/lib/reportsSync";
 import type { PostComment, Video } from "@/types";
 import { PostComments } from "@/components/feed/PostComments";
 import { formatCount } from "@/lib/format";
@@ -40,6 +41,7 @@ export function VideoModal({ video, liked, saved, onLike, onSave, onClose, comme
           <div className="flex gap-2">
             <Button variant="outline" aria-pressed={liked} onClick={onLike} className="h-10 px-3 text-xs"><Heart size={15} className={liked ? "text-danger" : ""} fill={liked ? "currentColor" : "none"} />{t(liked ? "post.liked" : "post.like")}{video.src && (video.likes ?? 0) + (liked ? 1 : 0) ? ` · ${formatCount((video.likes ?? 0) + (liked ? 1 : 0))}` : ""}</Button>
             <Button variant="outline" aria-pressed={saved} onClick={onSave} className="h-10 px-3 text-xs"><Bookmark size={15} className={saved ? "text-accent" : ""} fill={saved ? "currentColor" : "none"} />{t(saved ? "videos.saved" : "videos.save")}</Button>
+            {video.src && !video.mine ? <Button variant="outline" onClick={() => openReport({ type: "video", id: video.id })} aria-label={t("report.action")} title={t("report.action")} className="h-10 px-3 text-xs text-muted"><Flag size={15} /></Button> : null}
             {onDelete ? <Button variant="outline" onClick={onDelete} aria-label={t("post.delete")} title={t("post.delete")} className="h-10 px-3 text-xs text-danger"><Trash2 size={15} /></Button> : null}
           </div>
         </div>

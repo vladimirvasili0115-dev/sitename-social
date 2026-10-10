@@ -14,6 +14,10 @@ import { SettingsSection } from "./SettingsSection";
 import { useSettings } from "./useSettings";
 import { useAuth, type AuthResult } from "@/components/auth/AuthProvider";
 import { FormError } from "@/components/auth/FormError";
+import { supabase } from "@/lib/supabase";
+
+// Two-step sign-in and the session list are only a preview until they are backed by the server.
+const preview = !supabase;
 
 type Errors = Partial<Record<"current" | "next" | "confirm", TranslationKey>>;
 
@@ -59,7 +63,7 @@ export function SecuritySection() {
           </div>
         </form>
       </SettingsSection>
-      <SettingsSection>
+      {preview ? <><SettingsSection>
         <SettingRow icon={ShieldCheck} title={t("settings.sec2fa")} hint={t("settings.sec2faHint")}><Switch checked={settings.twoFactor} onChange={(twoFactor) => set({ twoFactor })} label={t("settings.sec2fa")} /></SettingRow>
       </SettingsSection>
       <SettingsSection title={t("settings.secSessions")}>
@@ -68,7 +72,7 @@ export function SecuritySection() {
             {session.current ? null : <Button variant="outline" className="h-9 px-3 text-xs" onClick={() => update((current) => ({ ...current, endedSessions: [...current.endedSessions, session.id] }))}>{t("settings.secEnd")}</Button>}
           </SettingRow>
         ))}
-      </SettingsSection>
+      </SettingsSection></> : null}
     </>
   );
 }
