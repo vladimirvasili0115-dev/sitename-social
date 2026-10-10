@@ -62,5 +62,6 @@ const az = {
   "gifts.paySoon":"Onlayn ödəniş tezliklə aktiv olacaq. Hələlik xal almaq üçün Əlaqə səhifəsindən bizə yaz.","privacy.rateLimit":"Çox tez-tez yazırsan. Bir az gözlə və yenidən cəhd et.","settings.secWrongCurrent":"Cari şifrə yanlışdır.","admin.typeVideoComment":"Video şərhi",
   "verified.badge":"Təsdiqlənmiş hesab","verified.official":"Rəsmi hesab","admin.verify":"Təsdiqlə","admin.unverify":"Təsdiqi götür",
   "bottle.title":"Butulka","bottle.tryDemo":"Nümunəyə bax","bottle.yourTurn":"Növbə səndədir!","bottle.spins":"fırladır…","bottle.spinning":"Butulka fırlanır…","bottle.deciding":"Qərar verirlər…","bottle.kissed":"Öpüşdülər! 💋","bottle.declined":"Bu dəfə alınmadı","bottle.spin":"Fırlat","bottle.ask":"Öpürsən:","bottle.yes":"Öp","bottle.no":"Rədd et","bottle.table":"Masa","bottle.leave":"Masadan çıx","bottle.myKisses":"Öpüşlərin","bottle.demoNote":"Nümunə rejim: digər oyunçular kompüterdir.","bottle.giftHint":"Hədiyyə göndərmək üçün oyunçunun şəklinə vur",
+  "bottle.fullscreen":"Tam ekran","bottle.videoLink":"YouTube linkini yapışdır","bottle.videoPlay":"Oxut","bottle.videoShared":"musiqi qoydu",
 } as const;
 export default az;

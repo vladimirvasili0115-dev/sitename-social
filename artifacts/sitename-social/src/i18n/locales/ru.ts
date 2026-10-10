@@ -53,5 +53,6 @@ const ru: Record<keyof typeof az, string> = {
   "gifts.paySoon":"Онлайн-оплата скоро заработает. Пока, чтобы получить баллы, напишите нам через страницу «Контакты».","privacy.rateLimit":"Вы пишете слишком часто. Подождите немного и попробуйте снова.","settings.secWrongCurrent":"Текущий пароль неверный.","admin.typeVideoComment":"Комментарий к видео",
   "verified.badge":"Подтверждённый аккаунт","verified.official":"Официальный аккаунт","admin.verify":"Подтвердить","admin.unverify":"Снять подтверждение",
   "bottle.title":"Бутылочка","bottle.tryDemo":"Посмотреть пример","bottle.yourTurn":"Ваш ход!","bottle.spins":"крутит…","bottle.spinning":"Бутылочка крутится…","bottle.deciding":"Решают…","bottle.kissed":"Поцеловались! 💋","bottle.declined":"В этот раз не вышло","bottle.spin":"Крутить","bottle.ask":"Поцеловать:","bottle.yes":"Поцеловать","bottle.no":"Отказаться","bottle.table":"Стол","bottle.leave":"Выйти из-за стола","bottle.myKisses":"Ваши поцелуи","bottle.demoNote":"Демо-режим: остальные игроки — компьютер.","bottle.giftHint":"Нажмите на фото игрока, чтобы отправить подарок",
+  "bottle.fullscreen":"Во весь экран","bottle.videoLink":"Вставьте ссылку YouTube","bottle.videoPlay":"Включить","bottle.videoShared":"включил музыку",
 };
 export default ru;

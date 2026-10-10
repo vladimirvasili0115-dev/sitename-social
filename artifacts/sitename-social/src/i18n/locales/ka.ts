@@ -53,5 +53,6 @@ const ka: Record<keyof typeof az, string> = {
   "gifts.paySoon":"ონლაინ გადახდა მალე ამოქმედდება. ჯერჯერობით ქულების მისაღებად მოგვწერე კონტაქტის გვერდიდან.","privacy.rateLimit":"ძალიან ხშირად წერ. ცოტა მოიცადე და სცადე ხელახლა.","settings.secWrongCurrent":"მიმდინარე პაროლი არასწორია.","admin.typeVideoComment":"ვიდეოს კომენტარი",
   "verified.badge":"დადასტურებული ანგარიში","verified.official":"ოფიციალური ანგარიში","admin.verify":"დადასტურება","admin.unverify":"დადასტურების მოხსნა",
   "bottle.title":"ბოთლის თამაში","bottle.tryDemo":"ნახე ნიმუში","bottle.yourTurn":"შენი ჯერია!","bottle.spins":"ატრიალებს…","bottle.spinning":"ბოთლი ტრიალებს…","bottle.deciding":"წყვეტენ…","bottle.kissed":"აკოცეს! 💋","bottle.declined":"ამჯერად არ გამოვიდა","bottle.spin":"დაატრიალე","bottle.ask":"აკოცებ:","bottle.yes":"კოცნა","bottle.no":"უარი","bottle.table":"მაგიდა","bottle.leave":"მაგიდიდან გასვლა","bottle.myKisses":"შენი კოცნები","bottle.demoNote":"სადემონსტრაციო რეჟიმი: სხვა მოთამაშეები კომპიუტერია.","bottle.giftHint":"საჩუქრის გასაგზავნად დააჭირე მოთამაშის ფოტოს",
+  "bottle.fullscreen":"სრული ეკრანი","bottle.videoLink":"ჩასვი YouTube-ის ბმული","bottle.videoPlay":"ჩართვა","bottle.videoShared":"ჩართო მუსიკა",
 };
 export default ka;
