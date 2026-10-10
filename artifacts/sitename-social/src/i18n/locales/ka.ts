@@ -56,5 +56,6 @@ const ka: Record<keyof typeof az, string> = {
   "bottle.fullscreen":"სრული ეკრანი","bottle.videoLink":"ჩასვი YouTube-ის ბმული","bottle.videoPlay":"ჩართვა","bottle.videoShared":"ჩართო მუსიკა",
   "bottle.yourChoice":"შენი არჩევანი",
   "bottle.kissBack":"კოცნას კოცნით უპასუხებს?",
+  "bottle.chooses":"ირჩევს…",
 };
 export default ka;

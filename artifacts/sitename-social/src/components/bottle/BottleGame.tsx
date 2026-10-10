@@ -97,36 +97,40 @@ export function BottleGame() {
       const timer = window.setTimeout(() => { playSound("chosen"); setPhase("choice"); }, 3400);
       return () => window.clearTimeout(timer);
     }
-    if (phase === "choice" && target !== null) {
-      const timers: number[] = [];
-      const decide = (role: "spinner" | "target", index: number) => {
-        if (index !== meIndex) timers.push(window.setTimeout(() => setAnswers((value) => ({ ...value, [role]: Math.random() < 0.75 })), 1200 + Math.random() * 2500));
-      };
-      decide("spinner", turn);
-      decide("target", target);
-      setSeconds(ANSWER_SECONDS);
-      const tick = window.setInterval(() => setSeconds((value) => Math.max(0, value - 1)), 1000);
-      timers.push(window.setTimeout(() => setAnswers((value) => ({ spinner: value.spinner ?? false, target: value.target ?? false })), ANSWER_SECONDS * 1000));
-      return () => { window.clearInterval(tick); timers.forEach((timer) => window.clearTimeout(timer)); };
-    }
     if (phase === "kissed" || phase === "declined") {
       const timer = window.setTimeout(nextTurn, 2600);
       return () => window.clearTimeout(timer);
     }
-  }, [phase, turn, target, spin, nextTurn]);
+  }, [phase, turn, spin, nextTurn]);
+
+  // The spinner answers first. Only if they kiss is the chosen player asked to kiss back; each has 10 seconds.
+  const deciding: "spinner" | "target" | null = phase === "choice" && target !== null ? (answers.spinner === null ? "spinner" : answers.spinner && answers.target === null ? "target" : null) : null;
+  useEffect(() => {
+    if (!deciding || target === null) return;
+    const index = deciding === "spinner" ? turn : target;
+    setSeconds(ANSWER_SECONDS);
+    const tick = window.setInterval(() => setSeconds((value) => Math.max(0, value - 1)), 1000);
+    const timer = index === meIndex
+      ? window.setTimeout(() => setAnswers((value) => (value[deciding] === null ? { ...value, [deciding]: false } : value)), ANSWER_SECONDS * 1000)
+      : window.setTimeout(() => setAnswers((value) => ({ ...value, [deciding]: Math.random() < 0.75 })), 1500 + Math.random() * 2500);
+    return () => { window.clearInterval(tick); window.clearTimeout(timer); };
+  }, [deciding, turn, target]);
 
   useEffect(() => {
-    if (phase !== "choice" || target === null || answers.spinner === null || answers.target === null) return;
+    if (phase !== "choice" || target === null || answers.spinner === null) return;
     const [a, b] = [players[turn], players[target]];
-    if (answers.spinner && answers.target) {
+    if (answers.spinner === false || answers.target === false) {
+      const timer = window.setTimeout(() => { playSound("decline"); setPhase("declined"); }, 700);
+      return () => window.clearTimeout(timer);
+    }
+    if (answers.target === null) return void playSound("chosen");
+    const timer = window.setTimeout(() => {
       setKisses((value) => ({ ...value, [a.id]: (value[a.id] ?? 0) + 1, [b.id]: (value[b.id] ?? 0) + 1 }));
       say({ from: a.id, to: b.id });
       playSound("kiss");
       setPhase("kissed");
-    } else {
-      playSound("decline");
-      setPhase("declined");
-    }
+    }, 700);
+    return () => window.clearTimeout(timer);
   }, [answers, phase, target, turn, players, say]);
 
   useEffect(() => {
@@ -148,7 +152,7 @@ export function BottleGame() {
 
   const byId = (id: string) => players.find((player) => player.id === id);
   const staged = phase !== "waiting" && phase !== "spinning" && target !== null;
-  const myRole = phase === "choice" && target !== null ? (turn === meIndex ? "spinner" : target === meIndex ? "target" : null) : null;
+  const myRole = deciding && target !== null && (deciding === "spinner" ? turn : target) === meIndex ? deciding : null;
   const status = phase === "waiting" ? (turn === meIndex ? t("bottle.yourTurn") : `${players[turn].name} ${t("bottle.spins")}`) : phase === "spinning" ? t("bottle.spinning") : "";
 
   function handleChat(event: FormEvent<HTMLFormElement>) {
@@ -257,18 +261,18 @@ export function BottleGame() {
         {staged && target !== null ? (
           <div className="pointer-events-none absolute left-1/2 top-[49.5%] z-30 flex w-[50cqmin] -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-[1.6cqmin]">
             <p role="status" className="mb-[4.5cqmin] text-center text-[3.8cqmin] font-bold leading-tight text-white [text-shadow:0_2px_6px_rgba(0,0,0,0.75)]">
-              {phase === "kissed" ? t("bottle.kissed") : phase === "declined" ? t("bottle.declined") : myRole && answers[myRole] === null ? t("bottle.yourChoice") : answers.spinner || answers.target ? t("bottle.kissBack") : t("bottle.deciding")}
+              {phase === "kissed" ? t("bottle.kissed") : phase === "declined" ? t("bottle.declined") : myRole ? t("bottle.yourChoice") : deciding === "target" ? t("bottle.kissBack") : deciding === "spinner" ? `${players[turn].name} ${t("bottle.chooses")}` : ""}
             </p>
             <div className="relative flex w-[46cqmin] items-start justify-between">
               {stageCard(players[turn])}
-              {phase === "choice"
+              {deciding
                 ? <span aria-label={`${seconds}`} className="mt-[4.5cqmin] w-[8cqmin] text-center text-[7cqmin] font-bold tabular-nums leading-none text-white [text-shadow:0_2px_6px_rgba(0,0,0,0.75)]">{seconds}</span>
                 : <Heart className="mt-[5cqmin] h-[7cqmin] w-[7cqmin] shrink-0" fill={phase === "kissed" ? "#FF4D6A" : "none"} stroke="#FFFFFF" strokeWidth={1.8} />}
               {stageCard(players[target])}
               {arrows(false)}
               {arrows(true)}
             </div>
-            <div className={cn("pointer-events-auto mt-[2cqmin] flex gap-[2.5cqmin]", !(myRole && answers[myRole] === null) && "invisible")}>
+            <div className={cn("pointer-events-auto mt-[2cqmin] flex gap-[2.5cqmin]", !myRole && "invisible")}>
               <button onClick={() => myRole && setAnswers((value) => ({ ...value, [myRole]: false }))} className="h-[7.5cqmin] w-[20cqmin] rounded-[1.8cqmin] bg-[#E2401F] text-[3cqmin] font-bold text-white shadow-lg hover:brightness-110">{t("bottle.no")}</button>
               <button onClick={() => myRole && setAnswers((value) => ({ ...value, [myRole]: true }))} className="h-[7.5cqmin] w-[20cqmin] rounded-[1.8cqmin] bg-[#8CC63F] text-[3cqmin] font-bold text-white shadow-lg hover:brightness-110">{t("bottle.yes")}</button>
             </div>

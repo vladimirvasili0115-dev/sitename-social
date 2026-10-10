@@ -56,5 +56,6 @@ const ru: Record<keyof typeof az, string> = {
   "bottle.fullscreen":"Во весь экран","bottle.videoLink":"Вставьте ссылку YouTube","bottle.videoPlay":"Включить","bottle.videoShared":"включил музыку",
   "bottle.yourChoice":"Ваш выбор",
   "bottle.kissBack":"Ответит поцелуем на поцелуй?",
+  "bottle.chooses":"выбирает…",
 };
 export default ru;

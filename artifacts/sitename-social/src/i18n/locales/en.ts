@@ -56,5 +56,6 @@ const en: Record<keyof typeof az, string> = {
   "bottle.fullscreen":"Full screen","bottle.videoLink":"Paste a YouTube link","bottle.videoPlay":"Play","bottle.videoShared":"put on some music",
   "bottle.yourChoice":"Your choice",
   "bottle.kissBack":"Will they kiss back?",
+  "bottle.chooses":"is choosing…",
 };
 export default en;

@@ -65,5 +65,6 @@ const az = {
   "bottle.fullscreen":"Tam ekran","bottle.videoLink":"YouTube linkini yapışdır","bottle.videoPlay":"Oxut","bottle.videoShared":"musiqi qoydu",
   "bottle.yourChoice":"Sənin seçimin",
   "bottle.kissBack":"Öpüşə öpüşlə cavab verəcək?",
+  "bottle.chooses":"seçir…",
 } as const;
 export default az;

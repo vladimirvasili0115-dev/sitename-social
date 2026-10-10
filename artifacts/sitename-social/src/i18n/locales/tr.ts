@@ -56,5 +56,6 @@ const tr: Record<keyof typeof az, string> = {
   "bottle.fullscreen":"Tam ekran","bottle.videoLink":"YouTube bağlantısını yapıştır","bottle.videoPlay":"Oynat","bottle.videoShared":"müzik açtı",
   "bottle.yourChoice":"Senin seçimin",
   "bottle.kissBack":"Öpücüğe öpücükle karşılık verecek mi?",
+  "bottle.chooses":"seçiyor…",
 };
 export default tr;
