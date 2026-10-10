@@ -41,9 +41,9 @@ export async function removeFiles(urls: (string | null | undefined)[]) {
 }
 
 // Removes everything the signed-in user has uploaded. Used when the account is deleted.
-export async function removeAllMyFiles() {
+export async function removeAllMyFiles(ownerId?: string) {
   if (!supabase) return;
-  const userId = (await supabase.auth.getSession()).data.session?.user.id;
+  const userId = ownerId ?? (await supabase.auth.getSession()).data.session?.user.id;
   if (!userId) return;
   const bucket = supabase.storage.from(BUCKET);
   const { data: folders } = await bucket.list(userId, { limit: 100 });
