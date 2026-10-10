@@ -176,29 +176,39 @@ export function BottleGame() {
     if (document.fullscreenElement) void document.exitFullscreen();
     else void rootRef.current?.requestFullscreen?.().catch(() => undefined);
   }
-  // A curved arrow from the player who answered to the other one: green with lips for a kiss, red for a refusal.
+  // A curved arrow from the player who answered to the other one. A kiss is green and runs below the pair; a refusal is red and runs above it.
   const arrow = (answer: boolean | null, leftToRight: boolean, drop: number) => {
     if (answer === null) return null;
     const color = answer ? "#7AC143" : "#E2401F";
-    const [from, to] = leftToRight ? [150, 440] : [440, 150];
-    const tip = leftToRight ? "M452 4l-46 6 28 36z" : "M138 4l46 6-28 36z";
-    const path = `M${from} ${18 + drop} Q295 ${118 + drop} ${to} ${18 + drop}`;
+    const [from, to] = leftToRight ? [105, 355] : [355, 105];
+    const tip = leftToRight ? "M368 2l-44 6 27 34z" : "M92 2l44 6-27 34z";
+    const path = `M${from} ${16 + drop} Q230 ${96 + drop} ${to} ${16 + drop}`;
     return (
       <g>
-        <path d={path} fill="none" stroke="#FFFFFF" strokeWidth="24" strokeLinecap="round" />
+        <path d={path} fill="none" stroke="#FFFFFF" strokeWidth="22" strokeLinecap="round" />
         <path d={tip} transform={`translate(0 ${drop})`} fill={color} stroke="#FFFFFF" strokeWidth="6" strokeLinejoin="round" />
-        <path d={path} fill="none" stroke={color} strokeWidth="15" strokeLinecap="round" />
-        <circle cx="295" cy={68 + drop} r="24" fill={color} stroke="#FFFFFF" strokeWidth="5" />
-        <text x="295" y={78 + drop} textAnchor="middle" fontSize="28">{answer ? "💋" : "✋"}</text>
+        <path d={path} fill="none" stroke={color} strokeWidth="14" strokeLinecap="round" />
+        <circle cx="230" cy={56 + drop} r="22" fill={color} stroke="#FFFFFF" strokeWidth="5" />
       </g>
     );
   };
+  const arrows = (kiss: boolean) => {
+    const mine = [answers.spinner === kiss ? arrow(kiss, true, 0) : null, answers.target === kiss ? arrow(kiss, false, answers.spinner === kiss ? 30 : 0) : null];
+    if (!mine[0] && !mine[1]) return null;
+    const icons = [answers.spinner === kiss ? 0 : null, answers.target === kiss ? (answers.spinner === kiss ? 30 : 0) : null].filter((value): value is number => value !== null);
+    return (
+      <div aria-hidden="true" className={cn("pointer-events-none absolute inset-x-0 z-10 h-[11cqmin]", kiss ? "top-[76%]" : "bottom-[88%]")}>
+        <svg viewBox="0 0 460 130" className={cn("h-full w-full overflow-visible", !kiss && "-scale-y-100")}>{mine}</svg>
+        {icons.map((drop) => <span key={drop} className="absolute left-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center text-[3.4cqmin] leading-none" style={{ top: kiss ? `${((56 + drop) / 130) * 100}%` : `${100 - ((56 + drop) / 130) * 100}%` }}>{kiss ? "💋" : "✋"}</span>)}
+      </div>
+    );
+  };
   const stageCard = (player: Player) => (
-    <div className="flex w-[21cqmin] flex-col items-center">
+    <div className="flex w-[17cqmin] flex-col items-center">
       <div className="relative aspect-square w-full overflow-hidden rounded-[12%] bg-surface-2 shadow-[0_6px_16px_rgba(0,0,0,0.45)]">
         <img src={player.avatar} alt="" className="h-full w-full object-cover" />
       </div>
-      <p className="mt-1 max-w-full truncate text-[3cqmin] font-semibold text-white [text-shadow:0_2px_4px_rgba(0,0,0,0.8)]">{player.me ? t("common.you") : player.name}, {player.age}</p>
+      <p className="mt-0.5 max-w-full truncate text-[2.7cqmin] font-semibold text-white [text-shadow:0_2px_4px_rgba(0,0,0,0.8)]">{player.me ? t("common.you") : player.name}, {player.age}</p>
     </div>
   );
 
@@ -245,24 +255,22 @@ export function BottleGame() {
         ) : null}
 
         {staged && target !== null ? (
-          <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-[2cqmin] pt-[9cqmin]">
-            <p role="status" className="max-w-[44cqmin] text-center text-[4.2cqmin] font-bold leading-tight text-white [text-shadow:0_2px_6px_rgba(0,0,0,0.75)]">
+          <div className="pointer-events-none absolute left-1/2 top-[49.5%] z-30 flex w-[50cqmin] -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-[1.6cqmin]">
+            <p role="status" className="mb-[4.5cqmin] text-center text-[3.8cqmin] font-bold leading-tight text-white [text-shadow:0_2px_6px_rgba(0,0,0,0.75)]">
               {phase === "kissed" ? t("bottle.kissed") : phase === "declined" ? t("bottle.declined") : myRole && answers[myRole] === null ? t("bottle.yourChoice") : answers.spinner || answers.target ? t("bottle.kissBack") : t("bottle.deciding")}
             </p>
-            <div className="flex items-center gap-[2.5cqmin]">
+            <div className="relative flex w-[46cqmin] items-start justify-between">
               {stageCard(players[turn])}
               {phase === "choice"
-                ? <span aria-label={`${seconds}`} className="w-[8cqmin] text-center text-[8cqmin] font-bold tabular-nums text-white [text-shadow:0_2px_6px_rgba(0,0,0,0.75)]">{seconds}</span>
-                : <Heart className="h-[8cqmin] w-[8cqmin] shrink-0" fill={phase === "kissed" ? "#FF4D6A" : "none"} stroke="#FFFFFF" strokeWidth={1.8} />}
+                ? <span aria-label={`${seconds}`} className="mt-[4.5cqmin] w-[8cqmin] text-center text-[7cqmin] font-bold tabular-nums leading-none text-white [text-shadow:0_2px_6px_rgba(0,0,0,0.75)]">{seconds}</span>
+                : <Heart className="mt-[5cqmin] h-[7cqmin] w-[7cqmin] shrink-0" fill={phase === "kissed" ? "#FF4D6A" : "none"} stroke="#FFFFFF" strokeWidth={1.8} />}
               {stageCard(players[target])}
+              {arrows(false)}
+              {arrows(true)}
             </div>
-            <svg viewBox="0 0 590 130" aria-hidden="true" className="-mt-[1.5cqmin] h-[12cqmin] w-[55cqmin] overflow-visible">
-              {arrow(answers.spinner, true, 0)}
-              {arrow(answers.target, false, answers.spinner === null ? 0 : 34)}
-            </svg>
-            <div className={cn("-mt-[3cqmin] flex gap-[3cqmin]", !(myRole && answers[myRole] === null) && "invisible")}>
-              <button onClick={() => myRole && setAnswers((value) => ({ ...value, [myRole]: false }))} className="h-[10cqmin] w-[23cqmin] rounded-[2cqmin] bg-[#E2401F] text-[3.4cqmin] font-bold text-white shadow-lg hover:brightness-110">{t("bottle.no")}</button>
-              <button onClick={() => myRole && setAnswers((value) => ({ ...value, [myRole]: true }))} className="h-[10cqmin] w-[23cqmin] rounded-[2cqmin] bg-[#8CC63F] text-[3.4cqmin] font-bold text-white shadow-lg hover:brightness-110">{t("bottle.yes")}</button>
+            <div className={cn("pointer-events-auto mt-[2cqmin] flex gap-[2.5cqmin]", !(myRole && answers[myRole] === null) && "invisible")}>
+              <button onClick={() => myRole && setAnswers((value) => ({ ...value, [myRole]: false }))} className="h-[7.5cqmin] w-[20cqmin] rounded-[1.8cqmin] bg-[#E2401F] text-[3cqmin] font-bold text-white shadow-lg hover:brightness-110">{t("bottle.no")}</button>
+              <button onClick={() => myRole && setAnswers((value) => ({ ...value, [myRole]: true }))} className="h-[7.5cqmin] w-[20cqmin] rounded-[1.8cqmin] bg-[#8CC63F] text-[3cqmin] font-bold text-white shadow-lg hover:brightness-110">{t("bottle.yes")}</button>
             </div>
           </div>
         ) : null}
