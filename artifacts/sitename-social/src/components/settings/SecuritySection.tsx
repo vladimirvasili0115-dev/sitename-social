@@ -40,7 +40,7 @@ export function SecuritySection() {
     if (form.confirm !== form.next) found.confirm = "auth.errMatch";
     setErrors(found);
     if (Object.keys(found).length) return;
-    const result = await updatePassword(form.next);
+    const result = await updatePassword(form.next, form.current);
     setFailure(result);
     if (result) return;
     setForm({ current: "", next: "", confirm: "" });

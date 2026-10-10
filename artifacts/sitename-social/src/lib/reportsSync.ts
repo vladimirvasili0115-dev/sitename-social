@@ -4,7 +4,7 @@ import { isRemoteId } from "./remoteProfiles";
 import { supabase } from "./supabase";
 import { fetchUsers } from "./usersCache";
 
-export type ReportTarget = { type: "post" | "comment" | "video" | "user"; id: string };
+export type ReportTarget = { type: "post" | "comment" | "video" | "video_comment" | "user"; id: string };
 export type ReportReason = "spam" | "abuse" | "adult" | "fraud" | "other";
 export type ReportAction = "dismiss" | "delete" | "ban";
 export type Report = { id: string; type: ReportTarget["type"]; targetId: string; reason: ReportReason; note: string; snapshot: string; mediaUrl: string | null; at: number; reporter?: Person; owner?: Person; ownerId: string };

@@ -82,7 +82,7 @@ export function ReelItem({ reel, liked, saved, onLike, onSave, comments, onComme
             <p className="text-sm font-semibold">{t("post.comment")} · {comments.length}</p>
             <button onClick={() => setShowComments(false)} aria-label={t("photos.close")} className="flex h-8 w-8 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-text"><X size={16} /></button>
           </div>
-          <div className="min-h-0 overflow-y-auto"><PostComments comments={comments} onAdd={onComment} onRemove={onRemoveComment} /></div>
+          <div className="min-h-0 overflow-y-auto"><PostComments comments={comments} onAdd={onComment} onRemove={onRemoveComment} reportType="video_comment" /></div>
         </div>
       ) : null}
     </article>

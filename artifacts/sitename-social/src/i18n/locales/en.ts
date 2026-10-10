@@ -50,5 +50,6 @@ const en: Record<keyof typeof az, string> = {
   "banned.title":"Your account is banned","banned.until":"The ban is in effect until","banned.forever":"The ban has no end date.","banned.reason":"Reason","banned.help":"If you think this is a mistake, write to us:",
   "admin.welcome":"Welcome message","admin.welcomeHint":"Sent automatically to everyone who signs up, from the site owner's account. {ad} is replaced with the user's name.","admin.welcomeActive":"Send to new users","admin.logWelcomeOn":"updated the welcome message","admin.logWelcomeOff":"turned the welcome message off",
   "admin.searchUsersMod":"Search by name or username","admin.moderatorNote":"As a moderator you can review reports, delete content and ban an account for up to 30 days. Deleting accounts, giving coins, prices and the other settings belong to the site owner only.",
+  "gifts.paySoon":"Online payment will be available soon. For now, write to us through the Contact page to get coins.","privacy.rateLimit":"You are posting too fast. Wait a moment and try again.","settings.secWrongCurrent":"The current password is wrong.","admin.typeVideoComment":"Video comment",
 };
 export default en;

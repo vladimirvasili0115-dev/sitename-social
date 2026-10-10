@@ -30,7 +30,7 @@ export default function ProfilePage() {
   const { mine: posts } = usePosts();
   const stats = [
     { label: "nav.friends" as const, value: friends.length },
-    { label: "profile.followers" as const, value: details.followers },
+    { label: "saved.tabPosts" as const, value: posts.length },
     { label: "nav.photos" as const, value: profilePhotos.length },
     { label: "nav.gifts" as const, value: profileGifts.length },
   ];

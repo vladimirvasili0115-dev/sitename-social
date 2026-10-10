@@ -66,6 +66,6 @@ export function PostCard({ post }: { post: Post }) {
       <button onClick={() => setShowComments((value) => !value)} className="hover:text-text hover:underline">{comments.length} {t("post.comments")}</button>
     </div>
     <PostActions liked={liked} commentCount={comments.length} shareText={post.text} onLike={() => toggleLike(post.id)} onComment={() => setShowComments((value) => !value)} />
-    {showComments ? <PostComments comments={comments} onAdd={(text) => addComment(post.id, text)} onRemove={(id) => removeComment(post.id, id)} reportable /> : null}
+    {showComments ? <PostComments comments={comments} onAdd={(text) => addComment(post.id, text)} onRemove={(id) => removeComment(post.id, id)} reportType="comment" /> : null}
   </Card>;
 }

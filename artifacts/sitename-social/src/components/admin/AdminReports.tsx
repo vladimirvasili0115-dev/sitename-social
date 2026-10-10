@@ -10,7 +10,7 @@ import type { TranslationKey } from "@/i18n/LanguageProvider";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 
-const typeLabel: Record<Report["type"], TranslationKey> = { post: "admin.typePost", comment: "admin.typeComment", video: "admin.typeVideo", user: "admin.typeUser" };
+const typeLabel: Record<Report["type"], TranslationKey> = { post: "admin.typePost", comment: "admin.typeComment", video_comment: "admin.typeVideoComment", video: "admin.typeVideo", user: "admin.typeUser" };
 const reasonLabel: Record<Report["reason"], TranslationKey> = { spam: "report.reasonSpam", abuse: "report.reasonAbuse", adult: "report.reasonAdult", fraud: "report.reasonFraud", other: "report.reasonOther" };
 
 export function AdminReports() {

@@ -3,6 +3,10 @@ import { useEffect, useState } from "react";
 import { FlaskConical, PartyPopper, X } from "lucide-react";
 import { DEFAULT_PACKAGE_ID, type CoinPackage } from "@/data/coins";
 import { usePrices } from "./usePrices";
+import { supabase } from "@/lib/supabase";
+
+// Until a payment provider is connected, coins are only credited by the site owner.
+const paymentsOpen = !supabase;
 import { useTranslation } from "@/i18n/useTranslation";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -59,8 +63,8 @@ export function TopUpModal({ onPay, onClose }: { onPay: (pack: CoinPackage) => v
                 );
               })}
             </ul>
-            <p className="mt-4 flex items-start gap-2 rounded-xl border border-border bg-surface-2 p-3 text-xs leading-5 text-muted"><FlaskConical size={15} className="mt-0.5 shrink-0 text-accent" />{t("gifts.testMode")}</p>
-            <Button className="mt-4 h-12 w-full" onClick={() => { onPay(pack); setDone(true); }}>{t("gifts.pay")} · {pack.price.toFixed(2)} AZN</Button>
+            <p className="mt-4 flex items-start gap-2 rounded-xl border border-border bg-surface-2 p-3 text-xs leading-5 text-muted"><FlaskConical size={15} className="mt-0.5 shrink-0 text-accent" />{t(paymentsOpen ? "gifts.testMode" : "gifts.paySoon")}</p>
+            <Button className="mt-4 h-12 w-full disabled:opacity-50" disabled={!paymentsOpen} onClick={() => { onPay(pack); setDone(true); }}>{t("gifts.pay")} · {pack.price.toFixed(2)} AZN</Button>
           </div>
         )}
       </Card>

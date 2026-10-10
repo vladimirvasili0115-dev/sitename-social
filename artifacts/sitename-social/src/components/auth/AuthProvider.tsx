@@ -28,7 +28,7 @@ type AuthContextValue = {
   login: (email: string, password: string, remember: boolean) => Promise<AuthResult>;
   register: (input: RegisterInput) => Promise<AuthResult>;
   requestReset: (email: string) => Promise<AuthResult>;
-  updatePassword: (password: string) => Promise<AuthResult>;
+  updatePassword: (password: string, current?: string) => Promise<AuthResult>;
   signOut: () => Promise<void>;
 };
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -123,8 +123,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return error ? toKey(error.message) : null;
   }, []);
 
-  const updatePassword = useCallback(async (password: string): Promise<AuthResult> => {
+  const updatePassword = useCallback(async (password: string, current?: string): Promise<AuthResult> => {
     if (!supabase) return null;
+    // From Settings the current password is checked first; the reset-by-email page has no current password.
+    if (current !== undefined) {
+      const email = (await supabase.auth.getSession()).data.session?.user.email;
+      if (!email) return "auth.errGeneric";
+      const check = await supabase.auth.signInWithPassword({ email, password: current });
+      if (check.error) return check.error.message.toLowerCase().includes("invalid login") ? "settings.secWrongCurrent" : toKey(check.error.message);
+    }
     const { error } = await supabase.auth.updateUser({ password });
     return error ? toKey(error.message) : null;
   }, []);

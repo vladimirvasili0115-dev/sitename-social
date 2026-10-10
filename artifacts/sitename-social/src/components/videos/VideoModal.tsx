@@ -45,7 +45,7 @@ export function VideoModal({ video, liked, saved, onLike, onSave, onClose, comme
             {onDelete ? <Button variant="outline" onClick={onDelete} aria-label={t("post.delete")} title={t("post.delete")} className="h-10 px-3 text-xs text-danger"><Trash2 size={15} /></Button> : null}
           </div>
         </div>
-        {video.src && comments && onComment && onRemoveComment ? <PostComments comments={comments} onAdd={onComment} onRemove={onRemoveComment} /> : null}
+        {video.src && comments && onComment && onRemoveComment ? <PostComments comments={comments} onAdd={onComment} onRemove={onRemoveComment} reportType="video_comment" /> : null}
       </Card>
     </div>
   );

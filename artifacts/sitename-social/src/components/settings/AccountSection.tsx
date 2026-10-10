@@ -12,6 +12,7 @@ import { Select } from "@/components/ui/Select";
 import { SettingRow } from "./SettingRow";
 import { SettingsSection } from "./SettingsSection";
 import { deleteAccount } from "@/lib/account";
+import { supabase } from "@/lib/supabase";
 
 const KEEP = ["sitename-auth", "sitename-locale", "sitename-profile", "sitename-uid", "sitename-ephemeral"];
 function clearData(keepSession: boolean) {
@@ -47,9 +48,9 @@ export function AccountSection() {
       </SettingsSection>
       <SettingsSection>
         <SettingRow icon={LogOut} title={t("auth.logout")} hint={t("settings.accLogoutHint")}><Button variant="outline" className="h-10 px-3 text-xs" onClick={() => void signOut()}>{t("auth.logout")}</Button></SettingRow>
-        <SettingRow icon={RotateCcw} title={t("settings.accReset")} hint={t("settings.accResetHint")}>
+        {supabase ? null : <SettingRow icon={RotateCcw} title={t("settings.accReset")} hint={t("settings.accResetHint")}>
           <Button variant="outline" className="h-10 px-3 text-xs" onClick={() => { clearData(true); window.location.reload(); }}>{t("settings.accReset")}</Button>
-        </SettingRow>
+        </SettingRow>}
         <SettingRow icon={Trash2} title={t("settings.accDelete")} hint={t(failed ? "settings.accDeleteFailed" : confirming ? "settings.accDeleteConfirm" : "settings.accDeleteHint")}>
           {confirming ? (
             <>

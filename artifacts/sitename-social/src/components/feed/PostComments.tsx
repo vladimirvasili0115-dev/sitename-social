@@ -13,9 +13,9 @@ import { useTranslation } from "@/i18n/useTranslation";
 import { Avatar } from "@/components/ui/Avatar";
 import { useProfile } from "@/components/profile/useProfile";
 
-type Props = { comments: PostComment[]; onAdd: (text: string) => void; onRemove: (id: string) => void; reportable?: boolean };
+type Props = { comments: PostComment[]; onAdd: (text: string) => void; onRemove: (id: string) => void; reportType?: "comment" | "video_comment" };
 
-export function PostComments({ comments, onAdd, onRemove, reportable = false }: Props) {
+export function PostComments({ comments, onAdd, onRemove, reportType }: Props) {
   const { t } = useTranslation();
   const { user } = useProfile();
   const [text, setText] = useState("");
@@ -46,7 +46,7 @@ export function PostComments({ comments, onAdd, onRemove, reportable = false }: 
                 </div>
                 <p className="mt-0.5 whitespace-pre-wrap break-words text-[13px] leading-5 text-text">{comment.text}</p>
               </div>
-              {comment.userId === currentUser.id ? <button onClick={() => onRemove(comment.id)} aria-label={t("post.delete")} title={t("post.delete")} className="flex h-7 w-7 shrink-0 items-center justify-center self-center rounded-full text-muted hover:bg-surface-2 hover:text-text"><X size={14} /></button> : reportable && isRemoteId(comment.id) ? <button onClick={() => openReport({ type: "comment", id: comment.id })} aria-label={t("report.action")} title={t("report.action")} className="flex h-7 w-7 shrink-0 items-center justify-center self-center rounded-full text-muted hover:bg-surface-2 hover:text-danger"><Flag size={13} /></button> : null}
+              {comment.userId === currentUser.id ? <button onClick={() => onRemove(comment.id)} aria-label={t("post.delete")} title={t("post.delete")} className="flex h-7 w-7 shrink-0 items-center justify-center self-center rounded-full text-muted hover:bg-surface-2 hover:text-text"><X size={14} /></button> : reportType && isRemoteId(comment.id) ? <button onClick={() => openReport({ type: reportType, id: comment.id })} aria-label={t("report.action")} title={t("report.action")} className="flex h-7 w-7 shrink-0 items-center justify-center self-center rounded-full text-muted hover:bg-surface-2 hover:text-danger"><Flag size={13} /></button> : null}
             </li>
           );
         })}
