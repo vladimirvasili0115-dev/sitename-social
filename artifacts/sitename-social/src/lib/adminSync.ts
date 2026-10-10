@@ -101,6 +101,7 @@ export async function fetchPriceTables(): Promise<{ gifts: import("./pricesSync"
   return data && typeof data === "object" && "gifts" in data ? data : null;
 }
 
+export const setVerified = async (id: string, enabled: boolean) => (await call("admin_set_verified", { target: id, enabled })) !== null;
 export type Welcome = { enabled: boolean; text: string };
 export async function fetchWelcome(): Promise<Welcome | null> {
   const data = await call<Welcome>("admin_welcome_get");

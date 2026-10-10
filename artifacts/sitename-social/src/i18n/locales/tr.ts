@@ -51,5 +51,6 @@ const tr: Record<keyof typeof az, string> = {
   "admin.welcome":"Hoş geldin mesajı","admin.welcomeHint":"Yeni kaydolan herkese site sahibinin hesabından otomatik gönderilir. {ad} yazan yere kullanıcının adı konur.","admin.welcomeActive":"Yeni kullanıcılara gönder","admin.logWelcomeOn":"hoş geldin mesajını güncelledi","admin.logWelcomeOff":"hoş geldin mesajını kapattı",
   "admin.searchUsersMod":"Ad veya kullanıcı adıyla ara","admin.moderatorNote":"Moderatör olarak şikâyetleri inceleyebilir, içerik silebilir ve bir hesabı en fazla 30 gün engelleyebilirsin. Hesap silme, puan verme, fiyatlar ve diğer ayarlar yalnızca site sahibine aittir.",
   "gifts.paySoon":"Çevrimiçi ödeme yakında açılacak. Şimdilik puan almak için İletişim sayfasından bize yaz.","privacy.rateLimit":"Çok sık yazıyorsun. Biraz bekleyip tekrar dene.","settings.secWrongCurrent":"Mevcut şifre yanlış.","admin.typeVideoComment":"Video yorumu",
+  "verified.badge":"Doğrulanmış hesap","verified.official":"Resmî hesap","admin.verify":"Doğrula","admin.unverify":"Doğrulamayı kaldır",
 };
 export default tr;

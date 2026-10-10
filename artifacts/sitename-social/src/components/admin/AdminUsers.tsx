@@ -1,8 +1,11 @@
 "use client";
+import { VerifiedMark } from "@/components/ui/VerifiedMark";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { Ban, ChevronDown, Coins, ShieldCheck, ShieldOff, Trash2, Undo2 } from "lucide-react";
-import { banUser, deleteUser, fetchAdminUsers, fetchUserDetail, grantCoins, setModerator, type AdminUser, type UserDetail } from "@/lib/adminSync";
+import { BadgeCheck, Ban, ChevronDown, Coins, ShieldCheck, ShieldOff, Trash2, Undo2 } from "lucide-react";
+import { useSyncExternalStore } from "react";
+import { refreshVerified, verifiedStore } from "@/lib/verifiedSync";
+import { banUser, deleteUser, fetchAdminUsers, fetchUserDetail, grantCoins, setModerator, setVerified, type AdminUser, type UserDetail } from "@/lib/adminSync";
 import type { TranslationKey } from "@/i18n/LanguageProvider";
 import { initialsAvatar } from "@/lib/avatar";
 import { formatDay } from "@/lib/datetime";
@@ -36,6 +39,7 @@ export function AdminUsers({ owner }: { owner: boolean }) {
   const [openId, setOpenId] = useState<string | null>(null);
   const [detail, setDetail] = useState<UserDetail | null>(null);
   const [failed, setFailed] = useState(false);
+  const verified = useSyncExternalStore(verifiedStore.subscribe, verifiedStore.get, verifiedStore.getServer);
   const load = useCallback((search: string) => void fetchAdminUsers(search).then((list) => {
     setUsers(list ?? []);
     setFailed(!list);
@@ -91,7 +95,7 @@ export function AdminUsers({ owner }: { owner: boolean }) {
                     <Link href={userHref(user.id)} className="shrink-0"><img src={user.avatar || initialsAvatar(user.name || "?")} alt="" className="h-11 w-11 rounded-full object-cover" /></Link>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <Link href={userHref(user.id)} className="truncate text-sm font-semibold hover:underline">{user.name || "—"}</Link>
+                        <Link href={userHref(user.id)} className="truncate text-sm font-semibold hover:underline">{user.name || "—"}<VerifiedMark userId={user.id} size={14} /></Link>
                         {user.owner ? <span className={cn(chip, "border-accent text-accent")}>{t("admin.roleOwner")}</span> : user.moderator ? <span className={cn(chip, "border-accent text-accent")}>{t("admin.roleModerator")}</span> : null}
                         {user.banned ? <span className={cn(chip, "border-danger text-danger")}>{t("admin.statBanned")}</span> : null}
                         {online ? <span className={cn(chip, "border-border text-accent")}>{t("common.onlineNow")}</span> : null}
@@ -105,6 +109,7 @@ export function AdminUsers({ owner }: { owner: boolean }) {
                     {user.moderator ? null : user.banned
                       ? <button disabled={locked} onClick={() => void run(user.id, () => banUser(user.id, -1, ""))} className={action}><Undo2 size={14} />{t("settings.blkUnblock")}</button>
                       : <button disabled={locked} onClick={() => { setBanFor(banFor === user.id ? null : user.id); setBanDays(7); setReason(""); }} className={cn(danger, "text-danger hover:bg-surface-2")}><Ban size={14} />{t("admin.ban")}</button>}
+                    {owner && verified[user.id] !== "official" ? <button disabled={locked} onClick={() => void run(user.id, async () => { const done = await setVerified(user.id, !verified[user.id]); await refreshVerified(); return done; })} className={action}><BadgeCheck size={14} style={{ color: "#3B9DF8" }} />{t(verified[user.id] ? "admin.unverify" : "admin.verify")}</button> : null}
                     {owner && !user.owner ? <button disabled={locked} onClick={() => void run(user.id, () => setModerator(user.id, !user.moderator))} className={action}>{user.moderator ? <ShieldOff size={14} /> : <ShieldCheck size={14} />}{t(user.moderator ? "admin.removeModerator" : "admin.makeModerator")}</button> : null}
                     {user.moderator || !owner ? null : <button disabled={locked} onClick={() => (asking ? void run(user.id, () => deleteUser(user.id)) : setConfirm(user.id))} className={cn(danger, asking ? "bg-danger text-bg" : "text-danger hover:bg-surface-2")}><Trash2 size={14} />{t(asking ? "admin.confirm" : "settings.accDelete")}</button>}
                     <button onClick={() => toggleDetail(user.id)} aria-expanded={openId === user.id} className={cn(action, "ml-auto")}>{t("admin.details")}<ChevronDown size={14} className={openId === user.id ? "rotate-180" : ""} /></button>

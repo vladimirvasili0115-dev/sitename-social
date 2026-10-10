@@ -1,4 +1,5 @@
 "use client";
+import { VerifiedMark } from "@/components/ui/VerifiedMark";
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { Flag, SendHorizontal, X } from "lucide-react";
@@ -41,7 +42,7 @@ export function PostComments({ comments, onAdd, onRemove, reportType }: Props) {
               <Link href={userHref(author.id)} className="shrink-0"><Avatar user={author} size="sm" /></Link>
               <div className="min-w-0 flex-1 rounded-2xl bg-surface-2 px-3 py-2">
                 <div className="flex items-baseline gap-2">
-                  <Link href={userHref(author.id)} className="truncate text-xs font-semibold text-text hover:underline">{author.name}</Link>
+                  <Link href={userHref(author.id)} className="truncate text-xs font-semibold text-text hover:underline">{author.name}<VerifiedMark userId={author.id} size={12} /></Link>
                   <span className="shrink-0 text-[10px] text-muted">{label === "0m" ? t("post.justNow") : relativeTime(label, t)}</span>
                 </div>
                 <p className="mt-0.5 whitespace-pre-wrap break-words text-[13px] leading-5 text-text">{comment.text}</p>

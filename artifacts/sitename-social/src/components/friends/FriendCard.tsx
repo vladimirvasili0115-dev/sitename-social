@@ -1,4 +1,5 @@
 "use client";
+import { VerifiedMark } from "@/components/ui/VerifiedMark";
 import Link from "next/link";
 import { Check, Clock, MapPin, MessageCircle, UserMinus, UserPlus, X } from "lucide-react";
 import type { Person } from "@/types";
@@ -23,7 +24,7 @@ export function FriendCard({ person, kind, actions }: { person: Person; kind: Fr
         {user.online ? <span aria-label={t("common.onlineNow")} className="absolute bottom-0.5 right-0.5 h-3.5 w-3.5 rounded-full border-2 border-surface bg-accent" /> : null}
       </span>
       <div className="min-w-0 flex-1">
-        <Link href={userHref(user.id)} className="block truncate text-sm font-semibold hover:underline">{user.name}</Link>
+        <Link href={userHref(user.id)} className="block truncate text-sm font-semibold hover:underline">{user.name}<VerifiedMark userId={user.id} size={14} /></Link>
         <div className="mt-0.5 flex items-center gap-1 truncate text-xs text-muted"><MapPin size={12} className="shrink-0" />{city}</div>
         {mutual ? <div className="mt-0.5 truncate text-xs text-muted">{mutual} {t("friends.mutual")}</div> : null}
         <div className="mt-2.5 flex flex-wrap items-center gap-2">

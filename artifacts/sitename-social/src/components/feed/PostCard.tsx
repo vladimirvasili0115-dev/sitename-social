@@ -1,4 +1,5 @@
 "use client";
+import { VerifiedMark } from "@/components/ui/VerifiedMark";
 import { useState } from "react";
 import Link from "next/link";
 import { Bookmark, EyeOff, Flag, MoreHorizontal, Pencil, Trash2, UserRound } from "lucide-react";
@@ -35,7 +36,7 @@ export function PostCard({ post }: { post: Post }) {
     <div className="flex items-center gap-3 px-4 pb-3 pt-4">
       <Link href={href} className="shrink-0"><Avatar user={post.author} /></Link>
       <div className="min-w-0 flex-1">
-        <div className="truncate text-sm"><Link href={href} className="font-semibold hover:underline">{post.author.name}</Link>{post.kind === "avatar" ? <span className="text-muted"> {t("post.newAvatar")}</span> : null}</div>
+        <div className="truncate text-sm"><Link href={href} className="font-semibold hover:underline">{post.author.name}</Link><VerifiedMark userId={post.author.id} size={14} />{post.kind === "avatar" ? <span className="text-muted"> {t("post.newAvatar")}</span> : null}</div>
         <div className="mt-0.5 text-[11px] text-muted">{post.time === "0m" ? t("post.justNow") : relativeTime(post.time, t)}{post.edited ? ` · ${t("post.edited")}` : ""}</div>
       </div>
       <IconButton aria-label={t(saved ? "saved.remove" : "videos.save")} title={t(saved ? "saved.remove" : "videos.save")} aria-pressed={saved} onClick={() => toggleSaved(post.id)} className={cn("h-8 w-8", saved && "text-accent")}><Bookmark size={17} fill={saved ? "currentColor" : "none"} /></IconButton>

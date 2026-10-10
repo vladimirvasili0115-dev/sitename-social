@@ -1,4 +1,5 @@
 "use client";
+import { VerifiedMark } from "@/components/ui/VerifiedMark";
 import { useState } from "react";
 import { Search, SquarePen } from "lucide-react";
 import { dayDiff, formatClock, formatDay } from "@/lib/datetime";
@@ -34,7 +35,7 @@ export function ConversationList({ chats, activeId, onOpen, onNew, className }: 
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="flex items-baseline justify-between gap-2">
-                    <span className="truncate text-sm font-semibold text-text">{user.name}</span>
+                    <span className="truncate text-sm font-semibold text-text">{user.name}<VerifiedMark userId={user.id} size={13} /></span>
                     {last ? <span className="shrink-0 text-[11px] text-muted">{dayDiff(last.at) === 0 ? formatClock(last.at) : formatDay(last.at).slice(0, 5)}</span> : null}
                   </span>
                   <span className="mt-0.5 flex items-center justify-between gap-2">

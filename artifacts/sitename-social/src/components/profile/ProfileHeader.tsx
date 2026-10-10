@@ -1,4 +1,5 @@
 "use client";
+import { VerifiedMark, useVerified } from "@/components/ui/VerifiedMark";
 import type { ChangeEvent } from "react";
 import { Camera, EyeOff, MapPin, Pencil } from "lucide-react";
 import type { ProfileDetails, ProfileEdits, User } from "@/types";
@@ -14,6 +15,7 @@ type Props = { user: User; details: ProfileDetails; stats: Stat[]; onUpdate: (pa
 
 export function ProfileHeader({ user, details, stats, onUpdate, onEdit }: Props) {
   const { t } = useTranslation();
+  const official = useVerified(user.id) === "official";
   const { hidesOnline } = useInvisible();
   const pick = (field: "avatar" | "cover", size: number) => async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -37,7 +39,7 @@ export function ProfileHeader({ user, details, stats, onUpdate, onEdit }: Props)
       <div className="px-5 pb-6 sm:px-9">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
           <div className="relative -mt-14 h-28 w-28 shrink-0 sm:-mt-16 sm:h-32 sm:w-32">
-            <span className="block h-full w-full rounded-full bg-[linear-gradient(135deg,var(--accent),var(--accent-2))] p-[3px]">
+            <span className={`block h-full w-full rounded-full ${official ? "bg-[linear-gradient(135deg,#F6D365,#E7B93C,#B8860B)] p-[4px]" : "bg-[linear-gradient(135deg,var(--accent),var(--accent-2))] p-[3px]"}`}>
               <img src={user.avatar} alt={user.name} className="h-full w-full rounded-full border-4 border-surface object-cover" />
             </span>
             <label className="absolute bottom-1 right-1 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-border bg-surface text-text hover:bg-surface-2">
@@ -47,7 +49,8 @@ export function ProfileHeader({ user, details, stats, onUpdate, onEdit }: Props)
           </div>
           <div className="min-w-0 flex-1 sm:pb-1 sm:pt-5">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-              <h1 className="truncate text-2xl font-semibold tracking-[-0.03em]">{user.name}</h1>
+              <h1 className="truncate text-2xl font-semibold tracking-[-0.03em]">{user.name}<VerifiedMark userId={user.id} size={21} /></h1>
+              {official ? <span className="rounded-full border px-2.5 py-0.5 text-[11px] font-semibold" style={{ borderColor: "#E7B93C", color: "#E7B93C" }}>{t("verified.official")}</span> : null}
               {hidesOnline
                 ? <span className="flex items-center gap-1.5 text-xs font-medium text-muted"><EyeOff size={13} />{t("invisible.badge")}</span>
                 : <span className="flex items-center gap-1.5 text-xs font-medium text-accent"><span className="h-2 w-2 rounded-full bg-accent" />{t("common.onlineNow")}</span>}

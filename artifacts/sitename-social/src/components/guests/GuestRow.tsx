@@ -1,4 +1,5 @@
 "use client";
+import { VerifiedMark } from "@/components/ui/VerifiedMark";
 import Link from "next/link";
 import { Check, Clock, MapPin, MessageCircle, UserPlus } from "lucide-react";
 import type { Person, Visit } from "@/types";
@@ -24,7 +25,7 @@ export function GuestRow({ person, visit, isNew, relation, onAdd }: Props) {
       </span>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <Link href={userHref(user.id)} className="truncate text-sm font-semibold hover:underline">{user.name}</Link>
+          <Link href={userHref(user.id)} className="truncate text-sm font-semibold hover:underline">{user.name}<VerifiedMark userId={user.id} size={14} /></Link>
           {isNew ? <span className="shrink-0 rounded-full bg-accent px-2 py-0.5 text-[10px] font-semibold text-bg">{t("guests.new")}</span> : null}
         </div>
         <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted">

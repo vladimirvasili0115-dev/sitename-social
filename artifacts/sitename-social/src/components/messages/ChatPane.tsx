@@ -1,4 +1,5 @@
 "use client";
+import { VerifiedMark } from "@/components/ui/VerifiedMark";
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import Link from "next/link";
 import { ArrowLeft, ImagePlus, SendHorizontal, Smile, Trash2, X } from "lucide-react";
@@ -61,7 +62,7 @@ export function ChatPane({ chat, onBack, onSend, onDelete, className }: Props) {
         <IconButton aria-label={t("messages.back")} onClick={onBack} className="md:hidden"><ArrowLeft size={18} /></IconButton>
         <Link href={userHref(user.id)} className="shrink-0"><Avatar user={user} /></Link>
         <div className="min-w-0">
-          <Link href={userHref(user.id)} className="block truncate text-sm font-semibold hover:underline">{user.name}</Link>
+          <Link href={userHref(user.id)} className="block truncate text-sm font-semibold hover:underline">{user.name}<VerifiedMark userId={user.id} size={14} /></Link>
           <div className={cn("text-xs", user.online ? "text-accent" : "text-muted")}>{t(user.online ? "common.onlineNow" : "messages.offline")}</div>
         </div>
       </div>

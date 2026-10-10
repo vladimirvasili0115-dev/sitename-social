@@ -1,4 +1,5 @@
 "use client";
+import { VerifiedMark } from "@/components/ui/VerifiedMark";
 import Link from "next/link";
 import { Check, Clock, Gift, MapPin, MessageCircle, UserPlus } from "lucide-react";
 import type { Person } from "@/types";
@@ -19,7 +20,7 @@ export function OnlineCard({ person, relation, onAdd }: { person: Person; relati
         <Avatar user={user} className="h-full w-full border-2 border-surface" />
         <span aria-label={t("common.onlineNow")} className="absolute bottom-1 right-1 h-4 w-4 rounded-full border-2 border-surface bg-accent" />
       </span>
-      <Link href={userHref(user.id)} className="mt-2.5 block w-full truncate text-sm font-semibold hover:underline">{user.name}</Link>
+      <Link href={userHref(user.id)} className="mt-2.5 block w-full truncate text-sm font-semibold hover:underline">{user.name}<VerifiedMark userId={user.id} size={14} /></Link>
       <p className="mt-0.5 flex items-center gap-1 text-xs text-muted"><MapPin size={12} />{city}</p>
       <p className="mt-1 flex h-5 items-center gap-1 text-[11px] text-muted">
         {relation === "friend" ? <><Check size={12} className="text-accent" />{t("guests.friend")}</> : null}

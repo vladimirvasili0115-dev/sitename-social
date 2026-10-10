@@ -60,5 +60,6 @@ const az = {
   "admin.welcome":"Xoş gəldin mesajı","admin.welcomeHint":"Yeni qeydiyyatdan keçən hər kəsə sayt sahibinin hesabından avtomatik göndərilir. {ad} yazılan yerə istifadəçinin adı qoyulur.","admin.welcomeActive":"Yeni istifadəçilərə göndər","admin.logWelcomeOn":"xoş gəldin mesajını yenilədi","admin.logWelcomeOff":"xoş gəldin mesajını söndürdü",
   "admin.searchUsersMod":"Ad və ya istifadəçi adı ilə axtar","admin.moderatorNote":"Moderator kimi şikayətlərə baxa, məzmunu silə və hesabı ən çoxu 30 günlük bloklaya bilərsən. Hesab silmək, xal vermək, qiymətlər və digər tənzimləmələr yalnız sayt sahibinə aiddir.",
   "gifts.paySoon":"Onlayn ödəniş tezliklə aktiv olacaq. Hələlik xal almaq üçün Əlaqə səhifəsindən bizə yaz.","privacy.rateLimit":"Çox tez-tez yazırsan. Bir az gözlə və yenidən cəhd et.","settings.secWrongCurrent":"Cari şifrə yanlışdır.","admin.typeVideoComment":"Video şərhi",
+  "verified.badge":"Təsdiqlənmiş hesab","verified.official":"Rəsmi hesab","admin.verify":"Təsdiqlə","admin.unverify":"Təsdiqi götür",
 } as const;
 export default az;

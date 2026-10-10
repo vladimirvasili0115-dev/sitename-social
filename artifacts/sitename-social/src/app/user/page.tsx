@@ -1,4 +1,5 @@
 "use client";
+import { VerifiedMark, useVerified } from "@/components/ui/VerifiedMark";
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { AtSign, MapPin, Users } from "lucide-react";
@@ -38,6 +39,7 @@ function UserProfile() {
     return () => { active = false; };
   }, [id, remote]);
   const blocked = settings.blocked.includes(id);
+  const official = useVerified(id) === "official";
   const known = Boolean(person) && !remote;
 
   // Record the visit unless invisible mode hides it.
@@ -63,12 +65,13 @@ function UserProfile() {
         <div className="h-36 bg-[linear-gradient(135deg,var(--accent),var(--accent-2))] sm:h-52">{cover || !remote ? <img src={cover ?? `https://picsum.photos/seed/cover-${id}/1400/420`} alt="" className="h-full w-full object-cover" /> : null}</div>
         <div className="px-5 pb-6 sm:px-9">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
-            <span className="-mt-14 block h-28 w-28 shrink-0 rounded-full bg-[linear-gradient(135deg,var(--accent),var(--accent-2))] p-[3px] sm:-mt-16 sm:h-32 sm:w-32">
+            <span className={`-mt-14 block h-28 w-28 shrink-0 rounded-full p-[3px] sm:-mt-16 sm:h-32 sm:w-32 ${official ? "bg-[linear-gradient(135deg,#F6D365,#E7B93C,#B8860B)] p-[4px]" : "bg-[linear-gradient(135deg,var(--accent),var(--accent-2))]"}`}>
               <img src={user.avatar} alt={user.name} className="h-full w-full rounded-full border-4 border-surface object-cover" />
             </span>
             <div className="min-w-0 flex-1 sm:pb-1 sm:pt-5">
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                <h1 className="truncate text-2xl font-semibold tracking-[-0.03em]">{user.name}</h1>
+                <h1 className="truncate text-2xl font-semibold tracking-[-0.03em]">{user.name}<VerifiedMark userId={user.id} size={21} /></h1>
+                {official ? <span className="rounded-full border px-2.5 py-0.5 text-[11px] font-semibold" style={{ borderColor: "#E7B93C", color: "#E7B93C" }}>{t("verified.official")}</span> : null}
                 <span className={`flex items-center gap-1.5 text-xs font-medium ${user.online ? "text-accent" : "text-muted"}`}><span className={`h-2 w-2 rounded-full ${user.online ? "bg-accent" : "bg-border"}`} />{t(user.online ? "common.onlineNow" : "messages.offline")}</span>
               </div>
               <p className="mt-0.5 text-sm text-muted">@{user.handle}</p>
