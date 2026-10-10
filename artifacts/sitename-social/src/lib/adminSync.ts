@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 export type AdminStats = Record<"profiles" | "posts" | "comments" | "messages" | "groups" | "videos" | "tracks" | "photos" | "stories" | "gifts" | "newDay" | "newWeek" | "banned" | "online" | "openReports" | "coins", number>;
 export type AdminUser = { id: string; name: string; handle: string; avatar: string | null; email: string; joined: number; lastSeen: number | null; banned: boolean; moderator: boolean; owner: boolean; balance: number };
-export type ContentKind = "post" | "video" | "track";
+export type ContentKind = "post" | "comment" | "video" | "track" | "group";
 export type AdminContent = { id: string; ownerId: string; ownerName: string; body: string; mediaUrl: string | null; at: number };
 type UserRow = { id: string; name: string | null; handle: string | null; avatar_url: string | null; email: string | null; created_at: string; last_seen: string | null; banned: boolean; moderator: boolean; owner: boolean; balance: number };
 type ContentRow = { id: string; owner_id: string; owner_name: string | null; body: string | null; media_url: string | null; created_at: string };
@@ -31,7 +31,6 @@ export async function fetchAdminUsers(search: string): Promise<AdminUser[] | nul
 export async function fetchIsOwner(): Promise<boolean> {
   return (await call<boolean>("is_owner")) === true;
 }
-export const setBan = async (id: string, banned: boolean) => (await call("admin_set_ban", { target: id, banned })) !== null;
 export const setModerator = async (id: string, enabled: boolean) => (await call("admin_set_moderator", { target: id, enabled })) !== null;
 export async function grantCoins(id: string, amount: number): Promise<number | null> {
   const total = await call<number>("admin_grant_coins", { target: id, amount });
@@ -54,4 +53,50 @@ export async function deleteContent(kind: ContentKind, item: AdminContent): Prom
   if ((await call("admin_delete_content", { kind, target: item.id })) === null) return false;
   await removeFiles([item.mediaUrl]);
   return true;
+}
+
+// ----- Journal, bans with a reason, user card, charts, notice, word filter, prices -----
+export type LogEntry = { id: number; admin: string; action: string; targetId: string | null; target: string; details: string; at: number };
+export type UserDetail = {
+  posts: number; comments: number; videos: number; tracks: number; photos: number; groups: number; friends: number; reportsTotal: number; reportsOpen: number;
+  ban: { reason: string; until: string | null; at: string } | null;
+  log: { action: string; admin: string; details: string; at: string }[];
+  recentPosts: { id: string; text: string; image: string | null; at: string }[];
+};
+export type SeriesPoint = { day: string; users: number; posts: number };
+export type SiteNotice = { body: string; kind: "info" | "warning"; active: boolean; updatedAt: string };
+type LogRow = { id: number; admin_name: string; action: string; target_id: string | null; target_name: string; details: string; created_at: string };
+
+export async function fetchLog(): Promise<LogEntry[] | null> {
+  const rows = await call<LogRow[]>("admin_log_list", { lim: 150 });
+  if (!Array.isArray(rows)) return null;
+  return rows.map((row) => ({ id: row.id, admin: row.admin_name, action: row.action, targetId: row.target_id, target: row.target_name, details: row.details, at: Date.parse(row.created_at) }));
+}
+// days: 0 = forever, a negative number lifts the ban.
+export const banUser = async (id: string, days: number, reason: string) => (await call("admin_set_ban", { target: id, days, reason })) !== null;
+export async function fetchUserDetail(id: string): Promise<UserDetail | null> {
+  const data = await call<UserDetail>("admin_user_detail", { target: id });
+  return data && typeof data === "object" ? data : null;
+}
+export async function fetchSeries(): Promise<SeriesPoint[] | null> {
+  const data = await call<SeriesPoint[]>("admin_series");
+  return Array.isArray(data) ? data : null;
+}
+export async function fetchNotice(): Promise<SiteNotice | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.from("site_notice").select("body,kind,active,updated_at").eq("id", 1).maybeSingle();
+  if (error || !data) return null;
+  const row = data as { body: string; kind: "info" | "warning"; active: boolean; updated_at: string };
+  return { body: row.body, kind: row.kind, active: row.active, updatedAt: row.updated_at };
+}
+export const saveNotice = async (body: string, kind: SiteNotice["kind"], active: boolean) => (await call("admin_set_notice", { body, kind, active })) !== null;
+export async function fetchWords(): Promise<string[] | null> {
+  const data = await call<string[]>("admin_words");
+  return Array.isArray(data) ? data : null;
+}
+export const setWord = async (word: string, enabled: boolean) => (await call("admin_word_set", { word, enabled })) !== null;
+export const setPrice = async (table: "gift_prices" | "coin_packages", key: string, column: string, value: number) => (await call("admin_price_set", { tbl: table, key, col: column, val: value })) !== null;
+export async function fetchPriceTables(): Promise<{ gifts: import("./pricesSync").PriceTable; packages: import("./pricesSync").PriceTable } | null> {
+  const data = await call<{ gifts: import("./pricesSync").PriceTable; packages: import("./pricesSync").PriceTable }>("price_list");
+  return data && typeof data === "object" && "gifts" in data ? data : null;
 }

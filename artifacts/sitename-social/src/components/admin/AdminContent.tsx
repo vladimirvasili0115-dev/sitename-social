@@ -10,7 +10,7 @@ import type { TranslationKey } from "@/i18n/LanguageProvider";
 import { Card } from "@/components/ui/Card";
 import { cn } from "@/lib/utils";
 
-const kinds: { id: ContentKind; label: TranslationKey }[] = [{ id: "post", label: "saved.tabPosts" }, { id: "video", label: "nav.videos" }, { id: "track", label: "nav.music" }];
+const kinds: { id: ContentKind; label: TranslationKey }[] = [{ id: "post", label: "saved.tabPosts" }, { id: "comment", label: "post.comments" }, { id: "video", label: "nav.videos" }, { id: "track", label: "nav.music" }, { id: "group", label: "nav.groups" }];
 
 export function AdminContent() {
   const { t } = useTranslation();
@@ -40,7 +40,7 @@ export function AdminContent() {
 
   return (
     <>
-      <div className="mb-4 flex gap-2">
+      <div className="mb-4 flex flex-wrap gap-2">
         {kinds.map((item) => <button key={item.id} onClick={() => setKind(item.id)} aria-pressed={kind === item.id} className={cn("h-9 rounded-full border px-3.5 text-xs font-semibold capitalize", kind === item.id ? "border-accent bg-surface-2 text-accent" : "border-border text-muted hover:text-text")}>{t(item.label)}</button>)}
       </div>
       {failed ? <p role="alert" className="mb-3 rounded-xl border border-danger px-4 py-2.5 text-sm text-danger">{t("report.failed")}</p> : null}
@@ -54,7 +54,7 @@ export function AdminContent() {
                   <span className="ml-auto shrink-0 tabular-nums">{formatDay(item.at)} · {formatClock(item.at)}</span>
                 </div>
                 {item.body ? <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-text">{item.body}</p> : null}
-                {item.mediaUrl ? (kind === "post"
+                {item.mediaUrl ? (kind === "post" || kind === "group"
                   ? <img src={item.mediaUrl} alt="" loading="lazy" className="mt-2 max-h-[240px] rounded-xl object-contain" />
                   : kind === "video"
                     ? <video src={item.mediaUrl} controls preload="metadata" className="mt-2 max-h-[240px] w-full rounded-xl bg-bg" />

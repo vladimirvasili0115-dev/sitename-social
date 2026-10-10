@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Ban, Coins, FileText, Flag, Gift, Images, Mail, MessageSquare, Music2, UserPlus, Users, UsersRound, Video, Wifi, type LucideIcon } from "lucide-react";
-import { fetchStats, type AdminStats } from "@/lib/adminSync";
+import { fetchSeries, fetchStats, type AdminStats, type SeriesPoint } from "@/lib/adminSync";
+import { AdminChart } from "./AdminChart";
 import { formatCount } from "@/lib/format";
 import { useTranslation } from "@/i18n/useTranslation";
 import type { TranslationKey } from "@/i18n/LanguageProvider";
@@ -25,6 +26,7 @@ export function AdminDashboard() {
   const { t } = useTranslation();
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [failed, setFailed] = useState(false);
+  const [series, setSeries] = useState<SeriesPoint[] | null>(null);
   useEffect(() => {
     let active = true;
     void fetchStats().then((result) => {
@@ -32,8 +34,10 @@ export function AdminDashboard() {
       setStats(result);
       setFailed(!result);
     });
+    void fetchSeries().then((result) => { if (active) setSeries(result); });
     return () => { active = false; };
   }, []);
+  const dayLabel = (day: string) => `${day.slice(8, 10)}.${day.slice(5, 7)}`;
   if (failed) return <Card className="p-8 text-center text-sm text-muted">{t("admin.loadFailed")}</Card>;
   const grid = (tiles: Tile[]) => (
     <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -51,6 +55,15 @@ export function AdminDashboard() {
     <>
       <h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-muted">{t("admin.groupPeople")}</h2>
       {grid(people)}
+      {series?.length ? (
+        <>
+          <h2 className="mb-2 mt-6 px-1 text-xs font-semibold uppercase tracking-wide text-muted">{t("admin.last30")}</h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <AdminChart title={t("admin.chartUsers")} points={series.map((point) => ({ label: dayLabel(point.day), value: point.users }))} />
+            <AdminChart title={t("admin.chartPosts")} points={series.map((point) => ({ label: dayLabel(point.day), value: point.posts }))} />
+          </div>
+        </>
+      ) : null}
       <h2 className="mb-2 mt-6 px-1 text-xs font-semibold uppercase tracking-wide text-muted">{t("admin.groupContent")}</h2>
       {grid(content)}
     </>

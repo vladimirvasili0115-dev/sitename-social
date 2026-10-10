@@ -9,6 +9,7 @@ import { Sidebar } from "./Sidebar";
 import { MobileNav } from "./MobileNav";
 import { Footer } from "./Footer";
 import { FlashNotice } from "./FlashNotice";
+import { SiteNotice } from "./SiteNotice";
 import { ReportHost } from "@/components/report/ReportHost";
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -34,6 +35,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return <div className="min-h-[100dvh] bg-bg text-text">
     <Header />
+    <SiteNotice />
     <div className="mx-auto flex min-h-[calc(100dvh-72px)] max-w-[1160px] items-start gap-6 px-4 pt-6 md:px-6">
       <Sidebar />
       <main className="min-w-0 flex-1">{children}</main>

@@ -8,7 +8,7 @@ export function flash(key: TranslationKey) {
 // Maps a privacy refusal from the database to a notice. Returns true when one was shown.
 export function flashRefusal(message: string | undefined) {
   if (!message) return false;
-  const key: TranslationKey | null = message.includes("privacy_messages") ? "privacy.noMessages" : message.includes("privacy_requests") ? "privacy.noRequests" : message.includes("privacy_gifts") ? "privacy.noGifts" : null;
+  const key: TranslationKey | null = message.includes("privacy_messages") ? "privacy.noMessages" : message.includes("privacy_requests") ? "privacy.noRequests" : message.includes("privacy_gifts") ? "privacy.noGifts" : message.includes("banned_word") ? "privacy.bannedWord" : null;
   if (key) flash(key);
   return Boolean(key);
 }

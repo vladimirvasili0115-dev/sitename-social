@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import { FlaskConical, PartyPopper, X } from "lucide-react";
-import { coinPackages, DEFAULT_PACKAGE_ID, type CoinPackage } from "@/data/coins";
+import { DEFAULT_PACKAGE_ID, type CoinPackage } from "@/data/coins";
+import { usePrices } from "./usePrices";
 import { useTranslation } from "@/i18n/useTranslation";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -12,6 +13,7 @@ import { Price } from "./Price";
 
 export function TopUpModal({ onPay, onClose }: { onPay: (pack: CoinPackage) => void; onClose: () => void }) {
   const { t } = useTranslation();
+  const { packages: coinPackages } = usePrices();
   const [packId, setPackId] = useState(DEFAULT_PACKAGE_ID);
   const [done, setDone] = useState(false);
   const pack = coinPackages.find((item) => item.id === packId) ?? coinPackages[0];

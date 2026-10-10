@@ -3,6 +3,7 @@ import { currentUser } from "@/data/users";
 import { isDataUrl, uploadImage } from "./media";
 import { isRemoteId, toUser, type ProfileRow } from "./remoteProfiles";
 import { supabase } from "./supabase";
+import { flashRefusal } from "./flash";
 import { agoLabel } from "./utils";
 
 type RemoteState = { posts: Post[]; groups: Record<string, Post[]>; comments: Record<string, PostComment[]>; liked: string[] };
@@ -104,7 +105,7 @@ export async function createRemotePost(input: { text: string; image?: string; gr
   if (!supabase) return;
   const image_url = isDataUrl(input.image) ? await uploadImage(input.image, "posts") : null;
   const { error } = await supabase.from("posts").insert({ text: input.text, image_url, ...(input.groupId ? { group_id: input.groupId } : {}) });
-  if (error) console.error("Post could not be saved:", error.message);
+  if (error && !flashRefusal(error.message)) console.error("Post could not be saved:", error.message);
   await refreshPosts();
 }
 // A new profile photo also appears on the wall. Falls back to a plain photo post if the "kind" column is missing.
@@ -116,7 +117,8 @@ export async function createAvatarPost(imageUrl: string) {
 }
 export async function editRemotePost(id: string, text: string) {
   if (!supabase) return;
-  await supabase.from("posts").update({ text, edited_at: new Date().toISOString() }).eq("id", id);
+  const { error } = await supabase.from("posts").update({ text, edited_at: new Date().toISOString() }).eq("id", id);
+  if (error) flashRefusal(error.message);
   await refreshPosts();
 }
 export async function deleteRemotePost(id: string) {
@@ -135,7 +137,7 @@ export async function toggleRemoteLike(id: string) {
 export async function addRemoteComment(postId: string, text: string) {
   if (!supabase) return;
   const { error } = await supabase.from("comments").insert({ post_id: postId, text });
-  if (error) console.error("Comment could not be saved:", error.message);
+  if (error && !flashRefusal(error.message)) console.error("Comment could not be saved:", error.message);
   await refreshPosts();
 }
 export async function removeRemoteComment(postId: string, id: string) {

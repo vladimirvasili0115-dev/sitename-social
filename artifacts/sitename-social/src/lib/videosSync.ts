@@ -3,6 +3,7 @@ import { currentUser } from "@/data/users";
 import { removeFiles, uploadBlob, uploadImage } from "./media";
 import { toUser, type ProfileRow } from "./remoteProfiles";
 import { supabase } from "./supabase";
+import { flashRefusal } from "./flash";
 
 type One<T> = T | T[] | null;
 type CommentRow = { id: string; text: string; created_at: string; author: One<ProfileRow> };
@@ -151,7 +152,7 @@ export const toggleVideoSave = (id: string) => void toggle("video_saves", "saved
 export async function addVideoComment(videoId: string, text: string) {
   if (!supabase) return;
   const { error } = await supabase.from("video_comments").insert({ video_id: videoId, text });
-  if (error) console.error("Comment could not be saved:", error.message);
+  if (error && !flashRefusal(error.message)) console.error("Comment could not be saved:", error.message);
   await refreshVideos();
 }
 export async function removeVideoComment(videoId: string, id: string) {

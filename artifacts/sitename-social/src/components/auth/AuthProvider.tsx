@@ -36,6 +36,7 @@ const TAB_ALIVE = "sitename-tab";
 
 function toKey(message: string): TranslationKey {
   const text = message.toLowerCase();
+  if (text.includes("banned")) return "auth.errBanned";
   if (text.includes("invalid login")) return "auth.errCredentials";
   if (text.includes("already registered") || text.includes("already been registered")) return "auth.errExists";
   if (text.includes("rate limit") || text.includes("security purposes")) return "auth.errRate";

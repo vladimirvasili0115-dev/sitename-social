@@ -2,7 +2,8 @@
 import { useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 import type { GiftCategory, GiftDef } from "@/types";
-import { giftCatalog, giftCategories } from "@/data/gifts";
+import { giftCategories } from "@/data/gifts";
+import { usePrices } from "@/components/gifts/usePrices";
 import { useTranslation } from "@/i18n/useTranslation";
 import type { TranslationKey } from "@/i18n/LanguageProvider";
 import { Card } from "@/components/ui/Card";
@@ -27,6 +28,7 @@ export default function GiftsPage() {
   const { balance, received, sent, transactions, topUp, send } = useGifts();
   const [paying, setPaying] = useState(false);
   const { friends, directory: people } = useFriends();
+  const { gifts: giftCatalog } = usePrices();
   const [tab, setTab] = useState<GiftsTab>("store");
   const [filter, setFilter] = useState<Filter>("all");
   const [selected, setSelected] = useState<GiftDef | null>(null);
