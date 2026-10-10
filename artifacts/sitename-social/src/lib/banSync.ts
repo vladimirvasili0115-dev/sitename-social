@@ -20,6 +20,15 @@ function set(next: BanInfo | null) {
 // Asks the server whether this account is banned. Runs when the site opens and then once a minute.
 export async function checkBan() {
   if (!supabase) return;
+  // An account deleted by a moderator (or from another device) may still have this tab open: sign it out.
+  const userId = (await supabase.auth.getSession()).data.session?.user.id;
+  if (!userId) return;
+  const own = await supabase.from("profiles").select("id").eq("id", userId).maybeSingle();
+  if (!own.error && !own.data) {
+    await supabase.auth.signOut({ scope: "local" });
+    window.location.replace("/login");
+    return;
+  }
   const { data, error } = await supabase.rpc("my_ban");
   if (error) return;
   const info = data as BanInfo | null;

@@ -50,7 +50,12 @@ async function push() {
   const { theme, notifications, autoplay, reelsMuted, privacy, blocked } = settingsStore.read();
   const prefs: Prefs = { theme, notifications, autoplay, reelsMuted, invisible: invisibleStore.read() };
   const { error } = await supabase.from("user_settings").upsert({ user_id: id, privacy, prefs, updated_at: new Date().toISOString() });
-  if (error) console.error("Settings could not be saved:", error.message);
+  if (error) {
+    // The account no longer exists (deleted): stop syncing instead of repeating the error.
+    if (error.message.includes("foreign key")) ready = false;
+    else console.error("Settings could not be saved:", error.message);
+    return;
+  }
   const wanted = blocked.filter(isRemoteId);
   const added = wanted.filter((item) => !knownBlocked.includes(item));
   const removed = knownBlocked.filter((item) => !wanted.includes(item));
