@@ -65,5 +65,6 @@ const ru: Record<keyof typeof az, string> = {
   "bottle.shop":"Купить сердечки","bottle.vipStatus":"СТАТУС","bottle.vipMore":"Узнать","bottle.packBest":"Выгодно","bottle.packHit":"Хит","bottle.bonus":"БОНУС","bottle.currency":"ÇEK","bottle.paySoon":"Онлайн-оплата скоро заработает.",
   "bottle.waitTurn":"Дождись своей очереди","bottle.giftHint2":"Выбери подарок и отправь",
   "bottle.needKisses":"Чтобы открыть этот подарок, получи больше поцелуев","bottle.noHearts":"Не хватает сердечек","bottle.needGirls":"Чтобы бутылочка крутилась, в комнате нужно минимум 2 девушки","bottle.balance":"Твой баланс",
+  "bottle.courts":"Ухаживает","bottle.courtBtn":"Ухаживать","bottle.noSuitor":"Пока никто не ухаживает","bottle.courtStarted":"стал ухаживать:","bottle.kick":"Выгнать из комнаты","bottle.kickVip":"Выгонять из комнаты могут только VIP","bottle.addFriend":"Добавить в друзья","bottle.friendSent":"Заявка в друзья отправлена (пример)","bottle.report":"Пожаловаться на фото","bottle.reportSent":"Жалоба принята (пример)","bottle.statKisses":"поцелуев","bottle.statSongs":"песен","bottle.statGifts":"подарков",
 };
 export default ru;

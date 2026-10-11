@@ -65,5 +65,6 @@ const ka: Record<keyof typeof az, string> = {
   "bottle.shop":"გულების ყიდვა","bottle.vipStatus":"სტატუსი","bottle.vipMore":"ნახვა","bottle.packBest":"მომგებიანი","bottle.packHit":"ჰიტი","bottle.bonus":"ბონუსი","bottle.currency":"ÇEK","bottle.paySoon":"ონლაინ გადახდა მალე გააქტიურდება.",
   "bottle.waitTurn":"დაელოდე შენს ჯერს","bottle.giftHint2":"აირჩიე საჩუქარი",
   "bottle.needKisses":"ამ საჩუქრის გასახსნელად მეტი კოცნა გჭირდება","bottle.noHearts":"გულები არ გყოფნის","bottle.needGirls":"ბოთლის დასატრიალებლად ოთახში მინიმუმ 2 გოგო უნდა იყოს","bottle.balance":"შენი ბალანსი",
+  "bottle.courts":"ეარშიყება:","bottle.courtBtn":"არშიყი","bottle.noSuitor":"ჯერ არავინ ეარშიყება","bottle.courtStarted":"დაიწყო არშიყი:","bottle.kick":"ოთახიდან გაგდება","bottle.kickVip":"ოთახიდან გაგდება მხოლოდ VIP-ს შეუძლია","bottle.addFriend":"მეგობრობის გაგზავნა","bottle.friendSent":"მეგობრობის მოთხოვნა გაიგზავნა (ნიმუში)","bottle.report":"ფოტოს გასაჩივრება","bottle.reportSent":"საჩივარი მიღებულია (ნიმუში)","bottle.statKisses":"კოცნა","bottle.statSongs":"სიმღერა","bottle.statGifts":"საჩუქარი",
 };
 export default ka;

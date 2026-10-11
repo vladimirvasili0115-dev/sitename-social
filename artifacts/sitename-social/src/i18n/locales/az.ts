@@ -74,5 +74,6 @@ const az = {
   "bottle.shop":"Ürək al","bottle.vipStatus":"STATUS","bottle.vipMore":"Bax","bottle.packBest":"Sərfəli","bottle.packHit":"Hit","bottle.bonus":"BONUS","bottle.currency":"ÇEK","bottle.paySoon":"Onlayn ödəniş tezliklə aktiv olacaq.",
   "bottle.waitTurn":"Öz növbəni gözlə","bottle.giftHint2":"Hədiyyə seç və göndər",
   "bottle.needKisses":"Bu hədiyyəni açmaq üçün daha çox öpüş almalısan","bottle.noHearts":"Ürəyin çatmır","bottle.needGirls":"Butulkanın fırlanması üçün otaqda ən azı 2 qız olmalıdır","bottle.balance":"Balansın",
+  "bottle.courts":"Uxaj edir:","bottle.courtBtn":"Uxaj et","bottle.noSuitor":"Hələ heç kim uxaj etmir","bottle.courtStarted":"uxaj etməyə başladı:","bottle.kick":"Otaqdan at","bottle.kickVip":"Otaqdan atmaq yalnız VIP üçündür","bottle.addFriend":"Dostluq göndər","bottle.friendSent":"Dostluq istəyi göndərildi (nümunə)","bottle.report":"Foto barədə şikayət","bottle.reportSent":"Şikayət qeydə alındı (nümunə)","bottle.statKisses":"öpüş","bottle.statSongs":"mahnı","bottle.statGifts":"hədiyyə",
 } as const;
 export default az;

@@ -65,5 +65,6 @@ const en: Record<keyof typeof az, string> = {
   "bottle.shop":"Buy hearts","bottle.vipStatus":"STATUS","bottle.vipMore":"Details","bottle.packBest":"Best value","bottle.packHit":"Hit","bottle.bonus":"BONUS","bottle.currency":"ÇEK","bottle.paySoon":"Online payment will be available soon.",
   "bottle.waitTurn":"Wait for your turn","bottle.giftHint2":"Pick a gift to send",
   "bottle.needKisses":"Get more kisses to unlock this gift","bottle.noHearts":"Not enough hearts","bottle.needGirls":"At least 2 girls are needed in the room for the bottle to spin","bottle.balance":"Your balance",
+  "bottle.courts":"Courted by","bottle.courtBtn":"Court","bottle.noSuitor":"Nobody is courting yet","bottle.courtStarted":"started courting:","bottle.kick":"Kick from room","bottle.kickVip":"Only VIP can kick from the room","bottle.addFriend":"Add friend","bottle.friendSent":"Friend request sent (demo)","bottle.report":"Report photo","bottle.reportSent":"Report received (demo)","bottle.statKisses":"kisses","bottle.statSongs":"songs","bottle.statGifts":"gifts",
 };
 export default en;

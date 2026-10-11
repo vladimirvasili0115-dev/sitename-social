@@ -65,5 +65,6 @@ const tr: Record<keyof typeof az, string> = {
   "bottle.shop":"Kalp satın al","bottle.vipStatus":"STATÜ","bottle.vipMore":"İncele","bottle.packBest":"Avantajlı","bottle.packHit":"Hit","bottle.bonus":"BONUS","bottle.currency":"ÇEK","bottle.paySoon":"Çevrimiçi ödeme yakında aktif olacak.",
   "bottle.waitTurn":"Sıranı bekle","bottle.giftHint2":"Hediye seç ve gönder",
   "bottle.needKisses":"Bu hediyeyi açmak için daha çok öpücük almalısın","bottle.noHearts":"Kalbin yetmiyor","bottle.needGirls":"Şişenin dönmesi için odada en az 2 kız olmalı","bottle.balance":"Bakiyen",
+  "bottle.courts":"Kur yapan:","bottle.courtBtn":"Kur yap","bottle.noSuitor":"Henüz kimse kur yapmıyor","bottle.courtStarted":"kur yapmaya başladı:","bottle.kick":"Odadan at","bottle.kickVip":"Odadan atmak yalnızca VIP içindir","bottle.addFriend":"Arkadaşlık gönder","bottle.friendSent":"Arkadaşlık isteği gönderildi (örnek)","bottle.report":"Fotoğrafı şikayet et","bottle.reportSent":"Şikayet alındı (örnek)","bottle.statKisses":"öpücük","bottle.statSongs":"şarkı","bottle.statGifts":"hediye",
 };
 export default tr;
