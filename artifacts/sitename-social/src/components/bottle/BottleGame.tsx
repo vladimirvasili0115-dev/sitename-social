@@ -196,14 +196,13 @@ export function BottleGame() {
       </g>
     );
   };
-  const arrows = (kiss: boolean) => {
-    const mine = [answers.spinner === kiss ? arrow(kiss, true, 0) : null, answers.target === kiss ? arrow(kiss, false, answers.spinner === kiss ? 30 : 0) : null];
-    if (!mine[0] && !mine[1]) return null;
-    const icons = [answers.spinner === kiss ? 0 : null, answers.target === kiss ? (answers.spinner === kiss ? 30 : 0) : null].filter((value): value is number => value !== null);
+  // The spinner's kiss runs below the pair; every reply from the chosen player, and any refusal, runs above it.
+  const arrowLayer = (above: boolean, answer: boolean | null, leftToRight: boolean) => {
+    if (answer === null) return null;
     return (
-      <div aria-hidden="true" className={cn("pointer-events-none absolute inset-x-0 z-10 h-[11cqmin]", kiss ? "top-[76%]" : "bottom-[88%]")}>
-        <svg viewBox="0 0 460 130" className={cn("h-full w-full overflow-visible", !kiss && "-scale-y-100")}>{mine}</svg>
-        {icons.map((drop) => <span key={drop} className="absolute left-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center text-[3.4cqmin] leading-none" style={{ top: kiss ? `${((56 + drop) / 130) * 100}%` : `${100 - ((56 + drop) / 130) * 100}%` }}>{kiss ? "💋" : "✋"}</span>)}
+      <div aria-hidden="true" className={cn("pointer-events-none absolute inset-x-0 z-10 h-[11cqmin]", above ? "bottom-[88%]" : "top-[76%]")}>
+        <svg viewBox="0 0 460 130" className={cn("h-full w-full overflow-visible", above && "-scale-y-100")}>{arrow(answer, leftToRight, 0)}</svg>
+        <span className="absolute left-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center text-[3.4cqmin] leading-none" style={{ top: above ? `${100 - (56 / 130) * 100}%` : `${(56 / 130) * 100}%` }}>{answer ? "💋" : "✋"}</span>
       </div>
     );
   };
@@ -269,8 +268,8 @@ export function BottleGame() {
                 ? <span aria-label={`${seconds}`} className="mt-[4.5cqmin] w-[8cqmin] text-center text-[7cqmin] font-bold tabular-nums leading-none text-white [text-shadow:0_2px_6px_rgba(0,0,0,0.75)]">{seconds}</span>
                 : <Heart className="mt-[5cqmin] h-[7cqmin] w-[7cqmin] shrink-0" fill={phase === "kissed" ? "#FF4D6A" : "none"} stroke="#FFFFFF" strokeWidth={1.8} />}
               {stageCard(players[target])}
-              {arrows(false)}
-              {arrows(true)}
+              {answers.spinner === true ? arrowLayer(false, true, true) : null}
+              {answers.spinner === false ? arrowLayer(true, false, true) : arrowLayer(true, answers.target, false)}
             </div>
             <div className={cn("pointer-events-auto mt-[2cqmin] flex gap-[2.5cqmin]", !myRole && "invisible")}>
               <button onClick={() => myRole && setAnswers((value) => ({ ...value, [myRole]: false }))} className="h-[7.5cqmin] w-[20cqmin] rounded-[1.8cqmin] bg-[#E2401F] text-[3cqmin] font-bold text-white shadow-lg hover:brightness-110">{t("bottle.no")}</button>
