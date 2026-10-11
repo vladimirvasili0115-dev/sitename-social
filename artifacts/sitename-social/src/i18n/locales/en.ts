@@ -74,5 +74,7 @@ const en: Record<keyof typeof az, string> = {
   "auth.day":"Day","auth.month":"Month","auth.year":"Year",
   "bottle.liveNote":"Live table","admin.hearts":"Give hearts","admin.heartsHint":"Adds hearts to the game balance; a negative number removes them.","admin.logHearts":"hearts changed:",
   "bottle.dmToast":"sent you a private message","bottle.dmOpen":"Tap to view","bottle.dmVipWrite":"Private messages are for VIP users",
+  "bottle.dmMinimize":"Minimize","bottle.dmExpand":"Expand",
+  "bottle.dmResize":"Resize (drag)",
 };
 export default en;

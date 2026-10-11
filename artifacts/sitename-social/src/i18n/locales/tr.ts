@@ -74,5 +74,7 @@ const tr: Record<keyof typeof az, string> = {
   "auth.day":"Gün","auth.month":"Ay","auth.year":"Yıl",
   "bottle.liveNote":"Canlı masa","admin.hearts":"Kalp ver","admin.heartsHint":"Oyun bakiyesine kalp ekler; eksi sayı düşer.","admin.logHearts":"kalp değişti:",
   "bottle.dmToast":"size özel mesaj yazdı","bottle.dmOpen":"Görmek için dokun","bottle.dmVipWrite":"Özel mesaj yazmak VIP kullanıcılar içindir",
+  "bottle.dmMinimize":"Küçült","bottle.dmExpand":"Büyüt",
+  "bottle.dmResize":"Boyutu değiştir (sürükle)",
 };
 export default tr;

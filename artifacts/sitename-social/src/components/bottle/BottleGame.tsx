@@ -130,6 +130,10 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [audio, setAudio] = useState<{ url: string; name: string } | null>(null);
   const [dm, setDm] = useState<{ id: string; name: string; avatar: string } | null>(null);
   const [dmNote, setDmNote] = useState(false);
+  // The private chat box can be dragged smaller by its corner grip and back up to its normal size, never beyond.
+  const DM_FULL = { w: 290, h: 330 };
+  const [dmSize, setDmSize] = useState(DM_FULL);
+  const dmDrag = useRef<{ x: number; y: number; w: number; h: number } | null>(null);
   const [dmToast, setDmToast] = useState<{ id: string; name: string; avatar: string } | null>(null);
   const [dmDraft, setDmDraft] = useState("");
   const [dms, setDms] = useState<Record<string, { mine: boolean; text: string }[]>>({});
@@ -944,11 +948,20 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         </div>
       ) : null}
       {dm ? (
-        <div role="dialog" aria-label={`${t("bottle.write")}: ${dm.name}`} className="absolute bottom-0 right-3 z-[55] flex h-[330px] w-[min(290px,calc(100%-24px))] flex-col overflow-hidden rounded-t-xl border border-border bg-surface shadow-2xl">
-          <div className="flex h-11 shrink-0 items-center gap-2 bg-[#3B9EDD] px-2 text-white">
-            <img src={dm.avatar} alt="" className="h-8 w-8 rounded-full object-cover" />
+        <div role="dialog" aria-label={`${t("bottle.write")}: ${dm.name}`} style={{ width: dmSize.w, height: dmSize.h }} className="absolute bottom-0 right-3 z-[55] flex max-w-[calc(100%-24px)] flex-col overflow-hidden rounded-t-xl border border-border bg-surface shadow-2xl">
+          <div className="flex h-11 shrink-0 items-center gap-1.5 bg-[#3B9EDD] pl-1 pr-2 text-white">
+            <button type="button" aria-label={t("bottle.dmResize")} title={t("bottle.dmResize")}
+              onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); dmDrag.current = { x: event.clientX, y: event.clientY, w: dmSize.w, h: dmSize.h }; }}
+              onPointerMove={(event) => { const start = dmDrag.current; if (start) setDmSize({ w: Math.min(DM_FULL.w, Math.max(190, start.w - (event.clientX - start.x))), h: Math.min(DM_FULL.h, Math.max(150, start.h - (event.clientY - start.y))) }); }}
+              onPointerUp={() => { dmDrag.current = null; }} onPointerCancel={() => { dmDrag.current = null; }}
+              onKeyDown={(event) => { if (event.key === "ArrowDown" || event.key === "ArrowRight") setDmSize((size) => ({ w: Math.max(190, size.w - 20), h: Math.max(150, size.h - 30) })); if (event.key === "ArrowUp" || event.key === "ArrowLeft") setDmSize((size) => ({ w: Math.min(DM_FULL.w, size.w + 20), h: Math.min(DM_FULL.h, size.h + 30) })); }}
+              onDoubleClick={() => setDmSize(DM_FULL)}
+              className="flex h-9 w-7 shrink-0 cursor-nwse-resize touch-none items-center justify-center rounded hover:bg-white/20">
+              <svg viewBox="0 0 14 14" aria-hidden="true" className="h-3.5 w-3.5"><path d="M1 9L9 1M1 5l4-4M1 13L13 1" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>
+            </button>
+            <img src={dm.avatar} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover" />
             <span className="min-w-0 flex-1 truncate text-sm font-bold">{dm.name}</span>
-            <button onClick={() => setDm(null)} aria-label={t("photos.close")} title={t("photos.close")} className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-white/20"><X size={17} /></button>
+            <button onClick={() => setDm(null)} aria-label={t("photos.close")} title={t("photos.close")} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full hover:bg-white/20"><X size={17} /></button>
           </div>
           <div className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto p-2">
             {dmLines.map((item, index) => <p key={index} className={cn("max-w-[80%] break-words rounded-2xl px-3 py-1.5 text-sm", item.mine ? "self-end bg-[#3B9EDD] text-white" : "self-start bg-surface-2 text-text")}>{item.text}</p>)}

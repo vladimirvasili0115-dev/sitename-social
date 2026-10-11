@@ -74,5 +74,7 @@ const ka: Record<keyof typeof az, string> = {
   "auth.day":"დღე","auth.month":"თვე","auth.year":"წელი",
   "bottle.liveNote":"ცოცხალი მაგიდა","admin.hearts":"გულების მიცემა","admin.heartsHint":"ამატებს გულებს თამაშის ბალანსზე; უარყოფითი რიცხვი აკლებს.","admin.logHearts":"გულები შეიცვალა:",
   "bottle.dmToast":"მოგწერათ პირადი შეტყობინება","bottle.dmOpen":"დააჭირე სანახავად","bottle.dmVipWrite":"პირადი შეტყობინების დაწერა VIP მომხმარებლებისთვისაა",
+  "bottle.dmMinimize":"ჩაკეცვა","bottle.dmExpand":"გაშლა",
+  "bottle.dmResize":"ზომის შეცვლა (გადაათრიე)",
 };
 export default ka;

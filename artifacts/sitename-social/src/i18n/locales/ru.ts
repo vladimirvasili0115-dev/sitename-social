@@ -74,5 +74,7 @@ const ru: Record<keyof typeof az, string> = {
   "auth.day":"День","auth.month":"Месяц","auth.year":"Год",
   "bottle.liveNote":"Живой стол","admin.hearts":"Выдать сердечки","admin.heartsHint":"Добавляет сердечки на игровой баланс; отрицательное число списывает.","admin.logHearts":"сердечки изменены:",
   "bottle.dmToast":"написал(а) вам личное сообщение","bottle.dmOpen":"Нажми, чтобы посмотреть","bottle.dmVipWrite":"Писать личные сообщения могут VIP-пользователи",
+  "bottle.dmMinimize":"Свернуть","bottle.dmExpand":"Развернуть",
+  "bottle.dmResize":"Изменить размер (потяни)",
 };
 export default ru;

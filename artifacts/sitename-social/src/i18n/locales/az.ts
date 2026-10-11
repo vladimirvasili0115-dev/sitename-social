@@ -83,5 +83,7 @@ const az = {
   "auth.day":"Gün","auth.month":"Ay","auth.year":"İl",
   "bottle.liveNote":"Canlı masa","admin.hearts":"Ürək ver","admin.heartsHint":"Oyun balansına ürək əlavə edir; mənfi rəqəm çıxır.","admin.logHearts":"ürək dəyişdi:",
   "bottle.dmToast":"sizə özəl mesaj yazdı","bottle.dmOpen":"Baxmaq üçün vur","bottle.dmVipWrite":"Özəl mesaj yazmaq VIP istifadəçilər üçündür",
+  "bottle.dmMinimize":"Kiçilt","bottle.dmExpand":"Böyüt",
+  "bottle.dmResize":"Ölçünü dəyiş (sürüklə)",
 } as const;
 export default az;
