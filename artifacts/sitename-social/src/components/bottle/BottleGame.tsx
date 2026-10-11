@@ -31,6 +31,10 @@ const smallTalk = ["Salam hamıya 👋", "Bu gün bəxtim gətirir 😄", "Kim f
 const giftChoices: [GiftId, number][] = [["crown", 3], ["diamond", 3], ["ring", 3], ["tower", 2], ["tar", 2], ["buta", 2], ["heart", 1], ["rose", 1], ["flame", 1], ["tea", 1], ["nar", 1], ["paxlava", 1], ["shekerbura", 1], ["semeni", 1], ["xaribulbul", 1]];
 const SPIN_SECONDS = 8;
 const ANSWER_SECONDS = 9;
+const packs: { hearts: number; price: number; bonus?: number; tag?: "best" | "hit"; art: string }[] = [
+  { hearts: 6750, price: 5000, bonus: 35, tag: "best", art: "🛒" }, { hearts: 1350, price: 1000, bonus: 35, art: "🧰" }, { hearts: 650, price: 500, bonus: 30, art: "🛢️" },
+  { hearts: 240, price: 200, bonus: 20, tag: "hit", art: "🍯" }, { hearts: 110, price: 100, bonus: 10, art: "👝" }, { hearts: 50, price: 50, art: "🎁" }, { hearts: 10, price: 10, art: "💕" },
+];
 const tool = "flex h-[min(44px,8.5cqmin)] w-[min(44px,8.5cqmin)] shrink-0 items-center justify-center rounded-full bg-white/20 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.18)] hover:bg-white/30";
 function youtubeId(value: string) {
   const match = value.trim().match(/(?:youtu\.be\/|[?&]v=|\/embed\/|\/shorts\/|\/live\/)([A-Za-z0-9_-]{11})/) ?? value.trim().match(/^([A-Za-z0-9_-]{11})$/);
@@ -64,7 +68,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave }: { wide: boolea
   const [volume, setVolumeLevel] = useState(80);
   const [music, setMusic] = useState(60);
   const [accept, setAccept] = useState(true);
-  const [panel, setPanel] = useState<"settings" | "top" | "rules" | null>(null);
+  const [panel, setPanel] = useState<"settings" | "top" | "rules" | "shop" | null>(null);
+  const [payNote, setPayNote] = useState(false);
   const [tableNo, setTableNo] = useState(60);
   const [copied, setCopied] = useState(false);
   const frameRef = useRef<HTMLIFrameElement>(null);
@@ -204,7 +209,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave }: { wide: boolea
       setFlying(null);
       setStickers((value) => ({ ...value, [player.id]: [...(value[player.id] ?? []), gift].slice(-2) }));
       say({ from: "me", to: player.id, gift });
-    }, 800);
+    }, 1700);
   }
   // A curved arrow from the player who answered to the other one. Green means a kiss, red a refusal.
   const arrow = (answer: boolean | null, leftToRight: boolean, drop: number) => {
@@ -237,10 +242,10 @@ export function BottleGame({ wide, full, onToggleFull, onLeave }: { wide: boolea
       <div className={cn("relative shrink-0 overflow-hidden bg-[#E0A04E] [container-type:size]", wide ? "h-full w-[54%]" : "aspect-[9/10] max-h-[60%] w-full")} onClick={() => setPicked(null)}>
         <WoodTable className="pointer-events-none absolute inset-0 h-full w-full" />
         <div className={cn("absolute z-10 flex items-center", wide ? "inset-y-0 left-0 w-[13%] flex-col gap-[2.2cqmin] py-[2.2cqmin]" : "inset-x-0 top-0 h-[10%] gap-[2.6cqmin] px-[2.5cqmin]")} onClick={(event) => event.stopPropagation()}>
-          <div className={cn("flex items-center text-white", wide ? "flex-col" : "gap-1.5")} title={t("bottle.hearts")}>
+          <button type="button" onClick={() => { setPayNote(false); setPanel("shop"); }} aria-label={`${t("bottle.shop")}: ${hearts}`} className={cn("flex items-center text-white hover:brightness-110", wide ? "flex-col" : "gap-1.5")} title={t("bottle.shop")}>
             <Heart className="h-[8.5cqmin] max-h-11 w-[8.5cqmin] max-w-11" fill="#FF6A1F" stroke="#FFFFFF" strokeWidth={1.5} />
             <span className="text-[max(12px,2.6cqmin)] font-bold tabular-nums leading-tight [text-shadow:0_1px_3px_rgba(0,0,0,0.6)]">{hearts}</span>
-          </div>
+          </button>
           <span className="flex-1" />
           <button onClick={onToggleFull} aria-label={t("bottle.fullscreen")} title={t("bottle.fullscreen")} className={tool}>{full ? <Minimize size={17} /> : <Maximize size={17} />}</button>
           <button onClick={() => setPanel("top")} aria-label={t("bottle.top")} title={t("bottle.top")} className={tool}><Trophy size={18} /></button>
@@ -275,7 +280,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave }: { wide: boolea
           );
         })}
 
-        {flying ? <div className="pointer-events-none absolute z-40 h-[11cqmin] w-[11cqmin] -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_0_10px_rgba(255,240,150,0.95)] transition-[left,top] duration-700 ease-out" style={{ left: `${seats[flying.moved ? flying.to : meIndex][0]}%`, top: `${seats[flying.moved ? flying.to : meIndex][1]}%` }}><GiftArt id={flying.gift} className="h-full w-full" /></div> : null}
+        {flying ? <div className="pointer-events-none absolute z-40 h-[11cqmin] w-[11cqmin] -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_0_10px_rgba(255,240,150,0.95)] transition-[left,top] duration-[1600ms] ease-in-out" style={{ left: `${seats[flying.moved ? flying.to : meIndex][0]}%`, top: `${seats[flying.moved ? flying.to : meIndex][1]}%` }}><GiftArt id={flying.gift} className="h-full w-full" /></div> : null}
 
         {staged && target !== null ? (
           <>
@@ -300,10 +305,30 @@ export function BottleGame({ wide, full, onToggleFull, onLeave }: { wide: boolea
 
         {panel ? (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/35 p-3" onClick={(event) => { event.stopPropagation(); setPanel(null); }}>
-            <div role="dialog" aria-modal="true" aria-label={t(`bottle.${panel}`)} onClick={(event) => event.stopPropagation()} className="relative max-h-full w-full max-w-[340px] rounded-2xl bg-white p-3 shadow-2xl">
-              <button onClick={() => setPanel(null)} aria-label={t("photos.close")} title={t("photos.close")} className="absolute -right-2 -top-2 flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#8CC63F] bg-white text-[#8CC63F] shadow"><X size={18} strokeWidth={3} /></button>
-              <p className="mb-1 text-center text-sm font-bold text-[#9CA3AF]">{t(`bottle.${panel}`)}</p>
-              {panel === "settings" ? (
+            <div role="dialog" aria-modal="true" aria-label={t(`bottle.${panel}`)} onClick={(event) => event.stopPropagation()} className={cn("relative max-h-full w-full rounded-2xl p-3 shadow-2xl", panel === "shop" ? "max-w-[420px] bg-[linear-gradient(180deg,#F26D7D,#F7A1A8)]" : "max-w-[340px] bg-white")}>
+              <button onClick={() => setPanel(null)} aria-label={t("photos.close")} title={t("photos.close")} className={cn("absolute -right-2 -top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 bg-white shadow", panel === "shop" ? "border-[#EF4444] text-[#EF4444]" : "border-[#8CC63F] text-[#8CC63F]")}><X size={18} strokeWidth={3} /></button>
+              <p className={cn("mb-1 text-center text-sm font-bold", panel === "shop" ? "mb-2 text-white" : "text-[#9CA3AF]")}>{t(`bottle.${panel}`)}</p>
+              {panel === "shop" ? (
+                <div className="max-h-[78cqmin] overflow-y-auto pt-2">
+                  <ul className="grid grid-cols-4 gap-1.5">
+                    <li className="flex flex-col items-center rounded-xl bg-white p-1.5 text-center">
+                      <span className="text-[13px] font-black leading-tight text-[#F59E0B]">VIP<span className="block text-[9px] font-bold">{t("bottle.vipStatus")}</span></span>
+                      <span aria-hidden="true" className="my-1 text-3xl">👑</span>
+                      <button onClick={() => setPayNote(true)} className="mt-auto h-7 w-full rounded-md bg-[#3B82F6] text-[11px] font-bold text-white hover:brightness-110">{t("bottle.vipMore")}</button>
+                    </li>
+                    {packs.map((pack) => (
+                      <li key={pack.hearts} className="relative flex flex-col items-center rounded-xl bg-white p-1.5 text-center">
+                        {pack.tag ? <span className={cn("absolute -top-1.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded px-1.5 text-[9px] font-bold text-white", pack.tag === "best" ? "bg-[#E11D8F]" : "bg-[#7C3AED]")}>{t(pack.tag === "best" ? "bottle.packBest" : "bottle.packHit")}</span> : null}
+                        <span className="flex items-center gap-0.5 text-[13px] font-black tabular-nums leading-tight text-[#EA580C]"><Heart size={12} fill="#F4511E" stroke="none" />{pack.hearts}</span>
+                        <span className="h-3 text-[9px] font-bold leading-3 text-[#F59E0B]">{pack.bonus ? `${pack.bonus}% ${t("bottle.bonus")}` : ""}</span>
+                        <span aria-hidden="true" className="my-1 text-3xl">{pack.art}</span>
+                        <button onClick={() => setPayNote(true)} className="mt-auto h-7 w-full rounded-md bg-[#8CC63F] text-[11px] font-bold tabular-nums text-white hover:brightness-110">{pack.price} {t("bottle.currency")}</button>
+                      </li>
+                    ))}
+                  </ul>
+                  {payNote ? <p role="status" className="mt-2 rounded-lg bg-white/90 p-2 text-center text-xs font-semibold text-[#7F1D1D]">{t("bottle.paySoon")}</p> : null}
+                </div>
+              ) : panel === "settings" ? (
                 <div className="max-h-[70cqmin] overflow-y-auto">
                   <label className={cn(row, "cursor-pointer font-bold")}>
                     <span aria-hidden="true" className="w-6 text-center text-lg">💋</span><span className="flex-1">{t("bottle.acceptKisses")}</span>

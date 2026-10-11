@@ -62,5 +62,6 @@ const en: Record<keyof typeof az, string> = {
   "bottle.willKiss":"Will they kiss?",
   "bottle.waitingSpin":"Waiting for the next spin",
   "bottle.settings":"Settings","bottle.acceptKisses":"Accept kisses","bottle.backLobby":"Back to lobby","bottle.sounds":"Sounds","bottle.music":"Music","bottle.invite":"Invite friends","bottle.copied":"Link copied","bottle.myFriends":"My friends","bottle.profileSettings":"Profile settings","bottle.top":"Table leaders","bottle.rules":"Rules","bottle.changeTable":"Change table","bottle.rule1":"When it is your turn, click the bottle.","bottle.rule2":"Whoever the bottle points at joins you in the centre: kiss or refuse within 9 seconds.","bottle.rule3":"Every kiss you receive raises the counter on your photo.","bottle.rule4":"Click a player's photo to send a gift for hearts.",
+  "bottle.shop":"Buy hearts","bottle.vipStatus":"STATUS","bottle.vipMore":"Details","bottle.packBest":"Best value","bottle.packHit":"Hit","bottle.bonus":"BONUS","bottle.currency":"ÇEK","bottle.paySoon":"Online payment will be available soon.",
 };
 export default en;
