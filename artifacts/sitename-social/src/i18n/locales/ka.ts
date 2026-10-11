@@ -61,5 +61,6 @@ const ka: Record<keyof typeof az, string> = {
   "bottle.hearts":"გულები","bottle.clickBottle":"დააჭირე ბოთლს!","bottle.spinsBottle":"ატრიალებს ბოთლს",
   "bottle.willKiss":"აკოცებენ თუ არა?",
   "bottle.waitingSpin":"ელოდებიან შემდეგ ტრიალს",
+  "bottle.settings":"პარამეტრები","bottle.acceptKisses":"კოცნის მიღება","bottle.backLobby":"ლობიში დაბრუნება","bottle.sounds":"ხმები","bottle.music":"მუსიკა","bottle.invite":"მეგობრების მოწვევა","bottle.copied":"ბმული დაკოპირდა","bottle.myFriends":"ჩემი მეგობრები","bottle.profileSettings":"პროფილის პარამეტრები","bottle.top":"მაგიდის ლიდერები","bottle.rules":"წესები","bottle.changeTable":"მაგიდის შეცვლა","bottle.rule1":"როცა შენი ჯერია, დააჭირე ბოთლს.","bottle.rule2":"ვისზეც ბოთლი გაჩერდება, ერთად გადიხართ ცენტრში: 9 წამში აკოცე ან უარი თქვი.","bottle.rule3":"ყოველი მიღებული კოცნა ზრდის მთვლელს ფოტოზე.","bottle.rule4":"დააჭირე მოთამაშის ფოტოს და გაუგზავნე საჩუქარი გულებით.",
 };
 export default ka;

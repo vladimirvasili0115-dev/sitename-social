@@ -61,5 +61,6 @@ const tr: Record<keyof typeof az, string> = {
   "bottle.hearts":"Kalpler","bottle.clickBottle":"Şişeye tıkla!","bottle.spinsBottle":"Şişeyi çeviriyor",
   "bottle.willKiss":"Öpüşecekler mi?",
   "bottle.waitingSpin":"Sıradaki çevirme bekleniyor",
+  "bottle.settings":"Ayarlar","bottle.acceptKisses":"Öpücükleri kabul et","bottle.backLobby":"Lobiye dön","bottle.sounds":"Sesler","bottle.music":"Müzik","bottle.invite":"Arkadaşlarını davet et","bottle.copied":"Bağlantı kopyalandı","bottle.myFriends":"Arkadaşlarım","bottle.profileSettings":"Profil ayarları","bottle.top":"Masanın liderleri","bottle.rules":"Kurallar","bottle.changeTable":"Masayı değiştir","bottle.rule1":"Sıra sana gelince şişeye tıkla.","bottle.rule2":"Şişe kimi gösterirse ikiniz ortaya gelirsiniz: 9 saniye içinde öp ya da reddet.","bottle.rule3":"Aldığın her öpücük fotoğrafındaki sayacı artırır.","bottle.rule4":"Oyuncunun fotoğrafına tıklayıp kalple hediye gönder.",
 };
 export default tr;

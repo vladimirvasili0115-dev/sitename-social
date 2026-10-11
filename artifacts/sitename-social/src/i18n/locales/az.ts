@@ -70,5 +70,6 @@ const az = {
   "bottle.hearts":"Ürəklər","bottle.clickBottle":"Butulkaya bas!","bottle.spinsBottle":"Butulkanı fırladır",
   "bottle.willKiss":"Öpüşəcəklər, ya yox?",
   "bottle.waitingSpin":"Növbəti fırlanmanı gözləyirlər",
+  "bottle.settings":"Parametrlər","bottle.acceptKisses":"Öpüşləri qəbul et","bottle.backLobby":"Dəhlizə qayıt","bottle.sounds":"Səslər","bottle.music":"Musiqi","bottle.invite":"Dostları dəvət et","bottle.copied":"Link kopyalandı","bottle.myFriends":"Dostlarım","bottle.profileSettings":"Profil parametrləri","bottle.top":"Masanın liderləri","bottle.rules":"Qaydalar","bottle.changeTable":"Masanı dəyiş","bottle.rule1":"Növbə sənə çatanda butulkaya bas.","bottle.rule2":"Butulka kimə düşsə, ikiniz ortaya gəlirsiniz: 9 saniyə ərzində öp və ya imtina et.","bottle.rule3":"Aldığın hər öpüş şəklindəki sayğacı artırır.","bottle.rule4":"Oyunçunun şəklinə basıb ürəklə hədiyyə göndər.",
 } as const;
 export default az;

@@ -1,7 +1,7 @@
 // Small synthesized sounds (no audio files): a turn chime, a "chosen" ping and a kiss.
 let context: AudioContext | null = null;
-let muted = false;
-export const setMuted = (value: boolean) => { muted = value; };
+let level = 1;
+export const setVolume = (value: number) => { level = Math.min(1, Math.max(0, value)); };
 
 function tone(frequency: number, start: number, length: number, volume = 0.16, type: OscillatorType = "sine") {
   if (!context) return;
@@ -10,14 +10,14 @@ function tone(frequency: number, start: number, length: number, volume = 0.16, t
   oscillator.type = type;
   oscillator.frequency.value = frequency;
   gain.gain.setValueAtTime(0.0001, context.currentTime + start);
-  gain.gain.exponentialRampToValueAtTime(volume, context.currentTime + start + 0.02);
+  gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, volume * level), context.currentTime + start + 0.02);
   gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + start + length);
   oscillator.connect(gain).connect(context.destination);
   oscillator.start(context.currentTime + start);
   oscillator.stop(context.currentTime + start + length + 0.05);
 }
 export function playSound(kind: "turn" | "chosen" | "kiss" | "decline") {
-  if (muted || typeof window === "undefined") return;
+  if (level === 0 || typeof window === "undefined") return;
   try {
     context ??= new (window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
     if (context.state === "suspended") void context.resume();

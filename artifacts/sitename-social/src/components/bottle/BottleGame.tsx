@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { Heart, Maximize, Minimize, SendHorizontal, Volume2, VolumeX, X, Music2 } from "lucide-react";
+import Link from "next/link";
+import { Heart, Home, Maximize, Menu, Minimize, Music, Music2, RefreshCw, SendHorizontal, Settings, Trophy, UserPlus, UserRoundCog, Users, Volume2, X } from "lucide-react";
 import type { GiftId } from "@/types";
 import { cartoonAvatar } from "./avatarArt";
 import { useTranslation } from "@/i18n/useTranslation";
@@ -8,7 +9,7 @@ import { GiftArt } from "@/components/gifts/GiftArt";
 import { useProfile } from "@/components/profile/useProfile";
 import { cn } from "@/lib/utils";
 import { BottleSvg } from "./BottleArt";
-import { playSound, setMuted } from "./sound";
+import { playSound, setVolume } from "./sound";
 
 type Player = { id: string; name: string; age: number; female: boolean; avatar: string; me?: boolean };
 type Phase = "waiting" | "spinning" | "choice" | "kissed" | "declined";
@@ -30,7 +31,7 @@ const smallTalk = ["Salam hamıya 👋", "Bu gün bəxtim gətirir 😄", "Kim f
 const giftChoices: [GiftId, number][] = [["crown", 3], ["diamond", 3], ["ring", 3], ["tower", 2], ["tar", 2], ["buta", 2], ["heart", 1], ["rose", 1], ["flame", 1], ["tea", 1], ["nar", 1], ["paxlava", 1], ["shekerbura", 1], ["semeni", 1], ["xaribulbul", 1]];
 const SPIN_SECONDS = 8;
 const ANSWER_SECONDS = 9;
-const round = "flex h-[min(44px,8.5cqmin)] w-[min(44px,8.5cqmin)] items-center justify-center rounded-full bg-[#EE8A2B] text-white shadow-md hover:brightness-110";
+const tool = "flex h-[min(44px,8.5cqmin)] w-[min(44px,8.5cqmin)] shrink-0 items-center justify-center rounded-full bg-white/20 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.18)] hover:bg-white/30";
 function youtubeId(value: string) {
   const match = value.trim().match(/(?:youtu\.be\/|[?&]v=|\/embed\/|\/shorts\/|\/live\/)([A-Za-z0-9_-]{11})/) ?? value.trim().match(/^([A-Za-z0-9_-]{11})$/);
   return match ? match[1] : null;
@@ -60,7 +61,13 @@ export function BottleGame({ wide, full, onToggleFull, onLeave }: { wide: boolea
   const [draft, setDraft] = useState("");
   const [picked, setPicked] = useState<number | null>(null);
   const [flying, setFlying] = useState<{ gift: GiftId; to: number; moved: boolean } | null>(null);
-  const [sound, setSound] = useState(true);
+  const [volume, setVolumeLevel] = useState(80);
+  const [music, setMusic] = useState(60);
+  const [accept, setAccept] = useState(true);
+  const [panel, setPanel] = useState<"settings" | "top" | "rules" | null>(null);
+  const [tableNo, setTableNo] = useState(60);
+  const [copied, setCopied] = useState(false);
+  const frameRef = useRef<HTMLIFrameElement>(null);
   const [hearts, setHearts] = useState(12);
   const [link, setLink] = useState("");
   const [video, setVideo] = useState<string | null>(null);
@@ -76,13 +83,13 @@ export function BottleGame({ wide, full, onToggleFull, onLeave }: { wide: boolea
 
   const spin = useCallback(() => {
     const spinner = players[turn];
-    const options = players.map((_, index) => index).filter((index) => index !== turn && players[index].female !== spinner.female);
+    const options = players.map((_, index) => index).filter((index) => index !== turn && players[index].female !== spinner.female && (accept || index !== meIndex));
     const next = options[Math.floor(Math.random() * options.length)];
     setTarget(next);
     setAnswers({ spinner: null, target: null });
     setRotation((current) => current - (current % 360) + 1440 + (((angleTo(next) % 360) + 360) % 360));
     setPhase("spinning");
-  }, [players, turn, angleTo]);
+  }, [players, turn, angleTo, accept]);
 
   // Turn flow. A player has a few seconds to click the bottle, otherwise the turn passes on.
   useEffect(() => {
@@ -147,13 +154,30 @@ export function BottleGame({ wide, full, onToggleFull, onLeave }: { wide: boolea
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
   }, [lines.length]);
-  useEffect(() => setMuted(!sound), [sound]);
+  useEffect(() => setVolume(volume / 100), [volume]);
+  const pushMusic = useCallback(() => frameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: "command", func: "setVolume", args: [music] }), "*"), [music]);
+  useEffect(pushMusic, [pushMusic, video]);
   const byId = (id: string) => players.find((player) => player.id === id);
   const staged = phase !== "waiting" && phase !== "spinning" && target !== null;
   const myRole: "spinner" | "target" | null = staged ? (turn === meIndex ? "spinner" : target === meIndex ? "target" : null) : null;
   const canAnswer = deciding && myRole !== null && answers[myRole] === null;
   const myTurn = phase === "waiting" && turn === meIndex;
 
+  function changeTable() {
+    setTableNo(1 + Math.floor(Math.random() * 240));
+    setKisses({});
+    setStickers({});
+    setLines([]);
+    setPicked(null);
+    setTarget(null);
+    setTurn(Math.floor(Math.random() * players.length));
+    setPhase("waiting");
+  }
+  function invite() {
+    void navigator.clipboard?.writeText(`${window.location.origin}/games`).then(() => { setCopied(true); window.setTimeout(() => setCopied(false), 2000); });
+  }
+  const ranking = players.map((player) => ({ player, count: kisses[player.id] ?? 0 })).sort((a, b) => b.count - a.count);
+  const row = "flex min-h-11 w-full items-center gap-3 rounded-lg px-2 text-left text-sm text-[#1F2937] hover:bg-black/5";
   function handleChat(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!draft.trim()) return;
@@ -211,18 +235,21 @@ export function BottleGame({ wide, full, onToggleFull, onLeave }: { wide: boolea
   return (
     <div className={cn("flex h-full w-full bg-surface text-text", wide ? "flex-row" : "flex-col")}>
       <div className={cn("relative shrink-0 overflow-hidden bg-[#D08A3C] [background-image:radial-gradient(ellipse_at_50%_45%,rgba(255,214,140,0.75)_0%,rgba(255,190,100,0.25)_45%,rgba(120,60,10,0.35)_100%),repeating-linear-gradient(92deg,rgba(120,65,15,0.14)_0px,rgba(120,65,15,0)_3px,rgba(255,225,170,0.10)_7px,rgba(120,65,15,0.12)_11px,rgba(120,65,15,0)_19px),repeating-linear-gradient(88deg,rgba(90,45,5,0.10)_0px,rgba(90,45,5,0)_40px,rgba(90,45,5,0.08)_83px)] [container-type:size]", wide ? "h-full w-[54%]" : "aspect-[9/10] max-h-[60%] w-full")} onClick={() => setPicked(null)}>
-        <div className={cn("absolute z-10 flex items-center", wide ? "inset-y-0 left-0 w-[13%] flex-col gap-[2.2cqmin] py-[2.2cqmin]" : "inset-x-0 top-0 h-[10%] gap-[3cqmin] px-[2.5cqmin]")} onClick={(event) => event.stopPropagation()}>
+        <div className={cn("absolute z-10 flex items-center", wide ? "inset-y-0 left-0 w-[13%] flex-col gap-[2.2cqmin] py-[2.2cqmin]" : "inset-x-0 top-0 h-[10%] gap-[4.5cqmin] px-[2.5cqmin]")} onClick={(event) => event.stopPropagation()}>
           <div className={cn("flex items-center text-white", wide ? "flex-col" : "gap-1.5")} title={t("bottle.hearts")}>
             <Heart className="h-[8.5cqmin] max-h-11 w-[8.5cqmin] max-w-11" fill="#FF6A1F" stroke="#FFFFFF" strokeWidth={1.5} />
             <span className="text-[max(12px,2.6cqmin)] font-bold tabular-nums leading-tight [text-shadow:0_1px_3px_rgba(0,0,0,0.6)]">{hearts}</span>
           </div>
-          {wide ? null : <span className="flex-1" />}
-          <button onClick={() => setSound(!sound)} aria-pressed={sound} aria-label={t(sound ? "videos.mute" : "videos.unmute")} title={t(sound ? "videos.mute" : "videos.unmute")} className={round}>{sound ? <Volume2 size={18} /> : <VolumeX size={18} />}</button>
-          <button onClick={onToggleFull} aria-label={t("bottle.fullscreen")} title={t("bottle.fullscreen")} className={round}>{full ? <Minimize size={17} /> : <Maximize size={17} />}</button>
-          <button onClick={onLeave} aria-label={t("bottle.leave")} title={t("bottle.leave")} className={cn(round, wide && "order-last")}><X size={19} /></button>
           <span className="flex-1" />
-          <span className={cn("text-center text-[max(10px,2.2cqmin)] font-bold leading-tight text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.7)]", wide && "order-last")}>{t("bottle.table")}<br />60</span>
-          <span aria-label={myTurn ? `${seconds}` : undefined} className={cn(round, "text-[max(14px,3cqmin)] font-bold tabular-nums", !myTurn && "opacity-70")}>{myTurn ? seconds : "·"}</span>
+          <button onClick={onToggleFull} aria-label={t("bottle.fullscreen")} title={t("bottle.fullscreen")} className={tool}>{full ? <Minimize size={17} /> : <Maximize size={17} />}</button>
+          <button onClick={() => setPanel("top")} aria-label={t("bottle.top")} title={t("bottle.top")} className={tool}><Trophy size={18} /></button>
+          <button onClick={() => setPanel("rules")} aria-label={t("bottle.rules")} title={t("bottle.rules")} className={tool}><Menu size={18} /></button>
+          <button onClick={() => setPanel("settings")} aria-label={t("bottle.settings")} title={t("bottle.settings")} className={tool}><Settings size={18} /></button>
+          <span className="flex-1" />
+          <span className="text-center text-[max(10px,2.2cqmin)] font-bold leading-tight text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.7)]">{t("bottle.table")}<br />{tableNo}</span>
+          {myTurn
+            ? <span aria-label={`${seconds}`} className={cn(tool, "text-[max(14px,3cqmin)] font-bold tabular-nums")}>{seconds}</span>
+            : <button onClick={changeTable} aria-label={t("bottle.changeTable")} title={t("bottle.changeTable")} className={tool}><RefreshCw size={17} /></button>}
         </div>
 
         <button type="button" disabled={!myTurn} onClick={spin} aria-label={t("bottle.spin")} className={cn("absolute h-[40cqmin] transition-transform duration-[3200ms] ease-[cubic-bezier(0.15,0.6,0.2,1)] motion-reduce:duration-0", myTurn ? "z-20 cursor-pointer" : "pointer-events-none")} style={{ left: `${CENTER_X}%`, top: `${STAGE_Y}%`, transform: `translate(-50%, -50%) rotate(${rotation}deg)` }}>
@@ -269,12 +296,51 @@ export function BottleGame({ wide, full, onToggleFull, onLeave }: { wide: boolea
             ) : null}
           </>
         ) : null}
+
+        {panel ? (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/35 p-3" onClick={(event) => { event.stopPropagation(); setPanel(null); }}>
+            <div role="dialog" aria-modal="true" aria-label={t(`bottle.${panel}`)} onClick={(event) => event.stopPropagation()} className="relative max-h-full w-full max-w-[340px] rounded-2xl bg-white p-3 shadow-2xl">
+              <button onClick={() => setPanel(null)} aria-label={t("photos.close")} title={t("photos.close")} className="absolute -right-2 -top-2 flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#8CC63F] bg-white text-[#8CC63F] shadow"><X size={18} strokeWidth={3} /></button>
+              <p className="mb-1 text-center text-sm font-bold text-[#9CA3AF]">{t(`bottle.${panel}`)}</p>
+              {panel === "settings" ? (
+                <div className="max-h-[70cqmin] overflow-y-auto">
+                  <label className={cn(row, "cursor-pointer font-bold")}>
+                    <span aria-hidden="true" className="w-6 text-center text-lg">💋</span><span className="flex-1">{t("bottle.acceptKisses")}</span>
+                    <input type="checkbox" checked={accept} onChange={(event) => setAccept(event.target.checked)} className="peer sr-only" />
+                    <span className="relative h-7 w-12 rounded-full bg-[#D1D5DB] transition-colors after:absolute after:left-0.5 after:top-0.5 after:h-6 after:w-6 after:rounded-full after:bg-white after:shadow after:transition-transform peer-checked:bg-[#34C759] peer-checked:after:translate-x-5 peer-focus-visible:ring-2 peer-focus-visible:ring-[#2563EB]" />
+                  </label>
+                  <button onClick={onLeave} className={row}><Home size={20} className="w-6 text-[#3B82F6]" />{t("bottle.backLobby")}</button>
+                  <label className={row}><Volume2 size={20} className="w-6 shrink-0 text-[#8CC63F]" /><span className="flex-1">{t("bottle.sounds")}</span><input type="range" min={0} max={100} value={volume} onChange={(event) => setVolumeLevel(Number(event.target.value))} className="w-24 accent-[#8CC63F]" /></label>
+                  <label className={row}><Music size={20} className="w-6 shrink-0 text-[#EC4899]" /><span className="flex-1">{t("bottle.music")}</span><input type="range" min={0} max={100} value={music} onChange={(event) => setMusic(Number(event.target.value))} className="w-24 accent-[#8CC63F]" /></label>
+                  <button onClick={invite} className={row}><UserPlus size={20} className="w-6 text-[#8CC63F]" />{copied ? t("bottle.copied") : t("bottle.invite")}</button>
+                  <Link href="/friends" className={row}><Users size={20} className="w-6 text-[#3B82F6]" />{t("bottle.myFriends")}</Link>
+                  <Link href="/settings" className={row}><UserRoundCog size={20} className="w-6 text-[#3B82F6]" />{t("bottle.profileSettings")}</Link>
+                </div>
+              ) : panel === "top" ? (
+                <ol className="max-h-[70cqmin] overflow-y-auto">
+                  {ranking.map(({ player, count }, place) => (
+                    <li key={player.id} className="flex min-h-10 items-center gap-2 px-1 text-sm text-[#1F2937]">
+                      <span className="w-5 text-right font-bold tabular-nums text-[#9CA3AF]">{place + 1}</span>
+                      <img src={player.avatar} alt="" className="h-8 w-8 rounded-md object-cover" />
+                      <span className="min-w-0 flex-1 truncate font-semibold">{player.me ? t("common.you") : player.name}</span>
+                      <span className="font-bold tabular-nums">💋 {count}</span>
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <ol className="max-h-[70cqmin] list-decimal space-y-1.5 overflow-y-auto pl-6 pr-1 text-sm text-[#1F2937]">
+                  {[1, 2, 3, 4].map((n) => <li key={n}>{t(`bottle.rule${n}` as "bottle.rule1")}</li>)}
+                </ol>
+              )}
+            </div>
+          </div>
+        ) : null}
       </div>
 
       <div className={cn("flex min-h-0 min-w-0 flex-1 flex-col border-border", wide ? "border-l" : "border-t")}>
         {video ? (
           <div className={cn("relative aspect-video w-full shrink-0 bg-black", wide ? "max-h-[42%]" : "max-h-[24%]")}>
-            <iframe src={`https://www.youtube-nocookie.com/embed/${video}?autoplay=1&rel=0`} title="YouTube" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen className="h-full w-full" />
+            <iframe ref={frameRef} onLoad={() => window.setTimeout(pushMusic, 800)} src={`https://www.youtube-nocookie.com/embed/${video}?autoplay=1&rel=0&enablejsapi=1`} title="YouTube" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen className="h-full w-full" />
             <button onClick={() => setVideo(null)} aria-label={t("photos.close")} title={t("photos.close")} className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80"><X size={15} /></button>
           </div>
         ) : null}
