@@ -57,5 +57,6 @@ const ru: Record<keyof typeof az, string> = {
   "bottle.yourChoice":"Ваш выбор",
   "bottle.kissBack":"Ответит поцелуем на поцелуй?",
   "bottle.chooses":"выбирает…",
+  "bottle.window":"В окне","bottle.loading":"Игра загружается","games.play":"Играть","games.descBottle":"Крути бутылочку, найди свою симпатию и играй!","games.descNard":"Классические нарды: с друзьями или с ботом","games.descDomino":"Домино: онлайн-комнаты и боты","games.descDurak":"Карточная игра: кто останется в дураках?","games.descChess":"Шахматы: с другом или соперником","games.descLoto":"Лото: закрой карточку и забери выигрыш","games.descWords":"Составляй слова из букв и набирай очки","games.descQuiz":"Викторина: командой или в одиночку","games.descPoker":"Покер: садись за стол и сыграй руку",
 };
 export default ru;

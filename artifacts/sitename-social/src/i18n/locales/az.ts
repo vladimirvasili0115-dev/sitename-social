@@ -66,5 +66,6 @@ const az = {
   "bottle.yourChoice":"Sənin seçimin",
   "bottle.kissBack":"Öpüşə öpüşlə cavab verəcək?",
   "bottle.chooses":"seçir…",
+  "bottle.window":"Pəncərə","bottle.loading":"Oyun yüklənir","games.play":"Oyna","games.descBottle":"Butulkanı fırlat, məftununu tap və oyna!","games.descNard":"Klassik nərd: dostlarla və ya botla","games.descDomino":"Domino: onlayn otaqlar və botlar","games.descDurak":"Kart oyunu: kim axmaq qalacaq?","games.descChess":"Şahmat: dostunla və ya rəqiblə","games.descLoto":"Loto: kartını doldur, uduşu götür","games.descWords":"Hərflərdən söz düz, xal topla","games.descQuiz":"Bilik yarışı: komanda ilə və ya tək","games.descPoker":"Poker: masaya otur, əlini oyna",
 } as const;
 export default az;

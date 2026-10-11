@@ -1,7 +1,9 @@
 "use client";
-import { BottleGame } from "@/components/bottle/BottleGame";
+import { useRouter } from "next/navigation";
+import { GameWindow } from "@/components/bottle/GameWindow";
 
-// The game covers the whole screen; the X button on the table returns to the games list.
+// Direct link to the game: opens it full screen; closing returns to the games list.
 export default function BottlePage() {
-  return <BottleGame />;
+  const router = useRouter();
+  return <GameWindow startFull onClose={() => router.push("/games")} />;
 }

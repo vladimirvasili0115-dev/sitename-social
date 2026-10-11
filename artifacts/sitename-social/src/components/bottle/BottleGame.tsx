@@ -1,6 +1,5 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import Link from "next/link";
 import { Heart, Maximize, Minimize, SendHorizontal, Volume2, VolumeX, X, Music2 } from "lucide-react";
 import type { GiftId } from "@/types";
 import { cartoonAvatar } from "./avatarArt";
@@ -34,7 +33,7 @@ function youtubeId(value: string) {
   return match ? match[1] : null;
 }
 
-export function BottleGame() {
+export function BottleGame({ wide, full, onToggleFull, onLeave }: { wide: boolean; full: boolean; onToggleFull: () => void; onLeave: () => void }) {
   const { t } = useTranslation();
   const { user } = useProfile();
   const players = useMemo<Player[]>(() => {
@@ -56,11 +55,9 @@ export function BottleGame() {
   const [draft, setDraft] = useState("");
   const [picked, setPicked] = useState<number | null>(null);
   const [sound, setSound] = useState(true);
-  const [full, setFull] = useState(false);
   const [link, setLink] = useState("");
   const [video, setVideo] = useState<string | null>(null);
   const [badLink, setBadLink] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
   const lineId = useRef(3);
   const listRef = useRef<HTMLDivElement>(null);
   const say = useCallback((line: Omit<Line, "id">) => setLines((list) => [...list.slice(-40), { ...line, id: lineId.current++ }]), []);
@@ -144,12 +141,6 @@ export function BottleGame() {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
   }, [lines.length]);
   useEffect(() => setMuted(!sound), [sound]);
-  useEffect(() => {
-    const onChange = () => setFull(Boolean(document.fullscreenElement));
-    document.addEventListener("fullscreenchange", onChange);
-    return () => document.removeEventListener("fullscreenchange", onChange);
-  }, []);
-
   const byId = (id: string) => players.find((player) => player.id === id);
   const staged = phase !== "waiting" && phase !== "spinning" && target !== null;
   const myRole = deciding && target !== null && (deciding === "spinner" ? turn : target) === meIndex ? deciding : null;
@@ -175,10 +166,6 @@ export function BottleGame() {
     setStickers((value) => ({ ...value, [player.id]: [...(value[player.id] ?? []), gift].slice(-2) }));
     say({ from: "me", to: player.id, gift });
     setPicked(null);
-  }
-  function toggleFull() {
-    if (document.fullscreenElement) void document.exitFullscreen();
-    else void rootRef.current?.requestFullscreen?.().catch(() => undefined);
   }
   // A curved arrow from the player who answered to the other one. A kiss is green and runs below the pair; a refusal is red and runs above it.
   const arrow = (answer: boolean | null, leftToRight: boolean, drop: number) => {
@@ -216,17 +203,17 @@ export function BottleGame() {
   );
 
   return (
-    <div ref={rootRef} className="fixed inset-0 z-[60] flex flex-col bg-surface text-text lg:flex-row">
-      <div className="relative aspect-square w-full shrink-0 overflow-hidden bg-[#D08A3C] [background-image:radial-gradient(ellipse_at_50%_45%,rgba(255,214,140,0.75)_0%,rgba(255,190,100,0.25)_45%,rgba(120,60,10,0.35)_100%),repeating-linear-gradient(92deg,rgba(120,65,15,0.14)_0px,rgba(120,65,15,0)_3px,rgba(255,225,170,0.10)_7px,rgba(120,65,15,0.12)_11px,rgba(120,65,15,0)_19px),repeating-linear-gradient(88deg,rgba(90,45,5,0.10)_0px,rgba(90,45,5,0)_40px,rgba(90,45,5,0.08)_83px)] [container-type:size] max-lg:max-h-[58dvh] lg:aspect-auto lg:h-full lg:w-[54%]" onClick={() => setPicked(null)}>
+    <div className={cn("flex h-full w-full bg-surface text-text", wide ? "flex-row" : "flex-col")}>
+      <div className={cn("relative shrink-0 overflow-hidden bg-[#D08A3C] [background-image:radial-gradient(ellipse_at_50%_45%,rgba(255,214,140,0.75)_0%,rgba(255,190,100,0.25)_45%,rgba(120,60,10,0.35)_100%),repeating-linear-gradient(92deg,rgba(120,65,15,0.14)_0px,rgba(120,65,15,0)_3px,rgba(255,225,170,0.10)_7px,rgba(120,65,15,0.12)_11px,rgba(120,65,15,0)_19px),repeating-linear-gradient(88deg,rgba(90,45,5,0.10)_0px,rgba(90,45,5,0)_40px,rgba(90,45,5,0.08)_83px)] [container-type:size]", wide ? "h-full w-[54%]" : "aspect-square max-h-[58%] w-full")} onClick={() => setPicked(null)}>
         <div className="absolute left-2.5 top-2.5 z-10 flex flex-col items-center text-white" title={t("bottle.myKisses")}>
           <Heart size={36} fill="#FF6A1F" stroke="#FFFFFF" strokeWidth={1.5} />
           <span className="text-base font-bold tabular-nums [text-shadow:0_1px_3px_rgba(0,0,0,0.6)]">{kisses.me ?? 0}</span>
         </div>
         <span className="absolute right-2.5 top-2.5 z-10 rounded-full bg-[#EE8A2B] px-3 py-1.5 text-[11px] font-bold text-white shadow-md">{t("bottle.table")} 60</span>
-        <Link href="/games" aria-label={t("bottle.leave")} title={t("bottle.leave")} className={cn(round, "absolute bottom-2.5 left-2.5 z-10")}><X size={20} /></Link>
+        <button onClick={onLeave} aria-label={t("bottle.leave")} title={t("bottle.leave")} className={cn(round, "absolute bottom-2.5 left-2.5 z-10")}><X size={20} /></button>
         <div className="absolute bottom-2.5 right-2.5 z-10 flex flex-col gap-2">
           <button onClick={() => setSound(!sound)} aria-pressed={sound} aria-label={t(sound ? "videos.mute" : "videos.unmute")} title={t(sound ? "videos.mute" : "videos.unmute")} className={round}>{sound ? <Volume2 size={19} /> : <VolumeX size={19} />}</button>
-          <button onClick={toggleFull} aria-label={t("bottle.fullscreen")} title={t("bottle.fullscreen")} className={cn(round, "max-lg:hidden")}>{full ? <Minimize size={18} /> : <Maximize size={18} />}</button>
+          <button onClick={onToggleFull} aria-label={t("bottle.fullscreen")} title={t("bottle.fullscreen")} className={round}>{full ? <Minimize size={18} /> : <Maximize size={18} />}</button>
         </div>
 
         <div className="pointer-events-none absolute left-1/2 top-1/2 h-[40cqmin] transition-transform duration-[3200ms] ease-[cubic-bezier(0.15,0.6,0.2,1)] motion-reduce:duration-0" style={{ transform: `translate(-50%, -50%) rotate(${rotation}deg)` }}>
@@ -279,9 +266,9 @@ export function BottleGame() {
         ) : null}
       </div>
 
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col border-t border-border lg:border-l lg:border-t-0">
+      <div className={cn("flex min-h-0 min-w-0 flex-1 flex-col border-border", wide ? "border-l" : "border-t")}>
         {video ? (
-          <div className="relative aspect-video w-full shrink-0 bg-black max-lg:max-h-[24dvh] lg:max-h-[42%]">
+          <div className={cn("relative aspect-video w-full shrink-0 bg-black", wide ? "max-h-[42%]" : "max-h-[24%]")}>
             <iframe src={`https://www.youtube-nocookie.com/embed/${video}?autoplay=1&rel=0`} title="YouTube" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen className="h-full w-full" />
             <button onClick={() => setVideo(null)} aria-label={t("photos.close")} title={t("photos.close")} className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80"><X size={15} /></button>
           </div>
