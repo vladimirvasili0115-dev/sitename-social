@@ -5,7 +5,7 @@ import { games } from "@/data/games";
 import { useTranslation } from "@/i18n/useTranslation";
 import type { TranslationKey } from "@/i18n/LanguageProvider";
 import { Card } from "@/components/ui/Card";
-import { BottleSvg } from "@/components/bottle/BottleArt";
+import { BottleCover } from "@/components/bottle/BottleArt";
 import { GameWindow } from "@/components/bottle/GameWindow";
 
 // Emoji tiles stand in for game covers until each game has its own artwork.
@@ -46,7 +46,7 @@ export default function GamesPage() {
         <ul className="space-y-1">
           <li>
             <button onClick={() => setPlaying(true)} className={`${row} bg-surface-2 hover:brightness-110`}>
-              <span aria-hidden="true" className={`${icon} bg-[linear-gradient(135deg,#F0A63F,#C97A26)]`}><BottleSvg className="h-[84%] rotate-[28deg] drop-shadow-[0_3px_4px_rgba(0,0,0,0.35)]" /></span>
+              <span aria-hidden="true" className={icon}><BottleCover className="h-full w-full" /></span>
               <span className="min-w-0 flex-1">
                 <span className="block text-base font-bold text-text">{t("bottle.title")}</span>
                 <span className="mt-1 block text-[13px] leading-5 text-muted">{t("games.descBottle")}</span>
