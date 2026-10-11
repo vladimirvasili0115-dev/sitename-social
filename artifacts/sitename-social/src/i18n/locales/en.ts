@@ -60,5 +60,6 @@ const en: Record<keyof typeof az, string> = {
   "bottle.window":"Window","bottle.loading":"Loading the game","games.play":"Play","games.descBottle":"Spin the bottle, find your admirer and play!","games.descNard":"Classic backgammon: with friends or a bot","games.descDomino":"Dominoes: online rooms and bots","games.descDurak":"Card game: who will be left holding cards?","games.descChess":"Chess: against a friend or a rival","games.descLoto":"Lotto: fill your card and take the prize","games.descWords":"Build words from letters and score points","games.descQuiz":"Quiz battle: as a team or solo","games.descPoker":"Poker: take a seat and play your hand",
   "bottle.hearts":"Hearts","bottle.clickBottle":"Click the bottle!","bottle.spinsBottle":"Spinning the bottle",
   "bottle.willKiss":"Will they kiss?",
+  "bottle.waitingSpin":"Waiting for the next spin",
 };
 export default en;

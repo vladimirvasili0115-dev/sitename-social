@@ -14,9 +14,12 @@ type Player = { id: string; name: string; age: number; female: boolean; avatar: 
 type Phase = "waiting" | "spinning" | "choice" | "kissed" | "declined";
 type Line = { id: number; from: string; to?: string; text?: string; gift?: GiftId };
 
-// Seat centres in percent of the table: four on top, two on the right, four below, two on the left. The left strip is kept for the tool column.
-const seats = [[29, 15], [48.5, 15], [68, 15], [87, 15], [91, 39.5], [91, 62.5], [87, 85], [68, 85], [48.5, 85], [29, 85], [26, 62.5], [26, 39.5]] as const;
-const CENTER_X = 58.5;
+// Seat centres in percent of the table. Wide: a tool column on the left, seats in a rectangle. Tall (phone, window): a tool row on top, seats in an oval.
+type Seats = readonly (readonly [number, number])[];
+const layouts: Record<"wide" | "tall", { seats: Seats; cx: number; cy: number }> = {
+  wide: { seats: [[29, 15], [48.5, 15], [68, 15], [87, 15], [91, 39.5], [91, 62.5], [87, 85], [68, 85], [48.5, 85], [29, 85], [26, 62.5], [26, 39.5]], cx: 58.5, cy: 50 },
+  tall: { seats: [[17, 26], [39, 21], [61, 21], [83, 26], [87, 46], [87, 65.5], [83, 85], [61, 89.5], [39, 89.5], [17, 85], [13, 65.5], [13, 46]], cx: 50, cy: 55 },
+};
 const bots: Omit<Player, "avatar">[] = [
   { id: "b1", name: "Leyla", age: 24, female: true }, { id: "b2", name: "Rəşad", age: 27, female: false }, { id: "b3", name: "Nigar", age: 22, female: true },
   { id: "b4", name: "Samir", age: 29, female: false }, { id: "b5", name: "Mina", age: 21, female: true }, { id: "b6", name: "Kamran", age: 31, female: false },
@@ -27,9 +30,7 @@ const smallTalk = ["Salam hamıya 👋", "Bu gün bəxtim gətirir 😄", "Kim f
 const giftChoices: [GiftId, number][] = [["crown", 3], ["diamond", 3], ["ring", 3], ["tower", 2], ["tar", 2], ["buta", 2], ["heart", 1], ["rose", 1], ["flame", 1], ["tea", 1], ["nar", 1], ["paxlava", 1], ["shekerbura", 1], ["semeni", 1], ["xaribulbul", 1]];
 const SPIN_SECONDS = 8;
 const ANSWER_SECONDS = 9;
-const STAGE_Y = 50;
 const round = "flex h-[min(44px,8.5cqmin)] w-[min(44px,8.5cqmin)] items-center justify-center rounded-full bg-[#EE8A2B] text-white shadow-md hover:brightness-110";
-const angleTo = (index: number) => (Math.atan2(seats[index][1] - 50, seats[index][0] - CENTER_X) * 180) / Math.PI + 90;
 function youtubeId(value: string) {
   const match = value.trim().match(/(?:youtu\.be\/|[?&]v=|\/embed\/|\/shorts\/|\/live\/)([A-Za-z0-9_-]{11})/) ?? value.trim().match(/^([A-Za-z0-9_-]{11})$/);
   return match ? match[1] : null;
@@ -44,6 +45,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave }: { wide: boolea
     return [...others.slice(0, 7), me, ...others.slice(7)];
   }, [user.name, user.avatar]);
   const meIndex = 7;
+  const { seats, cx: CENTER_X, cy: STAGE_Y } = layouts[wide ? "wide" : "tall"];
+  const angleTo = useCallback((index: number) => (Math.atan2(seats[index][1] - STAGE_Y, seats[index][0] - CENTER_X) * 180) / Math.PI + 90, [seats, CENTER_X, STAGE_Y]);
 
   const [turn, setTurn] = useState(4);
   const [target, setTarget] = useState<number | null>(null);
@@ -79,7 +82,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave }: { wide: boolea
     setAnswers({ spinner: null, target: null });
     setRotation((current) => current - (current % 360) + 1440 + (((angleTo(next) % 360) + 360) % 360));
     setPhase("spinning");
-  }, [players, turn]);
+  }, [players, turn, angleTo]);
 
   // Turn flow. A player has a few seconds to click the bottle, otherwise the turn passes on.
   useEffect(() => {
@@ -207,24 +210,27 @@ export function BottleGame({ wide, full, onToggleFull, onLeave }: { wide: boolea
   };
   return (
     <div className={cn("flex h-full w-full bg-surface text-text", wide ? "flex-row" : "flex-col")}>
-      <div className={cn("relative shrink-0 overflow-hidden bg-[#D08A3C] [background-image:radial-gradient(ellipse_at_50%_45%,rgba(255,214,140,0.75)_0%,rgba(255,190,100,0.25)_45%,rgba(120,60,10,0.35)_100%),repeating-linear-gradient(92deg,rgba(120,65,15,0.14)_0px,rgba(120,65,15,0)_3px,rgba(255,225,170,0.10)_7px,rgba(120,65,15,0.12)_11px,rgba(120,65,15,0)_19px),repeating-linear-gradient(88deg,rgba(90,45,5,0.10)_0px,rgba(90,45,5,0)_40px,rgba(90,45,5,0.08)_83px)] [container-type:size]", wide ? "h-full w-[54%]" : "aspect-square max-h-[58%] w-full")} onClick={() => setPicked(null)}>
-        <div className="absolute inset-y-0 left-0 z-10 flex w-[13%] flex-col items-center gap-[2.2cqmin] py-[2.2cqmin]" onClick={(event) => event.stopPropagation()}>
-          <div className="flex flex-col items-center text-white" title={t("bottle.hearts")}>
+      <div className={cn("relative shrink-0 overflow-hidden bg-[#D08A3C] [background-image:radial-gradient(ellipse_at_50%_45%,rgba(255,214,140,0.75)_0%,rgba(255,190,100,0.25)_45%,rgba(120,60,10,0.35)_100%),repeating-linear-gradient(92deg,rgba(120,65,15,0.14)_0px,rgba(120,65,15,0)_3px,rgba(255,225,170,0.10)_7px,rgba(120,65,15,0.12)_11px,rgba(120,65,15,0)_19px),repeating-linear-gradient(88deg,rgba(90,45,5,0.10)_0px,rgba(90,45,5,0)_40px,rgba(90,45,5,0.08)_83px)] [container-type:size]", wide ? "h-full w-[54%]" : "aspect-[9/10] max-h-[60%] w-full")} onClick={() => setPicked(null)}>
+        <div className={cn("absolute z-10 flex items-center", wide ? "inset-y-0 left-0 w-[13%] flex-col gap-[2.2cqmin] py-[2.2cqmin]" : "inset-x-0 top-0 h-[10%] gap-[3cqmin] px-[2.5cqmin]")} onClick={(event) => event.stopPropagation()}>
+          <div className={cn("flex items-center text-white", wide ? "flex-col" : "gap-1.5")} title={t("bottle.hearts")}>
             <Heart className="h-[8.5cqmin] max-h-11 w-[8.5cqmin] max-w-11" fill="#FF6A1F" stroke="#FFFFFF" strokeWidth={1.5} />
             <span className="text-[max(12px,2.6cqmin)] font-bold tabular-nums leading-tight [text-shadow:0_1px_3px_rgba(0,0,0,0.6)]">{hearts}</span>
           </div>
-          <button onClick={() => setSound(!sound)} aria-pressed={sound} aria-label={t(sound ? "videos.mute" : "videos.unmute")} title={t(sound ? "videos.mute" : "videos.unmute")} className={round}>{sound ? <Volume2 size={19} /> : <VolumeX size={19} />}</button>
-          <button onClick={onToggleFull} aria-label={t("bottle.fullscreen")} title={t("bottle.fullscreen")} className={round}>{full ? <Minimize size={18} /> : <Maximize size={18} />}</button>
+          {wide ? null : <span className="flex-1" />}
+          <button onClick={() => setSound(!sound)} aria-pressed={sound} aria-label={t(sound ? "videos.mute" : "videos.unmute")} title={t(sound ? "videos.mute" : "videos.unmute")} className={round}>{sound ? <Volume2 size={18} /> : <VolumeX size={18} />}</button>
+          <button onClick={onToggleFull} aria-label={t("bottle.fullscreen")} title={t("bottle.fullscreen")} className={round}>{full ? <Minimize size={17} /> : <Maximize size={17} />}</button>
+          <button onClick={onLeave} aria-label={t("bottle.leave")} title={t("bottle.leave")} className={cn(round, wide && "order-last")}><X size={19} /></button>
           <span className="flex-1" />
-          {myTurn ? <span aria-hidden="true" className={cn(round, "bg-white text-lg font-bold tabular-nums !text-[#C2410C]")}>{seconds}</span> : null}
-          <button onClick={onLeave} aria-label={t("bottle.leave")} title={t("bottle.leave")} className={round}><X size={20} /></button>
-          <span className="text-center text-[max(10px,2.2cqmin)] font-bold leading-tight text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.7)]">{t("bottle.table")}<br />60</span>
+          <span className={cn("text-center text-[max(10px,2.2cqmin)] font-bold leading-tight text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.7)]", wide && "order-last")}>{t("bottle.table")}<br />60</span>
+          <span aria-label={myTurn ? `${seconds}` : undefined} className={cn(round, "text-[max(14px,3cqmin)] font-bold tabular-nums", !myTurn && "opacity-70")}>{myTurn ? seconds : "·"}</span>
         </div>
 
-        <button type="button" disabled={!myTurn} onClick={spin} aria-label={t("bottle.spin")} className={cn("absolute top-1/2 h-[40cqmin] transition-transform duration-[3200ms] ease-[cubic-bezier(0.15,0.6,0.2,1)] motion-reduce:duration-0", myTurn ? "z-20 cursor-pointer" : "pointer-events-none")} style={{ left: `${CENTER_X}%`, transform: `translate(-50%, -50%) rotate(${rotation}deg)` }}>
+        <button type="button" disabled={!myTurn} onClick={spin} aria-label={t("bottle.spin")} className={cn("absolute h-[40cqmin] transition-transform duration-[3200ms] ease-[cubic-bezier(0.15,0.6,0.2,1)] motion-reduce:duration-0", myTurn ? "z-20 cursor-pointer" : "pointer-events-none")} style={{ left: `${CENTER_X}%`, top: `${STAGE_Y}%`, transform: `translate(-50%, -50%) rotate(${rotation}deg)` }}>
           <BottleSvg className={cn("h-full drop-shadow-[0_6px_10px_rgba(0,0,0,0.45)] transition-opacity duration-700", staged && "opacity-0")} />
         </button>
-        {myTurn ? <p role="status" style={{ left: `${CENTER_X}%` }} className="pointer-events-none absolute top-[calc(50%+22cqmin)] z-20 -translate-x-1/2 animate-bounce whitespace-nowrap rounded-full bg-white px-[3cqmin] py-[1cqmin] text-[3.2cqmin] font-bold text-[#C2410C] shadow-lg motion-reduce:animate-none">↑ {t("bottle.clickBottle")}</p> : null}
+        {myTurn ? <div className="pointer-events-none absolute z-20 -translate-x-1/2 -translate-y-1/2" style={{ left: `${CENTER_X}%`, top: `${STAGE_Y}%` }}><p role="status" className="animate-bounce whitespace-nowrap rounded-full bg-white px-[3cqmin] py-[1cqmin] text-[3.2cqmin] font-bold text-[#C2410C] shadow-lg motion-reduce:animate-none">{t("bottle.clickBottle")}</p></div> : null}
+
+        {phase === "waiting" && !myTurn ? <p className="pointer-events-none absolute w-[40cqmin] -translate-x-1/2 -translate-y-1/2 text-center text-[3.4cqmin] font-bold leading-tight text-white [text-shadow:0_2px_6px_rgba(0,0,0,0.85)]" style={{ left: `${CENTER_X}%`, top: `${STAGE_Y}%` }}>{t("bottle.waitingSpin")}</p> : null}
 
         {players.map((player, index) => {
           const active = index === turn || index === target;
