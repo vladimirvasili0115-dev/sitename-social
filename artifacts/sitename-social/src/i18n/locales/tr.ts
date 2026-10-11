@@ -58,5 +58,6 @@ const tr: Record<keyof typeof az, string> = {
   "bottle.kissBack":"Öpücüğe öpücükle karşılık verecek mi?",
   "bottle.chooses":"seçiyor…",
   "bottle.window":"Pencere","bottle.loading":"Oyun yükleniyor","games.play":"Oyna","games.descBottle":"Şişeyi çevir, hayranını bul ve oyna!","games.descNard":"Klasik tavla: arkadaşlarla veya botla","games.descDomino":"Domino: çevrimiçi odalar ve botlar","games.descDurak":"Kart oyunu: kim kalacak?","games.descChess":"Satranç: arkadaşınla veya rakiple","games.descLoto":"Tombala: kartını doldur, ödülü al","games.descWords":"Harflerden kelime kur, puan topla","games.descQuiz":"Bilgi yarışı: takımla veya tek başına","games.descPoker":"Poker: masaya otur, elini oyna",
+  "bottle.hearts":"Kalpler","bottle.clickBottle":"Şişeye tıkla!","bottle.spinsBottle":"Şişeyi çeviriyor",
 };
 export default tr;

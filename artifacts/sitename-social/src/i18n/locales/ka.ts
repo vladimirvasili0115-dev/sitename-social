@@ -58,5 +58,6 @@ const ka: Record<keyof typeof az, string> = {
   "bottle.kissBack":"კოცნას კოცნით უპასუხებს?",
   "bottle.chooses":"ირჩევს…",
   "bottle.window":"ფანჯარა","bottle.loading":"თამაში იტვირთება","games.play":"თამაში","games.descBottle":"დაატრიალე ბოთლი, იპოვე თაყვანისმცემელი და ითამაშე!","games.descNard":"კლასიკური ნარდი: მეგობრებთან ან ბოტთან","games.descDomino":"დომინო: ონლაინ ოთახები და ბოტები","games.descDurak":"კარტის თამაში: ვინ დარჩება?","games.descChess":"ჭადრაკი: მეგობართან ან მეტოქესთან","games.descLoto":"ლოტო: შეავსე ბარათი და აიღე მოგება","games.descWords":"ააწყვე სიტყვები ასოებისგან და დააგროვე ქულები","games.descQuiz":"ვიქტორინა: გუნდურად ან მარტო","games.descPoker":"პოკერი: დაჯექი მაგიდასთან და ითამაშე",
+  "bottle.hearts":"გულები","bottle.clickBottle":"დააჭირე ბოთლს!","bottle.spinsBottle":"ატრიალებს ბოთლს",
 };
 export default ka;

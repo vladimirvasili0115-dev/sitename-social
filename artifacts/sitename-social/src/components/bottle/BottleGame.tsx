@@ -23,10 +23,11 @@ const bots: Omit<Player, "avatar">[] = [
   { id: "b10", name: "Elvin", age: 28, female: false }, { id: "b11", name: "Səbinə", age: 27, female: true },
 ];
 const smallTalk = ["Salam hamıya 👋", "Bu gün bəxtim gətirir 😄", "Kim fırladır?", "Çay içən var? ☕", "Hahaha", "Bir də fırlat!", "Bakıdan kim var?", "Gecəniz xeyrə 🌙"];
-const giftChoices: GiftId[] = ["tea", "rose", "heart", "paxlava"];
-const SPIN_SECONDS = 5;
-const ANSWER_SECONDS = 10;
-const round = "flex h-11 w-11 items-center justify-center rounded-full bg-[#EE8A2B] text-white shadow-md hover:brightness-110";
+const giftChoices: GiftId[] = ["crown", "heart", "diamond", "rose", "ring", "flame", "tea", "nar", "paxlava", "shekerbura", "semeni", "xaribulbul", "buta", "tar", "tower"];
+const SPIN_SECONDS = 8;
+const ANSWER_SECONDS = 9;
+const STAGE_Y = 48;
+const round = "flex h-[min(44px,8.5cqmin)] w-[min(44px,8.5cqmin)] items-center justify-center rounded-full bg-[#EE8A2B] text-white shadow-md hover:brightness-110";
 const angleTo = (index: number) => (Math.atan2(seats[index][1] - 50, seats[index][0] - 50) * 180) / Math.PI + 90;
 function youtubeId(value: string) {
   const match = value.trim().match(/(?:youtu\.be\/|[?&]v=|\/embed\/|\/shorts\/|\/live\/)([A-Za-z0-9_-]{11})/) ?? value.trim().match(/^([A-Za-z0-9_-]{11})$/);
@@ -54,6 +55,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave }: { wide: boolea
   const [lines, setLines] = useState<Line[]>([{ id: 1, from: "b3", text: smallTalk[0] }, { id: 2, from: "b6", to: "b1" }]);
   const [draft, setDraft] = useState("");
   const [picked, setPicked] = useState<number | null>(null);
+  const [flying, setFlying] = useState<{ gift: GiftId; to: number; moved: boolean } | null>(null);
   const [sound, setSound] = useState(true);
   const [link, setLink] = useState("");
   const [video, setVideo] = useState<string | null>(null);
@@ -77,7 +79,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave }: { wide: boolea
     setPhase("spinning");
   }, [players, turn]);
 
-  // Turn flow. A player has 5 seconds to spin, otherwise the bottle passes on; the chosen pair has 10 seconds to answer.
+  // Turn flow. A player has a few seconds to click the bottle, otherwise the turn passes on.
   useEffect(() => {
     if (phase === "waiting") {
       playSound("turn");
@@ -100,33 +102,33 @@ export function BottleGame({ wide, full, onToggleFull, onLeave }: { wide: boolea
     }
   }, [phase, turn, spin, nextTurn]);
 
-  // The spinner answers first. Only if they kiss is the chosen player asked to kiss back; each has 10 seconds.
-  const deciding: "spinner" | "target" | null = phase === "choice" && target !== null ? (answers.spinner === null ? "spinner" : answers.spinner && answers.target === null ? "target" : null) : null;
+  // Both players answer on their own within the same countdown; neither waits for the other.
+  const deciding = phase === "choice" && target !== null && (answers.spinner === null || answers.target === null);
   useEffect(() => {
-    if (!deciding || target === null) return;
-    const index = deciding === "spinner" ? turn : target;
+    if (phase !== "choice" || target === null) return;
     setSeconds(ANSWER_SECONDS);
     const tick = window.setInterval(() => setSeconds((value) => Math.max(0, value - 1)), 1000);
-    const timer = index === meIndex
-      ? window.setTimeout(() => setAnswers((value) => (value[deciding] === null ? { ...value, [deciding]: false } : value)), ANSWER_SECONDS * 1000)
-      : window.setTimeout(() => setAnswers((value) => ({ ...value, [deciding]: Math.random() < 0.75 })), 1500 + Math.random() * 2500);
-    return () => { window.clearInterval(tick); window.clearTimeout(timer); };
-  }, [deciding, turn, target]);
+    const timers = (["spinner", "target"] as const).map((role) => {
+      const index = role === "spinner" ? turn : target;
+      return index === meIndex
+        ? window.setTimeout(() => setAnswers((value) => (value[role] === null ? { ...value, [role]: false } : value)), ANSWER_SECONDS * 1000)
+        : window.setTimeout(() => setAnswers((value) => (value[role] === null ? { ...value, [role]: Math.random() < 0.75 } : value)), 1500 + Math.random() * 4500);
+    });
+    return () => { window.clearInterval(tick); timers.forEach((timer) => window.clearTimeout(timer)); };
+  }, [phase, turn, target]);
 
+  // A kiss counts for the player who receives it, even when they refused themselves.
   useEffect(() => {
-    if (phase !== "choice" || target === null || answers.spinner === null) return;
+    if (phase !== "choice" || target === null || answers.spinner === null || answers.target === null) return;
     const [a, b] = [players[turn], players[target]];
-    if (answers.spinner === false || answers.target === false) {
-      const timer = window.setTimeout(() => { playSound("decline"); setPhase("declined"); }, 700);
-      return () => window.clearTimeout(timer);
-    }
-    if (answers.target === null) return void playSound("chosen");
     const timer = window.setTimeout(() => {
-      setKisses((value) => ({ ...value, [a.id]: (value[a.id] ?? 0) + 1, [b.id]: (value[b.id] ?? 0) + 1 }));
-      say({ from: a.id, to: b.id });
-      playSound("kiss");
-      setPhase("kissed");
-    }, 700);
+      setKisses((value) => ({ ...value, ...(answers.spinner ? { [b.id]: (value[b.id] ?? 0) + 1 } : {}), ...(answers.target ? { [a.id]: (value[a.id] ?? 0) + 1 } : {}) }));
+      if (answers.spinner) say({ from: a.id, to: b.id });
+      if (answers.target) say({ from: b.id, to: a.id });
+      const both = answers.spinner && answers.target;
+      playSound(both ? "kiss" : "decline");
+      setPhase(both ? "kissed" : "declined");
+    }, 900);
     return () => window.clearTimeout(timer);
   }, [answers, phase, target, turn, players, say]);
 
@@ -143,8 +145,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave }: { wide: boolea
   useEffect(() => setMuted(!sound), [sound]);
   const byId = (id: string) => players.find((player) => player.id === id);
   const staged = phase !== "waiting" && phase !== "spinning" && target !== null;
-  const myRole = deciding && target !== null && (deciding === "spinner" ? turn : target) === meIndex ? deciding : null;
-  const status = phase === "waiting" ? (turn === meIndex ? t("bottle.yourTurn") : `${players[turn].name} ${t("bottle.spins")}`) : phase === "spinning" ? t("bottle.spinning") : "";
+  const myRole: "spinner" | "target" | null = staged ? (turn === meIndex ? "spinner" : target === meIndex ? "target" : null) : null;
+  const canAnswer = deciding && myRole !== null && answers[myRole] === null;
+  const myTurn = phase === "waiting" && turn === meIndex;
 
   function handleChat(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -163,11 +166,16 @@ export function BottleGame({ wide, full, onToggleFull, onLeave }: { wide: boolea
   }
   function sendGift(index: number, gift: GiftId) {
     const player = players[index];
-    setStickers((value) => ({ ...value, [player.id]: [...(value[player.id] ?? []), gift].slice(-2) }));
-    say({ from: "me", to: player.id, gift });
     setPicked(null);
+    setFlying({ gift, to: index, moved: false });
+    window.setTimeout(() => setFlying((value) => (value ? { ...value, moved: true } : value)), 40);
+    window.setTimeout(() => {
+      setFlying(null);
+      setStickers((value) => ({ ...value, [player.id]: [...(value[player.id] ?? []), gift].slice(-2) }));
+      say({ from: "me", to: player.id, gift });
+    }, 800);
   }
-  // A curved arrow from the player who answered to the other one. A kiss is green and runs below the pair; a refusal is red and runs above it.
+  // A curved arrow from the player who answered to the other one. Green means a kiss, red a refusal.
   const arrow = (answer: boolean | null, leftToRight: boolean, drop: number) => {
     if (answer === null) return null;
     const color = answer ? "#7AC143" : "#E2401F";
@@ -183,56 +191,51 @@ export function BottleGame({ wide, full, onToggleFull, onLeave }: { wide: boolea
       </g>
     );
   };
-  // The spinner's kiss runs below the pair; every reply from the chosen player, and any refusal, runs above it.
+  // The left player's arrow arcs over the pair and the right player's arrow under it, so together they close a circle.
   const arrowLayer = (above: boolean, answer: boolean | null, leftToRight: boolean) => {
     if (answer === null) return null;
     return (
       <div aria-hidden="true" className={cn("pointer-events-none absolute inset-x-0 z-10 h-[11cqmin]", above ? "bottom-[88%]" : "top-[76%]")}>
         <svg viewBox="0 0 460 130" className={cn("h-full w-full overflow-visible", above && "-scale-y-100")}>{arrow(answer, leftToRight, 0)}</svg>
-        <span className="absolute left-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center text-[3.4cqmin] leading-none" style={{ top: above ? `${100 - (56 / 130) * 100}%` : `${(56 / 130) * 100}%` }}>{answer ? "💋" : "✋"}</span>
+        <span className="absolute left-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center text-[3.4cqmin] leading-none" style={{ top: above ? `${100 - (56 / 130) * 100}%` : `${(56 / 130) * 100}%` }}>{answer ? "💋" : <b className="text-white">✕</b>}</span>
       </div>
     );
   };
-  const stageCard = (player: Player) => (
-    <div className="flex w-[17cqmin] flex-col items-center">
-      <div className="relative aspect-square w-full overflow-hidden rounded-[12%] bg-surface-2 shadow-[0_6px_16px_rgba(0,0,0,0.45)]">
-        <img src={player.avatar} alt="" className="h-full w-full object-cover" />
-      </div>
-      <p className="mt-0.5 max-w-full truncate text-[2.7cqmin] font-semibold text-white [text-shadow:0_2px_4px_rgba(0,0,0,0.8)]">{player.me ? t("common.you") : player.name}, {player.age}</p>
-    </div>
-  );
-
   return (
     <div className={cn("flex h-full w-full bg-surface text-text", wide ? "flex-row" : "flex-col")}>
       <div className={cn("relative shrink-0 overflow-hidden bg-[#D08A3C] [background-image:radial-gradient(ellipse_at_50%_45%,rgba(255,214,140,0.75)_0%,rgba(255,190,100,0.25)_45%,rgba(120,60,10,0.35)_100%),repeating-linear-gradient(92deg,rgba(120,65,15,0.14)_0px,rgba(120,65,15,0)_3px,rgba(255,225,170,0.10)_7px,rgba(120,65,15,0.12)_11px,rgba(120,65,15,0)_19px),repeating-linear-gradient(88deg,rgba(90,45,5,0.10)_0px,rgba(90,45,5,0)_40px,rgba(90,45,5,0.08)_83px)] [container-type:size]", wide ? "h-full w-[54%]" : "aspect-square max-h-[58%] w-full")} onClick={() => setPicked(null)}>
-        <div className="absolute left-2.5 top-2.5 z-10 flex flex-col items-center text-white" title={t("bottle.myKisses")}>
+        <div className="absolute left-2.5 top-2.5 z-10 flex flex-col items-center text-white" title={t("bottle.hearts")}>
           <Heart size={36} fill="#FF6A1F" stroke="#FFFFFF" strokeWidth={1.5} />
-          <span className="text-base font-bold tabular-nums [text-shadow:0_1px_3px_rgba(0,0,0,0.6)]">{kisses.me ?? 0}</span>
+          <span className="text-base font-bold tabular-nums [text-shadow:0_1px_3px_rgba(0,0,0,0.6)]">12</span>
         </div>
-        <span className="absolute right-2.5 top-2.5 z-10 rounded-full bg-[#EE8A2B] px-3 py-1.5 text-[11px] font-bold text-white shadow-md">{t("bottle.table")} 60</span>
-        <button onClick={onLeave} aria-label={t("bottle.leave")} title={t("bottle.leave")} className={cn(round, "absolute bottom-2.5 left-2.5 z-10")}><X size={20} /></button>
+        <button onClick={onLeave} aria-label={t("bottle.leave")} title={t("bottle.leave")} className={cn(round, "absolute right-2.5 top-2.5 z-10")}><X size={20} /></button>
+        <div className="absolute bottom-2.5 left-2.5 z-10 flex flex-col items-center gap-1">
+          <span aria-hidden="true" className={cn(round, "text-lg font-bold tabular-nums", !myTurn && "opacity-60")}>{myTurn ? seconds : "⟳"}</span>
+          <span className="text-[11px] font-bold text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.7)]">{t("bottle.table")} 60</span>
+        </div>
         <div className="absolute bottom-2.5 right-2.5 z-10 flex flex-col gap-2">
           <button onClick={() => setSound(!sound)} aria-pressed={sound} aria-label={t(sound ? "videos.mute" : "videos.unmute")} title={t(sound ? "videos.mute" : "videos.unmute")} className={round}>{sound ? <Volume2 size={19} /> : <VolumeX size={19} />}</button>
           <button onClick={onToggleFull} aria-label={t("bottle.fullscreen")} title={t("bottle.fullscreen")} className={round}>{full ? <Minimize size={18} /> : <Maximize size={18} />}</button>
         </div>
 
-        <div className="pointer-events-none absolute left-1/2 top-1/2 h-[40cqmin] transition-transform duration-[3200ms] ease-[cubic-bezier(0.15,0.6,0.2,1)] motion-reduce:duration-0" style={{ transform: `translate(-50%, -50%) rotate(${rotation}deg)` }}>
+        <button type="button" disabled={!myTurn} onClick={spin} aria-label={t("bottle.spin")} className={cn("absolute left-1/2 top-1/2 h-[40cqmin] transition-transform duration-[3200ms] ease-[cubic-bezier(0.15,0.6,0.2,1)] motion-reduce:duration-0", myTurn ? "z-20 cursor-pointer" : "pointer-events-none")} style={{ transform: `translate(-50%, -50%) rotate(${rotation}deg)` }}>
           <BottleSvg className={cn("h-full drop-shadow-[0_6px_10px_rgba(0,0,0,0.45)] transition-opacity duration-300", staged && "opacity-0")} />
-        </div>
-        {status ? <p role="status" className="pointer-events-none absolute left-1/2 top-1/2 w-[52cqmin] -translate-x-1/2 -translate-y-1/2 text-center text-[4.4cqmin] font-bold leading-tight text-white [text-shadow:0_2px_6px_rgba(0,0,0,0.75)]">{status}</p> : null}
+        </button>
+        {myTurn ? <p role="status" className="pointer-events-none absolute left-1/2 top-[calc(50%+22cqmin)] z-20 -translate-x-1/2 animate-bounce whitespace-nowrap rounded-full bg-white px-[3cqmin] py-[1cqmin] text-[3.2cqmin] font-bold text-[#C2410C] shadow-lg motion-reduce:animate-none">↑ {t("bottle.clickBottle")}</p> : null}
 
         {players.map((player, index) => {
           const active = index === turn || index === target;
           return (
-            <div key={player.id} className={cn("absolute w-[17cqmin] -translate-x-1/2 -translate-y-1/2 transition-opacity", staged && active && "pointer-events-none opacity-0")} style={{ left: `${seats[index][0]}%`, top: `${seats[index][1]}%` }}>
-              <button type="button" disabled={player.me} onClick={(event) => { event.stopPropagation(); setPicked(picked === index ? null : index); }} aria-label={`${player.name}, ${player.age}`} className={cn("relative block aspect-square w-full rounded-[14%] bg-surface-2 shadow-[0_4px_10px_rgba(0,0,0,0.4)]", index === turn && phase === "waiting" ? "ring-4 ring-white" : active && phase !== "waiting" ? "ring-4 ring-white" : player.me ? "ring-2 ring-white/80" : "")}>
+            <div key={player.id} className={cn("absolute w-[17cqmin] -translate-x-1/2 -translate-y-1/2 transition-[left,top] duration-500 motion-reduce:duration-0", staged && active && "pointer-events-none z-30")} style={staged && active ? { left: `calc(50% ${index === turn ? "-" : "+"} 14.5cqmin)`, top: `${STAGE_Y}%` } : { left: `${seats[index][0]}%`, top: `${seats[index][1]}%` }}>
+              <button type="button" disabled={player.me} onClick={(event) => { event.stopPropagation(); setPicked(picked === index ? null : index); }} aria-label={`${player.name}, ${player.age}`} className={cn("relative block aspect-square w-full rounded-[14%] bg-surface-2 shadow-[0_4px_10px_rgba(0,0,0,0.4)]", active ? "ring-4 ring-white" : player.me ? "ring-2 ring-white/80" : "")}>
                 <img src={player.avatar} alt="" className="h-full w-full rounded-[14%] object-cover" />
                 {kisses[player.id] ? <span className="absolute -right-[1.2cqmin] -top-[1.2cqmin] flex h-[4.6cqmin] min-w-[4.6cqmin] items-center justify-center rounded-full bg-[#E5334B] px-1 text-[2.4cqmin] font-bold tabular-nums text-white shadow">{kisses[player.id]}</span> : null}
                 {(stickers[player.id] ?? []).map((gift, position) => <GiftArt key={`${gift}-${position}`} id={gift} className={cn("absolute -bottom-[1.6cqmin] h-[48%] w-[48%] drop-shadow", position ? "-left-[1.6cqmin]" : "-right-[1.6cqmin]")} />)}
               </button>
               <p className="mt-0.5 truncate text-center text-[2.7cqmin] font-semibold text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.8)]">{player.me ? t("common.you") : player.name}, {player.age}</p>
+              {index === turn && !staged ? <p className={cn("absolute top-full whitespace-nowrap rounded-full bg-black/45 px-[1.6cqmin] text-[2.3cqmin] font-semibold text-white", seats[index][0] > 75 ? "right-0" : seats[index][0] < 25 ? "left-0" : "left-1/2 -translate-x-1/2")}>↑ {t("bottle.spinsBottle")}</p> : null}
               {picked === index ? (
-                <div role="menu" onClick={(event) => event.stopPropagation()} className={cn("absolute z-20 flex gap-1 rounded-xl border border-border bg-surface p-1.5 shadow-lg", seats[index][1] > 60 ? "bottom-full mb-1" : "top-full mt-1", seats[index][0] > 60 ? "right-0" : "left-0")}>
+                <div role="menu" onClick={(event) => event.stopPropagation()} className={cn("absolute z-40 grid w-[232px] grid-cols-5 gap-1 rounded-xl border border-border bg-surface p-1.5 shadow-lg", seats[index][1] > 60 ? "bottom-full mb-1" : "top-full mt-1", seats[index][0] > 60 ? "right-0" : seats[index][0] < 40 ? "left-0" : "left-1/2 -translate-x-1/2")}>
                   {giftChoices.map((gift) => <button key={gift} role="menuitem" onClick={() => sendGift(index, gift)} aria-label={t("gifts.send")} className="flex h-10 w-10 items-center justify-center rounded-lg hover:bg-surface-2"><GiftArt id={gift} className="h-8 w-8" /></button>)}
                 </div>
               ) : null}
@@ -240,29 +243,27 @@ export function BottleGame({ wide, full, onToggleFull, onLeave }: { wide: boolea
           );
         })}
 
-        {phase === "waiting" && turn === meIndex ? (
-          <button onClick={spin} className="absolute left-1/2 top-[64%] z-20 flex -translate-x-1/2 items-center gap-2 rounded-full bg-[#EE8A2B] px-[5cqmin] py-[2cqmin] text-[3.6cqmin] font-bold text-white shadow-lg hover:brightness-110">{t("bottle.spin")}<span className="flex h-[5cqmin] w-[5cqmin] items-center justify-center rounded-full bg-white/25 text-[3cqmin] tabular-nums">{seconds}</span></button>
-        ) : null}
+        {flying ? <div className="pointer-events-none absolute z-40 h-[11cqmin] w-[11cqmin] -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_0_10px_rgba(255,240,150,0.95)] transition-[left,top] duration-700 ease-out" style={{ left: `${seats[flying.moved ? flying.to : meIndex][0]}%`, top: `${seats[flying.moved ? flying.to : meIndex][1]}%` }}><GiftArt id={flying.gift} className="h-full w-full" /></div> : null}
 
         {staged && target !== null ? (
-          <div className="pointer-events-none absolute left-1/2 top-[49.5%] z-30 flex w-[50cqmin] -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-[1.6cqmin]">
-            <p role="status" className="mb-[4.5cqmin] text-center text-[3.8cqmin] font-bold leading-tight text-white [text-shadow:0_2px_6px_rgba(0,0,0,0.75)]">
-              {phase === "kissed" ? t("bottle.kissed") : phase === "declined" ? t("bottle.declined") : myRole ? t("bottle.yourChoice") : deciding === "target" ? t("bottle.kissBack") : deciding === "spinner" ? `${players[turn].name} ${t("bottle.chooses")}` : ""}
+          <>
+            <p role="status" className="pointer-events-none absolute left-1/2 z-30 w-[60cqmin] -translate-x-1/2 text-center text-[3.8cqmin] font-bold leading-tight text-white [text-shadow:0_2px_6px_rgba(0,0,0,0.75)]" style={{ bottom: `calc(${100 - STAGE_Y}% + 16.6cqmin)` }}>
+              {phase === "kissed" ? t("bottle.kissed") : phase === "declined" ? t("bottle.declined") : canAnswer ? t("bottle.yourChoice") : myRole ? t("bottle.kissBack") : t("bottle.deciding")}
             </p>
-            <div className="relative flex w-[46cqmin] items-start justify-between">
-              {stageCard(players[turn])}
+            <div className="pointer-events-none absolute left-1/2 z-30 h-[21cqmin] w-[46cqmin] -translate-x-1/2 -translate-y-1/2" style={{ top: `${STAGE_Y}%` }}>
               {deciding
-                ? <span aria-label={`${seconds}`} className="mt-[4.5cqmin] w-[8cqmin] text-center text-[7cqmin] font-bold tabular-nums leading-none text-white [text-shadow:0_2px_6px_rgba(0,0,0,0.75)]">{seconds}</span>
-                : <Heart className="mt-[5cqmin] h-[7cqmin] w-[7cqmin] shrink-0" fill={phase === "kissed" ? "#FF4D6A" : "none"} stroke="#FFFFFF" strokeWidth={1.8} />}
-              {stageCard(players[target])}
-              {answers.spinner === true ? arrowLayer(false, true, true) : null}
-              {answers.spinner === false ? arrowLayer(true, false, true) : arrowLayer(true, answers.target, false)}
+                ? <span aria-label={`${seconds}`} className="absolute left-1/2 top-[22%] -translate-x-1/2 text-[7cqmin] font-bold tabular-nums leading-none text-white [text-shadow:0_2px_6px_rgba(0,0,0,0.75)]">{seconds}</span>
+                : <Heart className="absolute left-1/2 top-[24%] h-[7cqmin] w-[7cqmin] -translate-x-1/2" fill={phase === "kissed" ? "#FF4D6A" : "none"} stroke="#FFFFFF" strokeWidth={1.8} />}
+              {arrowLayer(true, answers.spinner, true)}
+              {arrowLayer(false, answers.target, false)}
             </div>
-            <div className={cn("pointer-events-auto mt-[2cqmin] flex gap-[2.5cqmin]", !myRole && "invisible")}>
-              <button onClick={() => myRole && setAnswers((value) => ({ ...value, [myRole]: false }))} className="h-[7.5cqmin] w-[20cqmin] rounded-[1.8cqmin] bg-[#E2401F] text-[3cqmin] font-bold text-white shadow-lg hover:brightness-110">{t("bottle.no")}</button>
-              <button onClick={() => myRole && setAnswers((value) => ({ ...value, [myRole]: true }))} className="h-[7.5cqmin] w-[20cqmin] rounded-[1.8cqmin] bg-[#8CC63F] text-[3cqmin] font-bold text-white shadow-lg hover:brightness-110">{t("bottle.yes")}</button>
-            </div>
-          </div>
+            {canAnswer && myRole ? (
+              <div className="absolute left-1/2 z-30 flex -translate-x-1/2 gap-[2.5cqmin]" style={{ top: `calc(${STAGE_Y}% + 14.5cqmin)` }}>
+                <button onClick={() => setAnswers((value) => ({ ...value, [myRole]: false }))} className="h-[7.5cqmin] w-[20cqmin] rounded-[1.8cqmin] bg-[#E2401F] text-[3cqmin] font-bold text-white shadow-lg hover:brightness-110">{t("bottle.no")}</button>
+                <button onClick={() => setAnswers((value) => ({ ...value, [myRole]: true }))} className="h-[7.5cqmin] w-[20cqmin] rounded-[1.8cqmin] bg-[#8CC63F] text-[3cqmin] font-bold text-white shadow-lg hover:brightness-110">{t("bottle.yes")}</button>
+              </div>
+            ) : null}
+          </>
         ) : null}
       </div>
 
