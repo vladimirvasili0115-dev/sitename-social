@@ -41,11 +41,12 @@ const giftChoices: [string, number][] = [
   ["e:🧣", 1], ["e:⛑️", 2], ["e:🤠", 2], ["e:⚓", 2], ["e:👽", 2], ["e:🐻", 2], ["e:🐱", 2], ["e:🦊", 2], ["e:🐭", 2], ["e:🐼", 2], ["e:🐞", 2], ["e:😈", 2],
   ["e:🐷", 2], ["e:🦌", 2], ["e:🎗️", 2], ["e:🎀", 2], ["e:🌸", 2], ["e:🩷", 2], ["e:🎲", 1],
 ];
-// The wheel of fortune: 12 sectors clockwise from the top. The same table (with its odds) lives in the database, which does the real draw.
-const wheelSectors: { hearts?: number; chances?: number; weight: number }[] = [
-  { hearts: 1000, weight: 3 }, { hearts: 1, weight: 2200 }, { chances: 1, weight: 1200 }, { hearts: 3, weight: 1500 }, { hearts: 100, weight: 20 }, { hearts: 1, weight: 2000 },
-  { chances: 3, weight: 200 }, { hearts: 10, weight: 300 }, { hearts: 25, weight: 80 }, { hearts: 3, weight: 1200 }, { weight: 1100 }, { hearts: 5, weight: 197 },
+// The wheel of fortune: 16 sectors clockwise from the top. The same table (with its odds) lives in the database, which does the real draw.
+const wheelSectors: { hearts?: number; chances?: number; kisses?: number; weight: number }[] = [
+  { hearts: 1000, weight: 3 }, { hearts: 1, weight: 1700 }, { kisses: 1, weight: 900 }, { hearts: 25, weight: 80 }, { hearts: 3, weight: 1300 }, { chances: 1, weight: 1000 }, { hearts: 100, weight: 20 }, { hearts: 1, weight: 1700 },
+  { kisses: 3, weight: 300 }, { hearts: 10, weight: 300 }, { weight: 900 }, { chances: 3, weight: 200 }, { hearts: 3, weight: 1100 }, { hearts: 5, weight: 197 }, { kisses: 1, weight: 200 }, { hearts: 1, weight: 100 },
 ];
+const prizeText = (item: (typeof wheelSectors)[number]) => (item.hearts ? `❤ ${item.hearts}` : item.chances ? `🎲 ${item.chances}` : item.kisses ? `💋 ${item.kisses}` : "");
 const chancePacks: [number, number][] = [[300, 900], [50, 150], [15, 45], [5, 20], [1, 5]];
 const vipPlans: [number, number][] = [[7, 300], [30, 900], [90, 2200]];
 const frames = ["#FACC15", "#F472B6", "#60A5FA", "#34D399", "#A78BFA", "#F97316", "#EF4444"];
@@ -514,15 +515,17 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       sector = wheelSectors.findIndex((item) => (roll -= item.weight) < 0);
       if (sector < 0) sector = 10;
       after = { hearts: heartsRef.current + (wheelSectors[sector].hearts ?? 0), chances: chances - 1 + (wheelSectors[sector].chances ?? 0) };
+      const won = wheelSectors[sector].kisses;
+      if (won) window.setTimeout(() => setKisses((value) => ({ ...value, me: (value.me ?? 0) + won })), 4300);
     }
     setChances((value) => value - 1);
-    setWheelTurn((current) => current - (current % 360) + 1800 + ((360 - sector * 30) % 360));
+    setWheelTurn((current) => current - (current % 360) + 1800 + ((360 - sector * 22.5) % 360));
     window.setTimeout(() => {
       heartsRef.current = after.hearts;
       setHearts(after.hearts);
       setChances(after.chances);
       setWheelPrize(sector);
-      playSound(wheelSectors[sector].hearts || wheelSectors[sector].chances ? "kiss" : "decline");
+      playSound(prizeText(wheelSectors[sector]) ? "kiss" : "decline");
       wheelLock.current = false;
       setWheelBusy(false);
     }, 4300);
@@ -814,20 +817,28 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 <div className="max-h-[84cqmin] overflow-y-auto text-white">
                   <p className="text-center text-xs">{t("bottle.wheelHint")}</p>
                   <div className="relative mx-auto my-2 aspect-square w-[min(240px,62cqmin)]">
-                    <svg viewBox="-110 -110 220 220" className="h-full w-full transition-transform duration-[4200ms] ease-[cubic-bezier(0.12,0.7,0.1,1)] motion-reduce:duration-0" style={{ transform: `rotate(${wheelTurn}deg)` }} aria-hidden="true">
-                      <circle r="108" fill="#F5B301" /><circle r="100" fill="#0E8478" />
+                    <svg viewBox="-112 -112 224 224" className="h-full w-full transition-transform duration-[4200ms] ease-[cubic-bezier(0.12,0.7,0.1,1)] motion-reduce:duration-0" style={{ transform: `rotate(${wheelTurn}deg)` }} aria-hidden="true">
+                      <defs>
+                        <radialGradient id="wh-rim" cx="0.5" cy="0.5" r="0.5"><stop offset="0.86" stopColor="#FFD84A" /><stop offset="0.93" stopColor="#F5A300" /><stop offset="1" stopColor="#C97A00" /></radialGradient>
+                        <radialGradient id="wh-a" cx="0.5" cy="0.5" r="0.5"><stop offset="0.2" stopColor="#3FD9C6" /><stop offset="1" stopColor="#14A596" /></radialGradient>
+                        <radialGradient id="wh-b" cx="0.5" cy="0.5" r="0.5"><stop offset="0.2" stopColor="#1FB5A3" /><stop offset="1" stopColor="#0C8073" /></radialGradient>
+                        <radialGradient id="wh-j" cx="0.5" cy="0.5" r="0.5"><stop offset="0.2" stopColor="#FFF1A8" /><stop offset="1" stopColor="#F5B301" /></radialGradient>
+                      </defs>
+                      <circle r="111" fill="url(#wh-rim)" /><circle r="97" fill="#0B6B61" />
                       {wheelSectors.map((item, index) => (
-                        <g key={index} transform={`rotate(${index * 30})`}>
-                          <path d="M0 0L-25.36 -94.64A98 98 0 0 1 25.36 -94.64Z" fill={index === 0 ? "#F5B301" : index % 2 ? "#19B5A5" : "#12998C"} stroke="#0B6B61" strokeWidth="0.8" />
-                          <text y="-66" textAnchor="middle" fontSize="15">{item.hearts ? "❤️" : item.chances ? "🎲" : "💨"}</text>
-                          <text y="-48" textAnchor="middle" fontSize={item.hearts && item.hearts >= 1000 ? 12 : 15} fontWeight="800" fill={index === 0 ? "#7C2D12" : "#FFFFFF"}>{item.hearts ?? item.chances ?? ""}</text>
+                        <g key={index} transform={`rotate(${index * 22.5})`}>
+                          <path d="M0 0L-18.73 -94.15A96 96 0 0 1 18.73 -94.15Z" fill={`url(#wh-${index === 0 ? "j" : index % 2 ? "a" : "b"})`} stroke="#0B6B61" strokeWidth="1" />
+                          <circle cy="-104" r="2.6" fill={index % 2 ? "#FFFFFF" : "#FFF3B0"} />
+                          <circle cy="-104" r="2.6" fill="#FFF3B0" transform="rotate(11.25)" opacity="0.55" />
+                          <text y="-70" textAnchor="middle" fontSize="17">{item.hearts ? (item.hearts >= 100 ? "💖" : "❤️") : item.chances ? "🎲" : item.kisses ? "💋" : "💨"}</text>
+                          <text y="-50" textAnchor="middle" fontSize={item.hearts && item.hearts >= 1000 ? 10.5 : 14} fontWeight="900" fill={index === 0 ? "#7C2D12" : "#FFFFFF"} stroke={index === 0 ? "none" : "#0B6B61"} strokeWidth="0.6" paintOrder="stroke">{item.hearts ?? item.chances ?? item.kisses ?? ""}</text>
                         </g>
                       ))}
-                      <circle r="16" fill="#F5B301" stroke="#FFFFFF" strokeWidth="3" /><text y="6" textAnchor="middle" fontSize="16">🤍</text>
+                      <circle r="19" fill="url(#wh-rim)" /><circle r="14" fill="#FFF7D6" stroke="#F5A300" strokeWidth="2" /><text y="6" textAnchor="middle" fontSize="15">🤍</text>
                     </svg>
                     <span aria-hidden="true" className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1 text-3xl drop-shadow">🔻</span>
                   </div>
-                  <p role="status" className="min-h-6 text-center text-sm font-bold">{wheelPrize === null ? "" : wheelSectors[wheelPrize].hearts ? `${t("bottle.wheelWon")} ❤ ${wheelSectors[wheelPrize].hearts}` : wheelSectors[wheelPrize].chances ? `${t("bottle.wheelWon")} 🎲 ${wheelSectors[wheelPrize].chances}` : t("bottle.wheelEmpty")}</p>
+                  <p role="status" className="min-h-6 text-center text-sm font-bold">{wheelPrize === null ? "" : prizeText(wheelSectors[wheelPrize]) ? `${t("bottle.wheelWon")} ${prizeText(wheelSectors[wheelPrize])}` : t("bottle.wheelEmpty")}</p>
                   <div className="mt-1 flex items-center justify-center gap-2">
                     <span className="flex items-center gap-1 rounded-full bg-black/25 px-3 py-1.5 text-sm font-bold tabular-nums">{t("bottle.chancesLabel")}: 🎲 {chances}</span>
                     <button onClick={() => { setPayNote(false); setPanel("chances"); }} aria-label={t("bottle.chances")} title={t("bottle.chances")} className="flex h-8 w-8 items-center justify-center rounded-full bg-[#8CC63F] text-lg font-black text-white hover:brightness-110">+</button>
@@ -837,10 +848,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   <details className="mt-2 rounded-lg bg-black/20 p-2 text-xs">
                     <summary className="cursor-pointer font-bold">{t("bottle.wheelOdds")}</summary>
                     <ul className="mt-1 grid grid-cols-2 gap-x-3 tabular-nums">
-                      {[...wheelSectors].map((item, index) => ({ item, index })).filter(({ item, index }) => wheelSectors.findIndex((other) => other.hearts === item.hearts && other.chances === item.chances) === index).map(({ item }) => {
-                        const total = wheelSectors.filter((other) => other.hearts === item.hearts && other.chances === item.chances).reduce((sum, other) => sum + other.weight, 0);
-                        return <li key={`${item.hearts}-${item.chances}`} className="flex justify-between"><span>{item.hearts ? `❤ ${item.hearts}` : item.chances ? `🎲 ${item.chances}` : t("bottle.wheelEmptyShort")}</span><span>{(total / 100).toFixed(2)}%</span></li>;
-                      })}
+                      {[...new Set(wheelSectors.map(prizeText))].map((label) => (
+                        <li key={label} className="flex justify-between"><span>{label || t("bottle.wheelEmptyShort")}</span><span>{(wheelSectors.filter((item) => prizeText(item) === label).reduce((sum, item) => sum + item.weight, 0) / 100).toFixed(2)}%</span></li>
+                      ))}
                     </ul>
                   </details>
                 </div>
