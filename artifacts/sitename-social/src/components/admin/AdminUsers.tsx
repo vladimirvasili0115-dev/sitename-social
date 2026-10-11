@@ -157,6 +157,7 @@ export function AdminUsers({ owner }: { owner: boolean }) {
                   ) : null}
                   {coinsFor === user.id ? (
                     <form onSubmit={(event) => handleCoins(event, user.id)} className="mt-3 flex flex-wrap items-center gap-2">
+                      <span className={`flex h-10 items-center gap-1.5 rounded-xl px-3 text-xs font-bold ${grantKind === "hearts" ? "bg-[#F4511E] text-white" : "bg-surface-2 text-text"}`}>{grantKind === "hearts" ? <Heart size={14} fill="currentColor" /> : <Coins size={14} />}{t(grantKind === "hearts" ? "admin.hearts" : "admin.coins")}</span>
                       <input type="number" value={amount} onChange={(event) => setAmount(event.target.value)} min={-1000000} max={1000000} step={1} aria-label={t("admin.coinsAmount")} className="h-10 w-32 rounded-xl border border-border bg-surface-2 px-3 text-sm tabular-nums text-text outline-none focus:border-accent" />
                       <button type="submit" className="h-10 rounded-xl bg-accent px-4 text-xs font-semibold text-bg">{t("admin.coinsApply")}</button>
                       <p className="basis-full text-[11px] text-muted">{t(grantKind === "hearts" ? "admin.heartsHint" : "admin.coinsHint")}</p>

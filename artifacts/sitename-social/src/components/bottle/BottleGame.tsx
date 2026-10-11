@@ -277,7 +277,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         let data = await bottleSync(lastChat.current);
         if (!data) { await bottleJoin(); data = await bottleSync(lastChat.current); }
         if (!alive || !data) return;
-        const fresh = data.chat.filter((item) => item.id > lastChat.current);
+        const fresh = data.chat.filter((item) => item.id > lastChat.current && item.kind !== "wheel");
         if (fresh.length) {
           lastChat.current = fresh[fresh.length - 1].id;
           const who = (id: string | null) => (id === data!.me ? "me" : id ?? "");
@@ -732,7 +732,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   ) : null}
                 </div>
                 <div className="flex min-w-0 flex-1 flex-col gap-1 p-3 text-[#1F2937]">
-                  <p className="flex items-center gap-2 text-sm font-bold tabular-nums text-[#DC2626]"><span aria-hidden="true">💋</span>{(kisses[player.id] ?? 0).toLocaleString("az")}<span className="sr-only">{t("bottle.statKisses")}</span></p>
+                  <p className="flex items-center gap-2 text-sm font-bold tabular-nums text-[#DC2626]"><span aria-hidden="true">💋</span>{(online ? net?.seats.find((seat) => seat.id === (player.me ? net.me : player.id))?.total ?? 0 : kisses[player.id] ?? 0).toLocaleString("az")}<span className="sr-only">{t("bottle.statKisses")}</span></p>
                   <p className="flex items-center gap-2 text-sm font-bold tabular-nums text-[#C0399A]"><span aria-hidden="true">🎵</span>{(((picked + 3) * 7919) % 900).toLocaleString("az")}<span className="sr-only">{t("bottle.statSongs")}</span></p>
                   <p className="flex items-center gap-2 text-sm font-bold tabular-nums text-[#EA580C]"><span aria-hidden="true">🎁</span>{(((picked + 5) * 104729) % 600).toLocaleString("az")}<span className="sr-only">{t("bottle.statGifts")}</span></p>
                   <div className="my-1 border-t border-[#E5E7EB]" />
@@ -839,6 +839,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                     <span aria-hidden="true" className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1 text-3xl drop-shadow">🔻</span>
                   </div>
                   <p role="status" className="min-h-6 text-center text-sm font-bold">{wheelPrize === null ? "" : prizeText(wheelSectors[wheelPrize]) ? `${t("bottle.wheelWon")} ${prizeText(wheelSectors[wheelPrize])}` : t("bottle.wheelEmpty")}</p>
+                  {wheelPrize !== null && wheelSectors[wheelPrize].kisses ? <p className="text-center text-xs">{t("bottle.wheelKissNote")}</p> : null}
                   <div className="mt-1 flex items-center justify-center gap-2">
                     <span className="flex items-center gap-1 rounded-full bg-black/25 px-3 py-1.5 text-sm font-bold tabular-nums">{t("bottle.chancesLabel")}: 🎲 {chances}</span>
                     <button onClick={() => { setPayNote(false); setPanel("chances"); }} aria-label={t("bottle.chances")} title={t("bottle.chances")} className="flex h-8 w-8 items-center justify-center rounded-full bg-[#8CC63F] text-lg font-black text-white hover:brightness-110">+</button>

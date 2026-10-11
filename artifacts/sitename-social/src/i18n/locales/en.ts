@@ -77,5 +77,6 @@ const en: Record<keyof typeof az, string> = {
   "bottle.dmMinimize":"Minimize","bottle.dmExpand":"Expand",
   "bottle.dmResize":"Resize (drag)",
   "bottle.wheel":"Wheel of fortune","bottle.chances":"Chance shop","bottle.wheelHint":"Press Spin to start the Wheel of fortune and catch your prize!","bottle.wheelSpin":"Spin","bottle.chancesLabel":"Chances","bottle.wheelWon":"You won:","bottle.wheelEmpty":"Nothing this time. Try again!","bottle.wheelEmptyShort":"Nothing","bottle.wheelWinner":"Winner","bottle.wheelOdds":"Prize odds","bottle.wheelBack":"← Back to the wheel",
+  "bottle.wheelChat":"won on the Wheel of fortune:","bottle.wheelKissNote":"The kisses were added to the kiss count in your profile",
 };
 export default en;

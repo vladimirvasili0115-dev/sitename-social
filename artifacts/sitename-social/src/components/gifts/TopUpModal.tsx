@@ -23,13 +23,15 @@ export function TopUpModal({ onPay, onClose }: { onPay: (pack: CoinPackage) => v
   const pack = coinPackages.find((item) => item.id === packId) ?? coinPackages[0];
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
+      if (event.key !== "Escape") return;
+      event.stopPropagation(); // when opened on top of the game, Escape closes only this window
+      onClose();
     };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
+    document.addEventListener("keydown", onKey, true);
+    return () => document.removeEventListener("keydown", onKey, true);
   }, [onClose]);
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[color-mix(in_srgb,var(--bg)_82%,transparent)] sm:items-center sm:p-6" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+    <div className="fixed inset-0 z-[70] flex items-end justify-center bg-[color-mix(in_srgb,var(--bg)_82%,transparent)] sm:items-center sm:p-6" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
       <Card role="dialog" aria-modal="true" aria-label={t("gifts.topUp")} className="flex max-h-[94dvh] w-full max-w-[520px] flex-col rounded-b-none sm:rounded-b-card">
         <div className="flex items-center justify-between border-b border-border px-5 py-3">
           <h2 className="text-base font-semibold">{t("gifts.topUp")}</h2>
