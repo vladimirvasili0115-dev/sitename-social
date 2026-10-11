@@ -8,7 +8,6 @@ import { useTranslation } from "@/i18n/useTranslation";
 import { GiftArt } from "@/components/gifts/GiftArt";
 import { useProfile } from "@/components/profile/useProfile";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/lib/supabase";
 import { BottleSvg, WaterBottleSvg, WoodTable } from "./BottleArt";
 import { playSound, setVolume } from "./sound";
 
@@ -265,16 +264,39 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     say({ from: "me", text: draft.trim().slice(0, 200) });
     setDraft("");
   }
+  // The site is a static export (no server), so YouTube is asked straight from the browser.
+  // The key is public by design: in Google Cloud it must be restricted to this site's address and to "YouTube Data API v3".
   async function loadTracks(search: string) {
-    setTrackState("loading");
+    const key = process.env.NEXT_PUBLIC_YOUTUBE_API_KEY;
     setTracks([]);
+    if (!key) return setTrackState("nokey");
+    const cacheKey = `bottle-yt:${search.toLowerCase()}`;
     try {
-      const token = supabase ? (await supabase.auth.getSession()).data.session?.access_token : null;
-      const response = await fetch(`/api/youtube${search ? `?q=${encodeURIComponent(search)}` : ""}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
-      const body = (await response.json()) as { videos?: Track[]; error?: string };
-      if (!response.ok) return setTrackState(body.error === "nokey" ? "nokey" : "fail");
-      setTracks(body.videos ?? []);
+      const cached = JSON.parse(window.sessionStorage.getItem(cacheKey) ?? "null") as Track[] | null;
+      if (cached) { setTracks(cached); return setTrackState("idle"); }
+    } catch { /* no cache */ }
+    setTrackState("loading");
+    const api = "https://www.googleapis.com/youtube/v3";
+    const clock = (iso: string) => {
+      const part = /PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/.exec(iso);
+      if (!part) return "";
+      const [h, m, sec] = [Number(part[1] ?? 0), Number(part[2] ?? 0), Number(part[3] ?? 0)];
+      return `${h ? `${h}:${String(m).padStart(2, "0")}` : m}:${String(sec).padStart(2, "0")}`;
+    };
+    try {
+      let ids = "";
+      if (search) {
+        const found = await fetch(`${api}/search?part=id&type=video&videoEmbeddable=true&videoCategoryId=10&maxResults=12&q=${encodeURIComponent(search)}&key=${key}`);
+        if (!found.ok) return setTrackState("fail");
+        ids = (((await found.json()) as { items?: { id: { videoId: string } }[] }).items ?? []).map((item) => item.id.videoId).join(",");
+        if (!ids) return setTrackState("idle");
+      }
+      const details = await fetch(search ? `${api}/videos?part=snippet,contentDetails&id=${ids}&key=${key}` : `${api}/videos?part=snippet,contentDetails&chart=mostPopular&videoCategoryId=10&regionCode=AZ&maxResults=16&key=${key}`);
+      if (!details.ok) return setTrackState("fail");
+      const list = (((await details.json()) as { items?: { id: string; snippet: { title: string }; contentDetails: { duration: string } }[] }).items ?? []).map((item) => ({ id: item.id, title: item.snippet.title, duration: clock(item.contentDetails.duration) }));
+      setTracks(list);
       setTrackState("idle");
+      try { window.sessionStorage.setItem(cacheKey, JSON.stringify(list)); } catch { /* storage is full or blocked */ }
     } catch {
       setTrackState("fail");
     }
