@@ -8,7 +8,7 @@ import { useTranslation } from "@/i18n/useTranslation";
 import { GiftArt } from "@/components/gifts/GiftArt";
 import { useProfile } from "@/components/profile/useProfile";
 import { cn } from "@/lib/utils";
-import { BottleSvg, WoodTable } from "./BottleArt";
+import { BottleSvg, WaterBottleSvg, WoodTable } from "./BottleArt";
 import { playSound, setVolume } from "./sound";
 
 type Player = { id: string; name: string; age: number; female: boolean; avatar: string; me?: boolean };
@@ -36,6 +36,8 @@ const giftChoices: [string, number][] = [
 ];
 const vipPlans: [number, number][] = [[7, 300], [30, 900], [90, 2200]];
 const frames = ["#FACC15", "#F472B6", "#60A5FA", "#34D399", "#A78BFA", "#F97316", "#EF4444"];
+// Put the channel link here (for example "https://t.me/kanal_adi"); while empty, the settings row says it is not set yet.
+const TELEGRAM_URL = "";
 const SONG_PRICE = { video: 5, mp3: 3 };
 const lockedGifts: [string, number, number][] = [["e:💎", 4, -1], ["e:🦚", 4, -1], ["e:🎻", 4, -1], ["e:🦄", 5, 15000], ["e:🏰", 5, 15000], ["e:🚀", 8, 23000], ["e:🛥️", 8, 23000]];
 function Gift({ id, className }: { id: string; className?: string }) {
@@ -85,6 +87,12 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [giftNote, setGiftNote] = useState<string | null>(null);
   const [card, setCard] = useState(false);
   const [vip, setVip] = useState(false);
+  const [doubleUntil, setDoubleUntil] = useState(0);
+  const doubleRef = useRef(0);
+  const jumpRef = useRef(false);
+  const [jump, setJump] = useState(false);
+  const [muted, setMutedIds] = useState<string[]>([]);
+  const [flagMenu, setFlagMenu] = useState(false);
   const [songFor, setSongFor] = useState<number | null>(null);
   const [songKind, setSongKind] = useState<"video" | "mp3">("video");
   const [songFile, setSongFile] = useState<File | null>(null);
@@ -97,7 +105,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [volume, setVolumeLevel] = useState(80);
   const [music, setMusic] = useState(60);
   const [accept, setAccept] = useState(true);
-  const [panel, setPanel] = useState<"settings" | "top" | "rules" | "shop" | "menu" | "vip" | "bottles" | "frames" | "achievements" | null>(null);
+  const [panel, setPanel] = useState<"settings" | "top" | "rules" | "shop" | "menu" | "vip" | "bottles" | "frames" | "achievements" | "boosters" | null>(null);
   const [topTab, setTopTab] = useState<"league" | "daily" | "weekly">("league");
   const [sent, setSent] = useState<Record<string, number>>({});
   const [skin, setSkin] = useState(0);
@@ -118,7 +126,12 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const say = useCallback((line: Omit<Line, "id">) => setLines((list) => [...list.slice(-40), { ...line, id: lineId.current++ }]), []);
   const nextTurn = useCallback(() => {
     setTarget(null);
-    setTurn((current) => (current + 1) % players.length);
+    setTurn((current) => {
+      if (!jumpRef.current) return (current + 1) % players.length;
+      jumpRef.current = false;
+      setJump(false);
+      return meIndex;
+    });
     setPhase("waiting");
   }, [players.length]);
 
@@ -176,7 +189,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (phase !== "choice" || target === null || answers.spinner === null || answers.target === null) return;
     const [a, b] = [players[turn], players[target]];
     const timer = window.setTimeout(() => {
-      setKisses((value) => ({ ...value, ...(answers.spinner ? { [b.id]: (value[b.id] ?? 0) + 1 } : {}), ...(answers.target ? { [a.id]: (value[a.id] ?? 0) + 1 } : {}) }));
+      const gain = (id: string) => (id === "me" && Date.now() < doubleRef.current ? 2 : 1);
+      setKisses((value) => ({ ...value, ...(answers.spinner ? { [b.id]: (value[b.id] ?? 0) + gain(b.id) } : {}), ...(answers.target ? { [a.id]: (value[a.id] ?? 0) + gain(a.id) } : {}) }));
       if (answers.spinner) say({ from: a.id, to: b.id });
       if (answers.target) say({ from: b.id, to: a.id });
       const both = answers.spinner && answers.target;
@@ -225,7 +239,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     return true;
   };
   const topIds = new Set(players.map((player) => ({ id: player.id, count: kisses[player.id] ?? 0 })).filter((item) => item.count > 0).sort((a, b) => b.count - a.count).slice(0, 3).map((item) => item.id));
-  const skinFilter = (n: number) => (n ? `hue-rotate(${n * 12}deg) saturate(${n % 3 === 0 ? 1.5 : 1.1}) brightness(${n % 2 ? 1 : 1.12})` : undefined);
+  const skinFilter = (n: number) => (n % 15 ? `hue-rotate(${(n % 15) * 24}deg) saturate(${n % 3 === 0 ? 1.4 : 1.1})` : undefined);
+  const SkinBottle = skin >= 15 ? WaterBottleSvg : BottleSvg;
   const skinPrice = (n: number) => (n ? 3 + Math.floor(n / 5) * 2 : 0);
   const ranking = players.map((player) => ({ player, count: kisses[player.id] ?? 0 })).sort((a, b) => b.count - a.count);
   const row = "flex min-h-11 w-full items-center gap-3 rounded-lg px-2 text-left text-sm text-[#1F2937] hover:bg-black/5";
@@ -348,7 +363,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         </div>
 
         <button type="button" disabled={staged} onClick={(event) => { event.stopPropagation(); if (myTurn) return spin(); setWaitNote(true); window.setTimeout(() => setWaitNote(false), 1800); }} aria-label={t("bottle.spin")} className={cn("absolute h-[30cqmin] transition-transform duration-[3200ms] ease-[cubic-bezier(0.15,0.6,0.2,1)] motion-reduce:duration-0", staged ? "pointer-events-none" : myTurn ? "z-20 cursor-pointer" : "cursor-default")} style={{ left: `${CENTER_X}%`, top: `${STAGE_Y}%`, transform: `translate(-50%, -50%) rotate(${rotation}deg)`, filter: skinFilter(skin) }}>
-          <BottleSvg className={cn("h-full drop-shadow-[0_6px_10px_rgba(0,0,0,0.45)] transition-opacity duration-700", staged && "opacity-0")} />
+          <SkinBottle className={cn("h-full drop-shadow-[0_6px_10px_rgba(0,0,0,0.45)] transition-opacity duration-700", staged && "opacity-0")} />
         </button>
         {myTurn ? <div className="pointer-events-none absolute z-20 -translate-x-1/2 -translate-y-1/2" style={{ left: `${CENTER_X}%`, top: `${STAGE_Y}%` }}><p role="status" className="animate-bounce whitespace-nowrap rounded-full bg-white px-[3cqmin] py-[1cqmin] text-[3.2cqmin] font-bold text-[#C2410C] shadow-lg motion-reduce:animate-none">{t("bottle.clickBottle")}</p></div> : null}
 
@@ -359,7 +374,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           const active = index === turn || index === target;
           return (
             <div key={player.id} className={cn("absolute w-[17cqmin] -translate-x-1/2 -translate-y-1/2 transition-[left,top] duration-[1100ms] ease-in-out motion-reduce:duration-0", staged && active ? "pointer-events-none z-30" : index === turn && "z-10")} style={staged && active ? { left: `calc(${CENTER_X}% ${index === turn ? "-" : "+"} 12.5cqmin)`, top: `${STAGE_Y}%` } : { left: `${seats[index][0]}%`, top: `${seats[index][1]}%` }}>
-              <button type="button" disabled={player.me} onClick={(event) => { event.stopPropagation(); if (dedicate) { setBadLink(false); setSongFile(null); setSongFor(index); return; } setGiftNote(null); setCardNote(null); setCard(picked !== index); setPicked(picked === index ? null : index); }} aria-label={`${player.name}, ${player.age}`} className={cn("relative block aspect-square w-full rounded-[14%] bg-surface-2 shadow-[0_4px_10px_rgba(0,0,0,0.4)]", staged && index === target ? "ring-[0.9cqmin] ring-[#FFE2A8]" : active ? "ring-4 ring-white" : picked === index ? "ring-4 ring-[#8CC63F]" : player.me ? "ring-2 ring-white/80" : "")}>
+              <button type="button" disabled={player.me} onClick={(event) => { event.stopPropagation(); if (dedicate) { setBadLink(false); setSongFile(null); setSongFor(index); return; } setGiftNote(null); setCardNote(null); setFlagMenu(false); setCard(picked !== index); setPicked(picked === index ? null : index); }} aria-label={`${player.name}, ${player.age}`} className={cn("relative block aspect-square w-full rounded-[14%] bg-surface-2 shadow-[0_4px_10px_rgba(0,0,0,0.4)]", staged && index === target ? "ring-[0.9cqmin] ring-[#FFE2A8]" : active ? "ring-4 ring-white" : picked === index ? "ring-4 ring-[#8CC63F]" : player.me ? "ring-2 ring-white/80" : "")}>
                 <img src={player.avatar} alt="" className="h-full w-full rounded-[14%] object-cover" style={player.me && frame ? { boxShadow: `0 0 0 0.9cqmin ${frame}, 0 0 2.4cqmin ${frame}` } : undefined} />
                 {dedicate && !player.me ? <span className="absolute inset-0 z-10 flex items-center justify-center rounded-[14%] bg-black/35"><span className="flex h-[7cqmin] w-[7cqmin] items-center justify-center rounded-full bg-[#8CC63F] text-[5cqmin] font-black leading-none text-white shadow">+</span></span> : null}
                 {topIds.has(player.id) ? <span className="absolute -left-[1.2cqmin] -top-[1.2cqmin] rounded bg-[#FACC15] px-[0.8cqmin] text-[2.2cqmin] font-black leading-[1.5] text-[#713F12] shadow">TOP</span> : null}
@@ -407,7 +422,15 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 <div className="relative aspect-square w-1/2 shrink-0 overflow-hidden rounded-l-2xl bg-[#E5E7EB]">
                   <img src={player.avatar} alt="" className="h-full w-full object-cover" />
                   <p className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent px-8 pb-2 pt-6 text-center text-sm font-bold text-white">{player.name}, {player.age}</p>
-                  <button onClick={() => setCardNote(t("bottle.reportSent"))} aria-label={t("bottle.report")} title={t("bottle.report")} className="absolute bottom-1.5 right-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-[#111827] hover:bg-white"><Flag size={14} /></button>
+                  <button onClick={() => setFlagMenu(!flagMenu)} aria-expanded={flagMenu} aria-label={t("bottle.more")} title={t("bottle.more")} className="absolute bottom-1.5 right-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-[#111827] hover:bg-white"><Flag size={14} /></button>
+                  {flagMenu ? (
+                    <div role="menu" className="absolute bottom-10 right-1.5 z-10 w-44 overflow-hidden rounded-lg bg-white py-1 text-left text-xs font-semibold text-[#1F2937] shadow-xl">
+                      <button role="menuitem" onClick={() => { setMutedIds((list) => (list.includes(player.id) ? list.filter((id) => id !== player.id) : [...list, player.id])); setFlagMenu(false); setCardNote(t(muted.includes(player.id) ? "bottle.unrejected" : "bottle.rejected")); }} className="block w-full px-3 py-2 text-left hover:bg-black/5">{t(muted.includes(player.id) ? "bottle.unreject" : "bottle.reject")}</button>
+                      <button role="menuitem" onClick={() => { setFlagMenu(false); setCardNote(t("bottle.reportSent")); }} className="block w-full px-3 py-2 text-left hover:bg-black/5">{t("bottle.report")}</button>
+                      <button role="menuitem" onClick={() => { setFlagMenu(false); setCardNote(t("bottle.friendSent")); }} className="block w-full px-3 py-2 text-left hover:bg-black/5">{t("bottle.addFriend")}</button>
+                      <Link role="menuitem" href="/friends" className="block px-3 py-2 hover:bg-black/5">{t("bottle.myFriends")}</Link>
+                    </div>
+                  ) : null}
                 </div>
                 <div className="flex min-w-0 flex-1 flex-col gap-1 p-3 text-[#1F2937]">
                   <p className="flex items-center gap-2 text-sm font-bold tabular-nums text-[#DC2626]"><span aria-hidden="true">💋</span>{(kisses[player.id] ?? 0).toLocaleString("az")}<span className="sr-only">{t("bottle.statKisses")}</span></p>
@@ -496,6 +519,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   <label className={row}><Music size={20} className="w-6 shrink-0 text-[#EC4899]" /><span className="flex-1">{t("bottle.music")}</span><input type="range" min={0} max={100} value={music} onChange={(event) => setMusic(Number(event.target.value))} className="w-24 accent-[#8CC63F]" /></label>
                   <button onClick={invite} className={row}><UserPlus size={20} className="w-6 text-[#8CC63F]" />{copied ? t("bottle.copied") : t("bottle.invite")}</button>
                   <Link href="/friends" className={row}><Users size={20} className="w-6 text-[#3B82F6]" />{t("bottle.myFriends")}</Link>
+                  {TELEGRAM_URL ? <a href={TELEGRAM_URL} target="_blank" rel="noopener noreferrer" className={row}><SendHorizontal size={20} className="w-6 text-[#229ED9]" />{t("bottle.telegram")}</a> : <button onClick={() => setCopied(false)} disabled className={cn(row, "opacity-60")}><SendHorizontal size={20} className="w-6 text-[#229ED9]" /><span>{t("bottle.telegram")}<span className="block text-[11px] text-[#6B7280]">{t("bottle.telegramSoon")}</span></span></button>}
                   <Link href="/settings" className={row}><UserRoundCog size={20} className="w-6 text-[#3B82F6]" />{t("bottle.profileSettings")}</Link>
                 </div>
               ) : panel === "top" ? (
@@ -525,6 +549,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   <button onClick={() => { setTopTab("league"); setPanel("top"); }} className={row}><span aria-hidden="true" className="w-6 text-center text-lg">📊</span>{t("bottle.rating")}</button>
                   <button onClick={() => { setPayNote(false); setPanel("bottles"); }} className={row}><span aria-hidden="true" className="w-6 text-center text-lg">🍾</span>{t("bottle.bottles")}</button>
                   <button onClick={() => { setPayNote(false); setPanel("frames"); }} className={row}><span aria-hidden="true" className="w-6 text-center text-lg">🖼️</span>{t("bottle.frames")}</button>
+                  <button onClick={() => { setPayNote(false); setPanel("boosters"); }} className={row}><span aria-hidden="true" className="w-6 text-center text-lg">⚡</span>{t("bottle.boosters")}</button>
                   <button onClick={() => setPanel("rules")} className={row}><span aria-hidden="true" className="w-6 text-center text-lg">📖</span>{t("bottle.rules")}</button>
                 </div>
               ) : panel === "achievements" ? (
@@ -549,7 +574,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                       return (
                         <li key={n}>
                           <button onClick={() => { if (owned) return setSkin(n); if (!pay(skinPrice(n))) return setPayNote(true); setOwnedSkins((list) => [...list, n]); setSkin(n); }} aria-pressed={skin === n} aria-label={`${t("bottle.bottles")} ${n + 1}`} className={cn("flex w-full flex-col items-center rounded-lg border-2 bg-[#FDF3E1] py-1", skin === n ? "border-[#8CC63F]" : "border-transparent")}>
-                            <span className="h-12" style={{ filter: skinFilter(n) }}><BottleSvg className="h-full" /></span>
+                            <span className="h-12" style={{ filter: skinFilter(n) }}>{n >= 15 ? <WaterBottleSvg className="h-full" /> : <BottleSvg className="h-full" />}</span>
                             <span className="flex items-center gap-0.5 text-[10px] font-bold tabular-nums text-[#7C2D12]">{owned ? "✓" : <><Heart size={10} fill="#F4511E" stroke="none" />{skinPrice(n)}</>}</span>
                           </button>
                         </li>
@@ -557,6 +582,20 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                     })}
                   </ul>
                   {payNote ? <p role="status" className="mt-2 rounded-lg bg-[#FEF3C7] p-2 text-center text-xs font-semibold text-[#92400E]">{t("bottle.noHearts")}</p> : null}
+                </div>
+              ) : panel === "boosters" ? (
+                <div className="space-y-2 text-[#1F2937]">
+                  <div className="flex items-center gap-2 rounded-xl bg-[#FFF7ED] p-2">
+                    <span aria-hidden="true" className="text-2xl">💋</span>
+                    <p className="min-w-0 flex-1 text-xs"><b className="block text-sm">{t("bottle.boostDouble")}</b>{t("bottle.boostDoubleText")}</p>
+                    <button disabled={Date.now() < doubleUntil} onClick={() => { if (!pay(5)) return setPayNote(true); doubleRef.current = Date.now() + 600_000; setDoubleUntil(doubleRef.current); }} className="h-8 shrink-0 rounded-md bg-[#8CC63F] px-2.5 text-xs font-bold text-white disabled:bg-[#9CA3AF]">{Date.now() < doubleUntil ? "✓" : "❤ 5"}</button>
+                  </div>
+                  <div className="flex items-center gap-2 rounded-xl bg-[#FFF7ED] p-2">
+                    <span aria-hidden="true" className="text-2xl">⏩</span>
+                    <p className="min-w-0 flex-1 text-xs"><b className="block text-sm">{t("bottle.boostJump")}</b>{t("bottle.boostJumpText")}</p>
+                    <button disabled={jump} onClick={() => { if (!pay(3)) return setPayNote(true); jumpRef.current = true; setJump(true); }} className="h-8 shrink-0 rounded-md bg-[#8CC63F] px-2.5 text-xs font-bold text-white disabled:bg-[#9CA3AF]">{jump ? "✓" : "❤ 3"}</button>
+                  </div>
+                  {payNote ? <p role="status" className="rounded-lg bg-[#FEF3C7] p-2 text-center text-xs font-semibold text-[#92400E]">{t("bottle.noHearts")}</p> : null}
                 </div>
               ) : panel === "frames" ? (
                 <div>
@@ -617,7 +656,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           </div>
         ) : null}
         <div ref={listRef} className={cn("min-h-0 flex-1 space-y-2 overflow-y-auto p-3", picked !== null && "hidden")}>
-          {lines.map((line) => {
+          {lines.filter((line) => !line.text || !muted.includes(line.from)).map((line) => {
             const from = byId(line.from);
             const to = line.to ? byId(line.to) : null;
             if (!from) return null;

@@ -25,6 +25,29 @@ export function BottleSvg({ className }: { className?: string }) {
   );
 }
 
+// A plain plastic water bottle (no brand): used for the "local waters" bottle set.
+export function WaterBottleSvg({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 66 200" aria-hidden="true" className={className}>
+      <defs>
+        <linearGradient id="wb-body" x1="0" x2="1"><stop offset="0" stopColor="#8FCBEA" /><stop offset="0.35" stopColor="#E6F6FF" /><stop offset="0.7" stopColor="#B5DDF3" /><stop offset="1" stopColor="#7BBBE0" /></linearGradient>
+        <linearGradient id="wb-label" x1="0" x2="1"><stop offset="0" stopColor="#1D6FB8" /><stop offset="0.5" stopColor="#3D9BE0" /><stop offset="1" stopColor="#185C9B" /></linearGradient>
+      </defs>
+      <ellipse cx="33" cy="194" rx="25" ry="4" fill="#5A2E05" opacity="0.25" />
+      <path d="M25 22h16v16c0 8 15 14 15 32v112c0 7-4 11-11 11H21c-7 0-11-4-11-11V70c0-18 15-24 15-32z" fill="url(#wb-body)" stroke="#5FA6CF" strokeWidth="1.200" />
+      <rect x="23" y="6" width="20" height="14" rx="3" fill="#1D6FB8" stroke="#124C82" strokeWidth="1" />
+      <path d="M27 7v12M31 7v12M35 7v12M39 7v12" stroke="#124C82" strokeWidth="0.800" opacity="0.6" />
+      <rect x="23.500" y="20" width="19" height="3.500" rx="1.500" fill="#D5EEFB" stroke="#5FA6CF" strokeWidth="0.800" />
+      <path d="M10 92h46M10 150h46M10 162h46M10 174h46" stroke="#5FA6CF" strokeWidth="1.200" opacity="0.55" />
+      <rect x="10" y="98" width="46" height="46" fill="url(#wb-label)" />
+      <path d="M18 134l10-18 6 9 5-7 9 16z" fill="#FFFFFF" opacity="0.95" />
+      <path d="M10 138c10-5 16 4 23 0s14-4 23 0v6H10z" fill="#BFE6FF" />
+      <path d="M16 60c-2 8-2 18-2 28" stroke="#FFFFFF" strokeWidth="3" strokeLinecap="round" fill="none" opacity="0.8" />
+      <path d="M15 152v30" stroke="#FFFFFF" strokeWidth="2.500" strokeLinecap="round" fill="none" opacity="0.7" />
+    </svg>
+  );
+}
+
 // The table top: warm honey wood with a soft light in the middle and flowing grain.
 export function WoodTable({ className }: { className?: string }) {
   return (
