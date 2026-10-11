@@ -9,7 +9,7 @@ import { GiftArt } from "@/components/gifts/GiftArt";
 import { useProfile } from "@/components/profile/useProfile";
 import { cn } from "@/lib/utils";
 import { BottleSvg, WaterBottleSvg, WoodTable } from "./BottleArt";
-import { playSound, setVolume } from "./sound";
+import { playGiftSound, playSound, setVolume } from "./sound";
 import { supabase } from "@/lib/supabase";
 import { bottleAnswer, bottleJoin, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState } from "@/lib/bottleSync";
 
@@ -452,10 +452,12 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     setHearts(heartsRef.current);
     if (online) void bottleSpend(price);
     const key = flyId.current++;
+    playGiftSound(gift, "send");
     setFlying((list) => [...list, { key, gift, to: index, moved: false }]);
     window.setTimeout(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))), 40);
     window.setTimeout(() => {
       setFlying((list) => list.filter((item) => item.key !== key));
+      playGiftSound(gift, "land");
       setStickers((value) => ({ ...value, [player.id]: [...(value[player.id] ?? []), gift].slice(-2) }));
       say({ from: "me", to: player.id, gift });
     }, 3100);
