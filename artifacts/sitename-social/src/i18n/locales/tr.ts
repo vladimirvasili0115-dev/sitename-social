@@ -81,5 +81,7 @@ const tr: Record<keyof typeof az, string> = {
   "bottle.statSmiles":"gülen yüz","bottle.wheelSmileNote":"Gülen yüzler profilindeki sayıya eklendi",
   "bottle.zodiac":"Burç","bottle.sign0":"Oğlak","bottle.sign1":"Kova","bottle.sign2":"Balık","bottle.sign3":"Koç","bottle.sign4":"Boğa","bottle.sign5":"İkizler","bottle.sign6":"Yengeç","bottle.sign7":"Aslan","bottle.sign8":"Başak","bottle.sign9":"Terazi","bottle.sign10":"Akrep","bottle.sign11":"Yay",
   "bottle.tables":"Masayı değiştir","bottle.roomRandom":"Rastgele seçilmiş masa!","bottle.roomFriends":"Arkadaşlar ve tanıdıklar","bottle.roomNoFriends":"Şu anda oyunda arkadaşın yok","bottle.roomList":"Masalar","bottle.roomHere":"buradasın","bottle.roomFullTag":"dolu","bottle.roomFull1":"","bottle.roomFull2":"numaralı oda dolu. Bekleyin,","bottle.roomFirst":"ilk sırada sizsiniz.","bottle.roomPlace":"sıradaki yeriniz:","bottle.roomCancel":"Beklemekten vazgeç","bottle.roomGone":"Bu masa artık kapandı",
+  "profile.cropTitle":"Küçük resim seçimi","profile.cropZoom":"Yakınlaştır","profile.cropHint":"Fotoğrafı sürükleyerek yerini ayarla. Dairenin içi profilinde görünecek.",
+  "profile.cropCancel":"İptal",
 };
 export default tr;

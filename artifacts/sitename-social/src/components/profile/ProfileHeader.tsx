@@ -1,9 +1,10 @@
 "use client";
 import { VerifiedMark, useVerified } from "@/components/ui/VerifiedMark";
-import type { ChangeEvent } from "react";
+import { useState, type ChangeEvent } from "react";
 import { Camera, EyeOff, MapPin, Pencil } from "lucide-react";
 import type { ProfileDetails, ProfileEdits, User } from "@/types";
 import { resizeImage } from "@/lib/profile";
+import { AvatarCropper } from "./AvatarCropper";
 import { useTranslation } from "@/i18n/useTranslation";
 import type { TranslationKey } from "@/i18n/LanguageProvider";
 import { Button } from "@/components/ui/Button";
@@ -17,18 +18,22 @@ export function ProfileHeader({ user, details, stats, onUpdate, onEdit }: Props)
   const { t } = useTranslation();
   const official = useVerified(user.id) === "official";
   const { hidesOnline } = useInvisible();
+  const [cropping, setCropping] = useState<string | null>(null);
   const pick = (field: "avatar" | "cover", size: number) => async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
     try {
-      onUpdate({ [field]: await resizeImage(file, size) });
+      // A new profile photo is framed by the user first; the cover is used as it is.
+      if (field === "avatar") setCropping(await resizeImage(file, 1200));
+      else onUpdate({ [field]: await resizeImage(file, size) });
     } catch {
       // Unreadable image: keep the current one.
     }
   };
   return (
     <Card className="overflow-hidden">
+      {cropping ? <AvatarCropper src={cropping} onCancel={() => setCropping(null)} onSave={(avatar) => { setCropping(null); onUpdate({ avatar }); }} /> : null}
       <div className="relative h-40 bg-[linear-gradient(135deg,var(--accent),var(--accent-2))] sm:h-56">
         {details.cover ? <img src={details.cover} alt="" className="h-full w-full object-cover" /> : null}
         <label className="absolute right-3 top-3 flex cursor-pointer items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2 text-xs font-medium text-text hover:bg-surface-2">

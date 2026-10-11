@@ -81,5 +81,7 @@ const en: Record<keyof typeof az, string> = {
   "bottle.statSmiles":"smileys","bottle.wheelSmileNote":"The smileys were added to the count in your profile",
   "bottle.zodiac":"Zodiac sign","bottle.sign0":"Capricorn","bottle.sign1":"Aquarius","bottle.sign2":"Pisces","bottle.sign3":"Aries","bottle.sign4":"Taurus","bottle.sign5":"Gemini","bottle.sign6":"Cancer","bottle.sign7":"Leo","bottle.sign8":"Virgo","bottle.sign9":"Libra","bottle.sign10":"Scorpio","bottle.sign11":"Sagittarius",
   "bottle.tables":"Change table","bottle.roomRandom":"Random table!","bottle.roomFriends":"Friends","bottle.roomNoFriends":"None of your friends are playing right now","bottle.roomList":"Tables","bottle.roomHere":"you are here","bottle.roomFullTag":"full","bottle.roomFull1":"Room","bottle.roomFull2":"is full. Please wait,","bottle.roomFirst":"you are first in line.","bottle.roomPlace":"your place in line:","bottle.roomCancel":"Stop waiting","bottle.roomGone":"This table has closed",
+  "profile.cropTitle":"Choose thumbnail","profile.cropZoom":"Zoom","profile.cropHint":"Drag the photo to position it. The part inside the circle will show on your profile.",
+  "profile.cropCancel":"Cancel",
 };
 export default en;
