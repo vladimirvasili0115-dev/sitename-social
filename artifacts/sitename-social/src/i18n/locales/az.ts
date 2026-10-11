@@ -73,5 +73,6 @@ const az = {
   "bottle.settings":"Parametrlər","bottle.acceptKisses":"Öpüşləri qəbul et","bottle.backLobby":"Dəhlizə qayıt","bottle.sounds":"Səslər","bottle.music":"Musiqi","bottle.invite":"Dostları dəvət et","bottle.copied":"Link kopyalandı","bottle.myFriends":"Dostlarım","bottle.profileSettings":"Profil parametrləri","bottle.top":"Masanın liderləri","bottle.rules":"Qaydalar","bottle.changeTable":"Masanı dəyiş","bottle.rule1":"Növbə sənə çatanda butulkaya bas.","bottle.rule2":"Butulka kimə düşsə, ikiniz ortaya gəlirsiniz: 9 saniyə ərzində öp və ya imtina et.","bottle.rule3":"Aldığın hər öpüş şəklindəki sayğacı artırır.","bottle.rule4":"Oyunçunun şəklinə basıb ürəklə hədiyyə göndər.",
   "bottle.shop":"Ürək al","bottle.vipStatus":"STATUS","bottle.vipMore":"Bax","bottle.packBest":"Sərfəli","bottle.packHit":"Hit","bottle.bonus":"BONUS","bottle.currency":"ÇEK","bottle.paySoon":"Onlayn ödəniş tezliklə aktiv olacaq.",
   "bottle.waitTurn":"Öz növbəni gözlə","bottle.giftHint2":"Hədiyyə seç və göndər",
+  "bottle.needKisses":"Bu hədiyyəni açmaq üçün daha çox öpüş almalısan","bottle.noHearts":"Ürəyin çatmır","bottle.needGirls":"Butulkanın fırlanması üçün otaqda ən azı 2 qız olmalıdır","bottle.balance":"Balansın",
 } as const;
 export default az;

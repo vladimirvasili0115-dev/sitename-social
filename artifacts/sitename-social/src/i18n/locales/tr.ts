@@ -64,5 +64,6 @@ const tr: Record<keyof typeof az, string> = {
   "bottle.settings":"Ayarlar","bottle.acceptKisses":"Öpücükleri kabul et","bottle.backLobby":"Lobiye dön","bottle.sounds":"Sesler","bottle.music":"Müzik","bottle.invite":"Arkadaşlarını davet et","bottle.copied":"Bağlantı kopyalandı","bottle.myFriends":"Arkadaşlarım","bottle.profileSettings":"Profil ayarları","bottle.top":"Masanın liderleri","bottle.rules":"Kurallar","bottle.changeTable":"Masayı değiştir","bottle.rule1":"Sıra sana gelince şişeye tıkla.","bottle.rule2":"Şişe kimi gösterirse ikiniz ortaya gelirsiniz: 9 saniye içinde öp ya da reddet.","bottle.rule3":"Aldığın her öpücük fotoğrafındaki sayacı artırır.","bottle.rule4":"Oyuncunun fotoğrafına tıklayıp kalple hediye gönder.",
   "bottle.shop":"Kalp satın al","bottle.vipStatus":"STATÜ","bottle.vipMore":"İncele","bottle.packBest":"Avantajlı","bottle.packHit":"Hit","bottle.bonus":"BONUS","bottle.currency":"ÇEK","bottle.paySoon":"Çevrimiçi ödeme yakında aktif olacak.",
   "bottle.waitTurn":"Sıranı bekle","bottle.giftHint2":"Hediye seç ve gönder",
+  "bottle.needKisses":"Bu hediyeyi açmak için daha çok öpücük almalısın","bottle.noHearts":"Kalbin yetmiyor","bottle.needGirls":"Şişenin dönmesi için odada en az 2 kız olmalı","bottle.balance":"Bakiyen",
 };
 export default tr;

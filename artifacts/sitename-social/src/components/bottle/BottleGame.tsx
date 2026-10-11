@@ -18,7 +18,7 @@ type Line = { id: number; from: string; to?: string; text?: string; gift?: strin
 // Seat centres in percent of the table. Wide: a tool column on the left, seats in a rectangle. Tall (phone, window): a tool row on top, seats in an oval.
 type Seats = readonly (readonly [number, number])[];
 const layouts: Record<"wide" | "tall", { seats: Seats; cx: number; cy: number }> = {
-  wide: { seats: [[29, 15], [48.5, 15], [68, 15], [87, 15], [91, 39.5], [91, 62.5], [87, 85], [68, 85], [48.5, 85], [29, 85], [26, 62.5], [26, 39.5]], cx: 58.5, cy: 50 },
+  wide: { seats: [[26, 15], [45.5, 15], [65, 15], [84, 15], [88, 39.5], [88, 62.5], [84, 85], [65, 85], [45.5, 85], [26, 85], [23, 62.5], [23, 39.5]], cx: 55.5, cy: 50 },
   tall: { seats: [[17, 26], [39, 21], [61, 21], [83, 26], [87, 46], [87, 65.5], [83, 85], [61, 89.5], [39, 89.5], [17, 85], [13, 65.5], [13, 46]], cx: 50, cy: 55 },
 };
 const bots: Omit<Player, "avatar">[] = [
@@ -34,6 +34,7 @@ const giftChoices: [string, number][] = [
   ["heart", 1], ["rose", 1], ["flame", 1], ["tea", 1], ["nar", 1], ["paxlava", 1], ["shekerbura", 1], ["semeni", 1], ["xaribulbul", 1],
   ["e:💋", 1], ["e:🍓", 1], ["e:🍅", 1], ["e:🍦", 1], ["e:🍫", 1], ["e:🍬", 1], ["e:🍸", 1], ["e:🍹", 1], ["e:☕", 1], ["e:🍉", 1], ["e:🍒", 1], ["e:🎈", 1], ["e:🎩", 1], ["e:🐸", 1], ["e:🦋", 1], ["e:⭐", 1], ["e:🌙", 1], ["e:🍀", 1],
 ];
+const lockedGifts: [string, number, number][] = [["e:🦄", 5, 15000], ["e:🏰", 5, 15000], ["e:🚀", 8, 23000], ["e:🛥️", 8, 23000]];
 function Gift({ id, className }: { id: string; className?: string }) {
   if (!id.startsWith("e:")) return <GiftArt id={id as GiftId} className={className} />;
   return <span aria-hidden="true" className={cn("flex items-center justify-center leading-none [container-type:size]", className)}><span className="text-[82cqmin]">{id.slice(2)}</span></span>;
@@ -62,6 +63,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave }: { wide: boolea
   const { seats, cx: CENTER_X, cy: STAGE_Y } = layouts[wide ? "wide" : "tall"];
   const angleTo = useCallback((index: number) => (Math.atan2(seats[index][1] - STAGE_Y, seats[index][0] - CENTER_X) * 180) / Math.PI + 90, [seats, CENTER_X, STAGE_Y]);
 
+  const enoughGirls = players.filter((player) => player.female).length >= 2;
   const [turn, setTurn] = useState(4);
   const [target, setTarget] = useState<number | null>(null);
   const [phase, setPhase] = useState<Phase>("waiting");
@@ -73,7 +75,11 @@ export function BottleGame({ wide, full, onToggleFull, onLeave }: { wide: boolea
   const [lines, setLines] = useState<Line[]>([{ id: 1, from: "b3", text: smallTalk[0] }, { id: 2, from: "b6", to: "b1" }]);
   const [draft, setDraft] = useState("");
   const [picked, setPicked] = useState<number | null>(null);
-  const [flying, setFlying] = useState<{ gift: string; to: number; moved: boolean } | null>(null);
+  const [flying, setFlying] = useState<{ key: number; gift: string; to: number; moved: boolean }[]>([]);
+  const heartsRef = useRef(12);
+  const flyId = useRef(1);
+  const hold = useRef<number | null>(null);
+  const [giftNote, setGiftNote] = useState<string | null>(null);
   const [volume, setVolumeLevel] = useState(80);
   const [music, setMusic] = useState(60);
   const [accept, setAccept] = useState(true);
@@ -109,6 +115,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave }: { wide: boolea
   // Turn flow. A player has a few seconds to click the bottle, otherwise the turn passes on.
   useEffect(() => {
     if (phase === "waiting") {
+      if (!enoughGirls) return;
       playSound("turn");
       if (turn !== meIndex) {
         const timer = window.setTimeout(spin, 1500 + Math.random() * 1200);
@@ -127,7 +134,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave }: { wide: boolea
       const timer = window.setTimeout(nextTurn, 2600);
       return () => window.clearTimeout(timer);
     }
-  }, [phase, turn, spin, nextTurn]);
+  }, [phase, turn, spin, nextTurn, enoughGirls]);
 
   // Both players answer on their own within the same countdown; neither waits for the other.
   const deciding = phase === "choice" && target !== null && (answers.spinner === null || answers.target === null);
@@ -210,16 +217,27 @@ export function BottleGame({ wide, full, onToggleFull, onLeave }: { wide: boolea
   }
   function sendGift(index: number, gift: string, price: number) {
     const player = players[index];
-    if (hearts < price) return;
-    setHearts(hearts - price);
-    setPicked(null);
-    setFlying({ gift, to: index, moved: false });
-    window.setTimeout(() => setFlying((value) => (value ? { ...value, moved: true } : value)), 40);
+    if (heartsRef.current < price) return false;
+    heartsRef.current -= price;
+    setHearts(heartsRef.current);
+    const key = flyId.current++;
+    setFlying((list) => [...list, { key, gift, to: index, moved: false }]);
+    window.setTimeout(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))), 40);
     window.setTimeout(() => {
-      setFlying(null);
+      setFlying((list) => list.filter((item) => item.key !== key));
       setStickers((value) => ({ ...value, [player.id]: [...(value[player.id] ?? []), gift].slice(-2) }));
       say({ from: "me", to: player.id, gift });
-    }, 1700);
+    }, 3100);
+    return true;
+  }
+  // Press and hold a gift: it keeps going until the finger is lifted (or the hearts run out).
+  const stopHold = () => { if (hold.current) window.clearInterval(hold.current); hold.current = null; };
+  function startHold(index: number, gift: string, price: number, need?: number) {
+    stopHold();
+    if (need) return setGiftNote(`${t("bottle.needKisses")} (${need})`);
+    setGiftNote(null);
+    if (!sendGift(index, gift, price)) return setGiftNote(t("bottle.noHearts"));
+    hold.current = window.setInterval(() => { if (!sendGift(index, gift, price)) stopHold(); }, 450);
   }
   // A curved arrow from the player who answered to the other one. Green means a kiss, red a refusal.
   const arrow = (answer: boolean | null, leftToRight: boolean, drop: number) => {
@@ -274,13 +292,13 @@ export function BottleGame({ wide, full, onToggleFull, onLeave }: { wide: boolea
         {myTurn ? <div className="pointer-events-none absolute z-20 -translate-x-1/2 -translate-y-1/2" style={{ left: `${CENTER_X}%`, top: `${STAGE_Y}%` }}><p role="status" className="animate-bounce whitespace-nowrap rounded-full bg-white px-[3cqmin] py-[1cqmin] text-[3.2cqmin] font-bold text-[#C2410C] shadow-lg motion-reduce:animate-none">{t("bottle.clickBottle")}</p></div> : null}
 
         {waitNote && !myTurn && !staged ? <p role="status" className="pointer-events-none absolute z-30 -translate-x-1/2 whitespace-nowrap rounded-full bg-black/75 px-[3cqmin] py-[1cqmin] text-[3.2cqmin] font-bold text-white" style={{ left: `${CENTER_X}%`, top: `calc(${STAGE_Y}% + 17cqmin)` }}>{t("bottle.waitTurn")}</p> : null}
-        {phase === "waiting" && !myTurn ? <p className="pointer-events-none absolute w-[40cqmin] -translate-x-1/2 -translate-y-1/2 text-center text-[3.4cqmin] font-bold leading-tight text-white [text-shadow:0_2px_6px_rgba(0,0,0,0.85)]" style={{ left: `${CENTER_X}%`, top: `${STAGE_Y}%` }}>{t("bottle.waitingSpin")}</p> : null}
+        {phase === "waiting" && !myTurn ? <p className="pointer-events-none absolute w-[40cqmin] -translate-x-1/2 -translate-y-1/2 text-center text-[3.4cqmin] font-bold leading-tight text-white [text-shadow:0_2px_6px_rgba(0,0,0,0.85)]" style={{ left: `${CENTER_X}%`, top: `${STAGE_Y}%` }}>{t(enoughGirls ? "bottle.waitingSpin" : "bottle.needGirls")}</p> : null}
 
         {players.map((player, index) => {
           const active = index === turn || index === target;
           return (
             <div key={player.id} className={cn("absolute w-[17cqmin] -translate-x-1/2 -translate-y-1/2 transition-[left,top] duration-[1100ms] ease-in-out motion-reduce:duration-0", staged && active ? "pointer-events-none z-30" : index === turn && "z-10")} style={staged && active ? { left: `calc(${CENTER_X}% ${index === turn ? "-" : "+"} 12.5cqmin)`, top: `${STAGE_Y}%` } : { left: `${seats[index][0]}%`, top: `${seats[index][1]}%` }}>
-              <button type="button" disabled={player.me} onClick={(event) => { event.stopPropagation(); setPicked(picked === index ? null : index); }} aria-label={`${player.name}, ${player.age}`} className={cn("relative block aspect-square w-full rounded-[14%] bg-surface-2 shadow-[0_4px_10px_rgba(0,0,0,0.4)]", staged && index === target ? "ring-[0.9cqmin] ring-[#FFE2A8]" : active ? "ring-4 ring-white" : picked === index ? "ring-4 ring-[#8CC63F]" : player.me ? "ring-2 ring-white/80" : "")}>
+              <button type="button" disabled={player.me} onClick={(event) => { event.stopPropagation(); setGiftNote(null); setPicked(picked === index ? null : index); }} aria-label={`${player.name}, ${player.age}`} className={cn("relative block aspect-square w-full rounded-[14%] bg-surface-2 shadow-[0_4px_10px_rgba(0,0,0,0.4)]", staged && index === target ? "ring-[0.9cqmin] ring-[#FFE2A8]" : active ? "ring-4 ring-white" : picked === index ? "ring-4 ring-[#8CC63F]" : player.me ? "ring-2 ring-white/80" : "")}>
                 <img src={player.avatar} alt="" className="h-full w-full rounded-[14%] object-cover" />
                 {kisses[player.id] ? <span className="absolute -right-[1.2cqmin] -top-[1.2cqmin] flex h-[4.6cqmin] min-w-[4.6cqmin] items-center justify-center rounded-full bg-[#E5334B] px-1 text-[2.4cqmin] font-bold tabular-nums text-white shadow">{kisses[player.id]}</span> : null}
                 {(stickers[player.id] ?? []).map((gift, position) => <Gift key={`${gift}-${position}`} id={gift} className={cn("absolute -bottom-[1.6cqmin] h-[48%] w-[48%] drop-shadow", position ? "-left-[1.6cqmin]" : "-right-[1.6cqmin]")} />)}
@@ -291,7 +309,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave }: { wide: boolea
           );
         })}
 
-        {flying ? <div className="pointer-events-none absolute z-40 h-[11cqmin] w-[11cqmin] -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_0_10px_rgba(255,240,150,0.95)] transition-[left,top] duration-[1600ms] ease-in-out" style={{ left: `${seats[flying.moved ? flying.to : meIndex][0]}%`, top: `${seats[flying.moved ? flying.to : meIndex][1]}%` }}><Gift id={flying.gift} className="h-full w-full" /></div> : null}
+        {flying.map((item) => <div key={item.key} className="pointer-events-none absolute z-40 h-[11cqmin] w-[11cqmin] -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_0_10px_rgba(255,240,150,0.95)] transition-[left,top] duration-[3000ms] ease-in-out" style={{ left: `${seats[item.moved ? item.to : meIndex][0]}%`, top: `${seats[item.moved ? item.to : meIndex][1]}%` }}><Gift id={item.gift} className="h-full w-full" /></div>)}
 
         {staged && target !== null ? (
           <>
@@ -321,6 +339,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave }: { wide: boolea
               <p className={cn("mb-1 text-center text-sm font-bold", panel === "shop" ? "mb-2 text-white" : "text-[#9CA3AF]")}>{t(`bottle.${panel}`)}</p>
               {panel === "shop" ? (
                 <div className="max-h-[78cqmin] overflow-y-auto pt-2">
+                  <p className="mb-3 flex items-center justify-center gap-1.5 rounded-lg bg-white/90 py-1.5 text-sm font-bold text-[#7F1D1D]">{t("bottle.balance")}: <Heart size={15} fill="#F4511E" stroke="none" /><span className="tabular-nums">{hearts}</span></p>
                   <ul className="grid grid-cols-4 gap-1.5">
                     <li className="flex flex-col items-center rounded-xl bg-white p-1.5 text-center">
                       <span className="text-[13px] font-black leading-tight text-[#F59E0B]">VIP<span className="block text-[9px] font-bold">{t("bottle.vipStatus")}</span></span>
@@ -399,13 +418,14 @@ export function BottleGame({ wide, full, onToggleFull, onLeave }: { wide: boolea
               <button onClick={() => setPicked(null)} aria-label={t("photos.close")} title={t("photos.close")} className="flex h-9 w-9 shrink-0 items-center justify-center self-start rounded-full bg-[#8CC63F] text-white hover:brightness-110"><X size={17} /></button>
             </div>
             <div role="menu" className="grid min-h-0 flex-1 grid-cols-3 content-start gap-1 overflow-y-auto p-2 sm:grid-cols-3">
-              {giftChoices.map(([gift, price]) => (
-                <button key={gift} role="menuitem" disabled={hearts < price} onClick={() => sendGift(picked, gift, price)} aria-label={`${t("gifts.send")} ${price}`} className="flex flex-col items-center gap-0.5 rounded-xl p-2 hover:bg-surface-2 disabled:opacity-35">
+              {[...giftChoices, ...lockedGifts].map(([gift, price, need]) => (
+                <button key={gift} role="menuitem" aria-disabled={Boolean(need)} onPointerDown={() => startHold(picked, gift, price, need)} onPointerUp={stopHold} onPointerLeave={stopHold} onPointerCancel={stopHold} onContextMenu={(event) => event.preventDefault()} onKeyDown={(event) => { if (event.key === "Enter" && !event.repeat) { startHold(picked, gift, price, need); stopHold(); } }} aria-label={`${t("gifts.send")} ${price}`} className={cn("flex touch-none select-none flex-col items-center gap-0.5 rounded-xl p-2 hover:bg-surface-2", (Boolean(need) || hearts < price) && "opacity-35 grayscale")}>
                   <Gift id={gift} className="h-12 w-12" />
-                  <span className="flex items-center gap-1 text-xs font-bold tabular-nums text-text"><Heart size={12} fill="#FF6A1F" stroke="none" />{price}</span>
+                  <span className="flex items-center gap-1 text-xs font-bold tabular-nums text-text">{need ? <>💋 {need}</> : <><Heart size={12} fill="#FF6A1F" stroke="none" />{price}</>}</span>
                 </button>
               ))}
             </div>
+            {giftNote ? <p role="status" className="border-t border-border px-3 py-2 text-center text-xs font-semibold text-text">{giftNote}</p> : null}
           </div>
         ) : null}
         <div ref={listRef} className={cn("min-h-0 flex-1 space-y-2 overflow-y-auto p-3", picked !== null && "hidden")}>
