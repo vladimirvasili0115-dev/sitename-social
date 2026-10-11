@@ -42,11 +42,11 @@ const giftChoices: [string, number][] = [
   ["e:🐷", 2], ["e:🦌", 2], ["e:🎗️", 2], ["e:🎀", 2], ["e:🌸", 2], ["e:🩷", 2], ["e:🎲", 1],
 ];
 // The wheel of fortune: 16 sectors clockwise from the top. The database does the real draw with its own odds; the weights here are only used by the offline demo.
-const wheelSectors: { hearts?: number; chances?: number; kisses?: number; weight: number }[] = [
-  { hearts: 1000, weight: 30 }, { hearts: 1, weight: 900 }, { kisses: 1, weight: 900 }, { hearts: 25, weight: 400 }, { hearts: 3, weight: 1300 }, { chances: 1, weight: 1300 }, { hearts: 100, weight: 100 }, { hearts: 1, weight: 700 },
-  { kisses: 3, weight: 500 }, { hearts: 10, weight: 900 }, { weight: 200 }, { chances: 3, weight: 500 }, { hearts: 3, weight: 1070 }, { hearts: 5, weight: 900 }, { kisses: 1, weight: 200 }, { hearts: 1, weight: 100 },
+const wheelSectors: { hearts?: number; chances?: number; kisses?: number; smiles?: number; weight: number }[] = [
+  { hearts: 1000, weight: 30 }, { hearts: 1, weight: 900 }, { kisses: 1, weight: 900 }, { hearts: 25, weight: 400 }, { hearts: 3, weight: 1300 }, { chances: 1, weight: 1300 }, { hearts: 100, weight: 100 }, { smiles: 1, weight: 700 },
+  { kisses: 3, weight: 500 }, { hearts: 10, weight: 900 }, { weight: 200 }, { chances: 3, weight: 500 }, { hearts: 3, weight: 1070 }, { hearts: 5, weight: 900 }, { kisses: 1, weight: 200 }, { smiles: 3, weight: 100 },
 ];
-const prizeText = (item: (typeof wheelSectors)[number]) => (item.hearts ? `❤ ${item.hearts}` : item.chances ? `🎲 ${item.chances}` : item.kisses ? `💋 ${item.kisses}` : "");
+const prizeText = (item: (typeof wheelSectors)[number]) => (item.hearts ? `❤ ${item.hearts}` : item.chances ? `🎲 ${item.chances}` : item.kisses ? `💋 ${item.kisses}` : item.smiles ? `😊 ${item.smiles}` : "");
 const chancePacks: [number, number][] = [[300, 900], [50, 150], [15, 45], [5, 20], [1, 5]];
 const vipPlans: [number, number][] = [[7, 300], [30, 900], [90, 2200]];
 const frames = ["#FACC15", "#F472B6", "#60A5FA", "#34D399", "#A78BFA", "#F97316", "#EF4444"];
@@ -158,6 +158,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [wheelTurn, setWheelTurn] = useState(0);
   const [wheelBusy, setWheelBusy] = useState(false);
   const [wheelPrize, setWheelPrize] = useState<number | null>(null);
+  const [mySmiles, setMySmiles] = useState(0);
   const wheelLock = useRef(false);
   const [topTab, setTopTab] = useState<"league" | "daily" | "weekly">("league");
   const [sent, setSent] = useState<Record<string, number>>({});
@@ -517,6 +518,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       after = { hearts: heartsRef.current + (wheelSectors[sector].hearts ?? 0), chances: chances - 1 + (wheelSectors[sector].chances ?? 0) };
       const won = wheelSectors[sector].kisses;
       if (won) window.setTimeout(() => setKisses((value) => ({ ...value, me: (value.me ?? 0) + won })), 4300);
+      const smiles = wheelSectors[sector].smiles;
+      if (smiles) window.setTimeout(() => setMySmiles((value) => value + smiles), 4300);
     }
     setChances((value) => value - 1);
     setWheelTurn((current) => current - (current % 360) + 1800 + ((360 - sector * 22.5) % 360));
@@ -733,8 +736,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 </div>
                 <div className="flex min-w-0 flex-1 flex-col gap-1 p-3 text-[#1F2937]">
                   <p className="flex items-center gap-2 text-sm font-bold tabular-nums text-[#DC2626]"><span aria-hidden="true">💋</span>{(online ? net?.seats.find((seat) => seat.id === (player.me ? net.me : player.id))?.total ?? 0 : kisses[player.id] ?? 0).toLocaleString("az")}<span className="sr-only">{t("bottle.statKisses")}</span></p>
-                  <p className="flex items-center gap-2 text-sm font-bold tabular-nums text-[#C0399A]"><span aria-hidden="true">🎵</span>{(((picked + 3) * 7919) % 900).toLocaleString("az")}<span className="sr-only">{t("bottle.statSongs")}</span></p>
-                  <p className="flex items-center gap-2 text-sm font-bold tabular-nums text-[#EA580C]"><span aria-hidden="true">🎁</span>{(((picked + 5) * 104729) % 600).toLocaleString("az")}<span className="sr-only">{t("bottle.statGifts")}</span></p>
+                  <p className="flex items-center gap-2 text-sm font-bold tabular-nums text-[#C0399A]"><span aria-hidden="true">🎵</span>{(online ? 0 : ((picked + 3) * 7919) % 900).toLocaleString("az")}<span className="sr-only">{t("bottle.statSongs")}</span></p>
+                  <p className="flex items-center gap-2 text-sm font-bold tabular-nums text-[#EA580C]"><span aria-hidden="true">😊</span>{(online ? net?.seats.find((seat) => seat.id === (player.me ? net.me : player.id))?.smiles ?? 0 : player.me ? mySmiles : ((picked + 5) * 104729) % 600).toLocaleString("az")}<span className="sr-only">{t("bottle.statSmiles")}</span></p>
                   <div className="my-1 border-t border-[#E5E7EB]" />
                   <div className="flex items-center gap-2">
                     {by ? <img src={by.avatar} alt="" className="h-12 w-12 shrink-0 rounded-lg object-cover" /> : null}
@@ -830,8 +833,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                           <path d="M0 0L-18.73 -94.15A96 96 0 0 1 18.73 -94.15Z" fill={`url(#wh-${index === 0 ? "j" : index % 2 ? "a" : "b"})`} stroke="#0B6B61" strokeWidth="1" />
                           <circle cy="-104" r="2.6" fill={index % 2 ? "#FFFFFF" : "#FFF3B0"} />
                           <circle cy="-104" r="2.6" fill="#FFF3B0" transform="rotate(11.25)" opacity="0.55" />
-                          <text y="-70" textAnchor="middle" fontSize="17">{item.hearts ? (item.hearts >= 100 ? "💖" : "❤️") : item.chances ? "🎲" : item.kisses ? "💋" : "💨"}</text>
-                          <text y="-50" textAnchor="middle" fontSize={item.hearts && item.hearts >= 1000 ? 10.5 : 14} fontWeight="900" fill={index === 0 ? "#7C2D12" : "#FFFFFF"} stroke={index === 0 ? "none" : "#0B6B61"} strokeWidth="0.6" paintOrder="stroke">{item.hearts ?? item.chances ?? item.kisses ?? ""}</text>
+                          <text y="-70" textAnchor="middle" fontSize="17">{item.hearts ? (item.hearts >= 100 ? "💖" : "❤️") : item.chances ? "🎲" : item.kisses ? "💋" : item.smiles ? "😊" : "💨"}</text>
+                          <text y="-50" textAnchor="middle" fontSize={item.hearts && item.hearts >= 1000 ? 10.5 : 14} fontWeight="900" fill={index === 0 ? "#7C2D12" : "#FFFFFF"} stroke={index === 0 ? "none" : "#0B6B61"} strokeWidth="0.6" paintOrder="stroke">{item.hearts ?? item.chances ?? item.kisses ?? item.smiles ?? ""}</text>
                         </g>
                       ))}
                       <circle r="19" fill="url(#wh-rim)" /><circle r="14" fill="#FFF7D6" stroke="#F5A300" strokeWidth="2" /><text y="6" textAnchor="middle" fontSize="15">🤍</text>
@@ -840,6 +843,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   </div>
                   <p role="status" className="min-h-6 text-center text-sm font-bold">{wheelPrize === null ? "" : prizeText(wheelSectors[wheelPrize]) ? `${t("bottle.wheelWon")} ${prizeText(wheelSectors[wheelPrize])}` : t("bottle.wheelEmpty")}</p>
                   {wheelPrize !== null && wheelSectors[wheelPrize].kisses ? <p className="text-center text-xs">{t("bottle.wheelKissNote")}</p> : null}
+                  {wheelPrize !== null && wheelSectors[wheelPrize].smiles ? <p className="text-center text-xs">{t("bottle.wheelSmileNote")}</p> : null}
                   <div className="mt-1 flex items-center justify-center gap-2">
                     <span className="flex items-center gap-1 rounded-full bg-black/25 px-3 py-1.5 text-sm font-bold tabular-nums">{t("bottle.chancesLabel")}: 🎲 {chances}</span>
                     <button onClick={() => { setPayNote(false); setPanel("chances"); }} aria-label={t("bottle.chances")} title={t("bottle.chances")} className="flex h-8 w-8 items-center justify-center rounded-full bg-[#8CC63F] text-lg font-black text-white hover:brightness-110">+</button>

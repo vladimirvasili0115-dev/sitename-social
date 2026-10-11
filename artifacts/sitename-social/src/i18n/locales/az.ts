@@ -87,5 +87,6 @@ const az = {
   "bottle.dmResize":"Ölçünü dəyiş (sürüklə)",
   "bottle.wheel":"Bəxt çarxı","bottle.chances":"Şans mağazası","bottle.wheelHint":"«Fırlat» düyməsinə bas, Bəxt çarxını işə sal və mükafatını tut!","bottle.wheelSpin":"Fırlat","bottle.chancesLabel":"Şanslar","bottle.wheelWon":"Qazandın:","bottle.wheelEmpty":"Bu dəfə boş çıxdı. Yenə sına!","bottle.wheelEmptyShort":"Boş","bottle.wheelWinner":"Qalib","bottle.wheelOdds":"Düşmə ehtimalları","bottle.wheelBack":"← Çarxa qayıt",
   "bottle.wheelChat":"Bəxt çarxından qazandı:","bottle.wheelKissNote":"Öpüşlər profilindəki öpüş sayına əlavə olundu",
+  "bottle.statSmiles":"smaylik","bottle.wheelSmileNote":"Smayliklər profilindəki smaylik sayına əlavə olundu",
 } as const;
 export default az;
