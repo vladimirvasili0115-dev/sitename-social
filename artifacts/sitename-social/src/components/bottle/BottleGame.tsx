@@ -51,6 +51,8 @@ const lockedGifts: [string, number, number][] = [
   ["e:💍", 4, -1], ["e:🥇", 4, -1], ["e:🌹", 4, -1], ["e:👢", 4, -1], ["e:🏹", 4, -1], ["e:🐓", 4, -1], ["e:👑", 4, -1], ["e:🧲", 4, -1], ["e:🍾", 4, -1], ["e:🥀", 4, -1], ["e:🔱", 4, -1], ["e:⭕", 4, -1],
   ["e:📻", 5, 30000], ["e:🎂", 5, 30000], ["e:🎹", 5, 30000], ["e:🎼", 5, 30000], ["e:🪕", 5, 30000], ["e:👘", 5, 30000], ["e:🥁", 5, 30000], ["e:🎛️", 5, 30000], ["e:🕶️", 5, 30000], ["e:🎙️", 5, 30000], ["e:💌", 5, 40000], ["e:💟", 5, 40000], ["e:💜", 5, 40000], ["e:👠", 5, 40000], ["e:😎", 5, 40000], ["e:💛", 5, 40000], ["e:🖤", 5, 40000], ["e:❤️‍🔥", 5, 40000], ["e:🩵", 5, 40000], ["e:💚", 5, 40000], ["e:🧡", 5, 40000], ["e:💙", 5, 40000], ["e:🎭", 5, 50000], ["e:👡", 5, 50000], ["e:🐈‍⬛", 5, 50000], ["e:🪠", 5, 50000], ["e:🚗", 5, 50000], ["e:🥚", 5, 50000], ["e:🧤", 5, 50000], ["e:🪢", 5, 50000], ["e:🎪", 5, 50000], ["e:🕸️", 5, 50000], ["e:🪞", 5, 50000], ["e:🧺", 5, 50000], ["e:🐍", 5, 65000], ["e:🧳", 5, 65000], ["e:🥾", 5, 65000], ["e:🗑️", 5, 65000], ["e:🧨", 5, 65000], ["e:☯️", 5, 65000], ["e:🍀", 5, 65000], ["e:⌚", 5, 65000], ["e:📱", 5, 65000], ["e:⏰", 5, 65000], ["e:🕰️", 5, 65000], ["e:☎️", 5, 65000], ["e:🗼", 5, 80000], ["e:🗿", 5, 80000], ["e:👲", 5, 80000], ["e:⏱️", 5, 80000], ["e:⏲️", 5, 80000], ["e:📟", 5, 80000], ["e:🫖", 5, 80000], ["e:💘", 5, 80000], ["e:💔", 5, 80000], ["e:🦇", 5, 80000], ["e:🎮", 5, 80000], ["e:🚁", 5, 80000], ["e:🚜", 5, 100000], ["e:🍱", 5, 100000], ["e:🤵", 5, 100000], ["e:🦜", 5, 100000], ["e:🏍️", 5, 100000], ["e:🥊", 5, 100000], ["e:🔥", 5, 100000], ["e:🐖", 5, 100000], ["e:🪭", 5, 100000], ["e:✈️", 5, 100000], ["e:🐈", 5, 100000], ["e:🐴", 5, 100000], ["e:⭐", 5, 125000], ["e:🍨", 5, 125000], ["e:🐕", 5, 125000], ["e:⛓️", 5, 125000], ["e:🚙", 5, 125000], ["e:💩", 5, 125000], ["e:🛸", 5, 125000], ["e:🏆", 5, 125000], ["e:⏳", 5, 125000], ["e:🪈", 5, 125000], ["e:🥿", 5, 125000], ["e:🦢", 5, 125000], ["e:🛷", 5, 150000], ["e:🍫", 5, 150000], ["e:🛏️", 5, 150000], ["e:🌼", 5, 150000], ["e:🍎", 5, 150000], ["e:🕯️", 5, 150000], ["e:🎠", 5, 150000], ["e:🎡", 5, 150000], ["e:🧩", 5, 150000], ["e:🪁", 5, 150000], ["e:🎯", 5, 150000], ["e:🎺", 5, 150000],
 ];
+// Gifts that are worn on the head sit tilted on the top corner of the photo; everything else stands at the bottom.
+const headGifts = new Set(["crown", "e:👑", "e:⛑️", "e:🤠", "e:🎩", "e:👒", "e:🧢", "e:🎓", "e:🪖", "e:🎀", "e:🌸", "e:👳", "e:🔱"]);
 function Gift({ id, className }: { id: string; className?: string }) {
   if (id.startsWith("song:")) id = id === "song:video" ? "e:🎬" : "e:🎵";
   if (!id.startsWith("e:")) return <GiftArt id={id as GiftId} className={className} />;
@@ -492,7 +494,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     window.setTimeout(() => {
       setFlying((list) => list.filter((item) => item.key !== key));
       playGiftSound(gift, "land");
-      setStickers((value) => ({ ...value, [player.id]: [...(value[player.id] ?? []), gift].slice(-2) }));
+      setStickers((value) => ({ ...value, [player.id]: [...(value[player.id] ?? []), gift].slice(-6) }));
       say({ from: "me", to: player.id, gift });
     }, 3100);
     setSent((value) => ({ ...value, [player.id]: (value[player.id] ?? 0) + 1 }));
@@ -595,12 +597,21 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           const active = index === turn || index === target;
           return (
             <div key={player.id} className={cn("absolute -translate-x-1/2 -translate-y-1/2 transition-[left,top]", wide ? "w-[17cqmin]" : "w-[16cqmin]", " duration-[1100ms] ease-in-out motion-reduce:duration-0", staged && active ? "pointer-events-none z-30" : index === turn && "z-10")} style={staged && active ? { left: `calc(${CENTER_X}% ${index === turn ? "-" : "+"} 12.5cqmin)`, top: `${STAGE_Y}%` } : { left: `${seats[index][0]}%`, top: `${seats[index][1]}%` }}>
-              <button type="button" disabled={player.me} onClick={(event) => { event.stopPropagation(); if (dedicate) return openSong(index); setGiftNote(null); setCardNote(null); setFlagMenu(false); setCard(picked === index); setPicked(index); }} aria-label={`${player.name}, ${player.age}`} className={cn("relative block aspect-square w-full rounded-[14%] bg-surface-2 shadow-[0_4px_10px_rgba(0,0,0,0.4)]", staged && index === target ? "ring-[0.9cqmin] ring-[#FFE2A8]" : active ? "ring-4 ring-white" : picked === index ? "ring-4 ring-[#8CC63F]" : player.me ? "ring-2 ring-white/80" : "")}>
+              <button type="button" disabled={player.me} onClick={(event) => { event.stopPropagation(); if (dedicate) return openSong(index); setGiftNote(null); setCardNote(null); setFlagMenu(false); setCard(picked === index); setPicked(index); }} aria-label={`${player.name}, ${player.age}`} className={cn("group relative block aspect-square w-full rounded-[14%] bg-surface-2 shadow-[0_4px_10px_rgba(0,0,0,0.4)]", staged && index === target ? "ring-[0.9cqmin] ring-[#FFE2A8]" : active ? "ring-4 ring-white" : picked === index ? "ring-4 ring-[#8CC63F]" : player.me ? "ring-2 ring-white/80" : "")}>
                 <img src={player.avatar} alt="" className="h-full w-full rounded-[14%] object-cover" style={player.me && frame ? { boxShadow: `0 0 0 0.9cqmin ${frame}, 0 0 2.4cqmin ${frame}` } : undefined} />
+                {player.me || dedicate ? null : <span aria-hidden="true" className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-[14%] bg-black/35 opacity-0 transition-opacity group-hover:opacity-100"><GiftIcon className="h-[38%] w-[38%] text-white" strokeWidth={1.6} /></span>}
                 {dedicate && !player.me ? <span className="absolute inset-0 z-10 flex items-center justify-center rounded-[14%] bg-black/35"><span className="flex h-[7cqmin] w-[7cqmin] items-center justify-center rounded-full bg-[#8CC63F] text-[5cqmin] font-black leading-none text-white shadow">+</span></span> : null}
-                {topIds.has(player.id) ? <span className="absolute -left-[1.2cqmin] -top-[1.2cqmin] rounded bg-[#FACC15] px-[0.8cqmin] text-[2.2cqmin] font-black leading-[1.5] text-[#713F12] shadow">TOP</span> : null}
+                {topIds.has(player.id) ? <span className="absolute left-1/2 -top-[1.4cqmin] z-[1] -translate-x-1/2 rounded bg-[#FACC15] px-[0.8cqmin] text-[2.2cqmin] font-black leading-[1.5] text-[#713F12] shadow">TOP</span> : null}
                 {kisses[player.id] ? <span className="absolute -right-[1.2cqmin] -top-[1.2cqmin] flex h-[4.6cqmin] min-w-[4.6cqmin] items-center justify-center rounded-full bg-[#E5334B] px-1 text-[2.4cqmin] font-bold tabular-nums text-white shadow">{kisses[player.id]}</span> : null}
-                {(stickers[player.id] ?? []).map((gift, position) => <Gift key={`${gift}-${position}`} id={gift} className={cn("absolute -bottom-[1.6cqmin] h-[48%] w-[48%] drop-shadow", position ? "-left-[1.6cqmin]" : "-right-[1.6cqmin]")} />)}
+                {(() => {
+                  const mine = stickers[player.id] ?? [];
+                  const head = [...mine].reverse().find((gift) => headGifts.has(gift));
+                  const rest = mine.filter((gift) => !headGifts.has(gift)).slice(-2).reverse();
+                  return <>
+                    {head ? <Gift id={head} className="absolute -left-[2.6cqmin] -top-[2.8cqmin] h-[50%] w-[50%] -rotate-[24deg] drop-shadow" /> : null}
+                    {rest.map((gift, position) => <Gift key={`${gift}-${position}`} id={gift} className={cn("absolute -bottom-[1.6cqmin] h-[48%] w-[48%] drop-shadow", position ? "-left-[1.6cqmin]" : "-right-[1.6cqmin]")} />)}
+                  </>;
+                })()}
               </button>
               <p className="mt-px truncate text-center text-[2.6cqmin] font-semibold leading-tight text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.8)]">{player.me ? t("common.you") : player.name}, {player.age}</p>
               {index === turn && !staged ? <p className={cn("absolute top-full whitespace-nowrap rounded-full bg-black/45 px-[1.6cqmin] text-[2.3cqmin] font-semibold text-white", seats[index][0] > 75 ? "right-0" : seats[index][0] < 25 ? "left-0" : "left-1/2 -translate-x-1/2")}>↑ {t("bottle.spinsBottle")}</p> : null}
