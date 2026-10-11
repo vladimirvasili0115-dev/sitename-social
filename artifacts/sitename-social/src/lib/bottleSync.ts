@@ -21,3 +21,4 @@ export const bottleSpin = () => call<boolean>("bottle_spin");
 export const bottleAnswer = (kiss: boolean) => call<null>("bottle_answer", { p_kiss: kiss });
 export const bottleSay = (text: string) => call<null>("bottle_say", { p_text: text });
 export const bottleSpend = (amount: number) => call<number>("bottle_spend", { p_amount: amount });
+export const bottleCocktail = (to: string) => call<number>("bottle_cocktail", { p_to: to });

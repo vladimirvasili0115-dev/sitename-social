@@ -12,7 +12,7 @@ import { BottleSvg, WaterBottleSvg, WoodTable } from "./BottleArt";
 import { playGiftSound, playSound, setVolume } from "./sound";
 import { supabase } from "@/lib/supabase";
 import { ensureMessagesLoaded, openRemoteChat, remoteChats, sendRemoteMessage } from "@/lib/messagesSync";
-import { bottleAnswer, bottleJoin, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState } from "@/lib/bottleSync";
+import { bottleAnswer, bottleCocktail, bottleJoin, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState } from "@/lib/bottleSync";
 
 type Player = { id: string; name: string; age: number; female: boolean; avatar: string; me?: boolean; empty?: boolean };
 type Phase = "waiting" | "spinning" | "choice" | "kissed" | "declined";
@@ -52,6 +52,8 @@ const lockedGifts: [string, number, number][] = [
   ["e:📻", 5, 30000], ["e:🎂", 5, 30000], ["e:🎹", 5, 30000], ["e:🎼", 5, 30000], ["e:🪕", 5, 30000], ["e:👘", 5, 30000], ["e:🥁", 5, 30000], ["e:🎛️", 5, 30000], ["e:🕶️", 5, 30000], ["e:🎙️", 5, 30000], ["e:💌", 5, 40000], ["e:💟", 5, 40000], ["e:💜", 5, 40000], ["e:👠", 5, 40000], ["e:😎", 5, 40000], ["e:💛", 5, 40000], ["e:🖤", 5, 40000], ["e:❤️‍🔥", 5, 40000], ["e:🩵", 5, 40000], ["e:💚", 5, 40000], ["e:🧡", 5, 40000], ["e:💙", 5, 40000], ["e:🎭", 5, 50000], ["e:👡", 5, 50000], ["e:🐈‍⬛", 5, 50000], ["e:🪠", 5, 50000], ["e:🚗", 5, 50000], ["e:🥚", 5, 50000], ["e:🧤", 5, 50000], ["e:🪢", 5, 50000], ["e:🎪", 5, 50000], ["e:🕸️", 5, 50000], ["e:🪞", 5, 50000], ["e:🧺", 5, 50000], ["e:🐍", 5, 65000], ["e:🧳", 5, 65000], ["e:🥾", 5, 65000], ["e:🗑️", 5, 65000], ["e:🧨", 5, 65000], ["e:☯️", 5, 65000], ["e:🍀", 5, 65000], ["e:⌚", 5, 65000], ["e:📱", 5, 65000], ["e:⏰", 5, 65000], ["e:🕰️", 5, 65000], ["e:☎️", 5, 65000], ["e:🗼", 5, 80000], ["e:🗿", 5, 80000], ["e:👲", 5, 80000], ["e:⏱️", 5, 80000], ["e:⏲️", 5, 80000], ["e:📟", 5, 80000], ["e:🫖", 5, 80000], ["e:💘", 5, 80000], ["e:💔", 5, 80000], ["e:🦇", 5, 80000], ["e:🎮", 5, 80000], ["e:🚁", 5, 80000], ["e:🚜", 5, 100000], ["e:🍱", 5, 100000], ["e:🤵", 5, 100000], ["e:🦜", 5, 100000], ["e:🏍️", 5, 100000], ["e:🥊", 5, 100000], ["e:🔥", 5, 100000], ["e:🐖", 5, 100000], ["e:🪭", 5, 100000], ["e:✈️", 5, 100000], ["e:🐈", 5, 100000], ["e:🐴", 5, 100000], ["e:⭐", 5, 125000], ["e:🍨", 5, 125000], ["e:🐕", 5, 125000], ["e:⛓️", 5, 125000], ["e:🚙", 5, 125000], ["e:💩", 5, 125000], ["e:🛸", 5, 125000], ["e:🏆", 5, 125000], ["e:⏳", 5, 125000], ["e:🪈", 5, 125000], ["e:🥿", 5, 125000], ["e:🦢", 5, 125000], ["e:🛷", 5, 150000], ["e:🍫", 5, 150000], ["e:🛏️", 5, 150000], ["e:🌼", 5, 150000], ["e:🍎", 5, 150000], ["e:🕯️", 5, 150000], ["e:🎠", 5, 150000], ["e:🎡", 5, 150000], ["e:🧩", 5, 150000], ["e:🪁", 5, 150000], ["e:🎯", 5, 150000], ["e:🎺", 5, 150000],
 ];
 // Gifts that are worn on the head sit tilted on the top corner of the photo; everything else stands at the bottom.
+// Cocktails are the one gift that pays the receiver: every second cocktail gives them a heart (counted by the server).
+const cocktails = new Set(["e:🍸", "e:🍹"]);
 const headGifts = new Set(["crown", "e:👑", "e:⛑️", "e:🤠", "e:🎩", "e:👒", "e:🧢", "e:🎓", "e:🪖", "e:🎀", "e:🌸", "e:👳", "e:🔱"]);
 function Gift({ id, className }: { id: string; className?: string }) {
   if (id.startsWith("song:")) id = id === "song:video" ? "e:🎬" : "e:🎵";
@@ -487,7 +489,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (heartsRef.current < price) return false;
     heartsRef.current -= price;
     setHearts(heartsRef.current);
-    if (online) void bottleSpend(price);
+    if (online) void (cocktails.has(gift) && !player.me ? bottleCocktail(player.id) : bottleSpend(price));
     const key = flyId.current++;
     playGiftSound(gift, "send");
     setFlying((list) => [...list, { key, gift, to: index, moved: false, ms }]);
