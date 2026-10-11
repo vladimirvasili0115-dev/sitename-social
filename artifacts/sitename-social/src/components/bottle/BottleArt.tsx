@@ -1,26 +1,51 @@
-// Original artwork for the game: an emerald glass bottle with a gold foil neck and a small heart label (no brand marks).
+// Original artwork for the game: a plain green glass bottle, drawn here (no brand marks).
 export function BottleSvg({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 60 200" aria-hidden="true" className={className}>
+    <svg viewBox="0 0 66 200" aria-hidden="true" className={className}>
       <defs>
         <linearGradient id="bt-glass" x1="0" x2="1">
-          <stop offset="0" stopColor="#064E2B" /><stop offset="0.22" stopColor="#15A050" /><stop offset="0.42" stopColor="#5BE08A" /><stop offset="0.6" stopColor="#12994A" /><stop offset="1" stopColor="#043B20" />
+          <stop offset="0" stopColor="#2C7A12" /><stop offset="0.14" stopColor="#4FA524" /><stop offset="0.38" stopColor="#7CCB45" /><stop offset="0.62" stopColor="#57AE29" /><stop offset="0.88" stopColor="#3A8E18" /><stop offset="1" stopColor="#256A0E" />
         </linearGradient>
-        <linearGradient id="bt-gold" x1="0" x2="1"><stop offset="0" stopColor="#9A6F08" /><stop offset="0.45" stopColor="#FFE48A" /><stop offset="1" stopColor="#8A5F05" /></linearGradient>
-        <linearGradient id="bt-label" x1="0" x2="1"><stop offset="0" stopColor="#E9DDBE" /><stop offset="0.45" stopColor="#FFFBEF" /><stop offset="1" stopColor="#D9CBA6" /></linearGradient>
+        <linearGradient id="bt-depth" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#FFFFFF" stopOpacity="0.12" /><stop offset="0.55" stopColor="#FFFFFF" stopOpacity="0" /><stop offset="1" stopColor="#0E3D05" stopOpacity="0.35" /></linearGradient>
       </defs>
-      <ellipse cx="30" cy="197" rx="17" ry="2.500" fill="#000000" opacity="0.18" />
-      <path d="M24.500 14h11v34c0 12 14.500 20 14.500 44v84c0 12-6 20-15 20H25c-9 0-15-8-15-20V92c0-24 14.500-32 14.500-44z" fill="url(#bt-glass)" />
-      <path d="M12 176c0 11 5 17 13 17h10c8 0 13-6 13-17" fill="none" stroke="#032D18" strokeWidth="2" opacity="0.5" />
-      <rect x="22.500" y="3" width="15" height="13" rx="2.500" fill="url(#bt-gold)" />
-      <path d="M24 16h12v22c-3 2-9 2-12 0z" fill="url(#bt-gold)" />
-      <path d="M24 30h12" stroke="#7A5506" strokeWidth="1" opacity="0.6" />
-      <rect x="10" y="108" width="40" height="46" fill="url(#bt-label)" />
-      <path d="M10 108h40v3.500H10zM10 150.500h40v3.500H10z" fill="url(#bt-gold)" />
-      <path d="M30 142c-9-6.500-13-11-13-16.500 0-4.500 3.300-7.500 7-7.500 2.600 0 4.800 1.400 6 3.600 1.200-2.200 3.400-3.600 6-3.600 3.700 0 7 3 7 7.500 0 5.500-4 10-13 16.500z" fill="#E5334B" />
-      <path d="M17 62c-3 9-3.500 20-3.500 36" stroke="#D8FFE6" strokeWidth="3" strokeLinecap="round" fill="none" opacity="0.6" />
-      <path d="M15.500 160c0 9 .5 16 2 22" stroke="#D8FFE6" strokeWidth="2.500" strokeLinecap="round" fill="none" opacity="0.45" />
-      <path d="M43 70c2 8 3 16 3 26" stroke="#02301A" strokeWidth="2" strokeLinecap="round" fill="none" opacity="0.35" />
+      <ellipse cx="33" cy="194" rx="27" ry="4" fill="#5A2E05" opacity="0.28" />
+      <path id="bt-body" d="M26 12h14v40c0 13 19 20 19 44v84c0 8-5 13-13 13H20c-8 0-13-5-13-13V96c0-24 19-31 19-44z" fill="url(#bt-glass)" />
+      <path d="M26 12h14v40c0 13 19 20 19 44v84c0 8-5 13-13 13H20c-8 0-13-5-13-13V96c0-24 19-31 19-44z" fill="url(#bt-depth)" />
+      <path d="M26 12h14v40c0 13 19 20 19 44v84c0 8-5 13-13 13H20c-8 0-13-5-13-13V96c0-24 19-31 19-44z" fill="none" stroke="#1F5F0B" strokeWidth="1.200" opacity="0.7" />
+      <rect x="23.500" y="3" width="19" height="6" rx="2.500" fill="#4FA524" stroke="#1F5F0B" strokeWidth="1" />
+      <rect x="24.500" y="9" width="17" height="5" rx="2" fill="#3A8E18" stroke="#1F5F0B" strokeWidth="1" />
+      <path d="M26.500 4.800h13" stroke="#C9F2A4" strokeWidth="1.200" strokeLinecap="round" opacity="0.8" />
+      <path d="M12 178c5 10 37 10 42 0" fill="none" stroke="#C9F2A4" strokeWidth="2.500" strokeLinecap="round" opacity="0.55" />
+      <path d="M14 186c6 6 32 6 38 0" fill="none" stroke="#1F5F0B" strokeWidth="1.500" strokeLinecap="round" opacity="0.5" />
+      <path d="M15 100c-1.500 20-1.500 48 0 70" stroke="#E4FBCB" strokeWidth="3.500" strokeLinecap="round" fill="none" opacity="0.5" />
+      <path d="M29.500 18v32" stroke="#E4FBCB" strokeWidth="2.200" strokeLinecap="round" fill="none" opacity="0.55" />
+      <path d="M52 104c1.200 18 1.200 44 0 62" stroke="#184F08" strokeWidth="2.500" strokeLinecap="round" fill="none" opacity="0.3" />
+      <path d="M22 70c-6 6-9 13-10 22" stroke="#E4FBCB" strokeWidth="2.500" strokeLinecap="round" fill="none" opacity="0.4" />
+    </svg>
+  );
+}
+
+// The table top: warm honey wood with a soft light in the middle and flowing grain.
+export function WoodTable({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 400 440" preserveAspectRatio="xMidYMid slice" aria-hidden="true" className={className}>
+      <defs>
+        <radialGradient id="wd-light" cx="0.5" cy="0.5" r="0.75"><stop offset="0" stopColor="#F6C777" /><stop offset="0.5" stopColor="#E9A957" /><stop offset="1" stopColor="#CE8436" /></radialGradient>
+        <filter id="wd-grain" x="0" y="0" width="100%" height="100%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.006 0.055" numOctaves="4" seed="11" />
+          <feColorMatrix values="0 0 0 0 0.52  0 0 0 0 0.27  0 0 0 0 0.05  0 0 0 1.500 -0.620" />
+        </filter>
+        <filter id="wd-swirl" x="-5%" y="-5%" width="110%" height="110%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.011 0.004" numOctaves="2" seed="4" result="n" />
+          <feDisplacementMap in="SourceGraphic" in2="n" scale="46" />
+        </filter>
+      </defs>
+      <rect width="400" height="440" fill="url(#wd-light)" />
+      <g filter="url(#wd-swirl)" fill="none" stroke="#B9732A" strokeLinecap="round">
+        {[18, 52, 81, 118, 149, 186, 221, 252, 290, 324, 361, 396, 428].map((y, i) => <path key={y} d={`M-30 ${y}C80 ${y - 14} 150 ${y + 16} 230 ${y}S380 ${y - 12} 430 ${y + 6}`} strokeWidth={i % 3 === 0 ? 2.200 : 1.200} opacity={i % 2 ? 0.22 : 0.32} />)}
+        {[36, 100, 168, 236, 306, 378].map((y) => <path key={y} d={`M-30 ${y}C90 ${y + 10} 200 ${y - 12} 430 ${y + 4}`} stroke="#FFE2A6" strokeWidth="1.600" opacity="0.28" />)}
+      </g>
+      <rect width="400" height="440" filter="url(#wd-grain)" opacity="0.5" />
     </svg>
   );
 }
