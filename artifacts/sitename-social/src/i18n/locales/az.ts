@@ -89,5 +89,6 @@ const az = {
   "bottle.wheelChat":"Bəxt çarxından qazandı:","bottle.wheelKissNote":"Öpüşlər profilindəki öpüş sayına əlavə olundu",
   "bottle.statSmiles":"smaylik","bottle.wheelSmileNote":"Smayliklər profilindəki smaylik sayına əlavə olundu",
   "bottle.zodiac":"Bürc","bottle.sign0":"Oğlaq","bottle.sign1":"Dolça","bottle.sign2":"Balıqlar","bottle.sign3":"Qoç","bottle.sign4":"Buğa","bottle.sign5":"Əkizlər","bottle.sign6":"Xərçəng","bottle.sign7":"Şir","bottle.sign8":"Qız","bottle.sign9":"Tərəzi","bottle.sign10":"Əqrəb","bottle.sign11":"Oxatan",
+  "bottle.tables":"Masanı dəyiş","bottle.roomRandom":"Təsadüfi seçilmiş masa!","bottle.roomFriends":"Dostlar və tanışlar","bottle.roomNoFriends":"Hazırda oyunda dostun yoxdur","bottle.roomList":"Masalar","bottle.roomHere":"buradasan","bottle.roomFullTag":"dolu","bottle.roomFull1":"","bottle.roomFull2":"nömrəli otaq doludur. Gözləyin,","bottle.roomFirst":"ilk sırada sizsiniz.","bottle.roomPlace":"növbədəki yeriniz:","bottle.roomCancel":"Gözləməkdən imtina et","bottle.roomGone":"Bu masa artıq bağlanıb",
 } as const;
 export default az;

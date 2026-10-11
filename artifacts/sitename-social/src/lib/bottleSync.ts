@@ -25,3 +25,8 @@ export const bottleCocktail = (to: string) => call<number>("bottle_cocktail", { 
 export const bottleBuyChances = (pack: number) => call<{ hearts: number; chances: number }>("bottle_buy_chances", { p_pack: pack });
 export const bottleWheel = () => call<{ sector: number; hearts: number; chances: number }>("bottle_wheel_spin");
 export const bottleSong = (to: string, kind: "video" | "mp3") => call<number>("bottle_song", { p_to: to, p_kind: kind });
+export type BottleTables = { tables: { id: number; boys: number; girls: number }[]; friends: { id: string; name: string | null; avatar: string | null; table: number }[] };
+export type BottleMove = { table?: number; full?: boolean; position?: number; gone?: boolean };
+export const bottleTables = () => call<BottleTables>("bottle_tables_list");
+export const bottleMove = (table: number | null) => call<BottleMove>("bottle_move", { p_table: table });
+export const bottleQueueLeave = () => call<null>("bottle_queue_leave");

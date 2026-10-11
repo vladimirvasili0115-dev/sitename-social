@@ -80,5 +80,6 @@ const ru: Record<keyof typeof az, string> = {
   "bottle.wheelChat":"выиграл(а) на Колесе удачи:","bottle.wheelKissNote":"Поцелуи добавлены к числу поцелуев в твоём профиле",
   "bottle.statSmiles":"смайликов","bottle.wheelSmileNote":"Смайлики добавлены к счётчику в твоём профиле",
   "bottle.zodiac":"Знак зодиака","bottle.sign0":"Козерог","bottle.sign1":"Водолей","bottle.sign2":"Рыбы","bottle.sign3":"Овен","bottle.sign4":"Телец","bottle.sign5":"Близнецы","bottle.sign6":"Рак","bottle.sign7":"Лев","bottle.sign8":"Дева","bottle.sign9":"Весы","bottle.sign10":"Скорпион","bottle.sign11":"Стрелец",
+  "bottle.tables":"Сменить стол","bottle.roomRandom":"Случайный стол!","bottle.roomFriends":"Друзья и знакомые","bottle.roomNoFriends":"Сейчас в игре нет твоих друзей","bottle.roomList":"Столы","bottle.roomHere":"ты здесь","bottle.roomFullTag":"полный","bottle.roomFull1":"Комната","bottle.roomFull2":"заполнена. Подождите,","bottle.roomFirst":"вы первый в очереди.","bottle.roomPlace":"ваше место в очереди:","bottle.roomCancel":"Отменить ожидание","bottle.roomGone":"Этот стол уже закрыт",
 };
 export default ru;

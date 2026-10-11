@@ -80,5 +80,6 @@ const ka: Record<keyof typeof az, string> = {
   "bottle.wheelChat":"ბედის ბორბალზე მოიგო:","bottle.wheelKissNote":"კოცნები დაემატა შენი პროფილის კოცნების რაოდენობას",
   "bottle.statSmiles":"სმაილი","bottle.wheelSmileNote":"სმაილები დაემატა შენი პროფილის მთვლელს",
   "bottle.zodiac":"ზოდიაქო","bottle.sign0":"თხის რქა","bottle.sign1":"მერწყული","bottle.sign2":"თევზები","bottle.sign3":"ვერძი","bottle.sign4":"კურო","bottle.sign5":"ტყუპები","bottle.sign6":"კირჩხიბი","bottle.sign7":"ლომი","bottle.sign8":"ქალწული","bottle.sign9":"სასწორი","bottle.sign10":"მორიელი","bottle.sign11":"მშვილდოსანი",
+  "bottle.tables":"მაგიდის შეცვლა","bottle.roomRandom":"შემთხვევითი მაგიდა!","bottle.roomFriends":"მეგობრები და ნაცნობები","bottle.roomNoFriends":"ახლა თამაშში მეგობარი არ გყავს","bottle.roomList":"მაგიდები","bottle.roomHere":"აქ ხარ","bottle.roomFullTag":"სავსეა","bottle.roomFull1":"ოთახი","bottle.roomFull2":"სავსეა. დაელოდეთ,","bottle.roomFirst":"რიგში პირველი ხართ.","bottle.roomPlace":"თქვენი ადგილი რიგში:","bottle.roomCancel":"ლოდინის გაუქმება","bottle.roomGone":"ეს მაგიდა უკვე დაიხურა",
 };
 export default ka;
