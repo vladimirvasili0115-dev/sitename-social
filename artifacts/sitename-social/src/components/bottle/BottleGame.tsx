@@ -1,18 +1,22 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { AtSign, Ban, Flag, Mail, Gift as GiftIcon, Heart, Home, Maximize, Menu, Minimize, Music, Music2, RefreshCw, SendHorizontal, Settings, Trophy, UserPlus, UserRoundCog, Users, Volume2, X } from "lucide-react";
+import { AtSign, Clock, Flame, Search, Star, Ban, Flag, Mail, Gift as GiftIcon, Heart, Home, Maximize, Menu, Minimize, Music, Music2, RefreshCw, SendHorizontal, Settings, Trophy, UserPlus, UserRoundCog, Users, Volume2, X } from "lucide-react";
 import type { GiftId } from "@/types";
 import { cartoonAvatar } from "./avatarArt";
 import { useTranslation } from "@/i18n/useTranslation";
 import { GiftArt } from "@/components/gifts/GiftArt";
 import { useProfile } from "@/components/profile/useProfile";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/lib/supabase";
 import { BottleSvg, WaterBottleSvg, WoodTable } from "./BottleArt";
 import { playSound, setVolume } from "./sound";
 
 type Player = { id: string; name: string; age: number; female: boolean; avatar: string; me?: boolean };
 type Phase = "waiting" | "spinning" | "choice" | "kissed" | "declined";
+type Track = { id: string; title: string; duration?: string };
+const stored = (key: string): Track[] => { try { return JSON.parse(window.localStorage.getItem(key) ?? "[]") as Track[]; } catch { return []; } };
+const keep = (key: string, list: Track[]) => { try { window.localStorage.setItem(key, JSON.stringify(list.slice(0, 40))); } catch { /* storage is full or blocked */ } };
 type Line = { id: number; from: string; to?: string; text?: string; gift?: string; song?: string };
 
 // Seat centres in percent of the table. Wide: a tool column on the left, seats in a rectangle. Tall (phone, window): a tool row on top, seats in an oval.
@@ -94,7 +98,12 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [muted, setMutedIds] = useState<string[]>([]);
   const [flagMenu, setFlagMenu] = useState(false);
   const [songFor, setSongFor] = useState<number | null>(null);
-  const [songKind, setSongKind] = useState<"video" | "mp3">("video");
+  const [songTab, setSongTab] = useState<"popular" | "fav" | "recent" | "search" | "mp3">("popular");
+  const [tracks, setTracks] = useState<Track[]>([]);
+  const [trackState, setTrackState] = useState<"idle" | "loading" | "nokey" | "fail">("idle");
+  const [favs, setFavs] = useState<Track[]>([]);
+  const [recent, setRecent] = useState<Track[]>([]);
+  const [query, setQuery] = useState("");
   const [songFile, setSongFile] = useState<File | null>(null);
   const [audio, setAudio] = useState<{ url: string; name: string } | null>(null);
   const [dm, setDm] = useState<number | null>(null);
@@ -118,7 +127,6 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [waitNote, setWaitNote] = useState(false);
   const frameRef = useRef<HTMLIFrameElement>(null);
   const [hearts, setHearts] = useState(12);
-  const [link, setLink] = useState("");
   const [video, setVideo] = useState<string | null>(null);
   const [badLink, setBadLink] = useState(false);
   const lineId = useRef(3);
@@ -251,19 +259,64 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     say({ from: "me", text: draft.trim().slice(0, 200) });
     setDraft("");
   }
-  function sendSong(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function loadTracks(search: string) {
+    setTrackState("loading");
+    setTracks([]);
+    try {
+      const token = supabase ? (await supabase.auth.getSession()).data.session?.access_token : null;
+      const response = await fetch(`/api/youtube${search ? `?q=${encodeURIComponent(search)}` : ""}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+      const body = (await response.json()) as { videos?: Track[]; error?: string };
+      if (!response.ok) return setTrackState(body.error === "nokey" ? "nokey" : "fail");
+      setTracks(body.videos ?? []);
+      setTrackState("idle");
+    } catch {
+      setTrackState("fail");
+    }
+  }
+  function openSong(index: number) {
+    setBadLink(false);
+    setSongFile(null);
+    setGiftNote(null);
+    setFavs(stored("bottle-fav"));
+    setRecent(stored("bottle-recent"));
+    setSongTab("popular");
+    setSongFor(index);
+    void loadTracks("");
+  }
+  function finishSong(title: string) {
     if (songFor === null) return;
-    const target = players[songFor];
-    const id = songKind === "video" ? youtubeId(link) : null;
-    if (songKind === "video" ? !id : !songFile) return setBadLink(true);
-    if (!pay(SONG_PRICE[songKind])) return setGiftNote(t("bottle.noHearts"));
-    if (id) { setAudio(null); setVideo(id); }
-    else if (songFile) { setVideo(null); setAudio({ url: URL.createObjectURL(songFile), name: songFile.name.replace(/\.[^.]+$/, "") }); }
-    say({ from: "me", to: target.id, song: id ? "YouTube" : songFile!.name.replace(/\.[^.]+$/, "") });
-    setLink("");
+    say({ from: "me", to: players[songFor].id, song: title });
     setSongFor(null);
     onDedicate(false);
+  }
+  function orderTrack(track: Track) {
+    if (!pay(SONG_PRICE.video)) return setGiftNote(t("bottle.noHearts"));
+    setAudio(null);
+    setVideo(track.id);
+    const next = [track, ...recent.filter((item) => item.id !== track.id)];
+    setRecent(next);
+    keep("bottle-recent", next);
+    finishSong(track.title);
+  }
+  function toggleFav(track: Track) {
+    const next = favs.some((item) => item.id === track.id) ? favs.filter((item) => item.id !== track.id) : [track, ...favs];
+    setFavs(next);
+    keep("bottle-fav", next);
+  }
+  function searchTracks(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const id = youtubeId(query);
+    if (id) { setTrackState("idle"); return setTracks([{ id, title: "YouTube" }]); }
+    if (query.trim().length >= 2) void loadTracks(query.trim());
+  }
+  function sendMp3(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!songFile) return setBadLink(true);
+    if (!pay(SONG_PRICE.mp3)) return setGiftNote(t("bottle.noHearts"));
+    const name = songFile.name.replace(/\.[^.]+$/, "");
+    setVideo(null);
+    setAudio({ url: URL.createObjectURL(songFile), name });
+    finishSong(name);
   }
   function sendDm(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -375,7 +428,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           const active = index === turn || index === target;
           return (
             <div key={player.id} className={cn("absolute w-[17cqmin] -translate-x-1/2 -translate-y-1/2 transition-[left,top] duration-[1100ms] ease-in-out motion-reduce:duration-0", staged && active ? "pointer-events-none z-30" : index === turn && "z-10")} style={staged && active ? { left: `calc(${CENTER_X}% ${index === turn ? "-" : "+"} 12.5cqmin)`, top: `${STAGE_Y}%` } : { left: `${seats[index][0]}%`, top: `${seats[index][1]}%` }}>
-              <button type="button" disabled={player.me} onClick={(event) => { event.stopPropagation(); if (dedicate) { setBadLink(false); setSongFile(null); setSongFor(index); return; } setGiftNote(null); setCardNote(null); setFlagMenu(false); setCard(picked !== index); setPicked(picked === index ? null : index); }} aria-label={`${player.name}, ${player.age}`} className={cn("relative block aspect-square w-full rounded-[14%] bg-surface-2 shadow-[0_4px_10px_rgba(0,0,0,0.4)]", staged && index === target ? "ring-[0.9cqmin] ring-[#FFE2A8]" : active ? "ring-4 ring-white" : picked === index ? "ring-4 ring-[#8CC63F]" : player.me ? "ring-2 ring-white/80" : "")}>
+              <button type="button" disabled={player.me} onClick={(event) => { event.stopPropagation(); if (dedicate) return openSong(index); setGiftNote(null); setCardNote(null); setFlagMenu(false); setCard(picked !== index); setPicked(picked === index ? null : index); }} aria-label={`${player.name}, ${player.age}`} className={cn("relative block aspect-square w-full rounded-[14%] bg-surface-2 shadow-[0_4px_10px_rgba(0,0,0,0.4)]", staged && index === target ? "ring-[0.9cqmin] ring-[#FFE2A8]" : active ? "ring-4 ring-white" : picked === index ? "ring-4 ring-[#8CC63F]" : player.me ? "ring-2 ring-white/80" : "")}>
                 <img src={player.avatar} alt="" className="h-full w-full rounded-[14%] object-cover" style={player.me && frame ? { boxShadow: `0 0 0 0.9cqmin ${frame}, 0 0 2.4cqmin ${frame}` } : undefined} />
                 {dedicate && !player.me ? <span className="absolute inset-0 z-10 flex items-center justify-center rounded-[14%] bg-black/35"><span className="flex h-[7cqmin] w-[7cqmin] items-center justify-center rounded-full bg-[#8CC63F] text-[5cqmin] font-black leading-none text-white shadow">+</span></span> : null}
                 {topIds.has(player.id) ? <span className="absolute -left-[1.2cqmin] -top-[1.2cqmin] rounded bg-[#FACC15] px-[0.8cqmin] text-[2.2cqmin] font-black leading-[1.5] text-[#713F12] shadow">TOP</span> : null}
@@ -461,22 +514,54 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           );
         })() : null}
 
-        {songFor !== null ? (
-          <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/35 p-3" onClick={(event) => { event.stopPropagation(); setSongFor(null); }}>
-            <form onSubmit={sendSong} role="dialog" aria-modal="true" aria-label={t("bottle.dedicate")} onClick={(event) => event.stopPropagation()} className="relative w-full max-w-[340px] rounded-2xl bg-white p-3 text-[#1F2937] shadow-2xl">
-              <button type="button" onClick={() => setSongFor(null)} aria-label={t("photos.close")} title={t("photos.close")} className="absolute -right-2 -top-2 flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#8CC63F] bg-white text-[#8CC63F] shadow"><X size={18} strokeWidth={3} /></button>
-              <p className="flex items-center gap-2 text-sm font-bold"><img src={players[songFor].avatar} alt="" className="h-9 w-9 rounded-md object-cover" />{t("bottle.dedicateTo")} {players[songFor].name}</p>
-              <div role="tablist" className="my-2 flex gap-1">
-                {(["video", "mp3"] as const).map((kind) => <button key={kind} type="button" role="tab" aria-selected={songKind === kind} onClick={() => { setSongKind(kind); setBadLink(false); }} className={cn("flex h-9 flex-1 items-center justify-center gap-1 rounded-md text-xs font-bold", songKind === kind ? "bg-[#EE8A2B] text-white" : "bg-[#F3F4F6] text-[#4B5563]")}>{kind === "video" ? "YouTube video" : "MP3"} · <Heart size={11} fill="currentColor" stroke="none" />{SONG_PRICE[kind]}</button>)}
+        {songFor !== null ? (() => {
+          const shown = songTab === "fav" ? favs : songTab === "recent" ? recent : tracks;
+          const remote = songTab === "popular" || songTab === "search";
+          const tabs = [["popular", Flame], ["fav", Star], ["recent", Clock], ["search", Search]] as const;
+          return (
+            <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/35 p-3" onClick={(event) => { event.stopPropagation(); setSongFor(null); }}>
+              <div role="dialog" aria-modal="true" aria-label={t("bottle.dedicate")} onClick={(event) => event.stopPropagation()} className="relative flex max-h-full w-full max-w-[420px] flex-col rounded-2xl bg-white p-3 text-[#1F2937] shadow-2xl">
+                <button type="button" onClick={() => setSongFor(null)} aria-label={t("photos.close")} title={t("photos.close")} className="absolute -right-2 -top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#8CC63F] bg-white text-[#8CC63F] shadow"><X size={18} strokeWidth={3} /></button>
+                <div role="tablist" className="flex items-center justify-center gap-3">
+                  {tabs.map(([tab, Icon]) => <button key={tab} type="button" role="tab" aria-selected={songTab === tab} aria-label={t(`bottle.song${tab[0].toUpperCase()}${tab.slice(1)}` as "bottle.songPopular")} title={t(`bottle.song${tab[0].toUpperCase()}${tab.slice(1)}` as "bottle.songPopular")} onClick={() => { setSongTab(tab); if (tab === "popular") void loadTracks(""); if (tab === "search") { setTracks([]); setTrackState("idle"); } }} className={cn("flex h-10 w-10 items-center justify-center rounded-full", songTab === tab ? "bg-[#FFEDD5] text-[#EA580C]" : "text-[#9CA3AF] hover:bg-black/5")}><Icon size={22} fill={songTab === tab && (tab === "popular" || tab === "fav") ? "currentColor" : "none"} /></button>)}
+                  <button type="button" role="tab" aria-selected={songTab === "mp3"} onClick={() => setSongTab("mp3")} className={cn("h-10 rounded-full px-3 text-xs font-bold", songTab === "mp3" ? "bg-[#FFEDD5] text-[#EA580C]" : "text-[#9CA3AF] hover:bg-black/5")}>MP3</button>
+                </div>
+                <p className="mb-2 mt-1 flex items-center gap-2 text-xs font-bold text-[#6B7280]"><img src={players[songFor].avatar} alt="" className="h-6 w-6 rounded object-cover" /><span className="min-w-0 flex-1 truncate">{t("bottle.dedicateTo")} {players[songFor].name}</span><span className="flex shrink-0 items-center gap-0.5 text-[#EA580C]"><Heart size={11} fill="currentColor" stroke="none" />{SONG_PRICE[songTab === "mp3" ? "mp3" : "video"]}</span></p>
+                {songTab === "search" ? (
+                  <form onSubmit={searchTracks} className="mb-2 flex gap-1.5">
+                    <input value={query} onChange={(event) => setQuery(event.target.value)} maxLength={120} aria-label={t("bottle.songSearch")} placeholder={t("bottle.songSearchHint")} autoComplete="off" className="h-10 min-w-0 flex-1 rounded-lg border border-[#D1D5DB] bg-white px-3 text-sm outline-none focus:border-[#EE8A2B]" />
+                    <button type="submit" aria-label={t("bottle.songSearch")} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#EE8A2B] text-white"><Search size={18} /></button>
+                  </form>
+                ) : null}
+                {songTab === "mp3" ? (
+                  <form onSubmit={sendMp3}>
+                    <input type="file" accept="audio/mpeg,audio/mp3,.mp3" aria-label="MP3" onChange={(event) => { setSongFile(event.target.files?.[0] ?? null); setBadLink(false); }} className={cn("w-full rounded-lg border p-2 text-xs", badLink ? "border-[#DC2626]" : "border-[#D1D5DB]")} />
+                    <button type="submit" className="mt-3 h-10 w-full rounded-lg bg-[#8CC63F] text-sm font-bold text-white hover:brightness-110">{t("bottle.dedicateSend")}</button>
+                  </form>
+                ) : (
+                  <div className="min-h-[120px] overflow-y-auto">
+                    {remote && trackState === "loading" ? <p role="status" className="py-8 text-center text-xs text-[#6B7280]">{t("bottle.songLoading")}</p> : null}
+                    {remote && trackState === "nokey" ? <p role="status" className="rounded-lg bg-[#FEF3C7] p-3 text-xs font-semibold text-[#92400E]">{t("bottle.songNoKey")}</p> : null}
+                    {remote && trackState === "fail" ? <p role="status" className="rounded-lg bg-[#FEE2E2] p-3 text-xs font-semibold text-[#991B1B]">{t("bottle.songFail")}</p> : null}
+                    {!shown.length && !remote ? <p className="py-8 text-center text-xs text-[#6B7280]">{t("bottle.songEmpty")}</p> : null}
+                    <ul className="grid grid-cols-2 gap-2">
+                      {shown.map((track) => (
+                        <li key={track.id} className="relative">
+                          <button type="button" onClick={() => orderTrack(track)} className="block w-full text-left">
+                            <span className="relative block aspect-video overflow-hidden rounded-md bg-[#111827]"><img src={`https://i.ytimg.com/vi/${track.id}/mqdefault.jpg`} alt="" loading="lazy" className="h-full w-full object-cover" />{track.duration ? <span className="absolute bottom-0.5 right-0.5 rounded bg-black/75 px-1 text-[10px] font-semibold tabular-nums text-white">{track.duration}</span> : null}</span>
+                            <span className="mt-0.5 line-clamp-2 text-[11px] font-semibold leading-tight">{track.title}</span>
+                          </button>
+                          <button type="button" onClick={() => toggleFav(track)} aria-pressed={favs.some((item) => item.id === track.id)} aria-label={t("bottle.songFav")} title={t("bottle.songFav")} className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-black/45 text-white"><Star size={15} fill={favs.some((item) => item.id === track.id) ? "#FACC15" : "none"} stroke={favs.some((item) => item.id === track.id) ? "#FACC15" : "currentColor"} /></button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {giftNote ? <p role="status" className="mt-2 text-xs font-semibold text-[#B91C1C]">{giftNote}</p> : null}
               </div>
-              {songKind === "video"
-                ? <input value={link} onChange={(event) => { setLink(event.target.value); setBadLink(false); }} aria-label={t("bottle.videoLink")} placeholder={t("bottle.videoLink")} autoComplete="off" className={cn("h-10 w-full rounded-lg border bg-white px-3 text-sm outline-none focus:border-[#EE8A2B]", badLink ? "border-[#DC2626]" : "border-[#D1D5DB]")} />
-                : <input type="file" accept="audio/mpeg,audio/mp3,.mp3" aria-label="MP3" onChange={(event) => { setSongFile(event.target.files?.[0] ?? null); setBadLink(false); }} className={cn("w-full rounded-lg border p-2 text-xs", badLink ? "border-[#DC2626]" : "border-[#D1D5DB]")} />}
-              {giftNote ? <p role="status" className="mt-2 text-xs font-semibold text-[#B91C1C]">{giftNote}</p> : null}
-              <button type="submit" className="mt-3 h-10 w-full rounded-lg bg-[#8CC63F] text-sm font-bold text-white hover:brightness-110">{t("bottle.dedicateSend")}</button>
-            </form>
-          </div>
-        ) : null}
+            </div>
+          );
+        })() : null}
 
         {panel ? (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/35 p-3" onClick={(event) => { event.stopPropagation(); setPanel(null); }}>
