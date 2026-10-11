@@ -73,5 +73,6 @@ const en: Record<keyof typeof az, string> = {
   "bottle.songPopular":"Popular","bottle.songFav":"Favourites","bottle.songRecent":"Recent","bottle.songSearch":"Search","bottle.songSearchHint":"Song name or YouTube link","bottle.songNoKey":"YouTube search is not connected yet: the site owner must add a YouTube key. For now you can paste a YouTube link in Search.","bottle.songFail":"YouTube did not answer. Try again a little later.","bottle.songEmpty":"Nothing here yet","bottle.songLoading":"Loading…",
   "auth.day":"Day","auth.month":"Month","auth.year":"Year",
   "bottle.liveNote":"Live table","admin.hearts":"Give hearts","admin.heartsHint":"Adds hearts to the game balance; a negative number removes them.","admin.logHearts":"hearts changed:",
+  "bottle.dmToast":"sent you a private message","bottle.dmOpen":"Tap to view","bottle.dmVipWrite":"Private messages are for VIP users",
 };
 export default en;

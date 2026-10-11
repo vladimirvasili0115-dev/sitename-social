@@ -73,5 +73,6 @@ const tr: Record<keyof typeof az, string> = {
   "bottle.songPopular":"Popüler","bottle.songFav":"Favoriler","bottle.songRecent":"Son eklenenler","bottle.songSearch":"Ara","bottle.songSearchHint":"Şarkı adı veya YouTube bağlantısı","bottle.songNoKey":"YouTube araması henüz bağlı değil: site sahibi YouTube anahtarını eklemeli. Şimdilik Ara bölümüne YouTube bağlantısı yapıştırabilirsin.","bottle.songFail":"YouTube yanıt vermedi. Biraz sonra tekrar dene.","bottle.songEmpty":"Burada henüz bir şey yok","bottle.songLoading":"Yükleniyor…",
   "auth.day":"Gün","auth.month":"Ay","auth.year":"Yıl",
   "bottle.liveNote":"Canlı masa","admin.hearts":"Kalp ver","admin.heartsHint":"Oyun bakiyesine kalp ekler; eksi sayı düşer.","admin.logHearts":"kalp değişti:",
+  "bottle.dmToast":"size özel mesaj yazdı","bottle.dmOpen":"Görmek için dokun","bottle.dmVipWrite":"Özel mesaj yazmak VIP kullanıcılar içindir",
 };
 export default tr;

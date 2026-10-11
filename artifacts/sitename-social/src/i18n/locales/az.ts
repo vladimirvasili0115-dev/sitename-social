@@ -82,5 +82,6 @@ const az = {
   "bottle.songPopular":"Populyar","bottle.songFav":"Sevimlilər","bottle.songRecent":"Son qoyulanlar","bottle.songSearch":"Axtar","bottle.songSearchHint":"Mahnı adı və ya YouTube linki","bottle.songNoKey":"YouTube axtarışı hələ qoşulmayıb: saytın sahibi YouTube açarını əlavə etməlidir. Hələlik Axtar bölməsinə YouTube linkini yapışdıra bilərsən.","bottle.songFail":"YouTube cavab vermədi. Bir az sonra yenidən yoxla.","bottle.songEmpty":"Burada hələ heç nə yoxdur","bottle.songLoading":"Yüklənir…",
   "auth.day":"Gün","auth.month":"Ay","auth.year":"İl",
   "bottle.liveNote":"Canlı masa","admin.hearts":"Ürək ver","admin.heartsHint":"Oyun balansına ürək əlavə edir; mənfi rəqəm çıxır.","admin.logHearts":"ürək dəyişdi:",
+  "bottle.dmToast":"sizə özəl mesaj yazdı","bottle.dmOpen":"Baxmaq üçün vur","bottle.dmVipWrite":"Özəl mesaj yazmaq VIP istifadəçilər üçündür",
 } as const;
 export default az;

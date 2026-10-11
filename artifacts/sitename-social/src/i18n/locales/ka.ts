@@ -73,5 +73,6 @@ const ka: Record<keyof typeof az, string> = {
   "bottle.songPopular":"პოპულარული","bottle.songFav":"რჩეულები","bottle.songRecent":"ბოლო","bottle.songSearch":"ძებნა","bottle.songSearchHint":"სიმღერის სახელი ან YouTube ბმული","bottle.songNoKey":"YouTube ძებნა ჯერ არ არის ჩართული: საიტის მფლობელმა უნდა დაამატოს YouTube გასაღები. ჯერჯერობით ჩასვი YouTube ბმული ძებნაში.","bottle.songFail":"YouTube-მა არ უპასუხა. სცადე ცოტა მოგვიანებით.","bottle.songEmpty":"აქ ჯერ არაფერია","bottle.songLoading":"იტვირთება…",
   "auth.day":"დღე","auth.month":"თვე","auth.year":"წელი",
   "bottle.liveNote":"ცოცხალი მაგიდა","admin.hearts":"გულების მიცემა","admin.heartsHint":"ამატებს გულებს თამაშის ბალანსზე; უარყოფითი რიცხვი აკლებს.","admin.logHearts":"გულები შეიცვალა:",
+  "bottle.dmToast":"მოგწერათ პირადი შეტყობინება","bottle.dmOpen":"დააჭირე სანახავად","bottle.dmVipWrite":"პირადი შეტყობინების დაწერა VIP მომხმარებლებისთვისაა",
 };
 export default ka;

@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
 import Link from "next/link";
 import { AtSign, Clock, Flame, Search, Star, Ban, Flag, Mail, Gift as GiftIcon, Heart, Home, Maximize, Menu, Minimize, Music, Music2, RefreshCw, SendHorizontal, Settings, Trophy, UserPlus, UserRoundCog, Users, Volume2, VolumeX, X } from "lucide-react";
 import type { GiftId } from "@/types";
@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { BottleSvg, WaterBottleSvg, WoodTable } from "./BottleArt";
 import { playGiftSound, playSound, setVolume } from "./sound";
 import { supabase } from "@/lib/supabase";
+import { ensureMessagesLoaded, openRemoteChat, remoteChats, sendRemoteMessage } from "@/lib/messagesSync";
 import { bottleAnswer, bottleJoin, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState } from "@/lib/bottleSync";
 
 type Player = { id: string; name: string; age: number; female: boolean; avatar: string; me?: boolean; empty?: boolean };
@@ -127,7 +128,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [query, setQuery] = useState("");
   const [songFile, setSongFile] = useState<File | null>(null);
   const [audio, setAudio] = useState<{ url: string; name: string } | null>(null);
-  const [dm, setDm] = useState<number | null>(null);
+  const [dm, setDm] = useState<{ id: string; name: string; avatar: string } | null>(null);
+  const [dmNote, setDmNote] = useState(false);
+  const [dmToast, setDmToast] = useState<{ id: string; name: string; avatar: string } | null>(null);
   const [dmDraft, setDmDraft] = useState("");
   const [dms, setDms] = useState<Record<string, { mine: boolean; text: string }[]>>({});
   const [cardNote, setCardNote] = useState<string | null>(null);
@@ -295,6 +298,27 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       setRotation((current) => current - (current % 360) + 1440 + (((angleTo(targetAt) % 360) + 360) % 360));
     }
   }, [net, players, angleTo]);
+  const chats = useSyncExternalStore(remoteChats.subscribe, remoteChats.get, remoteChats.getServer);
+  const unreadRef = useRef<Map<string, number> | null>(null);
+  const myId = net?.me;
+  useEffect(() => { if (online) ensureMessagesLoaded(myId); }, [online, myId]);
+  useEffect(() => {
+    if (!online) return;
+    const before = unreadRef.current;
+    unreadRef.current = new Map(chats.map((chat) => [chat.userId, chat.unread]));
+    if (!before) return;
+    const fresh = chats.find((chat) => chat.unread > (before.get(chat.userId) ?? 0));
+    if (!fresh) return;
+    if (dm?.id === fresh.userId) return void openRemoteChat(fresh.userId);
+    playSound("chosen");
+    setDmToast({ id: fresh.userId, name: fresh.person.user.name.split(" ")[0], avatar: fresh.person.user.avatar });
+  }, [chats, online, dm]);
+  useEffect(() => {
+    if (!dmToast) return;
+    const timer = window.setTimeout(() => setDmToast(null), 10000);
+    return () => window.clearTimeout(timer);
+  }, [dmToast]);
+  const dmLines = dm ? (online ? (chats.find((chat) => chat.userId === dm.id)?.messages ?? []).map((item) => ({ mine: item.from === "me", text: item.text })) : dms[dm.id] ?? []) : [];
   const myTurnLive = online && phase === "waiting" && turn === 7;
   useEffect(() => {
     if (!online) return;
@@ -431,19 +455,25 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     setAudio({ url: URL.createObjectURL(songFile), name });
     finishSong(name);
   }
+  // Private messages use the site's own Messages. Reading is free; writing is free for girls and needs VIP for boys.
   function sendDm(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (dm === null || !dmDraft.trim()) return;
-    const id = players[dm].id;
-    setDms((value) => ({ ...value, [id]: [...(value[id] ?? []), { mine: true, text: dmDraft.trim().slice(0, 300) }] }));
+    if (!dm || !dmDraft.trim()) return;
+    if (!players[meIndex].female && !vip) return setDmNote(true);
+    const text = dmDraft.trim().slice(0, 300);
     setDmDraft("");
+    if (online) return void sendRemoteMessage(dm.id, { text });
+    const id = dm.id;
+    setDms((value) => ({ ...value, [id]: [...(value[id] ?? []), { mine: true, text }] }));
     window.setTimeout(() => setDms((value) => ({ ...value, [id]: [...(value[id] ?? []), { mine: false, text: smallTalk[Math.floor(Math.random() * smallTalk.length)] }] })), 1600);
   }
-  function openDm(index: number) {
-    if (!players[meIndex].female && !vip) return setCardNote(t("bottle.dmVip"));
+  function openDm(person: { id: string; name: string; avatar: string }) {
     setCard(false);
     setPicked(null);
-    setDm(index);
+    setDmNote(false);
+    setDmToast(null);
+    setDm(person);
+    if (online) void openRemoteChat(person.id);
   }
   function sendGift(index: number, gift: string, price: number) {
     const player = players[index];
@@ -638,7 +668,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                     <button onClick={() => setCardNote(t("bottle.friendSent"))} aria-label={t("bottle.addFriend")} title={t("bottle.addFriend")} className={cn(action, "bg-[#F59E0B]")}><UserPlus size={20} /></button>
                     <button onClick={() => setCard(false)} aria-label={t("gifts.send")} title={t("gifts.send")} className={cn(action, "bg-[#F97316]")}><GiftIcon size={20} /></button>
                     <button onClick={() => { setDraft(`${player.name}, `); setCard(false); setPicked(null); window.setTimeout(() => chatRef.current?.focus(), 50); }} aria-label={t("bottle.mention")} title={t("bottle.mention")} className={cn(action, "bg-[#8B5CF6]")}><AtSign size={20} /></button>
-                    <button onClick={() => openDm(picked)} aria-label={t("bottle.write")} title={t("bottle.write")} className={cn(action, "bg-[#3B9EDD]")}><Mail size={20} /></button>
+                    <button onClick={() => openDm(player)} aria-label={t("bottle.write")} title={t("bottle.write")} className={cn(action, "bg-[#3B9EDD]")}><Mail size={20} /></button>
                   </div>
                   {cardNote ? <p role="status" className="mt-1 rounded-md bg-[#FEF3C7] px-2 py-1 text-xs font-semibold text-[#92400E]">{cardNote}</p> : null}
                 </div>
@@ -904,18 +934,28 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           <button type="submit" disabled={!draft.trim()} aria-label={t("messages.send")} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#EE8A2B] text-white disabled:opacity-40"><SendHorizontal size={17} /></button>
         </form>
       </div>
-      {dm !== null ? (
-        <div role="dialog" aria-label={`${t("bottle.write")}: ${players[dm].name}`} className="absolute bottom-0 right-3 z-[55] flex h-[330px] w-[min(290px,calc(100%-24px))] flex-col overflow-hidden rounded-t-xl border border-border bg-surface shadow-2xl">
+      {dmToast && dmToast.id !== dm?.id ? (
+        <div role="status" className="absolute bottom-16 left-1/2 z-[56] flex w-[min(330px,calc(100%-24px))] -translate-x-1/2 items-center gap-2 rounded-2xl border border-border bg-surface p-2 shadow-2xl">
+          <button onClick={() => openDm(dmToast)} className="flex min-w-0 flex-1 items-center gap-2 text-left">
+            <img src={dmToast.avatar} alt="" className="h-10 w-10 shrink-0 rounded-full object-cover" />
+            <span className="min-w-0 text-sm text-text"><b>{dmToast.name}</b> {t("bottle.dmToast")}<span className="block text-xs font-semibold text-accent">{t("bottle.dmOpen")}</span></span>
+          </button>
+          <button onClick={() => setDmToast(null)} aria-label={t("photos.close")} title={t("photos.close")} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted hover:text-text"><X size={16} /></button>
+        </div>
+      ) : null}
+      {dm ? (
+        <div role="dialog" aria-label={`${t("bottle.write")}: ${dm.name}`} className="absolute bottom-0 right-3 z-[55] flex h-[330px] w-[min(290px,calc(100%-24px))] flex-col overflow-hidden rounded-t-xl border border-border bg-surface shadow-2xl">
           <div className="flex h-11 shrink-0 items-center gap-2 bg-[#3B9EDD] px-2 text-white">
-            <img src={players[dm].avatar} alt="" className="h-8 w-8 rounded-full object-cover" />
-            <span className="min-w-0 flex-1 truncate text-sm font-bold">{players[dm].name}</span>
+            <img src={dm.avatar} alt="" className="h-8 w-8 rounded-full object-cover" />
+            <span className="min-w-0 flex-1 truncate text-sm font-bold">{dm.name}</span>
             <button onClick={() => setDm(null)} aria-label={t("photos.close")} title={t("photos.close")} className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-white/20"><X size={17} /></button>
           </div>
           <div className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto p-2">
-            {(dms[players[dm].id] ?? []).map((item, index) => <p key={index} className={cn("max-w-[80%] break-words rounded-2xl px-3 py-1.5 text-sm", item.mine ? "self-end bg-[#3B9EDD] text-white" : "self-start bg-surface-2 text-text")}>{item.text}</p>)}
+            {dmLines.map((item, index) => <p key={index} className={cn("max-w-[80%] break-words rounded-2xl px-3 py-1.5 text-sm", item.mine ? "self-end bg-[#3B9EDD] text-white" : "self-start bg-surface-2 text-text")}>{item.text}</p>)}
           </div>
+          {dmNote ? <button onClick={() => { setPayNote(false); setPanel("vip"); }} className="border-t border-border bg-[#FEF3C7] px-2 py-1.5 text-left text-xs font-semibold text-[#92400E]">👑 {t("bottle.dmVipWrite")}</button> : null}
           <form onSubmit={sendDm} className="flex items-center gap-1.5 border-t border-border p-1.5">
-            <input value={dmDraft} onChange={(event) => setDmDraft(event.target.value)} maxLength={300} aria-label={t("messages.placeholder")} placeholder={t("messages.placeholder")} autoComplete="off" className="h-9 min-w-0 flex-1 rounded-full border border-border bg-surface-2 px-3 text-sm text-text outline-none placeholder:text-muted focus:border-accent" />
+            <input value={dmDraft} onChange={(event) => { setDmDraft(event.target.value); setDmNote(false); }} maxLength={300} aria-label={t("messages.placeholder")} placeholder={t("messages.placeholder")} autoComplete="off" className="h-9 min-w-0 flex-1 rounded-full border border-border bg-surface-2 px-3 text-sm text-text outline-none placeholder:text-muted focus:border-accent" />
             <button type="submit" disabled={!dmDraft.trim()} aria-label={t("messages.send")} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#3B9EDD] text-white disabled:opacity-40"><SendHorizontal size={15} /></button>
           </form>
         </div>
