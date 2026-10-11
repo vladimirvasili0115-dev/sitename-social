@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { AtSign, Clock, Flame, Search, Star, Ban, Flag, Mail, Gift as GiftIcon, Heart, Home, Maximize, Menu, Minimize, Music, Music2, RefreshCw, SendHorizontal, Settings, Trophy, UserPlus, UserRoundCog, Users, Volume2, X } from "lucide-react";
+import { AtSign, Clock, Flame, Search, Star, Ban, Flag, Mail, Gift as GiftIcon, Heart, Home, Maximize, Menu, Minimize, Music, Music2, RefreshCw, SendHorizontal, Settings, Trophy, UserPlus, UserRoundCog, Users, Volume2, VolumeX, X } from "lucide-react";
 import type { GiftId } from "@/types";
 import { cartoonAvatar } from "./avatarArt";
 import { useTranslation } from "@/i18n/useTranslation";
@@ -734,11 +734,24 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         ) : null}
       </div>
 
-      <div className={cn("flex min-h-0 min-w-0 flex-1 flex-col border-border", wide ? "border-l" : "border-t")}>
-        {video ? (
-          <div className={cn("relative aspect-video w-full shrink-0 bg-black", wide ? "max-h-[42%]" : "max-h-[24%]")}>
+      <div className={cn("relative flex min-h-0 min-w-0 flex-1 flex-col border-border", wide ? "border-l" : "border-t")}>
+        {video && wide ? (
+          <div className="relative aspect-video max-h-[42%] w-full shrink-0 bg-black">
             <iframe ref={frameRef} onLoad={() => window.setTimeout(pushMusic, 800)} src={`https://www.youtube-nocookie.com/embed/${video}?autoplay=1&rel=0&enablejsapi=1`} title="YouTube" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen className="h-full w-full" />
             <button onClick={() => setVideo(null)} aria-label={t("photos.close")} title={t("photos.close")} className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80"><X size={15} /></button>
+          </div>
+        ) : null}
+        {video && !wide ? (
+          <div className="absolute right-0 top-2 z-20 w-[190px] overflow-hidden rounded-l-2xl border border-r-0 border-border bg-surface shadow-lg">
+            <div className="flex items-center">
+              <img src={players[meIndex].avatar} alt="" className="mx-2 h-10 w-10 shrink-0 rounded-full border-2 border-border object-cover" />
+              <div className="aspect-video min-w-0 flex-1 bg-black"><iframe ref={frameRef} onLoad={() => window.setTimeout(pushMusic, 800)} src={`https://www.youtube-nocookie.com/embed/${video}?autoplay=1&rel=0&enablejsapi=1`} title="YouTube" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen className="h-full w-full" /></div>
+            </div>
+            <div className="flex items-center gap-1.5 px-2 py-1">
+              <button onClick={() => setMusic(music ? 0 : 60)} aria-label={t(music ? "videos.mute" : "videos.unmute")} title={t(music ? "videos.mute" : "videos.unmute")} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted hover:text-text">{music ? <Volume2 size={17} /> : <VolumeX size={17} />}</button>
+              <input type="range" min={0} max={100} value={music} onChange={(event) => setMusic(Number(event.target.value))} aria-label={t("bottle.music")} className="min-w-0 flex-1 accent-[#8CC63F]" />
+              <button onClick={() => setVideo(null)} aria-label={t("photos.close")} title={t("photos.close")} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted hover:text-text"><X size={15} /></button>
+            </div>
           </div>
         ) : null}
         {audio ? (
