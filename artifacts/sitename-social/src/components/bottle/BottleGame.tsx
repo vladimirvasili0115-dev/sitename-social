@@ -41,10 +41,10 @@ const giftChoices: [string, number][] = [
   ["e:🧣", 1], ["e:⛑️", 2], ["e:🤠", 2], ["e:⚓", 2], ["e:👽", 2], ["e:🐻", 2], ["e:🐱", 2], ["e:🦊", 2], ["e:🐭", 2], ["e:🐼", 2], ["e:🐞", 2], ["e:😈", 2],
   ["e:🐷", 2], ["e:🦌", 2], ["e:🎗️", 2], ["e:🎀", 2], ["e:🌸", 2], ["e:🩷", 2], ["e:🎲", 1],
 ];
-// The wheel of fortune: 16 sectors clockwise from the top. The same table (with its odds) lives in the database, which does the real draw.
+// The wheel of fortune: 16 sectors clockwise from the top. The database does the real draw with its own odds; the weights here are only used by the offline demo.
 const wheelSectors: { hearts?: number; chances?: number; kisses?: number; weight: number }[] = [
-  { hearts: 1000, weight: 3 }, { hearts: 1, weight: 1700 }, { kisses: 1, weight: 900 }, { hearts: 25, weight: 80 }, { hearts: 3, weight: 1300 }, { chances: 1, weight: 1000 }, { hearts: 100, weight: 20 }, { hearts: 1, weight: 1700 },
-  { kisses: 3, weight: 300 }, { hearts: 10, weight: 300 }, { weight: 900 }, { chances: 3, weight: 200 }, { hearts: 3, weight: 1100 }, { hearts: 5, weight: 197 }, { kisses: 1, weight: 200 }, { hearts: 1, weight: 100 },
+  { hearts: 1000, weight: 30 }, { hearts: 1, weight: 900 }, { kisses: 1, weight: 900 }, { hearts: 25, weight: 400 }, { hearts: 3, weight: 1300 }, { chances: 1, weight: 1300 }, { hearts: 100, weight: 100 }, { hearts: 1, weight: 700 },
+  { kisses: 3, weight: 500 }, { hearts: 10, weight: 900 }, { weight: 200 }, { chances: 3, weight: 500 }, { hearts: 3, weight: 1070 }, { hearts: 5, weight: 900 }, { kisses: 1, weight: 200 }, { hearts: 1, weight: 100 },
 ];
 const prizeText = (item: (typeof wheelSectors)[number]) => (item.hearts ? `❤ ${item.hearts}` : item.chances ? `🎲 ${item.chances}` : item.kisses ? `💋 ${item.kisses}` : "");
 const chancePacks: [number, number][] = [[300, 900], [50, 150], [15, 45], [5, 20], [1, 5]];
@@ -845,14 +845,6 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                     <button onClick={() => void spinWheel()} disabled={wheelBusy} className="h-9 rounded-lg bg-[#8CC63F] px-5 text-sm font-bold text-white hover:brightness-110 disabled:opacity-60">{t("bottle.wheelSpin")} · 🎲 1</button>
                   </div>
                   {net?.winner ? <p className="mt-2 rounded-lg bg-black/25 p-2 text-center text-xs"><b className="text-[#FDE047]">{t("bottle.wheelWinner")}:</b> {(net.winner.name ?? "").split(" ")[0]} — ❤ {net.winner.amount}</p> : null}
-                  <details className="mt-2 rounded-lg bg-black/20 p-2 text-xs">
-                    <summary className="cursor-pointer font-bold">{t("bottle.wheelOdds")}</summary>
-                    <ul className="mt-1 grid grid-cols-2 gap-x-3 tabular-nums">
-                      {[...new Set(wheelSectors.map(prizeText))].map((label) => (
-                        <li key={label} className="flex justify-between"><span>{label || t("bottle.wheelEmptyShort")}</span><span>{(wheelSectors.filter((item) => prizeText(item) === label).reduce((sum, item) => sum + item.weight, 0) / 100).toFixed(2)}%</span></li>
-                      ))}
-                    </ul>
-                  </details>
                 </div>
               ) : panel === "chances" ? (
                 <div>
