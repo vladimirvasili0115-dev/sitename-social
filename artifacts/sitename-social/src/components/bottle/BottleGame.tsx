@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
 import Link from "next/link";
-import { AtSign, Clock, Flame, Search, Star, Ban, Flag, Mail, Gift as GiftIcon, Heart, Home, Maximize, Menu, Minimize, Music, Music2, RefreshCw, SendHorizontal, Settings, Trophy, UserPlus, UserRoundCog, Users, Volume2, VolumeX, X } from "lucide-react";
+import { AtSign, LifeBuoy, Clock, Flame, Search, Star, Ban, Flag, Mail, Gift as GiftIcon, Heart, Home, Maximize, Menu, Minimize, Music, Music2, RefreshCw, SendHorizontal, Settings, Trophy, UserPlus, UserRoundCog, Users, Volume2, VolumeX, X } from "lucide-react";
 import type { GiftId } from "@/types";
 import { cartoonAvatar } from "./avatarArt";
 import { useTranslation } from "@/i18n/useTranslation";
@@ -12,7 +12,7 @@ import { BottleSvg, WaterBottleSvg, WoodTable } from "./BottleArt";
 import { playGiftSound, playSound, setVolume } from "./sound";
 import { supabase } from "@/lib/supabase";
 import { ensureMessagesLoaded, openRemoteChat, remoteChats, sendRemoteMessage } from "@/lib/messagesSync";
-import { bottleAnswer, bottleCocktail, bottleJoin, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState } from "@/lib/bottleSync";
+import { bottleAnswer, bottleBuyChances, bottleCocktail, bottleJoin, bottleWheel, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState } from "@/lib/bottleSync";
 
 type Player = { id: string; name: string; age: number; female: boolean; avatar: string; me?: boolean; empty?: boolean };
 type Phase = "waiting" | "spinning" | "choice" | "kissed" | "declined";
@@ -41,6 +41,12 @@ const giftChoices: [string, number][] = [
   ["e:🧣", 1], ["e:⛑️", 2], ["e:🤠", 2], ["e:⚓", 2], ["e:👽", 2], ["e:🐻", 2], ["e:🐱", 2], ["e:🦊", 2], ["e:🐭", 2], ["e:🐼", 2], ["e:🐞", 2], ["e:😈", 2],
   ["e:🐷", 2], ["e:🦌", 2], ["e:🎗️", 2], ["e:🎀", 2], ["e:🌸", 2], ["e:🩷", 2], ["e:🎲", 1],
 ];
+// The wheel of fortune: 12 sectors clockwise from the top. The same table (with its odds) lives in the database, which does the real draw.
+const wheelSectors: { hearts?: number; chances?: number; weight: number }[] = [
+  { hearts: 1000, weight: 3 }, { hearts: 1, weight: 2200 }, { chances: 1, weight: 1200 }, { hearts: 3, weight: 1500 }, { hearts: 100, weight: 20 }, { hearts: 1, weight: 2000 },
+  { chances: 3, weight: 200 }, { hearts: 10, weight: 300 }, { hearts: 25, weight: 80 }, { hearts: 3, weight: 1200 }, { weight: 1100 }, { hearts: 5, weight: 197 },
+];
+const chancePacks: [number, number][] = [[300, 900], [50, 150], [15, 45], [5, 20], [1, 5]];
 const vipPlans: [number, number][] = [[7, 300], [30, 900], [90, 2200]];
 const frames = ["#FACC15", "#F472B6", "#60A5FA", "#34D399", "#A78BFA", "#F97316", "#EF4444"];
 // Put the channel link here (for example "https://t.me/kanal_adi"); while empty, the settings row says it is not set yet.
@@ -146,7 +152,12 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [volume, setVolumeLevel] = useState(80);
   const [music, setMusic] = useState(60);
   const [accept, setAccept] = useState(true);
-  const [panel, setPanel] = useState<"settings" | "top" | "rules" | "shop" | "menu" | "vip" | "bottles" | "frames" | "achievements" | "boosters" | null>(null);
+  const [panel, setPanel] = useState<"settings" | "top" | "rules" | "shop" | "menu" | "vip" | "bottles" | "frames" | "achievements" | "boosters" | "wheel" | "chances" | null>(null);
+  const [chances, setChances] = useState(0);
+  const [wheelTurn, setWheelTurn] = useState(0);
+  const [wheelBusy, setWheelBusy] = useState(false);
+  const [wheelPrize, setWheelPrize] = useState<number | null>(null);
+  const wheelLock = useRef(false);
   const [topTab, setTopTab] = useState<"league" | "daily" | "weekly">("league");
   const [sent, setSent] = useState<Record<string, number>>({});
   const [skin, setSkin] = useState(0);
@@ -300,6 +311,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (net.phase === "choice") setSeconds(left(ANSWER_SECONDS));
     heartsRef.current = net.hearts;
     setHearts(net.hearts);
+    if (!wheelLock.current) setChances(net.chances ?? 0);
     const key = `${net.round}:${net.target}`;
     if (net.phase === "spinning" && targetAt >= 0 && spunRef.current !== key) {
       spunRef.current = key;
@@ -483,6 +495,54 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     setDm(person);
     if (online) void openRemoteChat(person.id);
   }
+  // The wheel. Online the database draws the sector; in the demo the same odds are rolled here.
+  async function spinWheel() {
+    if (wheelLock.current) return;
+    if (chances < 1) return setPanel("chances");
+    wheelLock.current = true;
+    setWheelBusy(true);
+    setWheelPrize(null);
+    let sector = 0;
+    let after: { hearts: number; chances: number };
+    if (online) {
+      const result = await bottleWheel();
+      if (!result) { wheelLock.current = false; setWheelBusy(false); return; }
+      sector = result.sector;
+      after = result;
+    } else {
+      let roll = Math.random() * 10000;
+      sector = wheelSectors.findIndex((item) => (roll -= item.weight) < 0);
+      if (sector < 0) sector = 10;
+      after = { hearts: heartsRef.current + (wheelSectors[sector].hearts ?? 0), chances: chances - 1 + (wheelSectors[sector].chances ?? 0) };
+    }
+    setChances((value) => value - 1);
+    setWheelTurn((current) => current - (current % 360) + 1800 + ((360 - sector * 30) % 360));
+    window.setTimeout(() => {
+      heartsRef.current = after.hearts;
+      setHearts(after.hearts);
+      setChances(after.chances);
+      setWheelPrize(sector);
+      playSound(wheelSectors[sector].hearts || wheelSectors[sector].chances ? "kiss" : "decline");
+      wheelLock.current = false;
+      setWheelBusy(false);
+    }, 4300);
+  }
+  async function buyChances(pack: number, price: number) {
+    if (heartsRef.current < price) return setPayNote(true);
+    if (online) {
+      const result = await bottleBuyChances(pack);
+      if (!result) return setPayNote(true);
+      heartsRef.current = result.hearts;
+      setHearts(result.hearts);
+      setChances(result.chances);
+    } else {
+      heartsRef.current -= price;
+      setHearts(heartsRef.current);
+      setChances((value) => value + pack);
+    }
+    setPayNote(false);
+    setPanel("wheel");
+  }
   // A single gift glides for 3 seconds; gifts sent in a rapid series (press and hold) fly in about a second.
   function sendGift(index: number, gift: string, price: number, ms = 3000) {
     const player = players[index];
@@ -576,7 +636,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             <span className="text-[max(12px,2.6cqmin)] font-bold tabular-nums leading-tight [text-shadow:0_1px_3px_rgba(0,0,0,0.6)]">{hearts}</span>
           </button>
           <span className="flex-1" />
-          <button onClick={onToggleFull} aria-label={t("bottle.fullscreen")} title={t("bottle.fullscreen")} className={tool}>{full ? <Minimize size={17} /> : <Maximize size={17} />}</button>
+          <button onClick={() => { setWheelPrize(null); setPayNote(false); setPanel("wheel"); }} aria-label={t("bottle.wheel")} title={t("bottle.wheel")} className={tool}><LifeBuoy size={19} /></button>
+          {wide ? <button onClick={onToggleFull} aria-label={t("bottle.fullscreen")} title={t("bottle.fullscreen")} className={tool}>{full ? <Minimize size={17} /> : <Maximize size={17} />}</button> : null}
           <button onClick={() => setPanel("top")} aria-label={t("bottle.top")} title={t("bottle.top")} className={tool}><Trophy size={18} /></button>
           <button onClick={() => setPanel("menu")} aria-label={t("bottle.menu")} title={t("bottle.menu")} className={tool}><Menu size={18} /></button>
           <button onClick={() => setPanel("settings")} aria-label={t("bottle.settings")} title={t("bottle.settings")} className={tool}><Settings size={18} /></button>
@@ -746,10 +807,61 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
 
         {panel ? (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/35 p-3" onClick={(event) => { event.stopPropagation(); setPanel(null); }}>
-            <div role="dialog" aria-modal="true" aria-label={t(`bottle.${panel}`)} onClick={(event) => event.stopPropagation()} className={cn("relative max-h-full w-full rounded-2xl p-3 shadow-2xl", panel === "shop" ? "max-w-[420px] bg-[linear-gradient(180deg,#F26D7D,#F7A1A8)]" : "max-w-[340px] bg-white")}>
-              <button onClick={() => setPanel(null)} aria-label={t("photos.close")} title={t("photos.close")} className={cn("absolute -right-2 -top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 bg-white shadow", panel === "shop" ? "border-[#EF4444] text-[#EF4444]" : "border-[#8CC63F] text-[#8CC63F]")}><X size={18} strokeWidth={3} /></button>
-              <p className={cn("mb-1 text-center text-sm font-bold", panel === "shop" ? "mb-2 text-white" : "text-[#9CA3AF]")}>{t(`bottle.${panel}`)}</p>
-              {panel === "shop" ? (
+            <div role="dialog" aria-modal="true" aria-label={t(`bottle.${panel}`)} onClick={(event) => event.stopPropagation()} className={cn("relative max-h-full w-full rounded-2xl p-3 shadow-2xl", panel === "shop" ? "max-w-[420px] bg-[linear-gradient(180deg,#F26D7D,#F7A1A8)]" : panel === "wheel" || panel === "chances" ? "max-w-[380px] bg-[linear-gradient(180deg,#12998C,#7FD8C8)]" : "max-w-[340px] bg-white")}>
+              <button onClick={() => setPanel(null)} aria-label={t("photos.close")} title={t("photos.close")} className={cn("absolute -right-2 -top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 bg-white shadow", panel === "shop" ? "border-[#EF4444] text-[#EF4444]" : panel === "wheel" || panel === "chances" ? "border-[#0E8478] text-[#0E8478]" : "border-[#8CC63F] text-[#8CC63F]")}><X size={18} strokeWidth={3} /></button>
+              <p className={cn("mb-1 text-center text-sm font-bold", panel === "shop" || panel === "wheel" || panel === "chances" ? "mb-2 text-white" : "text-[#9CA3AF]")}>{t(`bottle.${panel}`)}</p>
+              {panel === "wheel" ? (
+                <div className="max-h-[84cqmin] overflow-y-auto text-white">
+                  <p className="text-center text-xs">{t("bottle.wheelHint")}</p>
+                  <div className="relative mx-auto my-2 aspect-square w-[min(240px,62cqmin)]">
+                    <svg viewBox="-110 -110 220 220" className="h-full w-full transition-transform duration-[4200ms] ease-[cubic-bezier(0.12,0.7,0.1,1)] motion-reduce:duration-0" style={{ transform: `rotate(${wheelTurn}deg)` }} aria-hidden="true">
+                      <circle r="108" fill="#F5B301" /><circle r="100" fill="#0E8478" />
+                      {wheelSectors.map((item, index) => (
+                        <g key={index} transform={`rotate(${index * 30})`}>
+                          <path d="M0 0L-25.36 -94.64A98 98 0 0 1 25.36 -94.64Z" fill={index === 0 ? "#F5B301" : index % 2 ? "#19B5A5" : "#12998C"} stroke="#0B6B61" strokeWidth="0.8" />
+                          <text y="-66" textAnchor="middle" fontSize="15">{item.hearts ? "❤️" : item.chances ? "🎲" : "💨"}</text>
+                          <text y="-48" textAnchor="middle" fontSize={item.hearts && item.hearts >= 1000 ? 12 : 15} fontWeight="800" fill={index === 0 ? "#7C2D12" : "#FFFFFF"}>{item.hearts ?? item.chances ?? ""}</text>
+                        </g>
+                      ))}
+                      <circle r="16" fill="#F5B301" stroke="#FFFFFF" strokeWidth="3" /><text y="6" textAnchor="middle" fontSize="16">🤍</text>
+                    </svg>
+                    <span aria-hidden="true" className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1 text-3xl drop-shadow">🔻</span>
+                  </div>
+                  <p role="status" className="min-h-6 text-center text-sm font-bold">{wheelPrize === null ? "" : wheelSectors[wheelPrize].hearts ? `${t("bottle.wheelWon")} ❤ ${wheelSectors[wheelPrize].hearts}` : wheelSectors[wheelPrize].chances ? `${t("bottle.wheelWon")} 🎲 ${wheelSectors[wheelPrize].chances}` : t("bottle.wheelEmpty")}</p>
+                  <div className="mt-1 flex items-center justify-center gap-2">
+                    <span className="flex items-center gap-1 rounded-full bg-black/25 px-3 py-1.5 text-sm font-bold tabular-nums">{t("bottle.chancesLabel")}: 🎲 {chances}</span>
+                    <button onClick={() => { setPayNote(false); setPanel("chances"); }} aria-label={t("bottle.chances")} title={t("bottle.chances")} className="flex h-8 w-8 items-center justify-center rounded-full bg-[#8CC63F] text-lg font-black text-white hover:brightness-110">+</button>
+                    <button onClick={() => void spinWheel()} disabled={wheelBusy} className="h-9 rounded-lg bg-[#8CC63F] px-5 text-sm font-bold text-white hover:brightness-110 disabled:opacity-60">{t("bottle.wheelSpin")} · 🎲 1</button>
+                  </div>
+                  {net?.winner ? <p className="mt-2 rounded-lg bg-black/25 p-2 text-center text-xs"><b className="text-[#FDE047]">{t("bottle.wheelWinner")}:</b> {(net.winner.name ?? "").split(" ")[0]} — ❤ {net.winner.amount}</p> : null}
+                  <details className="mt-2 rounded-lg bg-black/20 p-2 text-xs">
+                    <summary className="cursor-pointer font-bold">{t("bottle.wheelOdds")}</summary>
+                    <ul className="mt-1 grid grid-cols-2 gap-x-3 tabular-nums">
+                      {[...wheelSectors].map((item, index) => ({ item, index })).filter(({ item, index }) => wheelSectors.findIndex((other) => other.hearts === item.hearts && other.chances === item.chances) === index).map(({ item }) => {
+                        const total = wheelSectors.filter((other) => other.hearts === item.hearts && other.chances === item.chances).reduce((sum, other) => sum + other.weight, 0);
+                        return <li key={`${item.hearts}-${item.chances}`} className="flex justify-between"><span>{item.hearts ? `❤ ${item.hearts}` : item.chances ? `🎲 ${item.chances}` : t("bottle.wheelEmptyShort")}</span><span>{(total / 100).toFixed(2)}%</span></li>;
+                      })}
+                    </ul>
+                  </details>
+                </div>
+              ) : panel === "chances" ? (
+                <div>
+                  <p className="mb-2 flex items-center justify-center gap-1.5 rounded-lg bg-white/90 py-1.5 text-sm font-bold text-[#134E4A]">{t("bottle.balance")}: <Heart size={15} fill="#F4511E" stroke="none" /><span className="tabular-nums">{hearts}</span> · 🎲 <span className="tabular-nums">{chances}</span></p>
+                  <ul className="grid grid-cols-3 gap-1.5">
+                    {chancePacks.map(([pack, price]) => (
+                      <li key={pack}>
+                        <button onClick={() => void buyChances(pack, price)} className={cn("flex w-full flex-col items-center rounded-xl bg-white p-2 text-center hover:brightness-95", hearts < price && "opacity-50")}>
+                          <span className="text-base font-black tabular-nums text-[#0E8478]">{pack}</span>
+                          <span aria-hidden="true" className="my-1 text-3xl">🎲</span>
+                          <span className="flex items-center gap-1 text-sm font-bold tabular-nums text-[#1F2937]"><Heart size={13} fill="#F4511E" stroke="none" />{price}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                  {payNote ? <p role="status" className="mt-2 rounded-lg bg-white/90 p-2 text-center text-xs font-semibold text-[#7F1D1D]">{t("bottle.noHearts")}</p> : null}
+                  <button onClick={() => setPanel("wheel")} className="mt-2 w-full text-center text-xs font-bold text-white underline">{t("bottle.wheelBack")}</button>
+                </div>
+              ) : panel === "shop" ? (
                 <div className="max-h-[78cqmin] overflow-y-auto pt-2">
                   <p className="mb-3 flex items-center justify-center gap-1.5 rounded-lg bg-white/90 py-1.5 text-sm font-bold text-[#7F1D1D]">{t("bottle.balance")}: <Heart size={15} fill="#F4511E" stroke="none" /><span className="tabular-nums">{hearts}</span></p>
                   <ul className="grid grid-cols-4 gap-1.5">

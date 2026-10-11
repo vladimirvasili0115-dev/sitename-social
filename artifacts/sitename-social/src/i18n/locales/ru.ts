@@ -76,5 +76,6 @@ const ru: Record<keyof typeof az, string> = {
   "bottle.dmToast":"написал(а) вам личное сообщение","bottle.dmOpen":"Нажми, чтобы посмотреть","bottle.dmVipWrite":"Писать личные сообщения могут VIP-пользователи",
   "bottle.dmMinimize":"Свернуть","bottle.dmExpand":"Развернуть",
   "bottle.dmResize":"Изменить размер (потяни)",
+  "bottle.wheel":"Колесо удачи","bottle.chances":"Магазин шансов","bottle.wheelHint":"Жми «Крутить» — запускай Колесо удачи и лови свою награду!","bottle.wheelSpin":"Крутить","bottle.chancesLabel":"Шансы","bottle.wheelWon":"Ты выиграл:","bottle.wheelEmpty":"В этот раз пусто. Попробуй ещё!","bottle.wheelEmptyShort":"Пусто","bottle.wheelWinner":"Победитель","bottle.wheelOdds":"Вероятности призов","bottle.wheelBack":"← К колесу",
 };
 export default ru;

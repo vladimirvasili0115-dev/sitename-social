@@ -76,5 +76,6 @@ const tr: Record<keyof typeof az, string> = {
   "bottle.dmToast":"size özel mesaj yazdı","bottle.dmOpen":"Görmek için dokun","bottle.dmVipWrite":"Özel mesaj yazmak VIP kullanıcılar içindir",
   "bottle.dmMinimize":"Küçült","bottle.dmExpand":"Büyüt",
   "bottle.dmResize":"Boyutu değiştir (sürükle)",
+  "bottle.wheel":"Şans çarkı","bottle.chances":"Şans mağazası","bottle.wheelHint":"«Çevir»e bas, Şans çarkını döndür ve ödülünü yakala!","bottle.wheelSpin":"Çevir","bottle.chancesLabel":"Şanslar","bottle.wheelWon":"Kazandın:","bottle.wheelEmpty":"Bu sefer boş çıktı. Tekrar dene!","bottle.wheelEmptyShort":"Boş","bottle.wheelWinner":"Kazanan","bottle.wheelOdds":"Çıkma olasılıkları","bottle.wheelBack":"← Çarka dön",
 };
 export default tr;

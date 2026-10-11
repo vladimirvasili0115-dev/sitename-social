@@ -76,5 +76,6 @@ const ka: Record<keyof typeof az, string> = {
   "bottle.dmToast":"მოგწერათ პირადი შეტყობინება","bottle.dmOpen":"დააჭირე სანახავად","bottle.dmVipWrite":"პირადი შეტყობინების დაწერა VIP მომხმარებლებისთვისაა",
   "bottle.dmMinimize":"ჩაკეცვა","bottle.dmExpand":"გაშლა",
   "bottle.dmResize":"ზომის შეცვლა (გადაათრიე)",
+  "bottle.wheel":"ბედის ბორბალი","bottle.chances":"შანსების მაღაზია","bottle.wheelHint":"დააჭირე «დატრიალებას», გაუშვი ბედის ბორბალი და დაიჭირე ჯილდო!","bottle.wheelSpin":"დატრიალება","bottle.chancesLabel":"შანსები","bottle.wheelWon":"მოიგე:","bottle.wheelEmpty":"ამჯერად ცარიელია. სცადე კიდევ!","bottle.wheelEmptyShort":"ცარიელი","bottle.wheelWinner":"გამარჯვებული","bottle.wheelOdds":"მოგების ალბათობები","bottle.wheelBack":"← ბორბალთან დაბრუნება",
 };
 export default ka;
