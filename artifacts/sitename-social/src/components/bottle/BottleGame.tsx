@@ -630,14 +630,14 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     <div className={cn("relative flex h-full w-full bg-surface text-text", wide ? "flex-row" : "flex-col")}>
       <div className={cn("relative shrink-0 overflow-hidden bg-[#E0A04E] [container-type:size]", wide ? "h-full w-[54%]" : "mx-auto aspect-[9/10] w-full max-w-[64dvh]")} onClick={() => setPicked(null)}>
         <WoodTable className="pointer-events-none absolute inset-0 h-full w-full" />
-        <div className={cn("absolute z-10 flex items-center", wide ? "inset-y-0 left-0 w-[13%] flex-col gap-[2.2cqmin] py-[2.2cqmin]" : "inset-x-0 top-0 h-[10%] gap-[2.6cqmin] px-[2.5cqmin]")} onClick={(event) => event.stopPropagation()}>
+        <div className={cn("absolute z-10 flex items-center", wide ? "inset-y-0 left-0 w-[13%] flex-col gap-[2.2cqmin] py-[2.2cqmin]" : "inset-x-0 top-0 h-[10%] gap-[1.7cqmin] px-[2cqmin]")} onClick={(event) => event.stopPropagation()}>
           <button type="button" onClick={() => { setPayNote(false); setPanel("shop"); }} aria-label={`${t("bottle.shop")}: ${hearts}`} className={cn("flex items-center text-white hover:brightness-110", wide ? "flex-col" : "gap-1.5")} title={t("bottle.shop")}>
             <Heart className="h-[8.5cqmin] max-h-11 w-[8.5cqmin] max-w-11" fill="#FF6A1F" stroke="#FFFFFF" strokeWidth={1.5} />
             <span className="text-[max(12px,2.6cqmin)] font-bold tabular-nums leading-tight [text-shadow:0_1px_3px_rgba(0,0,0,0.6)]">{hearts}</span>
           </button>
           <span className="flex-1" />
+          <button onClick={onToggleFull} aria-label={t("bottle.fullscreen")} title={t("bottle.fullscreen")} className={tool}>{full ? <Minimize size={17} /> : <Maximize size={17} />}</button>
           <button onClick={() => { setWheelPrize(null); setPayNote(false); setPanel("wheel"); }} aria-label={t("bottle.wheel")} title={t("bottle.wheel")} className={tool}><LifeBuoy size={19} /></button>
-          {wide ? <button onClick={onToggleFull} aria-label={t("bottle.fullscreen")} title={t("bottle.fullscreen")} className={tool}>{full ? <Minimize size={17} /> : <Maximize size={17} />}</button> : null}
           <button onClick={() => setPanel("top")} aria-label={t("bottle.top")} title={t("bottle.top")} className={tool}><Trophy size={18} /></button>
           <button onClick={() => setPanel("menu")} aria-label={t("bottle.menu")} title={t("bottle.menu")} className={tool}><Menu size={18} /></button>
           <button onClick={() => setPanel("settings")} aria-label={t("bottle.settings")} title={t("bottle.settings")} className={tool}><Settings size={18} /></button>
