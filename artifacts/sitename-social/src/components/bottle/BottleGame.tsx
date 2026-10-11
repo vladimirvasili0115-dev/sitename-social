@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { Ban, Flag, Mail, Gift as GiftIcon, Heart, Home, Maximize, Menu, Minimize, Music, Music2, RefreshCw, SendHorizontal, Settings, Trophy, UserPlus, UserRoundCog, Users, Volume2, X } from "lucide-react";
+import { AtSign, Ban, Flag, Mail, Gift as GiftIcon, Heart, Home, Maximize, Menu, Minimize, Music, Music2, RefreshCw, SendHorizontal, Settings, Trophy, UserPlus, UserRoundCog, Users, Volume2, X } from "lucide-react";
 import type { GiftId } from "@/types";
 import { cartoonAvatar } from "./avatarArt";
 import { useTranslation } from "@/i18n/useTranslation";
@@ -123,6 +123,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [badLink, setBadLink] = useState(false);
   const lineId = useRef(3);
   const listRef = useRef<HTMLDivElement>(null);
+  const chatRef = useRef<HTMLInputElement>(null);
   const say = useCallback((line: Omit<Line, "id">) => setLines((list) => [...list.slice(-40), { ...line, id: lineId.current++ }]), []);
   const nextTurn = useCallback(() => {
     setTarget(null);
@@ -450,6 +451,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                     <button onClick={() => setCardNote(t(vip ? "bottle.kickDemo" : "bottle.kickVip"))} aria-label={t("bottle.kick")} title={t("bottle.kick")} className={cn(action, "bg-[#EF4444]")}><Ban size={20} /></button>
                     <button onClick={() => setCardNote(t("bottle.friendSent"))} aria-label={t("bottle.addFriend")} title={t("bottle.addFriend")} className={cn(action, "bg-[#F59E0B]")}><UserPlus size={20} /></button>
                     <button onClick={() => setCard(false)} aria-label={t("gifts.send")} title={t("gifts.send")} className={cn(action, "bg-[#F97316]")}><GiftIcon size={20} /></button>
+                    <button onClick={() => { setDraft(`${player.name}, `); setCard(false); setPicked(null); window.setTimeout(() => chatRef.current?.focus(), 50); }} aria-label={t("bottle.mention")} title={t("bottle.mention")} className={cn(action, "bg-[#8B5CF6]")}><AtSign size={20} /></button>
                     <button onClick={() => openDm(picked)} aria-label={t("bottle.write")} title={t("bottle.write")} className={cn(action, "bg-[#3B9EDD]")}><Mail size={20} /></button>
                   </div>
                   {cardNote ? <p role="status" className="mt-1 rounded-md bg-[#FEF3C7] px-2 py-1 text-xs font-semibold text-[#92400E]">{cardNote}</p> : null}
@@ -670,7 +672,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           })}
         </div>
         <form onSubmit={handleChat} className={cn("flex items-center gap-2 border-t border-border p-2.5", picked !== null && "hidden")}>
-          <input value={draft} onChange={(event) => setDraft(event.target.value)} maxLength={200} aria-label={t("messages.placeholder")} placeholder={t("messages.placeholder")} autoComplete="off" className="h-11 min-w-0 flex-1 rounded-full border border-border bg-surface-2 px-4 text-sm text-text outline-none placeholder:text-muted focus:border-accent" />
+          <input ref={chatRef} value={draft} onChange={(event) => setDraft(event.target.value)} maxLength={200} aria-label={t("messages.placeholder")} placeholder={t("messages.placeholder")} autoComplete="off" className="h-11 min-w-0 flex-1 rounded-full border border-border bg-surface-2 px-4 text-sm text-text outline-none placeholder:text-muted focus:border-accent" />
           <button type="button" onClick={() => { setPayNote(false); setPanel("vip"); }} aria-label={`${t("bottle.smileys")} (VIP)`} title={`${t("bottle.smileys")} (VIP)`} className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface-2 text-xl">😊<b className="absolute -right-1 -top-1 rounded bg-[#F59E0B] px-1 text-[9px] leading-4 text-white">VIP</b></button>
           <button type="submit" disabled={!draft.trim()} aria-label={t("messages.send")} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#EE8A2B] text-white disabled:opacity-40"><SendHorizontal size={17} /></button>
         </form>
