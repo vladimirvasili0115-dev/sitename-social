@@ -12,9 +12,9 @@ import { BottleSvg, WaterBottleSvg, WoodTable } from "./BottleArt";
 import { playGiftSound, playSound, setVolume } from "./sound";
 import { supabase } from "@/lib/supabase";
 import { ensureMessagesLoaded, openRemoteChat, remoteChats, sendRemoteMessage } from "@/lib/messagesSync";
-import { bottleAnswer, bottleBuyChances, bottleCocktail, bottleJoin, bottleWheel, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState } from "@/lib/bottleSync";
+import { bottleAnswer, bottleBuyChances, bottleCocktail, bottleJoin, bottleSong, bottleWheel, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState } from "@/lib/bottleSync";
 
-type Player = { id: string; name: string; age: number; female: boolean; avatar: string; me?: boolean; empty?: boolean };
+type Player = { id: string; name: string; age: number; female: boolean; avatar: string; me?: boolean; empty?: boolean; zodiac?: number | null };
 type Phase = "waiting" | "spinning" | "choice" | "kissed" | "declined";
 type Track = { id: string; title: string; duration?: string };
 const stored = (key: string): Track[] => { try { return JSON.parse(window.localStorage.getItem(key) ?? "[]") as Track[]; } catch { return []; } };
@@ -52,6 +52,16 @@ const vipPlans: [number, number][] = [[7, 300], [30, 900], [90, 2200]];
 const frames = ["#FACC15", "#F472B6", "#60A5FA", "#34D399", "#A78BFA", "#F97316", "#EF4444"];
 // Put the channel link here (for example "https://t.me/kanal_adi"); while empty, the settings row says it is not set yet.
 const TELEGRAM_URL = "";
+// Zodiac signs in calendar order starting from Capricorn (22 December).
+const zodiacSigns = ["♑", "♒", "♓", "♈", "♉", "♊", "♋", "♌", "♍", "♎", "♏", "♐"];
+function zodiacOf(birthday: string | undefined) {
+  const [, month, day] = (birthday ?? "").split("-").map(Number);
+  if (!month || !day) return null;
+  const md = month * 100 + day;
+  const ends = [119, 218, 320, 419, 520, 620, 722, 822, 922, 1022, 1121, 1221];
+  const index = ends.findIndex((end) => md <= end);
+  return index < 0 ? 0 : index;
+}
 const SONG_PRICE = { video: 9, mp3: 5 };
 const lockedGifts: [string, number, number][] = [
   ["e:🥸", 5, 1000], ["e:🥤", 5, 1000], ["e:🃏", 5, 1000], ["e:🧊", 5, 1000], ["e:👒", 5, 1000], ["e:🍹", 5, 3000], ["e:💍", 5, 3000], ["e:💖", 5, 3000], ["e:💀", 5, 3000], ["e:💠", 5, 3000], ["e:🧋", 5, 3000], ["e:🪇", 5, 3000], ["e:🧃", 5, 3000], ["e:⚔️", 5, 3000], ["e:🫗", 5, 3000], ["e:🧢", 5, 3000], ["e:🍧", 5, 3000], ["e:🏴‍☠️", 5, 7000], ["e:🥃", 5, 7000], ["e:🎩", 5, 7000], ["e:🍸", 5, 7000], ["e:🪖", 5, 7000], ["e:🧉", 5, 7000], ["e:🕴️", 5, 7000], ["e:🥂", 5, 7000], ["e:🍔", 5, 7000], ["e:🏅", 5, 7000], ["e:🍼", 5, 7000], ["e:🥥", 5, 7000], ["e:🎁", 5, 15000], ["e:🎓", 5, 15000], ["e:⚗️", 5, 15000], ["e:🪶", 5, 15000], ["e:🫙", 5, 15000], ["e:👳", 5, 15000], ["e:🎤", 5, 15000], ["e:🪆", 5, 15000], ["e:🍯", 5, 15000], ["e:🌶️", 5, 15000], ["e:🥣", 5, 15000], ["e:🪔", 5, 15000], ["e:🍒", 5, 23000], ["e:🫒", 5, 23000], ["e:🛡️", 5, 23000], ["e:🦪", 5, 23000], ["e:🧙", 5, 23000], ["e:👸", 5, 23000], ["e:💨", 5, 23000], ["e:🦚", 5, 23000], ["e:🧿", 5, 23000], ["e:🥄", 5, 23000], ["e:💵", 5, 23000], ["e:🎎", 5, 23000], ["e:🧁", 5, 23000], ["e:🐰", 5, 23000], ["e:🍋", 5, 23000], ["e:🍭", 5, 23000], ["e:🤺", 5, 23000], ["e:🌺", 5, 23000], ["e:🌠", 5, 23000], ["e:🛢️", 5, 23000], ["e:💝", 5, 23000], ["e:🌭", 5, 23000], ["e:👜", 5, 23000], ["e:🍟", 5, 23000],
@@ -86,20 +96,20 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const online = Boolean(supabase);
   const [net, setNet] = useState<BottleState | null>(null);
   const players = useMemo<Player[]>(() => {
-    const me: Player = { id: "me", name: user.name.split(" ")[0], age: 25, female: details.gender === "female", avatar: user.avatar, me: true };
+    const me: Player = { id: "me", name: user.name.split(" ")[0], age: 25, female: details.gender === "female", avatar: user.avatar, me: true, zodiac: zodiacOf(details.birthday) };
     if (online) {
       const mine = net?.seats.find((seat) => seat.id === net.me)?.seat ?? 0;
       return Array.from({ length: 12 }, (_, place): Player => {
         const row = net?.seats.find((seat) => seat.seat === (place - 7 + mine + 12) % 12);
         if (!row) return place === 7 && !net ? me : { id: `empty-${place}`, name: "", age: 0, female: false, avatar: "", empty: true };
         const female = row.gender === "female";
-        if (row.id === net?.me) return { ...me, age: row.age ?? me.age, female };
-        return { id: row.id, name: (row.name ?? "").split(" ")[0] || "?", age: row.age ?? 0, female, avatar: row.avatar || cartoonAvatar(row.seat + 1, female) };
+        if (row.id === net?.me) return { ...me, age: row.age ?? me.age, female, zodiac: row.zodiac ?? me.zodiac };
+        return { id: row.id, name: (row.name ?? "").split(" ")[0] || "?", age: row.age ?? 0, female, avatar: row.avatar || cartoonAvatar(row.seat + 1, female), zodiac: row.zodiac };
       });
     }
-    const others = bots.map((bot, index) => ({ ...bot, avatar: cartoonAvatar(index + 1, bot.female) }));
+    const others = bots.map((bot, index) => ({ ...bot, avatar: cartoonAvatar(index + 1, bot.female), zodiac: (index * 5) % 12 }));
     return [...others.slice(0, 7), me, ...others.slice(7)];
-  }, [user.name, user.avatar, details.gender, online, net]);
+  }, [user.name, user.avatar, details.gender, details.birthday, online, net]);
   const seated = players.filter((player) => !player.empty);
   const meIndex = 7;
   const { seats, cx: CENTER_X, cy: STAGE_Y } = layouts[wide ? "wide" : "tall"];
@@ -130,6 +140,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [jump, setJump] = useState(false);
   const [muted, setMutedIds] = useState<string[]>([]);
   const [flagMenu, setFlagMenu] = useState(false);
+  const [signOpen, setSignOpen] = useState(false);
   const [songFor, setSongFor] = useState<number | null>(null);
   const [songTab, setSongTab] = useState<"popular" | "fav" | "recent" | "search" | "mp3">("popular");
   const [tracks, setTracks] = useState<Track[]>([]);
@@ -448,8 +459,18 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     setSongFor(null);
     onDedicate(false);
   }
+  // A song costs the sender hearts and adds one to the receiver's song count (counted by the server when the table is live).
+  function paySong(kind: "video" | "mp3") {
+    const price = SONG_PRICE[kind];
+    if (heartsRef.current < price) return false;
+    heartsRef.current -= price;
+    setHearts(heartsRef.current);
+    const target = songFor !== null ? players[songFor] : null;
+    if (online) void (target && !target.me ? bottleSong(target.id, kind) : bottleSpend(price));
+    return true;
+  }
   function orderTrack(track: Track) {
-    if (!pay(SONG_PRICE.video)) return setGiftNote(t("bottle.noHearts"));
+    if (!paySong("video")) return setGiftNote(t("bottle.noHearts"));
     setAudio(null);
     setVideo(track.id);
     const next = [track, ...recent.filter((item) => item.id !== track.id)];
@@ -471,7 +492,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   function sendMp3(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!songFile) return setBadLink(true);
-    if (!pay(SONG_PRICE.mp3)) return setGiftNote(t("bottle.noHearts"));
+    if (!paySong("mp3")) return setGiftNote(t("bottle.noHearts"));
     const name = songFile.name.replace(/\.[^.]+$/, "");
     setVideo(null);
     setAudio({ url: URL.createObjectURL(songFile), name });
@@ -667,7 +688,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           const active = index === turn || index === target;
           return (
             <div key={player.id} className={cn("absolute -translate-x-1/2 -translate-y-1/2 transition-[left,top]", wide ? "w-[17cqmin]" : "w-[16cqmin]", " duration-[1100ms] ease-in-out motion-reduce:duration-0", staged && active ? "pointer-events-none z-30" : index === turn && "z-10")} style={staged && active ? { left: `calc(${CENTER_X}% ${index === turn ? "-" : "+"} 12.5cqmin)`, top: `${STAGE_Y}%` } : { left: `${seats[index][0]}%`, top: `${seats[index][1]}%` }}>
-              <button type="button" disabled={player.me} onClick={(event) => { event.stopPropagation(); if (dedicate) return openSong(index); setGiftNote(null); setCardNote(null); setFlagMenu(false); setCard(picked === index); setPicked(index); }} aria-label={`${player.name}, ${player.age}`} className={cn("group relative block aspect-square w-full rounded-[14%] bg-surface-2 shadow-[0_4px_10px_rgba(0,0,0,0.4)]", staged && index === target ? "ring-[0.9cqmin] ring-[#FFE2A8]" : active ? "ring-4 ring-white" : picked === index ? "ring-4 ring-[#8CC63F]" : player.me ? "ring-2 ring-white/80" : "")}>
+              <button type="button" disabled={player.me} onClick={(event) => { event.stopPropagation(); if (dedicate) return openSong(index); setGiftNote(null); setCardNote(null); setFlagMenu(false); setSignOpen(false); setCard(picked === index); setPicked(index); }} aria-label={`${player.name}, ${player.age}`} className={cn("group relative block aspect-square w-full rounded-[14%] bg-surface-2 shadow-[0_4px_10px_rgba(0,0,0,0.4)]", staged && index === target ? "ring-[0.9cqmin] ring-[#FFE2A8]" : active ? "ring-4 ring-white" : picked === index ? "ring-4 ring-[#8CC63F]" : player.me ? "ring-2 ring-white/80" : "")}>
                 <img src={player.avatar} alt="" className="h-full w-full rounded-[14%] object-cover" style={player.me && frame ? { boxShadow: `0 0 0 0.9cqmin ${frame}, 0 0 2.4cqmin ${frame}` } : undefined} />
                 {player.me || dedicate ? null : <span aria-hidden="true" className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-[14%] bg-black/35 opacity-0 transition-opacity group-hover:opacity-100"><GiftIcon className="h-[38%] w-[38%] text-white" strokeWidth={1.6} /></span>}
                 {dedicate && !player.me ? <span className="absolute inset-0 z-10 flex items-center justify-center rounded-[14%] bg-black/35"><span className="flex h-[7cqmin] w-[7cqmin] items-center justify-center rounded-full bg-[#8CC63F] text-[5cqmin] font-black leading-none text-white shadow">+</span></span> : null}
@@ -724,6 +745,12 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 <div className="relative aspect-square w-1/2 shrink-0 overflow-hidden rounded-l-2xl bg-[#E5E7EB]">
                   <img src={player.avatar} alt="" className="h-full w-full object-cover" />
                   <p className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent px-8 pb-2 pt-6 text-center text-sm font-bold text-white">{player.name}, {player.age}</p>
+                  {player.zodiac !== null && player.zodiac !== undefined ? (
+                    <>
+                      <button onClick={() => setSignOpen(!signOpen)} aria-expanded={signOpen} aria-label={t("bottle.zodiac")} title={t("bottle.zodiac")} className="absolute bottom-1.5 left-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-black/45 text-base leading-none text-white hover:bg-black/65">{zodiacSigns[player.zodiac]}</button>
+                      {signOpen ? <span role="status" className="absolute bottom-10 left-1.5 z-10 rounded-full bg-black/80 px-3 py-1 text-sm font-semibold text-white">{t(`bottle.sign${player.zodiac}` as "bottle.sign0")}</span> : null}
+                    </>
+                  ) : null}
                   <button onClick={() => setFlagMenu(!flagMenu)} aria-expanded={flagMenu} aria-label={t("bottle.more")} title={t("bottle.more")} className="absolute bottom-1.5 right-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-[#111827] hover:bg-white"><Flag size={14} /></button>
                   {flagMenu ? (
                     <div role="menu" className="absolute bottom-10 right-1.5 z-10 w-44 overflow-hidden rounded-lg bg-white py-1 text-left text-xs font-semibold text-[#1F2937] shadow-xl">
@@ -736,7 +763,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 </div>
                 <div className="flex min-w-0 flex-1 flex-col gap-1 p-3 text-[#1F2937]">
                   <p className="flex items-center gap-2 text-sm font-bold tabular-nums text-[#DC2626]"><span aria-hidden="true">💋</span>{(online ? net?.seats.find((seat) => seat.id === (player.me ? net.me : player.id))?.total ?? 0 : kisses[player.id] ?? 0).toLocaleString("az")}<span className="sr-only">{t("bottle.statKisses")}</span></p>
-                  <p className="flex items-center gap-2 text-sm font-bold tabular-nums text-[#C0399A]"><span aria-hidden="true">🎵</span>{(online ? 0 : ((picked + 3) * 7919) % 900).toLocaleString("az")}<span className="sr-only">{t("bottle.statSongs")}</span></p>
+                  <p className="flex items-center gap-2 text-sm font-bold tabular-nums text-[#C0399A]"><span aria-hidden="true">🎵</span>{(online ? net?.seats.find((seat) => seat.id === (player.me ? net.me : player.id))?.songs ?? 0 : ((picked + 3) * 7919) % 900).toLocaleString("az")}<span className="sr-only">{t("bottle.statSongs")}</span></p>
                   <p className="flex items-center gap-2 text-sm font-bold tabular-nums text-[#EA580C]"><span aria-hidden="true">😊</span>{(online ? net?.seats.find((seat) => seat.id === (player.me ? net.me : player.id))?.smiles ?? 0 : player.me ? mySmiles : ((picked + 5) * 104729) % 600).toLocaleString("az")}<span className="sr-only">{t("bottle.statSmiles")}</span></p>
                   <div className="my-1 border-t border-[#E5E7EB]" />
                   <div className="flex items-center gap-2">

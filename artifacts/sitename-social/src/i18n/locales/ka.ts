@@ -79,5 +79,6 @@ const ka: Record<keyof typeof az, string> = {
   "bottle.wheel":"ბედის ბორბალი","bottle.chances":"შანსების მაღაზია","bottle.wheelHint":"დააჭირე «დატრიალებას», გაუშვი ბედის ბორბალი და დაიჭირე ჯილდო!","bottle.wheelSpin":"დატრიალება","bottle.chancesLabel":"შანსები","bottle.wheelWon":"მოიგე:","bottle.wheelEmpty":"ამჯერად ცარიელია. სცადე კიდევ!","bottle.wheelEmptyShort":"ცარიელი","bottle.wheelWinner":"გამარჯვებული","bottle.wheelOdds":"მოგების ალბათობები","bottle.wheelBack":"← ბორბალთან დაბრუნება",
   "bottle.wheelChat":"ბედის ბორბალზე მოიგო:","bottle.wheelKissNote":"კოცნები დაემატა შენი პროფილის კოცნების რაოდენობას",
   "bottle.statSmiles":"სმაილი","bottle.wheelSmileNote":"სმაილები დაემატა შენი პროფილის მთვლელს",
+  "bottle.zodiac":"ზოდიაქო","bottle.sign0":"თხის რქა","bottle.sign1":"მერწყული","bottle.sign2":"თევზები","bottle.sign3":"ვერძი","bottle.sign4":"კურო","bottle.sign5":"ტყუპები","bottle.sign6":"კირჩხიბი","bottle.sign7":"ლომი","bottle.sign8":"ქალწული","bottle.sign9":"სასწორი","bottle.sign10":"მორიელი","bottle.sign11":"მშვილდოსანი",
 };
 export default ka;

@@ -79,5 +79,6 @@ const tr: Record<keyof typeof az, string> = {
   "bottle.wheel":"Şans çarkı","bottle.chances":"Şans mağazası","bottle.wheelHint":"«Çevir»e bas, Şans çarkını döndür ve ödülünü yakala!","bottle.wheelSpin":"Çevir","bottle.chancesLabel":"Şanslar","bottle.wheelWon":"Kazandın:","bottle.wheelEmpty":"Bu sefer boş çıktı. Tekrar dene!","bottle.wheelEmptyShort":"Boş","bottle.wheelWinner":"Kazanan","bottle.wheelOdds":"Çıkma olasılıkları","bottle.wheelBack":"← Çarka dön",
   "bottle.wheelChat":"Şans çarkından kazandı:","bottle.wheelKissNote":"Öpücükler profilindeki öpücük sayısına eklendi",
   "bottle.statSmiles":"gülen yüz","bottle.wheelSmileNote":"Gülen yüzler profilindeki sayıya eklendi",
+  "bottle.zodiac":"Burç","bottle.sign0":"Oğlak","bottle.sign1":"Kova","bottle.sign2":"Balık","bottle.sign3":"Koç","bottle.sign4":"Boğa","bottle.sign5":"İkizler","bottle.sign6":"Yengeç","bottle.sign7":"Aslan","bottle.sign8":"Başak","bottle.sign9":"Terazi","bottle.sign10":"Akrep","bottle.sign11":"Yay",
 };
 export default tr;

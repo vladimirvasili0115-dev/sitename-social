@@ -79,5 +79,6 @@ const ru: Record<keyof typeof az, string> = {
   "bottle.wheel":"Колесо удачи","bottle.chances":"Магазин шансов","bottle.wheelHint":"Жми «Крутить» — запускай Колесо удачи и лови свою награду!","bottle.wheelSpin":"Крутить","bottle.chancesLabel":"Шансы","bottle.wheelWon":"Ты выиграл:","bottle.wheelEmpty":"В этот раз пусто. Попробуй ещё!","bottle.wheelEmptyShort":"Пусто","bottle.wheelWinner":"Победитель","bottle.wheelOdds":"Вероятности призов","bottle.wheelBack":"← К колесу",
   "bottle.wheelChat":"выиграл(а) на Колесе удачи:","bottle.wheelKissNote":"Поцелуи добавлены к числу поцелуев в твоём профиле",
   "bottle.statSmiles":"смайликов","bottle.wheelSmileNote":"Смайлики добавлены к счётчику в твоём профиле",
+  "bottle.zodiac":"Знак зодиака","bottle.sign0":"Козерог","bottle.sign1":"Водолей","bottle.sign2":"Рыбы","bottle.sign3":"Овен","bottle.sign4":"Телец","bottle.sign5":"Близнецы","bottle.sign6":"Рак","bottle.sign7":"Лев","bottle.sign8":"Дева","bottle.sign9":"Весы","bottle.sign10":"Скорпион","bottle.sign11":"Стрелец",
 };
 export default ru;

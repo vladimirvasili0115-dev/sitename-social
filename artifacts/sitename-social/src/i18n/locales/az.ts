@@ -88,5 +88,6 @@ const az = {
   "bottle.wheel":"Bəxt çarxı","bottle.chances":"Şans mağazası","bottle.wheelHint":"«Fırlat» düyməsinə bas, Bəxt çarxını işə sal və mükafatını tut!","bottle.wheelSpin":"Fırlat","bottle.chancesLabel":"Şanslar","bottle.wheelWon":"Qazandın:","bottle.wheelEmpty":"Bu dəfə boş çıxdı. Yenə sına!","bottle.wheelEmptyShort":"Boş","bottle.wheelWinner":"Qalib","bottle.wheelOdds":"Düşmə ehtimalları","bottle.wheelBack":"← Çarxa qayıt",
   "bottle.wheelChat":"Bəxt çarxından qazandı:","bottle.wheelKissNote":"Öpüşlər profilindəki öpüş sayına əlavə olundu",
   "bottle.statSmiles":"smaylik","bottle.wheelSmileNote":"Smayliklər profilindəki smaylik sayına əlavə olundu",
+  "bottle.zodiac":"Bürc","bottle.sign0":"Oğlaq","bottle.sign1":"Dolça","bottle.sign2":"Balıqlar","bottle.sign3":"Qoç","bottle.sign4":"Buğa","bottle.sign5":"Əkizlər","bottle.sign6":"Xərçəng","bottle.sign7":"Şir","bottle.sign8":"Qız","bottle.sign9":"Tərəzi","bottle.sign10":"Əqrəb","bottle.sign11":"Oxatan",
 } as const;
 export default az;

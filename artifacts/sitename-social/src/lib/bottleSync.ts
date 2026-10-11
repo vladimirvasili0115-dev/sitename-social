@@ -1,7 +1,7 @@
 import { supabase } from "./supabase";
 
 // Live tables of the bottle game. The database owns the game: seats, turns, where the bottle stops, answers and kisses.
-export type BottleSeat = { seat: number; id: string; name: string | null; avatar: string | null; gender: string | null; kisses: number; total?: number; smiles?: number; age: number | null };
+export type BottleSeat = { seat: number; id: string; name: string | null; avatar: string | null; gender: string | null; kisses: number; total?: number; smiles?: number; songs?: number; zodiac?: number | null; age: number | null };
 export type BottleChat = { id: number; from: string | null; to: string | null; kind: "text" | "kiss" | "wheel"; body: string | null };
 export type BottleState = {
   table: number; me: string; now: number; hearts: number; chances?: number; winner?: { name: string | null; amount: number } | null;
@@ -24,3 +24,4 @@ export const bottleSpend = (amount: number) => call<number>("bottle_spend", { p_
 export const bottleCocktail = (to: string) => call<number>("bottle_cocktail", { p_to: to });
 export const bottleBuyChances = (pack: number) => call<{ hearts: number; chances: number }>("bottle_buy_chances", { p_pack: pack });
 export const bottleWheel = () => call<{ sector: number; hearts: number; chances: number }>("bottle_wheel_spin");
+export const bottleSong = (to: string, kind: "video" | "mp3") => call<number>("bottle_song", { p_to: to, p_kind: kind });
