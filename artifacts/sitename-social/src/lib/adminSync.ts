@@ -36,6 +36,10 @@ export async function grantCoins(id: string, amount: number): Promise<number | n
   const total = await call<number>("admin_grant_coins", { target: id, amount });
   return total === null ? null : Number(total);
 }
+export async function grantHearts(id: string, amount: number): Promise<number | null> {
+  const total = await call<number>("admin_grant_hearts", { target: id, amount });
+  return total === null ? null : Number(total);
+}
 export async function deleteUser(id: string): Promise<boolean> {
   try {
     await removeAllMyFiles(id);

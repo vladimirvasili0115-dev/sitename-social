@@ -2,10 +2,10 @@
 import { VerifiedMark } from "@/components/ui/VerifiedMark";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { BadgeCheck, Ban, ChevronDown, Coins, ShieldCheck, ShieldOff, Trash2, Undo2 } from "lucide-react";
+import { BadgeCheck, Ban, ChevronDown, Coins, Heart, ShieldCheck, ShieldOff, Trash2, Undo2 } from "lucide-react";
 import { useSyncExternalStore } from "react";
 import { refreshVerified, verifiedStore } from "@/lib/verifiedSync";
-import { banUser, deleteUser, fetchAdminUsers, fetchUserDetail, grantCoins, setModerator, setVerified, type AdminUser, type UserDetail } from "@/lib/adminSync";
+import { banUser, deleteUser, fetchAdminUsers, fetchUserDetail, grantCoins, grantHearts, setModerator, setVerified, type AdminUser, type UserDetail } from "@/lib/adminSync";
 import type { TranslationKey } from "@/i18n/LanguageProvider";
 import { initialsAvatar } from "@/lib/avatar";
 import { formatDay } from "@/lib/datetime";
@@ -32,6 +32,7 @@ export function AdminUsers({ owner }: { owner: boolean }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<string | null>(null);
   const [coinsFor, setCoinsFor] = useState<string | null>(null);
+  const [grantKind, setGrantKind] = useState<"coins" | "hearts">("coins");
   const [amount, setAmount] = useState("100");
   const [banFor, setBanFor] = useState<string | null>(null);
   const [banDays, setBanDays] = useState(7);
@@ -75,7 +76,7 @@ export function AdminUsers({ owner }: { owner: boolean }) {
     const value = Math.trunc(Number(amount));
     if (!value) return;
     setCoinsFor(null);
-    void run(id, async () => (await grantCoins(id, value)) !== null);
+    void run(id, async () => (await (grantKind === "hearts" ? grantHearts(id, value) : grantCoins(id, value))) !== null);
   }
 
   return (
@@ -105,7 +106,8 @@ export function AdminUsers({ owner }: { owner: boolean }) {
                     </div>
                   </div>
                   <div className="mt-3 flex flex-wrap gap-2">
-                    {owner ? <button disabled={locked} onClick={() => { setCoinsFor(coinsFor === user.id ? null : user.id); setAmount("100"); }} className={action}><Coins size={14} />{t("admin.coins")}</button> : null}
+                    {owner ? <button disabled={locked} onClick={() => { setGrantKind("coins"); setCoinsFor(coinsFor === user.id && grantKind === "coins" ? null : user.id); setAmount("100"); }} className={action}><Coins size={14} />{t("admin.coins")}</button> : null}
+                    {owner ? <button disabled={locked} onClick={() => { setGrantKind("hearts"); setCoinsFor(coinsFor === user.id && grantKind === "hearts" ? null : user.id); setAmount("100"); }} className={action}><Heart size={14} />{t("admin.hearts")}</button> : null}
                     {user.moderator ? null : user.banned
                       ? <button disabled={locked} onClick={() => void run(user.id, () => banUser(user.id, -1, ""))} className={action}><Undo2 size={14} />{t("settings.blkUnblock")}</button>
                       : <button disabled={locked} onClick={() => { setBanFor(banFor === user.id ? null : user.id); setBanDays(7); setReason(""); }} className={cn(danger, "text-danger hover:bg-surface-2")}><Ban size={14} />{t("admin.ban")}</button>}
@@ -157,7 +159,7 @@ export function AdminUsers({ owner }: { owner: boolean }) {
                     <form onSubmit={(event) => handleCoins(event, user.id)} className="mt-3 flex flex-wrap items-center gap-2">
                       <input type="number" value={amount} onChange={(event) => setAmount(event.target.value)} min={-1000000} max={1000000} step={1} aria-label={t("admin.coinsAmount")} className="h-10 w-32 rounded-xl border border-border bg-surface-2 px-3 text-sm tabular-nums text-text outline-none focus:border-accent" />
                       <button type="submit" className="h-10 rounded-xl bg-accent px-4 text-xs font-semibold text-bg">{t("admin.coinsApply")}</button>
-                      <p className="basis-full text-[11px] text-muted">{t("admin.coinsHint")}</p>
+                      <p className="basis-full text-[11px] text-muted">{t(grantKind === "hearts" ? "admin.heartsHint" : "admin.coinsHint")}</p>
                     </form>
                   ) : null}
                 </Card>

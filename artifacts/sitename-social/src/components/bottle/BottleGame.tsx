@@ -10,8 +10,10 @@ import { useProfile } from "@/components/profile/useProfile";
 import { cn } from "@/lib/utils";
 import { BottleSvg, WaterBottleSvg, WoodTable } from "./BottleArt";
 import { playSound, setVolume } from "./sound";
+import { supabase } from "@/lib/supabase";
+import { bottleAnswer, bottleJoin, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState } from "@/lib/bottleSync";
 
-type Player = { id: string; name: string; age: number; female: boolean; avatar: string; me?: boolean };
+type Player = { id: string; name: string; age: number; female: boolean; avatar: string; me?: boolean; empty?: boolean };
 type Phase = "waiting" | "spinning" | "choice" | "kissed" | "declined";
 type Track = { id: string; title: string; duration?: string };
 const stored = (key: string): Track[] => { try { return JSON.parse(window.localStorage.getItem(key) ?? "[]") as Track[]; } catch { return []; } };
@@ -68,16 +70,30 @@ function youtubeId(value: string) {
 export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedicate }: { wide: boolean; full: boolean; onToggleFull: () => void; onLeave: () => void; dedicate: boolean; onDedicate: (value: boolean) => void }) {
   const { t } = useTranslation();
   const { user, details } = useProfile();
+  // With the database connected the table is live: real players, and the server decides everything. Without it, the demo with bots runs.
+  const online = Boolean(supabase);
+  const [net, setNet] = useState<BottleState | null>(null);
   const players = useMemo<Player[]>(() => {
     const me: Player = { id: "me", name: user.name.split(" ")[0], age: 25, female: details.gender === "female", avatar: user.avatar, me: true };
+    if (online) {
+      const mine = net?.seats.find((seat) => seat.id === net.me)?.seat ?? 0;
+      return Array.from({ length: 12 }, (_, place): Player => {
+        const row = net?.seats.find((seat) => seat.seat === (place - 7 + mine + 12) % 12);
+        if (!row) return place === 7 && !net ? me : { id: `empty-${place}`, name: "", age: 0, female: false, avatar: "", empty: true };
+        const female = row.gender === "female";
+        if (row.id === net?.me) return { ...me, age: row.age ?? me.age, female };
+        return { id: row.id, name: (row.name ?? "").split(" ")[0] || "?", age: row.age ?? 0, female, avatar: row.avatar || cartoonAvatar(row.seat + 1, female) };
+      });
+    }
     const others = bots.map((bot, index) => ({ ...bot, avatar: cartoonAvatar(index + 1, bot.female) }));
     return [...others.slice(0, 7), me, ...others.slice(7)];
-  }, [user.name, user.avatar, details.gender]);
+  }, [user.name, user.avatar, details.gender, online, net]);
+  const seated = players.filter((player) => !player.empty);
   const meIndex = 7;
   const { seats, cx: CENTER_X, cy: STAGE_Y } = layouts[wide ? "wide" : "tall"];
   const angleTo = useCallback((index: number) => (Math.atan2(seats[index][1] - STAGE_Y, seats[index][0] - CENTER_X) * 180) / Math.PI + 90, [seats, CENTER_X, STAGE_Y]);
 
-  const enoughGirls = players.filter((player) => player.female).length >= 2;
+  const enoughGirls = seated.filter((player) => player.female).length >= 2 && seated.length >= 2;
   const [turn, setTurn] = useState(4);
   const [target, setTarget] = useState<number | null>(null);
   const [phase, setPhase] = useState<Phase>("waiting");
@@ -161,6 +177,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
 
   // Turn flow. A player has a few seconds to click the bottle, otherwise the turn passes on.
   useEffect(() => {
+    if (online) return;
     if (phase === "waiting") {
       if (!enoughGirls) return;
       playSound("turn");
@@ -186,7 +203,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // Both players answer on their own within the same countdown; neither waits for the other.
   const deciding = phase === "choice" && target !== null && (answers.spinner === null || answers.target === null);
   useEffect(() => {
-    if (phase !== "choice" || target === null) return;
+    if (online || phase !== "choice" || target === null) return;
     setSeconds(ANSWER_SECONDS);
     const tick = window.setInterval(() => setSeconds((value) => Math.max(0, value - 1)), 1000);
     const timers = (["spinner", "target"] as const).map((role) => {
@@ -200,7 +217,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
 
   // A kiss counts for the player who receives it, even when they refused themselves.
   useEffect(() => {
-    if (phase !== "choice" || target === null || answers.spinner === null || answers.target === null) return;
+    if (online || phase !== "choice" || target === null || answers.spinner === null || answers.target === null) return;
     const [a, b] = [players[turn], players[target]];
     const timer = window.setTimeout(() => {
       const gain = (id: string) => (id === "me" && Date.now() < doubleRef.current ? 2 : 1);
@@ -215,12 +232,77 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   }, [answers, phase, target, turn, players, say]);
 
   useEffect(() => {
+    if (online) return;
     const timer = window.setInterval(() => {
       const bot = bots[Math.floor(Math.random() * bots.length)];
       say({ from: bot.id, text: smallTalk[Math.floor(Math.random() * smallTalk.length)] });
     }, 7000);
     return () => window.clearInterval(timer);
-  }, [say]);
+  }, [say, online]);
+
+  // Live table: sit down, then ask the server for the table once a second (this is also the "I am here" signal).
+  const lastChat = useRef(0);
+  const pullRef = useRef<() => void>(() => {});
+  useEffect(() => {
+    if (!online) return;
+    let alive = true;
+    let busy = false;
+    const pull = async () => {
+      if (busy) return;
+      busy = true;
+      try {
+        let data = await bottleSync(lastChat.current);
+        if (!data) { await bottleJoin(); data = await bottleSync(lastChat.current); }
+        if (!alive || !data) return;
+        const fresh = data.chat.filter((item) => item.id > lastChat.current);
+        if (fresh.length) {
+          lastChat.current = fresh[fresh.length - 1].id;
+          const who = (id: string | null) => (id === data!.me ? "me" : id ?? "");
+          setLines((list) => [...list, ...fresh.map((item) => (item.kind === "kiss" ? { id: item.id, from: who(item.from), to: who(item.to) } : { id: item.id, from: who(item.from), text: item.body ?? "" }))].slice(-80));
+        }
+        setNet(data);
+      } finally {
+        busy = false;
+      }
+    };
+    pullRef.current = () => void pull();
+    setLines([]);
+    void pull();
+    const timer = window.setInterval(() => void pull(), 1000);
+    const bye = () => void bottleLeave();
+    window.addEventListener("pagehide", bye);
+    return () => { alive = false; window.clearInterval(timer); window.removeEventListener("pagehide", bye); void bottleLeave(); };
+  }, [online]);
+  // Everything on screen follows what the server said.
+  const spunRef = useRef("");
+  useEffect(() => {
+    if (!net) return;
+    const place = (id: string | null) => (id ? players.findIndex((player) => player.id === (id === net.me ? "me" : id)) : -1);
+    const [turnAt, targetAt] = [place(net.turn), place(net.target)];
+    const left = (limit: number) => Math.max(0, Math.ceil(limit - (net.now - net.phase_at) / 1000));
+    setTurn(turnAt);
+    setTarget(targetAt >= 0 && net.phase !== "waiting" ? targetAt : null);
+    setAnswers({ spinner: net.spinner_answer, target: net.target_answer });
+    setPhase(net.phase === "result" ? (net.spinner_answer && net.target_answer ? "kissed" : "declined") : net.phase);
+    setKisses(Object.fromEntries(net.seats.map((seat) => [seat.id === net.me ? "me" : seat.id, seat.kisses])));
+    if (net.phase === "waiting") setSeconds(left(SPIN_SECONDS));
+    if (net.phase === "choice") setSeconds(left(ANSWER_SECONDS));
+    heartsRef.current = net.hearts;
+    setHearts(net.hearts);
+    const key = `${net.round}:${net.target}`;
+    if (net.phase === "spinning" && targetAt >= 0 && spunRef.current !== key) {
+      spunRef.current = key;
+      setRotation((current) => current - (current % 360) + 1440 + (((angleTo(targetAt) % 360) + 360) % 360));
+    }
+  }, [net, players, angleTo]);
+  const myTurnLive = online && phase === "waiting" && turn === 7;
+  useEffect(() => {
+    if (!online) return;
+    if (phase === "choice") playSound("chosen");
+    if (phase === "kissed") playSound("kiss");
+    if (phase === "declined") playSound("decline");
+  }, [online, phase]);
+  useEffect(() => { if (myTurnLive) playSound("turn"); }, [myTurnLive]);
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
   }, [lines.length]);
@@ -234,6 +316,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const myTurn = phase === "waiting" && turn === meIndex;
 
   function changeTable() {
+    if (online) return;
     setTableNo(1 + Math.floor(Math.random() * 240));
     setKisses({});
     setStickers({});
@@ -250,18 +333,20 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (heartsRef.current < price) return false;
     heartsRef.current -= price;
     setHearts(heartsRef.current);
+    if (online) void bottleSpend(price);
     return true;
   };
-  const topIds = new Set(players.map((player) => ({ id: player.id, count: kisses[player.id] ?? 0 })).filter((item) => item.count > 0).sort((a, b) => b.count - a.count).slice(0, 3).map((item) => item.id));
+  const topIds = new Set(seated.map((player) => ({ id: player.id, count: kisses[player.id] ?? 0 })).filter((item) => item.count > 0).sort((a, b) => b.count - a.count).slice(0, 3).map((item) => item.id));
   const skinFilter = (n: number) => (n % 15 ? `hue-rotate(${(n % 15) * 24}deg) saturate(${n % 3 === 0 ? 1.4 : 1.1})` : undefined);
   const SkinBottle = skin >= 15 ? WaterBottleSvg : BottleSvg;
   const skinPrice = (n: number) => (n ? 3 + Math.floor(n / 5) * 2 : 0);
-  const ranking = players.map((player) => ({ player, count: kisses[player.id] ?? 0 })).sort((a, b) => b.count - a.count);
+  const ranking = seated.map((player) => ({ player, count: kisses[player.id] ?? 0 })).sort((a, b) => b.count - a.count);
   const row = "flex min-h-11 w-full items-center gap-3 rounded-lg px-2 text-left text-sm text-[#1F2937] hover:bg-black/5";
   function handleChat(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!draft.trim()) return;
-    say({ from: "me", text: draft.trim().slice(0, 200) });
+    if (online) void bottleSay(draft.trim().slice(0, 200)).then(pullRef.current);
+    else say({ from: "me", text: draft.trim().slice(0, 200) });
     setDraft("");
   }
   // The site is a static export (no server), so YouTube is asked straight from the browser.
@@ -365,6 +450,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (heartsRef.current < price) return false;
     heartsRef.current -= price;
     setHearts(heartsRef.current);
+    if (online) void bottleSpend(price);
     const key = flyId.current++;
     setFlying((list) => [...list, { key, gift, to: index, moved: false }]);
     window.setTimeout(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))), 40);
@@ -383,6 +469,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (heartsRef.current < price) return setCardNote(`${t("bottle.noHearts")} (${price})`);
     heartsRef.current -= price;
     setHearts(heartsRef.current);
+    if (online) void bottleSpend(price);
     setSuitors((value) => ({ ...value, [player.id]: { by: "me", amount: price } }));
     say({ from: "me", text: `${t("bottle.courtStarted")} ${player.name} ❤ ${price}` });
   }
@@ -453,13 +540,13 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           <button onClick={() => setPanel("menu")} aria-label={t("bottle.menu")} title={t("bottle.menu")} className={tool}><Menu size={18} /></button>
           <button onClick={() => setPanel("settings")} aria-label={t("bottle.settings")} title={t("bottle.settings")} className={tool}><Settings size={18} /></button>
           <span className="flex-1" />
-          <span className="text-center text-[max(10px,2.2cqmin)] font-bold leading-tight text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.7)]">{t("bottle.table")}<br />{tableNo}</span>
+          <span className="text-center text-[max(10px,2.2cqmin)] font-bold leading-tight text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.7)]">{t("bottle.table")}<br />{online ? net?.table ?? "…" : tableNo}</span>
           {myTurn
             ? <span aria-label={`${seconds}`} className={cn(tool, "text-[max(14px,3cqmin)] font-bold tabular-nums")}>{seconds}</span>
-            : <button onClick={changeTable} aria-label={t("bottle.changeTable")} title={t("bottle.changeTable")} className={tool}><RefreshCw size={17} /></button>}
+            : online ? <span className={cn(tool, "opacity-0")} /> : <button onClick={changeTable} aria-label={t("bottle.changeTable")} title={t("bottle.changeTable")} className={tool}><RefreshCw size={17} /></button>}
         </div>
 
-        <button type="button" disabled={staged} onClick={(event) => { event.stopPropagation(); if (myTurn) return spin(); setWaitNote(true); window.setTimeout(() => setWaitNote(false), 1800); }} aria-label={t("bottle.spin")} className={cn("absolute h-[30cqmin] transition-transform duration-[3200ms] ease-[cubic-bezier(0.15,0.6,0.2,1)] motion-reduce:duration-0", staged ? "pointer-events-none" : myTurn ? "z-20 cursor-pointer" : "cursor-default")} style={{ left: `${CENTER_X}%`, top: `${STAGE_Y}%`, transform: `translate(-50%, -50%) rotate(${rotation}deg)`, filter: skinFilter(skin) }}>
+        <button type="button" disabled={staged} onClick={(event) => { event.stopPropagation(); if (myTurn) return online ? void bottleSpin().then(pullRef.current) : spin(); setWaitNote(true); window.setTimeout(() => setWaitNote(false), 1800); }} aria-label={t("bottle.spin")} className={cn("absolute h-[30cqmin] transition-transform duration-[3200ms] ease-[cubic-bezier(0.15,0.6,0.2,1)] motion-reduce:duration-0", staged ? "pointer-events-none" : myTurn ? "z-20 cursor-pointer" : "cursor-default")} style={{ left: `${CENTER_X}%`, top: `${STAGE_Y}%`, transform: `translate(-50%, -50%) rotate(${rotation}deg)`, filter: skinFilter(skin) }}>
           <SkinBottle className={cn("h-full drop-shadow-[0_6px_10px_rgba(0,0,0,0.45)] transition-opacity duration-700", staged && "opacity-0")} />
         </button>
         {myTurn ? <div className="pointer-events-none absolute z-20 -translate-x-1/2 -translate-y-1/2" style={{ left: `${CENTER_X}%`, top: `${STAGE_Y}%` }}><p role="status" className="animate-bounce whitespace-nowrap rounded-full bg-white px-[3cqmin] py-[1cqmin] text-[3.2cqmin] font-bold text-[#C2410C] shadow-lg motion-reduce:animate-none">{t("bottle.clickBottle")}</p></div> : null}
@@ -468,6 +555,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         {phase === "waiting" && !myTurn ? <p className="pointer-events-none absolute w-[40cqmin] -translate-x-1/2 -translate-y-1/2 text-center text-[3.4cqmin] font-bold leading-tight text-white [text-shadow:0_2px_6px_rgba(0,0,0,0.85)]" style={{ left: `${CENTER_X}%`, top: `${STAGE_Y}%` }}>{t(enoughGirls ? "bottle.waitingSpin" : "bottle.needGirls")}</p> : null}
 
         {players.map((player, index) => {
+          if (player.empty) return null;
           const active = index === turn || index === target;
           return (
             <div key={player.id} className={cn("absolute -translate-x-1/2 -translate-y-1/2 transition-[left,top]", wide ? "w-[17cqmin]" : "w-[16cqmin]", " duration-[1100ms] ease-in-out motion-reduce:duration-0", staged && active ? "pointer-events-none z-30" : index === turn && "z-10")} style={staged && active ? { left: `calc(${CENTER_X}% ${index === turn ? "-" : "+"} 12.5cqmin)`, top: `${STAGE_Y}%` } : { left: `${seats[index][0]}%`, top: `${seats[index][1]}%` }}>
@@ -500,8 +588,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             </div>
             {canAnswer && myRole ? (
               <div className="absolute z-30 flex -translate-x-1/2 gap-[2.5cqmin]" style={{ left: `${CENTER_X}%`, top: `calc(${STAGE_Y}% + 14.5cqmin)` }}>
-                <button onClick={() => setAnswers((value) => ({ ...value, [myRole]: false }))} className="h-[7.5cqmin] w-[20cqmin] rounded-[1.8cqmin] bg-[#E2401F] text-[3cqmin] font-bold text-white shadow-lg hover:brightness-110">{t("bottle.no")}</button>
-                <button onClick={() => setAnswers((value) => ({ ...value, [myRole]: true }))} className="h-[7.5cqmin] w-[20cqmin] rounded-[1.8cqmin] bg-[#8CC63F] text-[3cqmin] font-bold text-white shadow-lg hover:brightness-110">{t("bottle.yes")}</button>
+                <button onClick={() => { setAnswers((value) => ({ ...value, [myRole]: false })); if (online) void bottleAnswer(false).then(pullRef.current); }} className="h-[7.5cqmin] w-[20cqmin] rounded-[1.8cqmin] bg-[#E2401F] text-[3cqmin] font-bold text-white shadow-lg hover:brightness-110">{t("bottle.no")}</button>
+                <button onClick={() => { setAnswers((value) => ({ ...value, [myRole]: true })); if (online) void bottleAnswer(true).then(pullRef.current); }} className="h-[7.5cqmin] w-[20cqmin] rounded-[1.8cqmin] bg-[#8CC63F] text-[3cqmin] font-bold text-white shadow-lg hover:brightness-110">{t("bottle.yes")}</button>
               </div>
             ) : null}
           </>
@@ -659,8 +747,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   </div>
                   <ol className="max-h-[60cqmin] overflow-y-auto">
                     {(topTab === "league" ? ranking : topTab === "daily"
-                      ? players.filter((player) => sent[player.id]).map((player) => ({ player, count: sent[player.id] })).sort((a, b) => b.count - a.count)
-                      : players.map((player, index) => ({ player, count: (kisses[player.id] ?? 0) + (player.me ? 0 : ((index + 2) * 53) % 90) })).sort((a, b) => b.count - a.count)
+                      ? seated.filter((player) => sent[player.id]).map((player) => ({ player, count: sent[player.id] })).sort((a, b) => b.count - a.count)
+                      : seated.map((player, index) => ({ player, count: (kisses[player.id] ?? 0) + (player.me || online ? 0 : ((index + 2) * 53) % 90) })).sort((a, b) => b.count - a.count)
                     ).map(({ player, count }, place) => (
                       <li key={player.id} className="flex min-h-10 items-center gap-2 px-1 text-sm text-[#1F2937]">
                         <span className="w-5 text-right font-bold tabular-nums text-[#9CA3AF]">{place + 1}</span>
@@ -775,7 +863,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             <button onClick={() => setAudio(null)} aria-label={t("photos.close")} title={t("photos.close")} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-2 text-text"><X size={15} /></button>
           </div>
         ) : null}
-        <p className={cn("border-b border-border px-3 py-1.5 text-[11px] text-muted", picked !== null && !wide && "hidden")}>{t("bottle.demoNote")}</p>
+        <p className={cn("border-b border-border px-3 py-1.5 text-[11px] text-muted", picked !== null && !wide && "hidden")}>{online ? `${t("bottle.liveNote")} ${net?.table ?? ""} · ${seated.length}/12` : t("bottle.demoNote")}</p>
         {picked !== null ? (
           <div className="flex min-h-0 flex-1 flex-col">
             <div className="flex items-center gap-2 border-b border-border px-3 py-1.5">
