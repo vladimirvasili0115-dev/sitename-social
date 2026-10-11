@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { Ban, Flag, Gift as GiftIcon, Heart, Home, Maximize, Menu, Minimize, Music, Music2, RefreshCw, SendHorizontal, Settings, Trophy, UserPlus, UserRoundCog, Users, Volume2, X } from "lucide-react";
+import { Ban, Flag, Mail, Gift as GiftIcon, Heart, Home, Maximize, Menu, Minimize, Music, Music2, RefreshCw, SendHorizontal, Settings, Trophy, UserPlus, UserRoundCog, Users, Volume2, X } from "lucide-react";
 import type { GiftId } from "@/types";
 import { cartoonAvatar } from "./avatarArt";
 import { useTranslation } from "@/i18n/useTranslation";
@@ -13,7 +13,7 @@ import { playSound, setVolume } from "./sound";
 
 type Player = { id: string; name: string; age: number; female: boolean; avatar: string; me?: boolean };
 type Phase = "waiting" | "spinning" | "choice" | "kissed" | "declined";
-type Line = { id: number; from: string; to?: string; text?: string; gift?: string };
+type Line = { id: number; from: string; to?: string; text?: string; gift?: string; song?: string };
 
 // Seat centres in percent of the table. Wide: a tool column on the left, seats in a rectangle. Tall (phone, window): a tool row on top, seats in an oval.
 type Seats = readonly (readonly [number, number])[];
@@ -36,6 +36,7 @@ const giftChoices: [string, number][] = [
 ];
 const vipPlans: [number, number][] = [[7, 300], [30, 900], [90, 2200]];
 const frames = ["#FACC15", "#F472B6", "#60A5FA", "#34D399", "#A78BFA", "#F97316", "#EF4444"];
+const SONG_PRICE = { video: 5, mp3: 3 };
 const lockedGifts: [string, number, number][] = [["e:💎", 4, -1], ["e:🦚", 4, -1], ["e:🎻", 4, -1], ["e:🦄", 5, 15000], ["e:🏰", 5, 15000], ["e:🚀", 8, 23000], ["e:🛥️", 8, 23000]];
 function Gift({ id, className }: { id: string; className?: string }) {
   if (!id.startsWith("e:")) return <GiftArt id={id as GiftId} className={className} />;
@@ -53,14 +54,14 @@ function youtubeId(value: string) {
   return match ? match[1] : null;
 }
 
-export function BottleGame({ wide, full, onToggleFull, onLeave }: { wide: boolean; full: boolean; onToggleFull: () => void; onLeave: () => void }) {
+export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedicate }: { wide: boolean; full: boolean; onToggleFull: () => void; onLeave: () => void; dedicate: boolean; onDedicate: (value: boolean) => void }) {
   const { t } = useTranslation();
-  const { user } = useProfile();
+  const { user, details } = useProfile();
   const players = useMemo<Player[]>(() => {
-    const me: Player = { id: "me", name: user.name.split(" ")[0], age: 25, female: false, avatar: user.avatar, me: true };
+    const me: Player = { id: "me", name: user.name.split(" ")[0], age: 25, female: details.gender === "female", avatar: user.avatar, me: true };
     const others = bots.map((bot, index) => ({ ...bot, avatar: cartoonAvatar(index + 1, bot.female) }));
     return [...others.slice(0, 7), me, ...others.slice(7)];
-  }, [user.name, user.avatar]);
+  }, [user.name, user.avatar, details.gender]);
   const meIndex = 7;
   const { seats, cx: CENTER_X, cy: STAGE_Y } = layouts[wide ? "wide" : "tall"];
   const angleTo = useCallback((index: number) => (Math.atan2(seats[index][1] - STAGE_Y, seats[index][0] - CENTER_X) * 180) / Math.PI + 90, [seats, CENTER_X, STAGE_Y]);
@@ -83,6 +84,14 @@ export function BottleGame({ wide, full, onToggleFull, onLeave }: { wide: boolea
   const hold = useRef<number | null>(null);
   const [giftNote, setGiftNote] = useState<string | null>(null);
   const [card, setCard] = useState(false);
+  const [vip, setVip] = useState(false);
+  const [songFor, setSongFor] = useState<number | null>(null);
+  const [songKind, setSongKind] = useState<"video" | "mp3">("video");
+  const [songFile, setSongFile] = useState<File | null>(null);
+  const [audio, setAudio] = useState<{ url: string; name: string } | null>(null);
+  const [dm, setDm] = useState<number | null>(null);
+  const [dmDraft, setDmDraft] = useState("");
+  const [dms, setDms] = useState<Record<string, { mine: boolean; text: string }[]>>({});
   const [cardNote, setCardNote] = useState<string | null>(null);
   const [suitors, setSuitors] = useState<Record<string, { by: string; amount: number }>>(() => Object.fromEntries(bots.map((bot, index) => [bot.id, { by: bots[(index + 3) % bots.length].id, amount: 4 + ((index * 37) % 40) }])));
   const [volume, setVolumeLevel] = useState(80);
@@ -226,14 +235,33 @@ export function BottleGame({ wide, full, onToggleFull, onLeave }: { wide: boolea
     say({ from: "me", text: draft.trim().slice(0, 200) });
     setDraft("");
   }
-  function handleVideo(event: FormEvent<HTMLFormElement>) {
+  function sendSong(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const id = youtubeId(link);
-    setBadLink(!id);
-    if (!id) return;
-    setVideo(id);
+    if (songFor === null) return;
+    const target = players[songFor];
+    const id = songKind === "video" ? youtubeId(link) : null;
+    if (songKind === "video" ? !id : !songFile) return setBadLink(true);
+    if (!pay(SONG_PRICE[songKind])) return setGiftNote(t("bottle.noHearts"));
+    if (id) { setAudio(null); setVideo(id); }
+    else if (songFile) { setVideo(null); setAudio({ url: URL.createObjectURL(songFile), name: songFile.name.replace(/\.[^.]+$/, "") }); }
+    say({ from: "me", to: target.id, song: id ? "YouTube" : songFile!.name.replace(/\.[^.]+$/, "") });
     setLink("");
-    say({ from: "me", text: `🎵 ${t("bottle.videoShared")}` });
+    setSongFor(null);
+    onDedicate(false);
+  }
+  function sendDm(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (dm === null || !dmDraft.trim()) return;
+    const id = players[dm].id;
+    setDms((value) => ({ ...value, [id]: [...(value[id] ?? []), { mine: true, text: dmDraft.trim().slice(0, 300) }] }));
+    setDmDraft("");
+    window.setTimeout(() => setDms((value) => ({ ...value, [id]: [...(value[id] ?? []), { mine: false, text: smallTalk[Math.floor(Math.random() * smallTalk.length)] }] })), 1600);
+  }
+  function openDm(index: number) {
+    if (!players[meIndex].female && !vip) return setCardNote(t("bottle.dmVip"));
+    setCard(false);
+    setPicked(null);
+    setDm(index);
   }
   function sendGift(index: number, gift: string, price: number) {
     const player = players[index];
@@ -265,7 +293,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave }: { wide: boolea
   const stopHold = () => { if (hold.current) window.clearInterval(hold.current); hold.current = null; };
   function startHold(index: number, gift: string, price: number, need?: number) {
     stopHold();
-    if (need === -1) return setGiftNote(t("bottle.vipOnly"));
+    if (need === -1 && !vip) return setGiftNote(t("bottle.vipOnly"));
+    if (need === -1) need = 0;
     if (need) return setGiftNote(`${t("bottle.needKisses")} (${need})`);
     setGiftNote(null);
     if (!sendGift(index, gift, price)) return setGiftNote(t("bottle.noHearts"));
@@ -298,7 +327,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave }: { wide: boolea
     );
   };
   return (
-    <div className={cn("flex h-full w-full bg-surface text-text", wide ? "flex-row" : "flex-col")}>
+    <div className={cn("relative flex h-full w-full bg-surface text-text", wide ? "flex-row" : "flex-col")}>
       <div className={cn("relative shrink-0 overflow-hidden bg-[#E0A04E] [container-type:size]", wide ? "h-full w-[54%]" : "aspect-[9/10] max-h-[60%] w-full")} onClick={() => setPicked(null)}>
         <WoodTable className="pointer-events-none absolute inset-0 h-full w-full" />
         <div className={cn("absolute z-10 flex items-center", wide ? "inset-y-0 left-0 w-[13%] flex-col gap-[2.2cqmin] py-[2.2cqmin]" : "inset-x-0 top-0 h-[10%] gap-[2.6cqmin] px-[2.5cqmin]")} onClick={(event) => event.stopPropagation()}>
@@ -330,8 +359,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave }: { wide: boolea
           const active = index === turn || index === target;
           return (
             <div key={player.id} className={cn("absolute w-[17cqmin] -translate-x-1/2 -translate-y-1/2 transition-[left,top] duration-[1100ms] ease-in-out motion-reduce:duration-0", staged && active ? "pointer-events-none z-30" : index === turn && "z-10")} style={staged && active ? { left: `calc(${CENTER_X}% ${index === turn ? "-" : "+"} 12.5cqmin)`, top: `${STAGE_Y}%` } : { left: `${seats[index][0]}%`, top: `${seats[index][1]}%` }}>
-              <button type="button" disabled={player.me} onClick={(event) => { event.stopPropagation(); setGiftNote(null); setCardNote(null); setCard(picked !== index); setPicked(picked === index ? null : index); }} aria-label={`${player.name}, ${player.age}`} className={cn("relative block aspect-square w-full rounded-[14%] bg-surface-2 shadow-[0_4px_10px_rgba(0,0,0,0.4)]", staged && index === target ? "ring-[0.9cqmin] ring-[#FFE2A8]" : active ? "ring-4 ring-white" : picked === index ? "ring-4 ring-[#8CC63F]" : player.me ? "ring-2 ring-white/80" : "")}>
+              <button type="button" disabled={player.me} onClick={(event) => { event.stopPropagation(); if (dedicate) { setBadLink(false); setSongFile(null); setSongFor(index); return; } setGiftNote(null); setCardNote(null); setCard(picked !== index); setPicked(picked === index ? null : index); }} aria-label={`${player.name}, ${player.age}`} className={cn("relative block aspect-square w-full rounded-[14%] bg-surface-2 shadow-[0_4px_10px_rgba(0,0,0,0.4)]", staged && index === target ? "ring-[0.9cqmin] ring-[#FFE2A8]" : active ? "ring-4 ring-white" : picked === index ? "ring-4 ring-[#8CC63F]" : player.me ? "ring-2 ring-white/80" : "")}>
                 <img src={player.avatar} alt="" className="h-full w-full rounded-[14%] object-cover" style={player.me && frame ? { boxShadow: `0 0 0 0.9cqmin ${frame}, 0 0 2.4cqmin ${frame}` } : undefined} />
+                {dedicate && !player.me ? <span className="absolute inset-0 z-10 flex items-center justify-center rounded-[14%] bg-black/35"><span className="flex h-[7cqmin] w-[7cqmin] items-center justify-center rounded-full bg-[#8CC63F] text-[5cqmin] font-black leading-none text-white shadow">+</span></span> : null}
                 {topIds.has(player.id) ? <span className="absolute -left-[1.2cqmin] -top-[1.2cqmin] rounded bg-[#FACC15] px-[0.8cqmin] text-[2.2cqmin] font-black leading-[1.5] text-[#713F12] shadow">TOP</span> : null}
                 {kisses[player.id] ? <span className="absolute -right-[1.2cqmin] -top-[1.2cqmin] flex h-[4.6cqmin] min-w-[4.6cqmin] items-center justify-center rounded-full bg-[#E5334B] px-1 text-[2.4cqmin] font-bold tabular-nums text-white shadow">{kisses[player.id]}</span> : null}
                 {(stickers[player.id] ?? []).map((gift, position) => <Gift key={`${gift}-${position}`} id={gift} className={cn("absolute -bottom-[1.6cqmin] h-[48%] w-[48%] drop-shadow", position ? "-left-[1.6cqmin]" : "-right-[1.6cqmin]")} />)}
@@ -394,9 +424,10 @@ export function BottleGame({ wide, full, onToggleFull, onLeave }: { wide: boolea
                   </div>
                   <div className="my-1 border-t border-[#E5E7EB]" />
                   <div className="flex flex-wrap gap-2">
-                    <button onClick={() => setCardNote(t("bottle.kickVip"))} aria-label={t("bottle.kick")} title={t("bottle.kick")} className={cn(action, "bg-[#EF4444]")}><Ban size={20} /></button>
+                    <button onClick={() => setCardNote(t(vip ? "bottle.kickDemo" : "bottle.kickVip"))} aria-label={t("bottle.kick")} title={t("bottle.kick")} className={cn(action, "bg-[#EF4444]")}><Ban size={20} /></button>
                     <button onClick={() => setCardNote(t("bottle.friendSent"))} aria-label={t("bottle.addFriend")} title={t("bottle.addFriend")} className={cn(action, "bg-[#F59E0B]")}><UserPlus size={20} /></button>
                     <button onClick={() => setCard(false)} aria-label={t("gifts.send")} title={t("gifts.send")} className={cn(action, "bg-[#F97316]")}><GiftIcon size={20} /></button>
+                    <button onClick={() => openDm(picked)} aria-label={t("bottle.write")} title={t("bottle.write")} className={cn(action, "bg-[#3B9EDD]")}><Mail size={20} /></button>
                   </div>
                   {cardNote ? <p role="status" className="mt-1 rounded-md bg-[#FEF3C7] px-2 py-1 text-xs font-semibold text-[#92400E]">{cardNote}</p> : null}
                 </div>
@@ -404,6 +435,23 @@ export function BottleGame({ wide, full, onToggleFull, onLeave }: { wide: boolea
             </div>
           );
         })() : null}
+
+        {songFor !== null ? (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/35 p-3" onClick={(event) => { event.stopPropagation(); setSongFor(null); }}>
+            <form onSubmit={sendSong} role="dialog" aria-modal="true" aria-label={t("bottle.dedicate")} onClick={(event) => event.stopPropagation()} className="relative w-full max-w-[340px] rounded-2xl bg-white p-3 text-[#1F2937] shadow-2xl">
+              <button type="button" onClick={() => setSongFor(null)} aria-label={t("photos.close")} title={t("photos.close")} className="absolute -right-2 -top-2 flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#8CC63F] bg-white text-[#8CC63F] shadow"><X size={18} strokeWidth={3} /></button>
+              <p className="flex items-center gap-2 text-sm font-bold"><img src={players[songFor].avatar} alt="" className="h-9 w-9 rounded-md object-cover" />{t("bottle.dedicateTo")} {players[songFor].name}</p>
+              <div role="tablist" className="my-2 flex gap-1">
+                {(["video", "mp3"] as const).map((kind) => <button key={kind} type="button" role="tab" aria-selected={songKind === kind} onClick={() => { setSongKind(kind); setBadLink(false); }} className={cn("flex h-9 flex-1 items-center justify-center gap-1 rounded-md text-xs font-bold", songKind === kind ? "bg-[#EE8A2B] text-white" : "bg-[#F3F4F6] text-[#4B5563]")}>{kind === "video" ? "YouTube video" : "MP3"} · <Heart size={11} fill="currentColor" stroke="none" />{SONG_PRICE[kind]}</button>)}
+              </div>
+              {songKind === "video"
+                ? <input value={link} onChange={(event) => { setLink(event.target.value); setBadLink(false); }} aria-label={t("bottle.videoLink")} placeholder={t("bottle.videoLink")} autoComplete="off" className={cn("h-10 w-full rounded-lg border bg-white px-3 text-sm outline-none focus:border-[#EE8A2B]", badLink ? "border-[#DC2626]" : "border-[#D1D5DB]")} />
+                : <input type="file" accept="audio/mpeg,audio/mp3,.mp3" aria-label="MP3" onChange={(event) => { setSongFile(event.target.files?.[0] ?? null); setBadLink(false); }} className={cn("w-full rounded-lg border p-2 text-xs", badLink ? "border-[#DC2626]" : "border-[#D1D5DB]")} />}
+              {giftNote ? <p role="status" className="mt-2 text-xs font-semibold text-[#B91C1C]">{giftNote}</p> : null}
+              <button type="submit" className="mt-3 h-10 w-full rounded-lg bg-[#8CC63F] text-sm font-bold text-white hover:brightness-110">{t("bottle.dedicateSend")}</button>
+            </form>
+          </div>
+        ) : null}
 
         {panel ? (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/35 p-3" onClick={(event) => { event.stopPropagation(); setPanel(null); }}>
@@ -440,6 +488,11 @@ export function BottleGame({ wide, full, onToggleFull, onLeave }: { wide: boolea
                   </label>
                   <button onClick={onLeave} className={row}><Home size={20} className="w-6 text-[#3B82F6]" />{t("bottle.backLobby")}</button>
                   <label className={row}><Volume2 size={20} className="w-6 shrink-0 text-[#8CC63F]" /><span className="flex-1">{t("bottle.sounds")}</span><input type="range" min={0} max={100} value={volume} onChange={(event) => setVolumeLevel(Number(event.target.value))} className="w-24 accent-[#8CC63F]" /></label>
+                  <label className={cn(row, "cursor-pointer")}>
+                    <span aria-hidden="true" className="w-6 text-center text-lg">👑</span><span className="flex-1">{t("bottle.vipDemo")}</span>
+                    <input type="checkbox" checked={vip} onChange={(event) => setVip(event.target.checked)} className="peer sr-only" />
+                    <span className="relative h-7 w-12 rounded-full bg-[#D1D5DB] transition-colors after:absolute after:left-0.5 after:top-0.5 after:h-6 after:w-6 after:rounded-full after:bg-white after:shadow after:transition-transform peer-checked:bg-[#F59E0B] peer-checked:after:translate-x-5 peer-focus-visible:ring-2 peer-focus-visible:ring-[#2563EB]" />
+                  </label>
                   <label className={row}><Music size={20} className="w-6 shrink-0 text-[#EC4899]" /><span className="flex-1">{t("bottle.music")}</span><input type="range" min={0} max={100} value={music} onChange={(event) => setMusic(Number(event.target.value))} className="w-24 accent-[#8CC63F]" /></label>
                   <button onClick={invite} className={row}><UserPlus size={20} className="w-6 text-[#8CC63F]" />{copied ? t("bottle.copied") : t("bottle.invite")}</button>
                   <Link href="/friends" className={row}><Users size={20} className="w-6 text-[#3B82F6]" />{t("bottle.myFriends")}</Link>
@@ -533,11 +586,13 @@ export function BottleGame({ wide, full, onToggleFull, onLeave }: { wide: boolea
             <button onClick={() => setVideo(null)} aria-label={t("photos.close")} title={t("photos.close")} className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80"><X size={15} /></button>
           </div>
         ) : null}
-        <form onSubmit={handleVideo} className="flex items-center gap-2 border-b border-border p-2.5">
-          <Music2 size={20} className="shrink-0 text-[#FF3B30]" />
-          <input value={link} onChange={(event) => { setLink(event.target.value); setBadLink(false); }} aria-label={t("bottle.videoLink")} placeholder={t("bottle.videoLink")} autoComplete="off" className={cn("h-10 min-w-0 flex-1 rounded-full border bg-surface-2 px-4 text-sm text-text outline-none placeholder:text-muted focus:border-accent", badLink ? "border-danger" : "border-border")} />
-          <button type="submit" disabled={!link.trim()} className="h-10 shrink-0 rounded-full bg-accent px-4 text-xs font-bold text-bg disabled:opacity-40">{t("bottle.videoPlay")}</button>
-        </form>
+        {audio ? (
+          <div className="flex items-center gap-2 border-b border-border p-2">
+            <Music2 size={18} className="shrink-0 text-[#FF3B30]" />
+            <span className="min-w-0 flex-1"><span className="block truncate text-xs font-semibold text-text">{audio.name}</span><audio src={audio.url} autoPlay controls ref={(node) => { if (node) node.volume = music / 100; }} className="mt-1 h-8 w-full" /></span>
+            <button onClick={() => setAudio(null)} aria-label={t("photos.close")} title={t("photos.close")} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-2 text-text"><X size={15} /></button>
+          </div>
+        ) : null}
         <p className="border-b border-border px-3 py-1.5 text-[11px] text-muted">{t("bottle.demoNote")}</p>
         {picked !== null ? (
           <div className="flex min-h-0 flex-1 flex-col">
@@ -552,7 +607,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave }: { wide: boolea
             </div>
             <div role="menu" className="grid min-h-0 flex-1 grid-cols-3 content-start gap-1 overflow-y-auto p-2 sm:grid-cols-3">
               {[...giftChoices, ...lockedGifts].map(([gift, price, need]) => (
-                <button key={gift} role="menuitem" aria-disabled={Boolean(need)} onPointerDown={() => startHold(picked, gift, price, need)} onPointerUp={stopHold} onPointerLeave={stopHold} onPointerCancel={stopHold} onContextMenu={(event) => event.preventDefault()} onKeyDown={(event) => { if (event.key === "Enter" && !event.repeat) { startHold(picked, gift, price, need); stopHold(); } }} aria-label={`${t("gifts.send")} ${price}`} className={cn("flex touch-none select-none flex-col items-center gap-0.5 rounded-xl p-2 hover:bg-surface-2", (Boolean(need) || hearts < price) && "opacity-35 grayscale")}>
+                <button key={gift} role="menuitem" aria-disabled={need === -1 ? !vip : Boolean(need)} onPointerDown={() => startHold(picked, gift, price, need)} onPointerUp={stopHold} onPointerLeave={stopHold} onPointerCancel={stopHold} onContextMenu={(event) => event.preventDefault()} onKeyDown={(event) => { if (event.key === "Enter" && !event.repeat) { startHold(picked, gift, price, need); stopHold(); } }} aria-label={`${t("gifts.send")} ${price}`} className={cn("flex touch-none select-none flex-col items-center gap-0.5 rounded-xl p-2 hover:bg-surface-2", ((need === -1 ? !vip : Boolean(need)) || hearts < price) && "opacity-35 grayscale")}>
                   <Gift id={gift} className="h-12 w-12" />
                   <span className="flex items-center gap-1 text-xs font-bold tabular-nums text-text">{need === -1 ? <b className="rounded bg-[#F59E0B] px-1 text-[10px] text-white">VIP</b> : need ? <>💋 {need}</> : <><Heart size={12} fill="#FF6A1F" stroke="none" />{price}</>}</span>
                 </button>
@@ -570,7 +625,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave }: { wide: boolea
               <div key={line.id} className="flex items-center gap-2 text-sm">
                 <img src={from.avatar} alt={from.name} title={from.name} className="h-8 w-8 shrink-0 rounded-md object-cover" />
                 {line.text ? <p className="min-w-0 break-words text-text"><span className="font-semibold text-muted">{from.me ? t("common.you") : from.name}: </span>{line.text}</p> : null}
-                {to ? <>{line.gift ? <Gift id={line.gift} className="h-7 w-7 shrink-0" /> : <span className="shrink-0 text-lg">💋</span>}<span className="font-bold text-accent">»</span><img src={to.avatar} alt={to.name} title={to.name} className="h-8 w-8 shrink-0 rounded-md object-cover" /></> : null}
+                {to ? <>{line.gift ? <Gift id={line.gift} className="h-7 w-7 shrink-0" /> : line.song ? <span className="flex min-w-0 items-center gap-1 text-text"><Music2 size={16} className="shrink-0 text-[#F59E0B]" /><span className="truncate">{line.song}</span></span> : <span className="shrink-0 text-lg">💋</span>}<span className="font-bold text-accent">»</span><img src={to.avatar} alt={to.name} title={to.name} className="h-8 w-8 shrink-0 rounded-md object-cover" /></> : null}
               </div>
             );
           })}
@@ -581,6 +636,22 @@ export function BottleGame({ wide, full, onToggleFull, onLeave }: { wide: boolea
           <button type="submit" disabled={!draft.trim()} aria-label={t("messages.send")} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#EE8A2B] text-white disabled:opacity-40"><SendHorizontal size={17} /></button>
         </form>
       </div>
+      {dm !== null ? (
+        <div role="dialog" aria-label={`${t("bottle.write")}: ${players[dm].name}`} className="absolute bottom-0 right-3 z-[55] flex h-[330px] w-[min(290px,calc(100%-24px))] flex-col overflow-hidden rounded-t-xl border border-border bg-surface shadow-2xl">
+          <div className="flex h-11 shrink-0 items-center gap-2 bg-[#3B9EDD] px-2 text-white">
+            <img src={players[dm].avatar} alt="" className="h-8 w-8 rounded-full object-cover" />
+            <span className="min-w-0 flex-1 truncate text-sm font-bold">{players[dm].name}</span>
+            <button onClick={() => setDm(null)} aria-label={t("photos.close")} title={t("photos.close")} className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-white/20"><X size={17} /></button>
+          </div>
+          <div className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto p-2">
+            {(dms[players[dm].id] ?? []).map((item, index) => <p key={index} className={cn("max-w-[80%] break-words rounded-2xl px-3 py-1.5 text-sm", item.mine ? "self-end bg-[#3B9EDD] text-white" : "self-start bg-surface-2 text-text")}>{item.text}</p>)}
+          </div>
+          <form onSubmit={sendDm} className="flex items-center gap-1.5 border-t border-border p-1.5">
+            <input value={dmDraft} onChange={(event) => setDmDraft(event.target.value)} maxLength={300} aria-label={t("messages.placeholder")} placeholder={t("messages.placeholder")} autoComplete="off" className="h-9 min-w-0 flex-1 rounded-full border border-border bg-surface-2 px-3 text-sm text-text outline-none placeholder:text-muted focus:border-accent" />
+            <button type="submit" disabled={!dmDraft.trim()} aria-label={t("messages.send")} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#3B9EDD] text-white disabled:opacity-40"><SendHorizontal size={15} /></button>
+          </form>
+        </div>
+      ) : null}
     </div>
   );
 }
