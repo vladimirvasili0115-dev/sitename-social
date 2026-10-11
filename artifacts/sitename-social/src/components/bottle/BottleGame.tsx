@@ -33,18 +33,23 @@ const bots: Omit<Player, "avatar">[] = [
 ];
 const smallTalk = ["Salam hamıya 👋", "Bu gün bəxtim gətirir 😄", "Kim fırladır?", "Çay içən var? ☕", "Hahaha", "Bir də fırlat!", "Bakıdan kim var?", "Gecəniz xeyrə 🌙"];
 const giftChoices: [string, number][] = [
-  ["crown", 3], ["diamond", 3], ["ring", 3], ["e:🏆", 3], ["e:🚗", 3], ["e:💐", 3],
-  ["tower", 2], ["tar", 2], ["buta", 2], ["e:🧸", 2], ["e:🍾", 2], ["e:🎂", 2], ["e:💍", 2], ["e:🎸", 2], ["e:🕶️", 2],
-  ["heart", 1], ["rose", 1], ["flame", 1], ["tea", 1], ["nar", 1], ["paxlava", 1], ["shekerbura", 1], ["semeni", 1], ["xaribulbul", 1],
-  ["e:💋", 1], ["e:🍓", 1], ["e:🍅", 1], ["e:🍦", 1], ["e:🍫", 1], ["e:🍬", 1], ["e:🍸", 1], ["e:🍹", 1], ["e:☕", 1], ["e:🍉", 1], ["e:🍒", 1], ["e:🎈", 1], ["e:🎩", 1], ["e:🐸", 1], ["e:🦋", 1], ["e:⭐", 1], ["e:🌙", 1], ["e:🍀", 1],
+  ["song:video", 9], ["song:mp3", 5], ["crown", 3], ["e:👑", 3], ["e:🤴", 3], ["e:👸", 3], ["e:💋", 1], ["diamond", 1], ["e:🍓", 1], ["e:🍅", 1], ["e:🐸", 2], ["rose", 1],
+  ["e:🍬", 1], ["e:🦆", 1], ["e:🐿️", 1], ["e:🦛", 1], ["e:🐧", 1], ["e:🐵", 1], ["e:💐", 1], ["e:🌷", 1], ["e:🪴", 1], ["e:🌵", 1], ["e:🍦", 1], ["e:🍰", 1],
+  ["e:🥛", 1], ["e:🍷", 1], ["e:🥃", 1], ["e:🍵", 1], ["tea", 1], ["e:🥒", 3], ["e:☕", 1], ["e:🥂", 1], ["e:🍺", 1], ["e:🍸", 1], ["e:🍹", 1], ["e:🧸", 1],
+  ["e:🧣", 1], ["e:⛑️", 2], ["e:🤠", 2], ["e:⚓", 2], ["e:👽", 2], ["e:🐻", 2], ["e:🐱", 2], ["e:🦊", 2], ["e:🐭", 2], ["e:🐼", 2], ["e:🐞", 2], ["e:😈", 2],
+  ["e:🐷", 2], ["e:🦌", 2], ["e:🎗️", 2], ["e:🎀", 2], ["e:🌸", 2], ["e:🩷", 2], ["e:🎲", 1],
 ];
 const vipPlans: [number, number][] = [[7, 300], [30, 900], [90, 2200]];
 const frames = ["#FACC15", "#F472B6", "#60A5FA", "#34D399", "#A78BFA", "#F97316", "#EF4444"];
 // Put the channel link here (for example "https://t.me/kanal_adi"); while empty, the settings row says it is not set yet.
 const TELEGRAM_URL = "";
-const SONG_PRICE = { video: 5, mp3: 3 };
-const lockedGifts: [string, number, number][] = [["e:💎", 4, -1], ["e:🦚", 4, -1], ["e:🎻", 4, -1], ["e:🦄", 5, 15000], ["e:🏰", 5, 15000], ["e:🚀", 8, 23000], ["e:🛥️", 8, 23000]];
+const SONG_PRICE = { video: 9, mp3: 5 };
+const lockedGifts: [string, number, number][] = [
+  ["e:🥸", 5, 1000], ["e:🥤", 5, 1000], ["e:🃏", 5, 1000], ["e:🧊", 5, 1000], ["e:👒", 5, 1000], ["e:🍹", 5, 3000], ["e:💍", 5, 3000], ["e:💖", 5, 3000], ["e:💀", 5, 3000], ["e:💠", 5, 3000], ["e:🧋", 5, 3000], ["e:🪇", 5, 3000], ["e:🧃", 5, 3000], ["e:⚔️", 5, 3000], ["e:🫗", 5, 3000], ["e:🧢", 5, 3000], ["e:🍧", 5, 3000], ["e:🏴‍☠️", 5, 7000], ["e:🥃", 5, 7000], ["e:🎩", 5, 7000], ["e:🍸", 5, 7000], ["e:🪖", 5, 7000], ["e:🧉", 5, 7000], ["e:🕴️", 5, 7000], ["e:🥂", 5, 7000], ["e:🍔", 5, 7000], ["e:🏅", 5, 7000], ["e:🍼", 5, 7000], ["e:🥥", 5, 7000], ["e:🎁", 5, 15000], ["e:🎓", 5, 15000], ["e:⚗️", 5, 15000], ["e:🪶", 5, 15000], ["e:🫙", 5, 15000], ["e:👳", 5, 15000], ["e:🎤", 5, 15000], ["e:🪆", 5, 15000], ["e:🍯", 5, 15000], ["e:🌶️", 5, 15000], ["e:🥣", 5, 15000], ["e:🪔", 5, 15000], ["e:🍒", 5, 23000], ["e:🫒", 5, 23000], ["e:🛡️", 5, 23000], ["e:🦪", 5, 23000], ["e:🧙", 5, 23000], ["e:👸", 5, 23000], ["e:💨", 5, 23000], ["e:🦚", 5, 23000], ["e:🧿", 5, 23000], ["e:🥄", 5, 23000], ["e:💵", 5, 23000], ["e:🎎", 5, 23000], ["e:🧁", 5, 23000], ["e:🐰", 5, 23000], ["e:🍋", 5, 23000], ["e:🍭", 5, 23000], ["e:🤺", 5, 23000], ["e:🌺", 5, 23000], ["e:🌠", 5, 23000], ["e:🛢️", 5, 23000], ["e:💝", 5, 23000], ["e:🌭", 5, 23000], ["e:👜", 5, 23000], ["e:🍟", 5, 23000],
+  ["e:💎", 4, -1], ["e:🦄", 4, -1], ["e:🎻", 4, -1],
+];
 function Gift({ id, className }: { id: string; className?: string }) {
+  if (id.startsWith("song:")) id = id === "song:video" ? "e:🎬" : "e:🎵";
   if (!id.startsWith("e:")) return <GiftArt id={id as GiftId} className={className} />;
   return <span aria-hidden="true" className={cn("flex items-center justify-center leading-none [container-type:size]", className)}><span className="text-[82cqmin]">{id.slice(2)}</span></span>;
 }
@@ -362,6 +367,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const stopHold = () => { if (hold.current) window.clearInterval(hold.current); hold.current = null; };
   function startHold(index: number, gift: string, price: number, need?: number) {
     stopHold();
+    if (gift.startsWith("song:")) { openSong(index); if (gift === "song:mp3") setSongTab("mp3"); return; }
     if (need === -1 && !vip) return setGiftNote(t("bottle.vipOnly"));
     if (need === -1) need = 0;
     if (need) return setGiftNote(`${t("bottle.needKisses")} (${need})`);
@@ -731,11 +737,11 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
               </div>
               <button onClick={() => setPicked(null)} aria-label={t("photos.close")} title={t("photos.close")} className="flex h-9 w-9 shrink-0 items-center justify-center self-start rounded-full bg-[#8CC63F] text-white hover:brightness-110"><X size={17} /></button>
             </div>
-            <div role="menu" className="grid min-h-0 flex-1 grid-cols-3 content-start gap-1 overflow-y-auto p-2 sm:grid-cols-3">
-              {[...giftChoices, ...lockedGifts].map(([gift, price, need]) => (
-                <button key={gift} role="menuitem" aria-disabled={need === -1 ? !vip : Boolean(need)} onPointerDown={() => startHold(picked, gift, price, need)} onPointerUp={stopHold} onPointerLeave={stopHold} onPointerCancel={stopHold} onContextMenu={(event) => event.preventDefault()} onKeyDown={(event) => { if (event.key === "Enter" && !event.repeat) { startHold(picked, gift, price, need); stopHold(); } }} aria-label={`${t("gifts.send")} ${price}`} className={cn("flex touch-none select-none flex-col items-center gap-0.5 rounded-xl p-2 hover:bg-surface-2", ((need === -1 ? !vip : Boolean(need)) || hearts < price) && "opacity-35 grayscale")}>
-                  <Gift id={gift} className="h-12 w-12" />
-                  <span className="flex items-center gap-1 text-xs font-bold tabular-nums text-text">{need === -1 ? <b className="rounded bg-[#F59E0B] px-1 text-[10px] text-white">VIP</b> : need ? <>💋 {need}</> : <><Heart size={12} fill="#FF6A1F" stroke="none" />{price}</>}</span>
+            <div role="menu" className="grid min-h-0 flex-1 grid-cols-[repeat(auto-fill,minmax(58px,1fr))] content-start gap-0.5 overflow-y-auto p-2">
+              {[...giftChoices, ...lockedGifts].map(([gift, price, need], order) => (
+                <button key={`${gift}-${order}`} role="menuitem" aria-disabled={need === -1 ? !vip : Boolean(need)} onPointerDown={() => startHold(picked, gift, price, need)} onPointerUp={stopHold} onPointerLeave={stopHold} onPointerCancel={stopHold} onContextMenu={(event) => event.preventDefault()} onKeyDown={(event) => { if (event.key === "Enter" && !event.repeat) { startHold(picked, gift, price, need); stopHold(); } }} aria-label={`${t("gifts.send")} ${price}`} className={cn("flex touch-none select-none flex-col items-center gap-0.5 rounded-xl p-1.5 hover:bg-surface-2", ((need === -1 ? !vip : Boolean(need)) || hearts < price) && "opacity-35 grayscale")}>
+                  <Gift id={gift} className="h-11 w-11" />
+                  <span className="flex items-center gap-1 text-xs font-bold tabular-nums text-text">{need === -1 ? <b className="rounded bg-[#F59E0B] px-1 text-[10px] text-white">VIP</b> : need ? <span aria-label={`${need}`}>🔒</span> : <><Heart size={12} fill="#FF6A1F" stroke="none" />{price}</>}</span>
                 </button>
               ))}
             </div>
