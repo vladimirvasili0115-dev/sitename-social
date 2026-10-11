@@ -71,5 +71,6 @@ const ru: Record<keyof typeof az, string> = {
   "bottle.boosters":"Бустеры","bottle.boostDouble":"Двойной поцелуй","bottle.boostDoubleText":"10 минут каждый полученный поцелуй считается за 2","bottle.boostJump":"Ход вне очереди","bottle.boostJumpText":"Следующее вращение будет твоим","bottle.more":"Ещё","bottle.reject":"Отклонить","bottle.unreject":"Отменить отклонение","bottle.rejected":"Сообщения этого игрока больше не видны","bottle.unrejected":"Сообщения игрока снова видны","bottle.telegram":"Наш канал в Telegram","bottle.telegramSoon":"Ссылка на канал пока не добавлена",
   "bottle.mention":"Написать в чате по имени",
   "bottle.songPopular":"Популярное","bottle.songFav":"Избранное","bottle.songRecent":"Недавние","bottle.songSearch":"Поиск","bottle.songSearchHint":"Название песни или ссылка YouTube","bottle.songNoKey":"Поиск по YouTube ещё не подключён: владелец сайта должен добавить ключ YouTube. Пока можно вставить ссылку YouTube в разделе «Поиск».","bottle.songFail":"YouTube не ответил. Попробуй чуть позже.","bottle.songEmpty":"Здесь пока пусто","bottle.songLoading":"Загрузка…",
+  "auth.day":"День","auth.month":"Месяц","auth.year":"Год",
 };
 export default ru;

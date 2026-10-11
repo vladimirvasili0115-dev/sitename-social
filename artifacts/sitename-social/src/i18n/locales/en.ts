@@ -71,5 +71,6 @@ const en: Record<keyof typeof az, string> = {
   "bottle.boosters":"Boosters","bottle.boostDouble":"Double kiss","bottle.boostDoubleText":"For 10 minutes every kiss you get counts as 2","bottle.boostJump":"Jump the queue","bottle.boostJumpText":"The next spin is yours","bottle.more":"More","bottle.reject":"Reject","bottle.unreject":"Undo reject","bottle.rejected":"You will no longer see this player's messages","bottle.unrejected":"This player's messages are visible again","bottle.telegram":"Join our Telegram channel","bottle.telegramSoon":"The channel link has not been added yet",
   "bottle.mention":"Mention in table chat",
   "bottle.songPopular":"Popular","bottle.songFav":"Favourites","bottle.songRecent":"Recent","bottle.songSearch":"Search","bottle.songSearchHint":"Song name or YouTube link","bottle.songNoKey":"YouTube search is not connected yet: the site owner must add a YouTube key. For now you can paste a YouTube link in Search.","bottle.songFail":"YouTube did not answer. Try again a little later.","bottle.songEmpty":"Nothing here yet","bottle.songLoading":"Loading…",
+  "auth.day":"Day","auth.month":"Month","auth.year":"Year",
 };
 export default en;

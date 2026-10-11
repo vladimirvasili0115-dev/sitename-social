@@ -19,6 +19,14 @@ type Field = "name" | "email" | "gender" | "birthday" | "city" | "password" | "c
 type Errors = Partial<Record<Field, TranslationKey>>;
 const genders: { id: Gender; label: TranslationKey }[] = [{ id: "male", label: "auth.male" }, { id: "female", label: "auth.female" }];
 
+// Written out by hand: browsers do not all know month names for every language of the site.
+const monthNames: Record<string, string[]> = {
+  az: ["Yanvar", "Fevral", "Mart", "Aprel", "May", "İyun", "İyul", "Avqust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr"],
+  tr: ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"],
+  ru: ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"],
+  en: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+  ka: ["იანვარი", "თებერვალი", "მარტი", "აპრილი", "მაისი", "ივნისი", "ივლისი", "აგვისტო", "სექტემბერი", "ოქტომბერი", "ნოემბერი", "დეკემბერი"],
+};
 function ageOf(birthday: string) {
   const born = new Date(birthday);
   if (Number.isNaN(born.getTime())) return -1;
@@ -28,11 +36,22 @@ function ageOf(birthday: string) {
 }
 
 export function RegisterForm() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const { register } = useAuth();
   const [failure, setFailure] = useState<AuthResult>(null);
   const [pending, setPending] = useState(false);
   const router = useRouter();
+  // Birthday is picked from three short lists (day, month, year) instead of a calendar.
+  const [birth, setBirth] = useState({ d: "", m: "", y: "" });
+  const thisYear = new Date().getFullYear();
+  const years = Array.from({ length: 83 }, (_, n) => [String(thisYear - MIN_AGE - n), String(thisYear - MIN_AGE - n)] as const);
+  const months = Array.from({ length: 12 }, (_, n) => [String(n + 1), (monthNames[locale] ?? monthNames.en)[n]] as const);
+  function setBirthPart(part: "d" | "m" | "y", value: string) {
+    const next = { ...birth, [part]: value };
+    setBirth(next);
+    const valid = next.d && next.m && next.y && new Date(Number(next.y), Number(next.m) - 1, Number(next.d)).getDate() === Number(next.d);
+    setForm((current) => ({ ...current, birthday: valid ? `${next.y}-${next.m.padStart(2, "0")}-${next.d.padStart(2, "0")}` : "" }));
+  }
   const [form, setForm] = useState({ name: "", email: "", birthday: "", city: "", password: "", confirm: "" });
   const [gender, setGender] = useState<Gender | null>(null);
   const [terms, setTerms] = useState(false);
@@ -73,7 +92,18 @@ export function RegisterForm() {
         {errors.gender ? <p className="mt-1.5 text-xs text-[var(--danger)]">{t(errors.gender)}</p> : null}
       </fieldset>
       <div className="grid gap-4 sm:grid-cols-2">
-        <AuthField label={t("profile.birthday")} icon={Cake} type="date" autoComplete="bday" value={form.birthday} onChange={update("birthday")} error={errors.birthday && t(errors.birthday)} />
+        <fieldset>
+          <legend className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-muted"><Cake size={14} />{t("profile.birthday")}</legend>
+          <div className="grid grid-cols-[1fr_1.6fr_1.2fr] gap-2">
+            {([["d", t("auth.day"), Array.from({ length: 31 }, (_, n) => [String(n + 1), String(n + 1)])], ["m", t("auth.month"), months], ["y", t("auth.year"), years]] as const).map(([part, label, options]) => (
+              <select key={part} aria-label={label} value={birth[part]} onChange={(event) => setBirthPart(part, event.target.value)} className={cn("h-12 w-full rounded-xl border bg-surface-2 px-2.5 text-sm text-text outline-none focus:border-accent", errors.birthday ? "border-danger" : "border-border")}>
+                <option value="">{label}</option>
+                {options.map(([value, text]) => <option key={value} value={value}>{text}</option>)}
+              </select>
+            ))}
+          </div>
+          {errors.birthday ? <p role="alert" className="mt-1 text-xs text-danger">{t(errors.birthday)}</p> : null}
+        </fieldset>
         <AuthField label={t("profile.city")} icon={MapPin} autoComplete="address-level2" value={form.city} onChange={update("city")} error={errors.city && t(errors.city)} />
       </div>
       <div>

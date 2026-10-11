@@ -80,5 +80,6 @@ const az = {
   "bottle.boosters":"Busterlər","bottle.boostDouble":"İkiqat öpüş","bottle.boostDoubleText":"10 dəqiqə ərzində aldığın hər öpüş 2 sayılır","bottle.boostJump":"Növbəni qabağa çək","bottle.boostJumpText":"Növbəti fırlatma sənin olur","bottle.more":"Daha çox","bottle.reject":"Rədd et","bottle.unreject":"Rədd etməni götür","bottle.rejected":"Bu oyunçunun yazıları sənə görünməyəcək","bottle.unrejected":"Oyunçunun yazıları yenidən görünür","bottle.telegram":"Telegram kanalına qoşul","bottle.telegramSoon":"Kanal linki hələ əlavə edilməyib",
   "bottle.mention":"Çatda adı ilə yaz",
   "bottle.songPopular":"Populyar","bottle.songFav":"Sevimlilər","bottle.songRecent":"Son qoyulanlar","bottle.songSearch":"Axtar","bottle.songSearchHint":"Mahnı adı və ya YouTube linki","bottle.songNoKey":"YouTube axtarışı hələ qoşulmayıb: saytın sahibi YouTube açarını əlavə etməlidir. Hələlik Axtar bölməsinə YouTube linkini yapışdıra bilərsən.","bottle.songFail":"YouTube cavab vermədi. Bir az sonra yenidən yoxla.","bottle.songEmpty":"Burada hələ heç nə yoxdur","bottle.songLoading":"Yüklənir…",
+  "auth.day":"Gün","auth.month":"Ay","auth.year":"İl",
 } as const;
 export default az;

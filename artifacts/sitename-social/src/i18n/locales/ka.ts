@@ -71,5 +71,6 @@ const ka: Record<keyof typeof az, string> = {
   "bottle.boosters":"ბუსტერები","bottle.boostDouble":"ორმაგი კოცნა","bottle.boostDoubleText":"10 წუთი ყოველი მიღებული კოცნა 2-ად ითვლება","bottle.boostJump":"რიგის გადასწრება","bottle.boostJumpText":"შემდეგი ტრიალი შენია","bottle.more":"მეტი","bottle.reject":"უარყოფა","bottle.unreject":"უარყოფის გაუქმება","bottle.rejected":"ამ მოთამაშის შეტყობინებებს ვეღარ ნახავ","bottle.unrejected":"მოთამაშის შეტყობინებები ისევ ჩანს","bottle.telegram":"შემოგვიერთდი Telegram არხზე","bottle.telegramSoon":"არხის ბმული ჯერ არ არის დამატებული",
   "bottle.mention":"ჩატში სახელით მიწერა",
   "bottle.songPopular":"პოპულარული","bottle.songFav":"რჩეულები","bottle.songRecent":"ბოლო","bottle.songSearch":"ძებნა","bottle.songSearchHint":"სიმღერის სახელი ან YouTube ბმული","bottle.songNoKey":"YouTube ძებნა ჯერ არ არის ჩართული: საიტის მფლობელმა უნდა დაამატოს YouTube გასაღები. ჯერჯერობით ჩასვი YouTube ბმული ძებნაში.","bottle.songFail":"YouTube-მა არ უპასუხა. სცადე ცოტა მოგვიანებით.","bottle.songEmpty":"აქ ჯერ არაფერია","bottle.songLoading":"იტვირთება…",
+  "auth.day":"დღე","auth.month":"თვე","auth.year":"წელი",
 };
 export default ka;
