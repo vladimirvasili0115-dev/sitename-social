@@ -63,5 +63,6 @@ const ru: Record<keyof typeof az, string> = {
   "bottle.waitingSpin":"Ждут следующего вращения",
   "bottle.settings":"Параметры","bottle.acceptKisses":"Принимать поцелуи","bottle.backLobby":"Вернуться в лобби","bottle.sounds":"Звуки","bottle.music":"Музыка","bottle.invite":"Пригласить друзей","bottle.copied":"Ссылка скопирована","bottle.myFriends":"Мои друзья","bottle.profileSettings":"Настройки профиля","bottle.top":"Лидеры стола","bottle.rules":"Правила","bottle.changeTable":"Сменить стол","bottle.rule1":"Когда придёт твой ход, нажми на бутылочку.","bottle.rule2":"На кого укажет бутылочка, с тем вы выходите в центр: за 9 секунд поцелуй или откажись.","bottle.rule3":"Каждый полученный поцелуй увеличивает счётчик на фото.","bottle.rule4":"Нажми на фото игрока и отправь подарок за сердечки.",
   "bottle.shop":"Купить сердечки","bottle.vipStatus":"СТАТУС","bottle.vipMore":"Узнать","bottle.packBest":"Выгодно","bottle.packHit":"Хит","bottle.bonus":"БОНУС","bottle.currency":"ÇEK","bottle.paySoon":"Онлайн-оплата скоро заработает.",
+  "bottle.waitTurn":"Дождись своей очереди","bottle.giftHint2":"Выбери подарок и отправь",
 };
 export default ru;

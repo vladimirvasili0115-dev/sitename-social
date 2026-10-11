@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useRef, useSyncExternalStore, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { isAuthRoute, isPublicRoute } from "@/lib/auth";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -19,6 +19,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { user, ready } = useAuth();
   const authRoute = isAuthRoute(pathname);
+  const hadUser = useRef(false);
   const publicRoute = isPublicRoute(pathname);
   const { settings } = useSettings();
   const ban = useSyncExternalStore(banStore.subscribe, banStore.get, banStore.getServer);
@@ -29,7 +30,9 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!ready || publicRoute) return;
-    if (!user && !authRoute) router.replace("/login");
+    // "why=session" marks a login that was lost while the site was open (helps tell apart sign-in problems on one device).
+    if (!user && !authRoute) router.replace(hadUser.current ? "/login?why=session" : "/login");
+    if (user) hadUser.current = true;
     if (user && authRoute) router.replace("/feed");
   }, [ready, user, authRoute, publicRoute, router]);
 

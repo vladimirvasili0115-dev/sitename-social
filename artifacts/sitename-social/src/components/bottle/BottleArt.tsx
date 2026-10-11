@@ -30,7 +30,7 @@ export function WoodTable({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 400 440" preserveAspectRatio="xMidYMid slice" aria-hidden="true" className={className}>
       <defs>
-        <radialGradient id="wd-light" cx="0.5" cy="0.5" r="0.75"><stop offset="0" stopColor="#F6C777" /><stop offset="0.5" stopColor="#E9A957" /><stop offset="1" stopColor="#CE8436" /></radialGradient>
+        <radialGradient id="wd-light" cx="0.5" cy="0.5" r="0.75"><stop offset="0" stopColor="#D9A050" /><stop offset="0.5" stopColor="#BC7B31" /><stop offset="1" stopColor="#8A5220" /></radialGradient>
         <filter id="wd-grain" x="0" y="0" width="100%" height="100%">
           <feTurbulence type="fractalNoise" baseFrequency="0.006 0.055" numOctaves="4" seed="11" />
           <feColorMatrix values="0 0 0 0 0.52  0 0 0 0 0.27  0 0 0 0 0.05  0 0 0 1.500 -0.620" />
@@ -41,7 +41,7 @@ export function WoodTable({ className }: { className?: string }) {
         </filter>
       </defs>
       <rect width="400" height="440" fill="url(#wd-light)" />
-      <g filter="url(#wd-swirl)" fill="none" stroke="#B9732A" strokeLinecap="round">
+      <g filter="url(#wd-swirl)" fill="none" stroke="#7A4515" strokeLinecap="round">
         {[18, 52, 81, 118, 149, 186, 221, 252, 290, 324, 361, 396, 428].map((y, i) => <path key={y} d={`M-30 ${y}C80 ${y - 14} 150 ${y + 16} 230 ${y}S380 ${y - 12} 430 ${y + 6}`} strokeWidth={i % 3 === 0 ? 2.200 : 1.200} opacity={i % 2 ? 0.22 : 0.32} />)}
         {[36, 100, 168, 236, 306, 378].map((y) => <path key={y} d={`M-30 ${y}C90 ${y + 10} 200 ${y - 12} 430 ${y + 4}`} stroke="#FFE2A6" strokeWidth="1.600" opacity="0.28" />)}
       </g>
