@@ -108,7 +108,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [lines, setLines] = useState<Line[]>([{ id: 1, from: "b3", text: smallTalk[0] }, { id: 2, from: "b6", to: "b1" }]);
   const [draft, setDraft] = useState("");
   const [picked, setPicked] = useState<number | null>(null);
-  const [flying, setFlying] = useState<{ key: number; gift: string; to: number; moved: boolean }[]>([]);
+  const [flying, setFlying] = useState<{ key: number; gift: string; to: number; moved: boolean; ms: number }[]>([]);
   const heartsRef = useRef(12);
   const flyId = useRef(1);
   const hold = useRef<number | null>(null);
@@ -481,7 +481,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     setDm(person);
     if (online) void openRemoteChat(person.id);
   }
-  function sendGift(index: number, gift: string, price: number) {
+  // A single gift glides for 3 seconds; gifts sent in a rapid series (press and hold) fly in about a second.
+  function sendGift(index: number, gift: string, price: number, ms = 3000) {
     const player = players[index];
     if (heartsRef.current < price) return false;
     heartsRef.current -= price;
@@ -489,14 +490,14 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (online) void bottleSpend(price);
     const key = flyId.current++;
     playGiftSound(gift, "send");
-    setFlying((list) => [...list, { key, gift, to: index, moved: false }]);
+    setFlying((list) => [...list, { key, gift, to: index, moved: false, ms }]);
     window.setTimeout(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))), 40);
     window.setTimeout(() => {
       setFlying((list) => list.filter((item) => item.key !== key));
       playGiftSound(gift, "land");
       setStickers((value) => ({ ...value, [player.id]: [...(value[player.id] ?? []), gift].slice(-6) }));
       say({ from: "me", to: player.id, gift });
-    }, 3100);
+    }, ms + 100);
     setSent((value) => ({ ...value, [player.id]: (value[player.id] ?? 0) + 1 }));
     return true;
   }
@@ -528,7 +529,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     cancelPress();
     const state = { started: false, x, y, timer: window.setTimeout(() => {
       state.started = true;
-      if (giveGift(index, gift, price, need)) hold.current = window.setInterval(() => { if (!sendGift(index, gift, price)) stopHold(); }, 450);
+      if (giveGift(index, gift, price, need)) hold.current = window.setInterval(() => { if (!sendGift(index, gift, price, 1000)) stopHold(); }, 300);
     }, 380) };
     pressed.current = state;
   }
@@ -619,7 +620,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           );
         })}
 
-        {flying.map((item) => <div key={item.key} className="pointer-events-none absolute z-40 h-[11cqmin] w-[11cqmin] -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_0_10px_rgba(255,240,150,0.95)] transition-[left,top] duration-[3000ms] ease-in-out" style={{ left: `${seats[item.moved ? item.to : meIndex][0]}%`, top: `${seats[item.moved ? item.to : meIndex][1]}%` }}><Gift id={item.gift} className="h-full w-full" /></div>)}
+        {flying.map((item) => <div key={item.key} className="pointer-events-none absolute z-40 h-[11cqmin] w-[11cqmin] -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_0_10px_rgba(255,240,150,0.95)] transition-[left,top] ease-in-out" style={{ transitionDuration: `${item.ms}ms`, left: `${seats[item.moved ? item.to : meIndex][0]}%`, top: `${seats[item.moved ? item.to : meIndex][1]}%` }}><Gift id={item.gift} className="h-full w-full" /></div>)}
 
         {staged && target !== null ? (
           <>
