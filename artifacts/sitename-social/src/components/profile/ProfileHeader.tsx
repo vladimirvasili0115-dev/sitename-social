@@ -18,22 +18,21 @@ export function ProfileHeader({ user, details, stats, onUpdate, onEdit }: Props)
   const { t } = useTranslation();
   const official = useVerified(user.id) === "official";
   const { hidesOnline } = useInvisible();
-  const [cropping, setCropping] = useState<string | null>(null);
+  const [cropping, setCropping] = useState<{ kind: "avatar" | "cover"; src: string } | null>(null);
   const pick = (field: "avatar" | "cover", size: number) => async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
     try {
-      // A new profile photo is framed by the user first; the cover is used as it is.
-      if (field === "avatar") setCropping(await resizeImage(file, 1200));
-      else onUpdate({ [field]: await resizeImage(file, size) });
+      // The user frames a new profile photo or cover before it is saved.
+      setCropping({ kind: field, src: await resizeImage(file, field === "cover" ? 2000 : 1200) });
     } catch {
       // Unreadable image: keep the current one.
     }
   };
   return (
     <Card className="overflow-hidden">
-      {cropping ? <AvatarCropper src={cropping} onCancel={() => setCropping(null)} onSave={(avatar) => { setCropping(null); onUpdate({ avatar }); }} /> : null}
+      {cropping ? <AvatarCropper src={cropping.src} kind={cropping.kind} onCancel={() => setCropping(null)} onSave={(picture) => { const field = cropping.kind; setCropping(null); onUpdate({ [field]: picture }); }} /> : null}
       <div className="relative h-40 bg-[linear-gradient(135deg,var(--accent),var(--accent-2))] sm:h-56">
         {details.cover ? <img src={details.cover} alt="" className="h-full w-full object-cover" /> : null}
         <label className="absolute right-3 top-3 flex cursor-pointer items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2 text-xs font-medium text-text hover:bg-surface-2">

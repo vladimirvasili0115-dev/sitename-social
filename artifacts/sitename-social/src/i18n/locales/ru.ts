@@ -83,5 +83,6 @@ const ru: Record<keyof typeof az, string> = {
   "bottle.tables":"Сменить стол","bottle.roomRandom":"Случайный стол!","bottle.roomFriends":"Друзья и знакомые","bottle.roomNoFriends":"Сейчас в игре нет твоих друзей","bottle.roomList":"Столы","bottle.roomHere":"ты здесь","bottle.roomFullTag":"полный","bottle.roomFull1":"Комната","bottle.roomFull2":"заполнена. Подождите,","bottle.roomFirst":"вы первый в очереди.","bottle.roomPlace":"ваше место в очереди:","bottle.roomCancel":"Отменить ожидание","bottle.roomGone":"Этот стол уже закрыт",
   "profile.cropTitle":"Выбор миниатюры","profile.cropZoom":"Масштаб","profile.cropHint":"Перетащи фото, чтобы выбрать область. В профиле будет видно то, что в круге.",
   "profile.cropCancel":"Отмена",
+  "profile.cropCover":"Выбор обложки","profile.cropHintCover":"Перетащи фото, чтобы выбрать область. Она будет видна вверху профиля.",
 };
 export default ru;

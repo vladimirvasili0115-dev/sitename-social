@@ -83,5 +83,6 @@ const ka: Record<keyof typeof az, string> = {
   "bottle.tables":"მაგიდის შეცვლა","bottle.roomRandom":"შემთხვევითი მაგიდა!","bottle.roomFriends":"მეგობრები და ნაცნობები","bottle.roomNoFriends":"ახლა თამაშში მეგობარი არ გყავს","bottle.roomList":"მაგიდები","bottle.roomHere":"აქ ხარ","bottle.roomFullTag":"სავსეა","bottle.roomFull1":"ოთახი","bottle.roomFull2":"სავსეა. დაელოდეთ,","bottle.roomFirst":"რიგში პირველი ხართ.","bottle.roomPlace":"თქვენი ადგილი რიგში:","bottle.roomCancel":"ლოდინის გაუქმება","bottle.roomGone":"ეს მაგიდა უკვე დაიხურა",
   "profile.cropTitle":"მინიატურის არჩევა","profile.cropZoom":"მასშტაბი","profile.cropHint":"გადაათრიე ფოტო სასურველ ადგილზე. პროფილზე გამოჩნდება წრეში მოქცეული ნაწილი.",
   "profile.cropCancel":"გაუქმება",
+  "profile.cropCover":"ყდის ფოტოს არჩევა","profile.cropHintCover":"გადაათრიე ფოტო სასურველ ადგილზე. ჩარჩოში მოქცეული ნაწილი გამოჩნდება პროფილის თავზე.",
 };
 export default ka;

@@ -83,5 +83,6 @@ const tr: Record<keyof typeof az, string> = {
   "bottle.tables":"Masayı değiştir","bottle.roomRandom":"Rastgele seçilmiş masa!","bottle.roomFriends":"Arkadaşlar ve tanıdıklar","bottle.roomNoFriends":"Şu anda oyunda arkadaşın yok","bottle.roomList":"Masalar","bottle.roomHere":"buradasın","bottle.roomFullTag":"dolu","bottle.roomFull1":"","bottle.roomFull2":"numaralı oda dolu. Bekleyin,","bottle.roomFirst":"ilk sırada sizsiniz.","bottle.roomPlace":"sıradaki yeriniz:","bottle.roomCancel":"Beklemekten vazgeç","bottle.roomGone":"Bu masa artık kapandı",
   "profile.cropTitle":"Küçük resim seçimi","profile.cropZoom":"Yakınlaştır","profile.cropHint":"Fotoğrafı sürükleyerek yerini ayarla. Dairenin içi profilinde görünecek.",
   "profile.cropCancel":"İptal",
+  "profile.cropCover":"Kapak fotoğrafı seçimi","profile.cropHintCover":"Fotoğrafı sürükleyerek yerini ayarla. Çerçevenin içi profilinin üstünde görünecek.",
 };
 export default tr;

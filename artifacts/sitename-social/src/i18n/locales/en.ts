@@ -83,5 +83,6 @@ const en: Record<keyof typeof az, string> = {
   "bottle.tables":"Change table","bottle.roomRandom":"Random table!","bottle.roomFriends":"Friends","bottle.roomNoFriends":"None of your friends are playing right now","bottle.roomList":"Tables","bottle.roomHere":"you are here","bottle.roomFullTag":"full","bottle.roomFull1":"Room","bottle.roomFull2":"is full. Please wait,","bottle.roomFirst":"you are first in line.","bottle.roomPlace":"your place in line:","bottle.roomCancel":"Stop waiting","bottle.roomGone":"This table has closed",
   "profile.cropTitle":"Choose thumbnail","profile.cropZoom":"Zoom","profile.cropHint":"Drag the photo to position it. The part inside the circle will show on your profile.",
   "profile.cropCancel":"Cancel",
+  "profile.cropCover":"Choose cover area","profile.cropHintCover":"Drag the photo to position it. The framed part will show on top of your profile.",
 };
 export default en;
