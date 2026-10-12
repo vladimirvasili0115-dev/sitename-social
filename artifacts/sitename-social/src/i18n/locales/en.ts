@@ -89,5 +89,6 @@ const en: Record<keyof typeof az, string> = {
   "bottle.giftFor": "send a gift to",
   "bottle.pickReceivers": "Choose receivers", "bottle.pickAll": "Choose everyone", "bottle.pickProfile": "Choose the person whose profile you opened",
   "bottle.openProfile": "Open profile", "bottle.admirer": "Admirer", "bottle.noAdmirer": "No admirer yet", "bottle.beAdmirer": "Become admirer",
+  "bottle.menuRatings": "Ratings", "bottle.menuBottles": "Bottle", "bottle.menuStyle": "Style",
 };
 export default en;

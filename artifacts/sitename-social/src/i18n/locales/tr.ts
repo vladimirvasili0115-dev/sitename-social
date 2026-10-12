@@ -89,5 +89,6 @@ const tr: Record<keyof typeof az, string> = {
   "bottle.giftFor": "için hediye gönder",
   "bottle.pickReceivers": "Alıcıları seç", "bottle.pickAll": "Herkesi seç", "bottle.pickProfile": "Profiline girdiğin kişiyi seç",
   "bottle.openProfile": "Profili aç", "bottle.admirer": "Hayranı", "bottle.noAdmirer": "Hayranı yok", "bottle.beAdmirer": "Hayranı ol",
+  "bottle.menuRatings": "Sıralamalar", "bottle.menuBottles": "Şişe", "bottle.menuStyle": "Tarz",
 };
 export default tr;

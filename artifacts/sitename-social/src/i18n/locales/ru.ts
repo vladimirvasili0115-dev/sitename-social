@@ -89,5 +89,6 @@ const ru: Record<keyof typeof az, string> = {
   "bottle.giftFor": "отправить подарок для",
   "bottle.pickReceivers": "Выберите получателей", "bottle.pickAll": "Выбрать всех", "bottle.pickProfile": "Выбрать того, чей профиль открыт",
   "bottle.openProfile": "Открыть профиль", "bottle.admirer": "Поклонник", "bottle.noAdmirer": "Поклонника нет", "bottle.beAdmirer": "Стать поклонником",
+  "bottle.menuRatings": "Рейтинги", "bottle.menuBottles": "Бутылочка", "bottle.menuStyle": "Стиль",
 };
 export default ru;

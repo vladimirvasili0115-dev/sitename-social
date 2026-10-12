@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
 import Link from "next/link";
-import { AtSign, LifeBuoy, Clock, Flame, Search, Star, Ban, Flag, Mail, Gift as GiftIcon, Heart, Home, Maximize, ArrowUpRight, BadgeCheck, Check, Menu, UserRound, Minimize, Music, Plus, UserCheck, Music2, RefreshCw, SendHorizontal, Settings, Trophy, UserPlus, UserRoundCog, Users, Volume2, VolumeX, X } from "lucide-react";
+import { AtSign, LifeBuoy, Clock, Flame, Search, Star, Ban, Flag, Mail, Gift as GiftIcon, Heart, Home, Maximize, ArrowUpRight, BadgeCheck, BookOpen, MessageSquare, Check, Menu, UserRound, Minimize, Music, Plus, UserCheck, Music2, RefreshCw, SendHorizontal, Settings, Trophy, UserPlus, UserRoundCog, Users, Volume2, VolumeX, X } from "lucide-react";
 import type { GiftId } from "@/types";
 import { cartoonAvatar } from "./avatarArt";
 import { useTranslation } from "@/i18n/useTranslation";
@@ -146,6 +146,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [lines, setLines] = useState<Line[]>([{ id: 1, from: "b3", text: smallTalk[0] }, { id: 2, from: "b6", to: "b1" }]);
   const [draft, setDraft] = useState("");
   const [picked, setPicked] = useState<number | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
   // "+" mode: choose several receivers on the table, then every gift goes to all of them.
   const [chosen, setChosen] = useState<string[]>([]);
   const [songMany, setSongMany] = useState<number[]>([]);
@@ -483,6 +484,16 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     return () => { alive = false; };
   }, [panel, topKind, topPeriod, online]);
   const row = "flex min-h-11 w-full items-center gap-3 rounded-lg px-2 text-left text-sm text-[#1F2937] hover:bg-black/5";
+  // The game menu opens as a small list next to its button, with coloured icons.
+  const menuItems = [
+    { key: "messages", label: t("nav.messages"), go: () => { window.location.href = "/messages"; }, icon: <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[linear-gradient(180deg,#5AA8FF,#2F7FF0)]"><MessageSquare size={15} className="text-white" fill="#FFFFFF" /></span> },
+    { key: "ach", label: t("bottle.achievements"), dot: !(kisses.me ?? 0), go: () => setPanel("achievements"), icon: <BadgeCheck size={24} className="text-white" fill="#F5B400" strokeWidth={2} /> },
+    { key: "rating", label: t("bottle.menuRatings"), go: () => { setTopKind("kisses"); setPanel("top"); }, icon: <svg viewBox="0 0 24 24" className="h-6 w-6"><rect x="2" y="12" width="6" height="8" rx="1" fill="#5BA4F5" /><rect x="9" y="6" width="6" height="14" rx="1" fill="#2F7FF0" /><rect x="16" y="9" width="6" height="11" rx="1" fill="#5BA4F5" /><rect x="1" y="20" width="22" height="2" rx="1" fill="#1E5FC2" /></svg> },
+    { key: "bottles", label: t("bottle.menuBottles"), go: () => { setPayNote(false); setPanel("bottles"); }, icon: <span className="relative h-6 w-6"><BottleSvg className="absolute left-0 top-0 h-6 -rotate-[35deg]" /><BottleSvg className="absolute left-2.5 top-0.5 h-5 -rotate-[35deg] saturate-150" /></span> },
+    { key: "frames", label: t("bottle.menuStyle"), go: () => { setPayNote(false); setPanel("frames"); }, icon: <svg viewBox="0 0 24 24" className="h-6 w-6"><rect x="2.5" y="2.5" width="19" height="19" rx="2" fill="#FFD25E" stroke="#E79A00" strokeWidth="2" /><rect x="6.5" y="6.5" width="11" height="11" rx="1" fill="#6FB6FF" stroke="#E79A00" strokeWidth="1.5" /></svg> },
+    { key: "boosters", label: t("bottle.boosters"), go: () => { setPayNote(false); setPanel("boosters"); }, icon: <svg viewBox="0 0 24 24" className="h-6 w-6"><g fill="#3D7BE0">{[0, 45, 90, 135, 180, 225, 270, 315].map((angle) => <ellipse key={angle} cx="12" cy="5" rx="3" ry="4.2" transform={`rotate(${angle} 12 12)`} />)}</g><circle cx="12" cy="12" r="4" fill="#FFC83D" stroke="#FFFFFF" strokeWidth="1.2" /></svg> },
+    { key: "rules", label: t("bottle.rules"), go: () => setPanel("rules"), icon: <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[linear-gradient(180deg,#7CD35B,#3FA62B)]"><BookOpen size={15} className="text-white" strokeWidth={2.4} /></span> },
+  ];
   function handleChat(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!draft.trim()) return;
@@ -862,7 +873,17 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           {full && !wide ? <button onClick={() => chooseMode(!dedicate)} aria-pressed={dedicate} aria-label={t("bottle.dedicate")} title={t("bottle.dedicate")} className={cn(tool, dedicate && "bg-[#8CC63F]")}><Plus size={19} strokeWidth={3} /></button> : null}
           {online && net && !net.wheel ? null : <button onClick={() => { setWheelPrize(null); setPayNote(false); setPanel("wheel"); }} aria-label={t("bottle.wheel")} title={t("bottle.wheel")} className={tool}><LifeBuoy size={19} /></button>}
           <button onClick={() => { setTopKind("kisses"); setPanel("top"); }} aria-label={t("bottle.top")} title={t("bottle.top")} className={tool}><Trophy size={18} /></button>
-          <button onClick={() => setPanel("menu")} aria-label={t("bottle.menu")} title={t("bottle.menu")} className={tool}><Menu size={18} /></button>
+          <span className="relative flex">
+            <button onClick={() => setMenuOpen(!menuOpen)} aria-expanded={menuOpen} aria-label={t("bottle.menu")} title={t("bottle.menu")} className={tool}><Menu size={18} /></button>
+            {menuOpen ? (
+              <>
+                <span aria-hidden="true" className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
+                <div role="menu" className={cn("absolute z-50 w-[200px] overflow-hidden rounded-lg bg-white py-1 shadow-[0_6px_20px_rgba(0,0,0,0.3)]", wide ? "left-full top-1/2 ml-3 -translate-y-1/2" : "right-[-60px] top-full mt-2")}>
+                  {menuItems.map((item) => <button key={item.key} role="menuitem" onClick={() => { setMenuOpen(false); item.go(); }} className="flex h-10 w-full items-center gap-3 px-3 text-left text-[15px] text-[#1F2937] hover:bg-[#F2F6FB]"><span aria-hidden="true" className="flex h-6 w-6 shrink-0 items-center justify-center">{item.icon}</span><span className="min-w-0 flex-1 truncate">{item.label}</span>{item.dot ? <span className="h-2 w-2 shrink-0 rounded-full bg-[#F04438]" /> : null}</button>)}
+                </div>
+              </>
+            ) : null}
+          </span>
           <button onClick={() => setPanel("settings")} aria-label={t("bottle.settings")} title={t("bottle.settings")} className={tool}><Settings size={18} /></button>
           <span className="flex-1" />
           <span className="text-center text-[max(10px,2.2cqmin)] font-bold leading-tight text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.7)]">{t("bottle.table")}<br />{online ? net?.table ?? "…" : tableNo}</span>
@@ -984,7 +1005,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
 
         {panel ? (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/35 p-3" onClick={(event) => { event.stopPropagation(); setPanel(null); }}>
-            <div role="dialog" aria-modal="true" aria-label={t(`bottle.${panel}`)} onClick={(event) => event.stopPropagation()} className={cn("relative max-h-full w-full rounded-2xl p-3 shadow-2xl", panel === "shop" ? "max-w-[420px] bg-[linear-gradient(180deg,#F26D7D,#F7A1A8)]" : panel === "wheel" || panel === "chances" ? "max-w-[380px] bg-[linear-gradient(180deg,#12998C,#7FD8C8)]" : panel === "top" ? "max-w-[380px] bg-[#EEF8FD]" : "max-w-[340px] bg-white")}>
+            <div role="dialog" aria-modal="true" aria-label={t(`bottle.${panel}`)} onClick={(event) => event.stopPropagation()} className={cn("relative max-h-full w-full rounded-2xl p-3 shadow-2xl", panel === "shop" ? "max-w-[420px] bg-[linear-gradient(180deg,#F26D7D,#F7A1A8)]" : panel === "wheel" || panel === "chances" ? "max-w-[380px] bg-[linear-gradient(180deg,#12998C,#7FD8C8)]" : panel === "top" ? "max-w-[300px] bg-[#EEF8FD]" : "max-w-[340px] bg-white")}>
               <button onClick={() => setPanel(null)} aria-label={t("photos.close")} title={t("photos.close")} className={cn("absolute -right-2 -top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 bg-white shadow", panel === "shop" ? "border-[#EF4444] text-[#EF4444]" : panel === "wheel" || panel === "chances" ? "border-[#0E8478] text-[#0E8478]" : panel === "top" ? "border-[#3B9AD9] text-[#3B9AD9]" : "border-[#8CC63F] text-[#8CC63F]")}><X size={18} strokeWidth={3} /></button>
               <p className={cn("mb-1 text-center text-sm font-bold", panel === "shop" || panel === "wheel" || panel === "chances" ? "mb-2 text-white" : "text-[#9CA3AF]", panel === "top" && "sr-only")}>{t(`bottle.${panel}`)}</p>
               {panel === "tables" ? (() => {
@@ -1127,9 +1148,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 return (
                   <div className="-m-3 rounded-2xl bg-[linear-gradient(180deg,#A9D8F2,#DDF1FB_30%,#EEF8FD)] p-3 pt-2">
                     <div role="tablist" className="mb-2 flex items-center justify-between gap-1 pr-6">
-                      <button role="tab" aria-selected={topKind === "help"} onClick={() => setTopKind("help")} title={t("bottle.topHelp")} className={cn("flex h-9 w-9 items-center justify-center rounded-full text-lg font-black", topKind === "help" ? "bg-white text-[#2B7FB8] shadow" : "text-white")}>?</button>
-                      <Trophy size={22} className="text-[#F5A524]" aria-hidden="true" />
-                      {kinds.map(([kind, emoji]) => <button key={kind} role="tab" aria-selected={topKind === kind} onClick={() => setTopKind(kind)} title={t(`bottle.top_${kind}`)} className={cn("flex h-9 w-9 items-center justify-center rounded-full text-xl", topKind === kind ? "bg-white shadow" : "opacity-70 hover:opacity-100")}>{emoji}</button>)}
+                      <button role="tab" aria-selected={topKind === "help"} onClick={() => setTopKind("help")} title={t("bottle.topHelp")} className={cn("flex h-7 w-7 items-center justify-center rounded-full text-base font-black", topKind === "help" ? "bg-white text-[#2B7FB8] shadow" : "text-white")}>?</button>
+                      <Trophy size={18} className="text-[#F5A524]" aria-hidden="true" />
+                      {kinds.map(([kind, emoji]) => <button key={kind} role="tab" aria-selected={topKind === kind} onClick={() => setTopKind(kind)} title={t(`bottle.top_${kind}`)} className={cn("flex h-7 w-7 items-center justify-center rounded-full text-base", topKind === kind ? "bg-white shadow" : "opacity-70 hover:opacity-100")}>{emoji}</button>)}
                     </div>
                     {topKind === "help" ? <p className="rounded-xl bg-white/80 p-3 text-sm leading-relaxed text-[#1F2937]">{t("bottle.topHelpText")}</p> : (
                       <>
@@ -1141,21 +1162,21 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                             <option value="day">{t("bottle.topDay")}</option>
                           </select>
                         </div>
-                        <ol className="max-h-[56cqmin] overflow-y-auto rounded-xl bg-white/60">
+                        <ol className="max-h-[44cqmin] overflow-y-auto rounded-xl bg-white/60">
                           {rows === null ? <li className="py-6 text-center text-xs text-[#6B7280]">{t("bottle.songLoading")}</li> : rows.length === 0 ? <li className="py-6 text-center text-xs text-[#6B7280]">{t("bottle.topEmpty")}</li> : rows.map((row) => (
-                            <li key={row.id} className={cn("flex min-h-11 items-center gap-2 border-b border-white/70 px-2 text-sm text-[#1F2937]", row.id === meId && "bg-[#FDF3B5]")}>
-                              {row.avatar ? <img src={row.avatar} alt="" className="h-9 w-9 shrink-0 rounded-md object-cover" /> : <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-[#9CCDEB] font-bold text-white">{(row.name ?? "?").slice(0, 1).toUpperCase()}</span>}
+                            <li key={row.id} className={cn("flex min-h-9 items-center gap-2 border-b border-white/70 px-2 text-xs text-[#1F2937]", row.id === meId && "bg-[#FDF3B5]")}>
+                              {row.avatar ? <img src={row.avatar} alt="" className="h-7 w-7 shrink-0 rounded-md object-cover" /> : <span aria-hidden="true" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[#9CCDEB] font-bold text-white">{(row.name ?? "?").slice(0, 1).toUpperCase()}</span>}
                               <span className="min-w-0 flex-1 truncate"><b className="tabular-nums">{row.place}.</b> {row.id === meId ? t("common.you") : row.name}</span>
-                              <span className="shrink-0 text-lg">{icon}</span>
-                              <span className="w-16 shrink-0 text-right font-bold tabular-nums text-[#B91C1C]">{row.count.toLocaleString("ru-RU")}</span>
+                              <span className="shrink-0 text-sm">{icon}</span>
+                              <span className="w-12 shrink-0 text-right font-bold tabular-nums text-[#B91C1C]">{row.count.toLocaleString("ru-RU")}</span>
                             </li>
                           ))}
                         </ol>
-                        <div className="mt-2 flex min-h-11 items-center gap-2 rounded-xl bg-[#FDE68A] px-2 text-sm text-[#1F2937]">
-                          <img src={me.avatar} alt="" className="h-9 w-9 shrink-0 rounded-md object-cover" />
+                        <div className="mt-2 flex min-h-9 items-center gap-2 rounded-xl bg-[#FDE68A] px-2 text-xs text-[#1F2937]">
+                          <img src={me.avatar} alt="" className="h-7 w-7 shrink-0 rounded-md object-cover" />
                           <span className="min-w-0 flex-1 truncate"><b className="tabular-nums">{mine ? `${mine.place}.` : "—"}</b> {me.name}</span>
-                          <span className="shrink-0 text-lg">{icon}</span>
-                          <span className="w-16 shrink-0 text-right font-bold tabular-nums text-[#B91C1C]">{(mine?.count ?? 0).toLocaleString("ru-RU")}</span>
+                          <span className="shrink-0 text-sm">{icon}</span>
+                          <span className="w-12 shrink-0 text-right font-bold tabular-nums text-[#B91C1C]">{(mine?.count ?? 0).toLocaleString("ru-RU")}</span>
                         </div>
                       </>
                     )}

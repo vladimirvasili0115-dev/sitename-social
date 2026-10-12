@@ -89,5 +89,6 @@ const ka: Record<keyof typeof az, string> = {
   "bottle.giftFor": "საჩუქრის გაგზავნა",
   "bottle.pickReceivers": "აირჩიე მიმღებები", "bottle.pickAll": "ყველას არჩევა", "bottle.pickProfile": "აირჩიე ის, ვისი პროფილიც გახსენი",
   "bottle.openProfile": "პროფილის გახსნა", "bottle.admirer": "თაყვანისმცემელი", "bottle.noAdmirer": "თაყვანისმცემელი არ ჰყავს", "bottle.beAdmirer": "გახდი თაყვანისმცემელი",
+  "bottle.menuRatings": "რეიტინგები", "bottle.menuBottles": "ბოთლი", "bottle.menuStyle": "სტილი",
 };
 export default ka;
