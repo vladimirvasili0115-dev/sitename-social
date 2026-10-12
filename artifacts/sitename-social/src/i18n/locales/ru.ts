@@ -88,5 +88,6 @@ const ru: Record<keyof typeof az, string> = {
   "bottle.top_kisses": "Самые целуемые", "bottle.top_songs": "Больше всех песен", "bottle.top_cocktails": "Больше всех коктейлей", "bottle.top_smiles": "Больше всех улыбок", "bottle.topAll": "за всё время", "bottle.topWeek": "за неделю", "bottle.topDay": "за сегодня", "bottle.topPeriod": "Период", "bottle.topEmpty": "Пока никого нет", "bottle.topHelp": "Как работает рейтинг?", "bottle.topHelpText": "В рейтинге все игроки сайта. 💋 – самые целуемые, 🎵 – больше всех песен, 🍸 – больше всех коктейлей, 😊 – больше всех улыбок. Период выбирается сверху. Жёлтая строка — ваше место.",
   "bottle.giftFor": "отправить подарок для",
   "bottle.pickReceivers": "Выберите получателей", "bottle.pickAll": "Выбрать всех", "bottle.pickProfile": "Выбрать того, чей профиль открыт",
+  "bottle.openProfile": "Открыть профиль", "bottle.admirer": "Поклонник", "bottle.noAdmirer": "Поклонника нет", "bottle.beAdmirer": "Стать поклонником",
 };
 export default ru;

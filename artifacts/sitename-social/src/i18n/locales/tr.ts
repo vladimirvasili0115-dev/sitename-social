@@ -88,5 +88,6 @@ const tr: Record<keyof typeof az, string> = {
   "bottle.top_kisses": "En çok öpülen", "bottle.top_songs": "En çok şarkı alan", "bottle.top_cocktails": "En çok kokteyl alan", "bottle.top_smiles": "En çok gülücük alan", "bottle.topAll": "tüm zamanlar", "bottle.topWeek": "bu hafta", "bottle.topDay": "bugün", "bottle.topPeriod": "Dönem", "bottle.topEmpty": "Henüz kimse yok", "bottle.topHelp": "Sıralama nasıl çalışır?", "bottle.topHelpText": "Sıralamada sitenin tüm oyuncuları var. 💋 – en çok öpülenler, 🎵 – en çok şarkı alanlar, 🍸 – en çok kokteyl alanlar, 😊 – en çok gülücük alanlar. Dönemi yukarıdan seç. Sarı satır senin yerin.",
   "bottle.giftFor": "için hediye gönder",
   "bottle.pickReceivers": "Alıcıları seç", "bottle.pickAll": "Herkesi seç", "bottle.pickProfile": "Profiline girdiğin kişiyi seç",
+  "bottle.openProfile": "Profili aç", "bottle.admirer": "Hayranı", "bottle.noAdmirer": "Hayranı yok", "bottle.beAdmirer": "Hayranı ol",
 };
 export default tr;

@@ -97,5 +97,6 @@ const az = {
   "bottle.top_kisses": "Ən çox öpülən", "bottle.top_songs": "Ən çox mahnı alan", "bottle.top_cocktails": "Ən çox kokteyl alan", "bottle.top_smiles": "Ən çox gülüş alan", "bottle.topAll": "hər zaman", "bottle.topWeek": "bu həftə", "bottle.topDay": "bu gün", "bottle.topPeriod": "Dövr", "bottle.topEmpty": "Hələ heç kim yoxdur", "bottle.topHelp": "Reytinq necə işləyir?", "bottle.topHelpText": "Reytinqdə saytın bütün oyunçuları var. 💋 – ən çox öpülənlər, 🎵 – ən çox mahnı alanlar, 🍸 – ən çox kokteyl alanlar, 😊 – ən çox gülüş alanlar. Yuxarıdan dövrü seç: hər zaman, bu həftə və ya bu gün. Sarı sətir sənin yerindir.",
   "bottle.giftFor": "üçün hədiyyə göndər",
   "bottle.pickReceivers": "Alanları seç", "bottle.pickAll": "Hamını seç", "bottle.pickProfile": "Profilinə girdiyin adamı seç",
+  "bottle.openProfile": "Profili aç", "bottle.admirer": "Məftun", "bottle.noAdmirer": "Məftun yoxdur", "bottle.beAdmirer": "Məftun ol",
 } as const;
 export default az;
