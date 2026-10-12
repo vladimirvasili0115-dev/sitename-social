@@ -16,7 +16,7 @@ export function EditProfileModal({ user, details, onSave, onClose }: Props) {
   const { t } = useTranslation();
   const [form, setForm] = useState({
     name: user.name, status: details.status, bio: details.bio, city: details.city, birthday: details.birthday,
-    relationship: details.relationship, work: details.work, education: details.education,
+    relationship: details.relationship, work: details.work, education: details.education, gender: details.gender ?? "",
   });
   const [nameError, setNameError] = useState(false);
   const set = (field: keyof typeof form) => (event: { target: { value: string } }) => setForm((current) => ({ ...current, [field]: event.target.value }));
@@ -32,7 +32,8 @@ export function EditProfileModal({ user, details, onSave, onClose }: Props) {
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (form.name.trim().length < 2) return setNameError(true);
-    onSave({ ...form, name: form.name.trim() });
+    const { gender, ...rest } = form;
+    onSave({ ...rest, name: form.name.trim(), ...(gender ? { gender: gender as "male" | "female" } : {}) });
     onClose();
   }
 
@@ -51,6 +52,13 @@ export function EditProfileModal({ user, details, onSave, onClose }: Props) {
             <AuthField label={t("profile.birthday")} icon={Cake} type="date" value={form.birthday} onChange={set("birthday")}  />
             <AuthField label={t("profile.work")} icon={Briefcase} value={form.work} onChange={set("work")} />
             <AuthField label={t("profile.education")} icon={GraduationCap} value={form.education} onChange={set("education")} />
+            <label className="block text-xs font-medium text-muted sm:col-span-2">{t("auth.gender")}
+              <select value={form.gender} onChange={(event) => setForm((current) => ({ ...current, gender: event.target.value }))} className={`${inputClass} mt-1.5 h-12`}>
+                <option value="" disabled>—</option>
+                <option value="male">{t("auth.male")}</option>
+                <option value="female">{t("auth.female")}</option>
+              </select>
+            </label>
             <label className="block text-xs font-medium text-muted sm:col-span-2">{t("profile.relationship")}
               <select value={form.relationship} onChange={(event) => setForm((current) => ({ ...current, relationship: event.target.value as Relationship }))} className={`${inputClass} mt-1.5 h-12`}>
                 {(Object.keys(relationshipLabels) as Relationship[]).map((key) => <option key={key} value={key}>{t(relationshipLabels[key])}</option>)}

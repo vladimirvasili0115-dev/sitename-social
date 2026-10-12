@@ -90,5 +90,8 @@ const ka: Record<keyof typeof az, string> = {
   "bottle.pickReceivers": "აირჩიე მიმღებები", "bottle.pickAll": "ყველას არჩევა", "bottle.pickProfile": "აირჩიე ის, ვისი პროფილიც გახსენი",
   "bottle.openProfile": "პროფილის გახსნა", "bottle.admirer": "თაყვანისმცემელი", "bottle.noAdmirer": "თაყვანისმცემელი არ ჰყავს", "bottle.beAdmirer": "გახდი თაყვანისმცემელი",
   "bottle.menuRatings": "რეიტინგები", "bottle.menuBottles": "ბოთლი", "bottle.menuStyle": "სტილი",
+  "bottle.roomFriendsKnown": "მეგობრები და ნაცნობები", "bottle.roomKnown": "საჩუქრები გაგიცვლიათ",
+  "privacy.welcomeNoReply": "მისალმების შეტყობინებაზე პასუხის გაცემა არ შეიძლება",
+  "bottle.miniMove": "გადაადგილება", "bottle.miniSize": "ზომის შეცვლა",
 };
 export default ka;

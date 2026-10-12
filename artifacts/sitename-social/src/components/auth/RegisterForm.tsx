@@ -91,12 +91,12 @@ export function RegisterForm() {
         </div>
         {errors.gender ? <p className="mt-1.5 text-xs text-[var(--danger)]">{t(errors.gender)}</p> : null}
       </fieldset>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <fieldset>
+      <div className="grid gap-4">
+        <fieldset className="min-w-0">
           <legend className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-muted"><Cake size={14} />{t("profile.birthday")}</legend>
-          <div className="grid grid-cols-[1fr_1.6fr_1.2fr] gap-2">
+          <div className="grid min-w-0 grid-cols-[1fr_1.6fr_1.2fr] gap-2">
             {([["d", t("auth.day"), Array.from({ length: 31 }, (_, n) => [String(n + 1), String(n + 1)])], ["m", t("auth.month"), months], ["y", t("auth.year"), years]] as const).map(([part, label, options]) => (
-              <select key={part} aria-label={label} value={birth[part]} onChange={(event) => setBirthPart(part, event.target.value)} className={cn("h-12 w-full rounded-xl border bg-surface-2 px-2.5 text-sm text-text outline-none focus:border-accent", errors.birthday ? "border-danger" : "border-border")}>
+              <select key={part} aria-label={label} value={birth[part]} onChange={(event) => setBirthPart(part, event.target.value)} className={cn("h-12 w-full min-w-0 rounded-xl border bg-surface-2 px-2.5 text-sm text-text outline-none focus:border-accent", errors.birthday ? "border-danger" : "border-border")}>
                 <option value="">{label}</option>
                 {options.map(([value, text]) => <option key={value} value={value}>{text}</option>)}
               </select>

@@ -34,3 +34,8 @@ body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--
 button, input { font: inherit; }
 button { cursor: pointer; }
 ::selection { background: var(--accent); color: var(--bg); }
+
+@keyframes bottle-drop {
+  from { transform: translateY(-110vh); opacity: 0.4; }
+  to { transform: translateY(0); opacity: 1; }
+}

@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type FormEvent, type PointerEvent as ReactPointerEvent } from "react";
 import Link from "next/link";
 import { AtSign, LifeBuoy, Clock, Flame, Search, Star, Ban, Flag, Mail, Gift as GiftIcon, Heart, Home, Maximize, ArrowUpRight, BadgeCheck, BookOpen, MessageSquare, Check, Menu, UserRound, Minimize, Music, Plus, UserCheck, Music2, RefreshCw, SendHorizontal, Settings, Trophy, UserPlus, UserRoundCog, Users, Volume2, VolumeX, X } from "lucide-react";
 import type { GiftId } from "@/types";
@@ -13,7 +13,7 @@ import { playGiftSound, playSound, setVolume } from "./sound";
 import { supabase } from "@/lib/supabase";
 import { ensureMessagesLoaded, openRemoteChat, remoteChats, sendRemoteMessage } from "@/lib/messagesSync";
 import { uploadBlob } from "@/lib/media";
-import { bottleAnswer, bottleBuyChances, bottleCocktail, bottleJoin, bottleMove, bottleQueueLeave, bottlePlay, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState } from "@/lib/bottleSync";
+import { bottleAnswer, bottleBuyChances, bottleJoin, bottleMove, bottleQueueLeave, bottleGift, bottlePlay, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState } from "@/lib/bottleSync";
 
 type Player = { id: string; name: string; age: number; female: boolean; avatar: string; me?: boolean; empty?: boolean; zodiac?: number | null };
 type Phase = "waiting" | "spinning" | "choice" | "kissed" | "declined";
@@ -147,10 +147,34 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [draft, setDraft] = useState("");
   const [picked, setPicked] = useState<number | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  // The phone video can be dragged by the avatar and resized from its lower-left corner.
+  const [mini, setMini] = useState<{ x: number | null; y: number; w: number }>({ x: null, y: 8, w: 190 });
+  const [miniBusy, setMiniBusy] = useState(false);
+  const miniRef = useRef<HTMLDivElement>(null);
+  function startMini(event: ReactPointerEvent, mode: "move" | "size") {
+    const box = miniRef.current;
+    const area = box?.parentElement;
+    if (!box || !area) return;
+    event.preventDefault();
+    const outer = area.getBoundingClientRect();
+    const rect = box.getBoundingClientRect();
+    const start = { px: event.clientX, py: event.clientY, x: rect.left - outer.left, y: rect.top - outer.top, w: rect.width };
+    setMiniBusy(true);
+    const move = (next: PointerEvent) => {
+      const dx = next.clientX - start.px;
+      const dy = next.clientY - start.py;
+      if (mode === "move") setMini((value) => ({ ...value, x: Math.min(Math.max(0, start.x + dx), outer.width - start.w), y: Math.min(Math.max(0, start.y + dy), outer.height - 60) }));
+      else { const w = Math.min(Math.max(150, start.w - dx), outer.width); setMini((value) => ({ ...value, w, x: Math.max(0, start.x + start.w - w) })); }
+    };
+    const stop = () => { setMiniBusy(false); window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", stop); window.removeEventListener("pointercancel", stop); };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", stop);
+    window.addEventListener("pointercancel", stop);
+  }
   // "+" mode: choose several receivers on the table, then every gift goes to all of them.
   const [chosen, setChosen] = useState<string[]>([]);
   const [songMany, setSongMany] = useState<number[]>([]);
-  const [flying, setFlying] = useState<{ key: number; gift: string; to: number; moved: boolean; ms: number }[]>([]);
+  const [flying, setFlying] = useState<{ key: number; gift: string; from: number; to: number; moved: boolean; ms: number }[]>([]);
   const heartsRef = useRef(12);
   const flyId = useRef(1);
   const hold = useRef<number | null>(null);
@@ -317,11 +341,16 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         let data = await bottleSync(lastChat.current);
         if (!data) { await bottleJoin(); data = await bottleSync(lastChat.current); }
         if (!alive || !data) return;
-        const fresh = data.chat.filter((item) => item.id > lastChat.current && item.kind !== "wheel");
+        const first = lastChat.current === 0;
+        const all = data.chat.filter((item) => item.id > lastChat.current && item.kind !== "wheel");
+        const who = (id: string | null) => (id === data!.me ? "me" : id ?? "");
+        // Gifts from other players fly across the table on every screen; my own gifts were already shown when I sent them.
+        const gifts = all.filter((item) => item.kind === "gift" && item.from !== data!.me);
+        if (!first) gifts.forEach((item, order) => window.setTimeout(() => remoteGift.current(who(item.from), who(item.to), item.body ?? "", gifts.length > 1 ? 1000 : 2000), order * 150));
+        const fresh = all.filter((item) => item.kind !== "gift" || (first && item.from !== data!.me));
+        if (all.length) lastChat.current = all[all.length - 1].id;
         if (fresh.length) {
-          lastChat.current = fresh[fresh.length - 1].id;
-          const who = (id: string | null) => (id === data!.me ? "me" : id ?? "");
-          setLines((list) => [...list, ...fresh.map((item) => (item.kind === "kiss" ? { id: item.id, from: who(item.from), to: who(item.to) } : item.kind === "song" ? { id: item.id, from: who(item.from), to: item.to ? who(item.to) : undefined, song: item.body || "♪" } : { id: item.id, from: who(item.from), text: item.body ?? "" }))].slice(-80));
+          setLines((list) => [...list, ...fresh.map((item) => (item.kind === "kiss" ? { id: item.id, from: who(item.from), to: who(item.to) } : item.kind === "gift" ? { id: item.id, from: who(item.from), to: who(item.to), gift: item.body ?? "" } : item.kind === "song" ? { id: item.id, from: who(item.from), to: item.to ? who(item.to) : undefined, song: item.body || "♪" } : { id: item.id, from: who(item.from), text: item.body ?? "" }))].slice(-80));
         }
         setNet(data);
       } finally {
@@ -701,10 +730,10 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (heartsRef.current < price) return false;
     heartsRef.current -= price;
     setHearts(heartsRef.current);
-    if (online) void (cocktails.has(gift) && !player.me ? bottleCocktail(player.id) : bottleSpend(price));
+    if (online) void bottleGift(player.me ? net?.me ?? "" : player.id, gift, price);
     const key = flyId.current++;
     playGiftSound(gift, "send");
-    setFlying((list) => [...list, { key, gift, to: index, moved: false, ms }]);
+    setFlying((list) => [...list, { key, gift, from: meIndex, to: index, moved: false, ms }]);
     window.setTimeout(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))), 40);
     window.setTimeout(() => {
       setFlying((list) => list.filter((item) => item.key !== key));
@@ -715,6 +744,22 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     setSent((value) => ({ ...value, [player.id]: (value[player.id] ?? 0) + 1 }));
     return true;
   }
+  // A gift another player sent: it flies from their seat to the receiver, then sits on the photo and goes into the chat.
+  const remoteGift = useRef<(from: string, to: string, gift: string, ms: number) => void>(() => {});
+  remoteGift.current = (fromId, toId, gift, ms) => {
+    const fromAt = players.findIndex((player) => player.id === fromId);
+    const toAt = players.findIndex((player) => player.id === toId);
+    if (!gift || toAt < 0) return;
+    const key = flyId.current++;
+    setFlying((list) => [...list, { key, gift, from: fromAt >= 0 ? fromAt : toAt, to: toAt, moved: false, ms }]);
+    window.setTimeout(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))), 40);
+    window.setTimeout(() => {
+      setFlying((list) => list.filter((item) => item.key !== key));
+      playGiftSound(gift, "land");
+      setStickers((value) => ({ ...value, [toId]: [...(value[toId] ?? []), gift].slice(-6) }));
+      say({ from: fromId, to: toId, gift });
+    }, ms + 100);
+  };
   function court(index: number) {
     const player = players[index];
     const price = (suitors[player.id]?.amount ?? 0) + 1;
@@ -929,7 +974,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           );
         })}
 
-        {flying.map((item) => <div key={item.key} className="pointer-events-none absolute z-40 h-[11cqmin] w-[11cqmin] -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_0_10px_rgba(255,240,150,0.95)] transition-[left,top] ease-in-out" style={{ transitionDuration: `${item.ms}ms`, left: `${seats[item.moved ? item.to : meIndex][0]}%`, top: `${seats[item.moved ? item.to : meIndex][1]}%` }}><Gift id={item.gift} className="h-full w-full" /></div>)}
+        {flying.map((item) => <div key={item.key} className="pointer-events-none absolute z-40 h-[11cqmin] w-[11cqmin] -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_0_10px_rgba(255,240,150,0.95)] transition-[left,top] ease-in-out" style={{ transitionDuration: `${item.ms}ms`, left: `${seats[item.moved ? item.to : item.from][0]}%`, top: `${seats[item.moved ? item.to : item.from][1]}%` }}><Gift id={item.gift} className="h-full w-full" /></div>)}
 
         {staged && target !== null ? (
           <>
@@ -1005,7 +1050,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
 
         {panel ? (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/35 p-3" onClick={(event) => { event.stopPropagation(); setPanel(null); }}>
-            <div role="dialog" aria-modal="true" aria-label={t(`bottle.${panel}`)} onClick={(event) => event.stopPropagation()} className={cn("relative max-h-full w-full rounded-2xl p-3 shadow-2xl", panel === "shop" ? "max-w-[420px] bg-[linear-gradient(180deg,#F26D7D,#F7A1A8)]" : panel === "wheel" || panel === "chances" ? "max-w-[380px] bg-[linear-gradient(180deg,#12998C,#7FD8C8)]" : panel === "top" ? "max-w-[300px] bg-[#EEF8FD]" : "max-w-[340px] bg-white")}>
+            <div role="dialog" aria-modal="true" aria-label={t(`bottle.${panel}`)} onClick={(event) => event.stopPropagation()} className={cn("relative max-h-full w-full rounded-2xl p-3 shadow-2xl", panel === "tables" && "animate-[bottle-drop_0.45s_cubic-bezier(0.22,1.2,0.36,1)]", panel === "shop" ? "max-w-[420px] bg-[linear-gradient(180deg,#F26D7D,#F7A1A8)]" : panel === "wheel" || panel === "chances" ? "max-w-[380px] bg-[linear-gradient(180deg,#12998C,#7FD8C8)]" : panel === "top" ? "max-w-[300px] bg-[#EEF8FD]" : "max-w-[340px] bg-white")}>
               <button onClick={() => setPanel(null)} aria-label={t("photos.close")} title={t("photos.close")} className={cn("absolute -right-2 -top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 bg-white shadow", panel === "shop" ? "border-[#EF4444] text-[#EF4444]" : panel === "wheel" || panel === "chances" ? "border-[#0E8478] text-[#0E8478]" : panel === "top" ? "border-[#3B9AD9] text-[#3B9AD9]" : "border-[#8CC63F] text-[#8CC63F]")}><X size={18} strokeWidth={3} /></button>
               <p className={cn("mb-1 text-center text-sm font-bold", panel === "shop" || panel === "wheel" || panel === "chances" ? "mb-2 text-white" : "text-[#9CA3AF]", panel === "top" && "sr-only")}>{t(`bottle.${panel}`)}</p>
               {panel === "tables" ? (() => {
@@ -1024,12 +1069,12 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                     ) : null}
                     {roomNote ? <p role="status" className="mb-2 rounded-lg bg-[#FEE2E2] p-2 text-center text-xs font-semibold text-[#991B1B]">{t("bottle.roomGone")}</p> : null}
                     <button onClick={() => void moveTo(null)} className="h-11 w-full rounded-xl bg-[#EE8A2B] text-sm font-bold text-white hover:brightness-110">{t("bottle.roomRandom")}</button>
-                    <p className="mb-1 mt-3 text-xs font-semibold text-[#9CA3AF]">{t("bottle.roomFriends")}</p>
+                    <p className="mb-1 mt-3 text-xs font-semibold text-[#9CA3AF]">{t("bottle.roomFriendsKnown")}</p>
                     {rooms && !rooms.friends.length ? <p className="py-1 text-xs text-[#6B7280]">{t("bottle.roomNoFriends")}</p> : null}
                     <ul>
                       {(rooms?.friends ?? []).map((friend) => (
                         <li key={friend.id}><button onClick={() => void moveTo(friend.table)} disabled={friend.table === net?.table} className="flex min-h-11 w-full items-center gap-2 rounded-lg px-1 text-left text-sm hover:bg-black/5 disabled:opacity-50">
-                          <img src={friend.avatar || cartoonAvatar(1, false)} alt="" className="h-9 w-9 shrink-0 rounded-md object-cover" /><span className="min-w-0 flex-1 truncate font-semibold">{(friend.name ?? "").split(" ")[0]}</span><span className="shrink-0 text-xs text-[#9CA3AF]">#{friend.table}</span>{counts(friend.table)}
+                          <img src={friend.avatar || cartoonAvatar(1, false)} alt="" className="h-9 w-9 shrink-0 rounded-md object-cover" /><span className="min-w-0 flex-1 truncate font-semibold">{(friend.name ?? "").split(" ")[0]}</span>{friend.friend === false ? <span title={t("bottle.roomKnown")} className="shrink-0 text-sm">🎁</span> : null}<span className="shrink-0 text-xs text-[#9CA3AF]">#{friend.table}</span>{counts(friend.table)}
                         </button></li>
                       ))}
                     </ul>
@@ -1266,16 +1311,17 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           </div>
         ) : null}
         {video && !wide ? (
-          <div className="absolute right-0 top-2 z-20 w-[190px] overflow-hidden rounded-l-2xl border border-r-0 border-border bg-surface shadow-lg">
+          <div ref={miniRef} style={mini.x === null ? { right: 0, top: mini.y, width: mini.w } : { left: mini.x, top: mini.y, width: mini.w }} className={cn("absolute z-20 overflow-hidden border border-border bg-surface shadow-lg", mini.x === null ? "rounded-l-2xl border-r-0" : "rounded-2xl")}>
             <div className="flex items-center">
-              <img src={players[meIndex].avatar} alt="" className="mx-2 h-10 w-10 shrink-0 rounded-full border-2 border-border object-cover" />
-              <div className="aspect-video min-w-0 flex-1 bg-black"><iframe ref={frameRef} onLoad={() => window.setTimeout(pushMusic, 800)} src={`https://www.youtube-nocookie.com/embed/${video}?autoplay=1&rel=0&enablejsapi=1`} title="YouTube" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen className="h-full w-full" /></div>
+              <img src={players[meIndex].avatar} alt="" title={t("bottle.miniMove")} onPointerDown={(event) => startMini(event, "move")} className="mx-2 h-10 w-10 shrink-0 cursor-move touch-none select-none rounded-full border-2 border-border object-cover" draggable={false} />
+              <div className={cn("aspect-video min-w-0 flex-1 bg-black", miniBusy && "pointer-events-none")}><iframe ref={frameRef} onLoad={() => window.setTimeout(pushMusic, 800)} src={`https://www.youtube-nocookie.com/embed/${video}?autoplay=1&rel=0&enablejsapi=1`} title="YouTube" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen className="h-full w-full" /></div>
             </div>
             <div className="flex items-center gap-1.5 px-2 py-1">
               <button onClick={() => setMusic(music ? 0 : 60)} aria-label={t(music ? "videos.mute" : "videos.unmute")} title={t(music ? "videos.mute" : "videos.unmute")} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted hover:text-text">{music ? <Volume2 size={17} /> : <VolumeX size={17} />}</button>
               <input type="range" min={0} max={100} value={music} onChange={(event) => setMusic(Number(event.target.value))} aria-label={t("bottle.music")} className="min-w-0 flex-1 accent-[#8CC63F]" />
               <button onClick={() => setVideo(null)} aria-label={t("photos.close")} title={t("photos.close")} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted hover:text-text"><X size={15} /></button>
             </div>
+            <span role="separator" aria-label={t("bottle.miniSize")} title={t("bottle.miniSize")} onPointerDown={(event) => startMini(event, "size")} className="absolute bottom-0 left-0 h-5 w-5 cursor-nesw-resize touch-none bg-[linear-gradient(225deg,transparent_50%,rgba(120,130,140,0.7)_50%)]" />
           </div>
         ) : null}
         {audio ? (

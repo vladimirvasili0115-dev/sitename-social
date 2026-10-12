@@ -90,5 +90,8 @@ const tr: Record<keyof typeof az, string> = {
   "bottle.pickReceivers": "Alıcıları seç", "bottle.pickAll": "Herkesi seç", "bottle.pickProfile": "Profiline girdiğin kişiyi seç",
   "bottle.openProfile": "Profili aç", "bottle.admirer": "Hayranı", "bottle.noAdmirer": "Hayranı yok", "bottle.beAdmirer": "Hayranı ol",
   "bottle.menuRatings": "Sıralamalar", "bottle.menuBottles": "Şişe", "bottle.menuStyle": "Tarz",
+  "bottle.roomFriendsKnown": "Arkadaşlar ve tanıdıklar", "bottle.roomKnown": "Hediyeleştiğiniz oyuncu",
+  "privacy.welcomeNoReply": "Bu hoş geldin mesajına cevap yazılamaz",
+  "bottle.miniMove": "Sürükle", "bottle.miniSize": "Büyüt / küçült",
 };
 export default tr;

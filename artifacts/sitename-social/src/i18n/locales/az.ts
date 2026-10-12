@@ -99,5 +99,8 @@ const az = {
   "bottle.pickReceivers": "Alanları seç", "bottle.pickAll": "Hamını seç", "bottle.pickProfile": "Profilinə girdiyin adamı seç",
   "bottle.openProfile": "Profili aç", "bottle.admirer": "Məftun", "bottle.noAdmirer": "Məftun yoxdur", "bottle.beAdmirer": "Məftun ol",
   "bottle.menuRatings": "Reytinqlər", "bottle.menuBottles": "Butulka", "bottle.menuStyle": "Tərz",
+  "bottle.roomFriendsKnown": "Dostlar və tanışlar", "bottle.roomKnown": "Hədiyyələşdiyiniz oyunçu",
+  "privacy.welcomeNoReply": "Bu xoş gəldin mesajına cavab yazmaq olmur",
+  "bottle.miniMove": "Sürüşdür", "bottle.miniSize": "Böyüt / kiçilt",
 } as const;
 export default az;
