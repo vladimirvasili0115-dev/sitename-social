@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type FormEvent, type PointerEvent as ReactPointerEvent } from "react";
 import Link from "next/link";
-import { AtSign, LifeBuoy, Clock, Flame, Search, Star, Ban, Flag, Mail, Gift as GiftIcon, Heart, Home, Maximize, ArrowUpRight, BadgeCheck, DoorOpen, BookOpen, MessageSquare, Check, Menu, UserRound, Minimize, Music, Plus, UserCheck, Music2, RefreshCw, SendHorizontal, Settings, Trophy, UserPlus, UserRoundCog, Users, Volume2, VolumeX, X } from "lucide-react";
+import { AtSign, LifeBuoy, Clock, Flame, Search, Star, Ban, Flag, Mail, Gift as GiftIcon, Heart, Home, Maximize, ArrowUpRight, BadgeCheck, Crown, DoorOpen, Eye, EyeOff, KeyRound, Lock, Mars, Venus, BookOpen, MessageSquare, Check, Menu, UserRound, Minimize, Music, Plus, UserCheck, Music2, RefreshCw, SendHorizontal, Settings, Trophy, UserPlus, UserRoundCog, Users, Volume2, VolumeX, X } from "lucide-react";
 import type { GiftId } from "@/types";
 import { cartoonAvatar } from "./avatarArt";
 import { useTranslation } from "@/i18n/useTranslation";
@@ -223,6 +223,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [roomPass, setRoomPass] = useState("");
   const [roomForm, setRoomForm] = useState({ name: "", pass: "", size: 4 });
   const [roomError, setRoomError] = useState<string | null>(null);
+  const [roomTab, setRoomTab] = useState<"list" | "create">("list");
+  const [showPass, setShowPass] = useState(false);
   const [rooms, setRooms] = useState<BottleTables | null>(null);
   const [waitFor, setWaitFor] = useState<{ table: number; position: number } | null>(null);
   const [roomNote, setRoomNote] = useState(false);
@@ -463,7 +465,10 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     setPanel("tables");
     void bottleTables().then(setRooms);
   }
+  function leaveRoom() { void moveTo(null); }
   function openPrivate() {
+    setRoomTab("list");
+    setShowPass(false);
     setRoomError(null);
     setRoomAsk(null);
     setPanel("rooms");
@@ -995,7 +1000,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           </span>
           <button onClick={() => setPanel("settings")} aria-label={t("bottle.settings")} title={t("bottle.settings")} className={tool}><Settings size={18} /></button>
           <span className="flex-1" />
-          <span className="text-center text-[max(10px,2.2cqmin)] font-bold leading-tight text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.7)]">{net?.room ? <><span aria-hidden="true">🔒</span><br /><span className="line-clamp-2 block max-w-[64px] break-words">{net.room.name}</span></> : <>{t("bottle.table")}<br />{online ? net?.table ?? "…" : tableNo}</>}</span>
+          <span className="text-center text-[max(10px,2.2cqmin)] font-bold leading-tight text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.7)]">{net?.room ? <><span aria-hidden="true">🔒</span><br /><span className="line-clamp-2 block max-w-[64px] break-words">{net.room.name}</span><button onClick={leaveRoom} aria-label={t("bottle.roomLeave")} title={t("bottle.roomLeave")} className="mx-auto mt-1 flex items-center gap-1 rounded-full bg-[#E5484D] px-2 py-0.5 text-[11px] font-bold text-white shadow hover:bg-[#D13438] [text-shadow:none]"><X size={12} strokeWidth={3} />{t("bottle.roomLeaveShort")}</button></> : <>{t("bottle.table")}<br />{online ? net?.table ?? "…" : tableNo}</>}</span>
           {myTurn
             ? <span aria-label={`${seconds}`} className={cn(tool, "text-[max(14px,3cqmin)] font-bold tabular-nums")}>{seconds}</span>
             : <button onClick={changeTable} aria-label={t("bottle.changeTable")} title={t("bottle.changeTable")} className={tool}><RefreshCw size={17} /></button>}
@@ -1114,52 +1119,68 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
 
         {panel ? (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/35 p-3" onClick={(event) => { event.stopPropagation(); setPanel(null); }}>
-            <div role="dialog" aria-modal="true" aria-label={t(`bottle.${panel}`)} onClick={(event) => event.stopPropagation()} className={cn("relative max-h-full w-full rounded-2xl p-3 shadow-2xl", panel === "tables" && "animate-[bottle-drop_0.45s_cubic-bezier(0.22,1.2,0.36,1)]", panel === "shop" ? "max-w-[420px] bg-[linear-gradient(180deg,#F26D7D,#F7A1A8)]" : panel === "wheel" || panel === "chances" ? "max-w-[380px] bg-[linear-gradient(180deg,#12998C,#7FD8C8)]" : panel === "top" ? "max-w-[300px] bg-[#EEF8FD]" : "max-w-[340px] bg-white")}>
-              <button onClick={() => setPanel(null)} aria-label={t("photos.close")} title={t("photos.close")} className={cn("absolute -right-2 -top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 bg-white shadow", panel === "shop" ? "border-[#EF4444] text-[#EF4444]" : panel === "wheel" || panel === "chances" ? "border-[#0E8478] text-[#0E8478]" : panel === "top" ? "border-[#3B9AD9] text-[#3B9AD9]" : "border-[#8CC63F] text-[#8CC63F]")}><X size={18} strokeWidth={3} /></button>
-              <p className={cn("mb-1 text-center text-sm font-bold", panel === "shop" || panel === "wheel" || panel === "chances" ? "mb-2 text-white" : "text-[#9CA3AF]", panel === "top" && "sr-only")}>{t(`bottle.${panel}`)}</p>
-              {panel === "rooms" ? (
-                <div className="max-h-[80cqmin] overflow-y-auto text-[#1F2937]">
-                  <form onSubmit={(event) => { event.preventDefault(); void bottleRoomsList(roomSearch).then(setRoomsData); }} className="mb-2 flex gap-1.5">
-                    <input value={roomSearch} onChange={(event) => setRoomSearch(event.target.value)} placeholder={t("bottle.roomSearch")} aria-label={t("bottle.roomSearch")} className="h-10 min-w-0 flex-1 rounded-lg border border-[#D1D5DB] bg-white px-3 text-sm outline-none focus:border-[#EE8A2B]" />
-                    <button type="submit" aria-label={t("bottle.songSearch")} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#EE8A2B] text-white"><Search size={17} /></button>
-                  </form>
-                  {roomError ? <p role="alert" className="mb-2 rounded-lg bg-[#FEE2E2] p-2 text-center text-xs font-semibold text-[#991B1B]">{roomError}</p> : null}
-                  {roomAsk ? (
-                    <form onSubmit={(event) => { event.preventDefault(); void joinPrivate(roomAsk.id, roomPass); }} className="mb-2 rounded-xl bg-[#FEF3C7] p-2.5">
-                      <p className="mb-1.5 text-sm font-semibold">🔒 {roomAsk.name}</p>
-                      <div className="flex gap-1.5">
-                        <input type="password" value={roomPass} onChange={(event) => setRoomPass(event.target.value)} placeholder={t("bottle.roomPass")} aria-label={t("bottle.roomPass")} autoFocus className="h-9 min-w-0 flex-1 rounded-lg border border-[#D1D5DB] bg-white px-2.5 text-sm outline-none" />
-                        <button type="submit" className="h-9 shrink-0 rounded-lg bg-[#7DC243] px-3 text-sm font-bold text-white">{t("bottle.roomEnter")}</button>
-                      </div>
-                    </form>
-                  ) : null}
-                  {!roomsData ? <p className="py-3 text-center text-xs text-[#6B7280]">{t("bottle.songLoading")}</p> : roomsData.rooms.length === 0 ? <p className="py-3 text-center text-xs text-[#6B7280]">{t("bottle.roomNone")}</p> : (
-                    <ul className="space-y-1">
-                      {roomsData.rooms.map((room) => (
-                        <li key={room.id}><button onClick={() => { setRoomError(null); if (room.locked && !room.mine) { setRoomPass(""); setRoomAsk({ id: room.id, name: room.name }); } else void joinPrivate(room.id, ""); }} disabled={room.id === net?.table} className="flex min-h-12 w-full items-center gap-2 rounded-lg border border-[#F3E2C7] bg-[#FFFBF3] px-2 text-left text-sm hover:bg-[#FFF3DD] disabled:opacity-60">
-                          <img src={room.owner?.avatar || cartoonAvatar(2, false)} alt="" className="h-9 w-9 shrink-0 rounded-md object-cover" />
-                          <span className="min-w-0 flex-1"><span className="block truncate font-bold">{room.locked ? "🔒 " : ""}{room.name}</span><span className="block truncate text-[11px] text-[#6B7280]">{room.owner?.name ?? ""}{room.mine ? ` · ${t("bottle.roomMine")}` : ""}</span></span>
-                          <span className="flex shrink-0 flex-col items-end text-[11px] tabular-nums text-[#6B7280]"><span>👦 {room.boys}/{room.capacity / 2}</span><span>👧 {room.girls}/{room.capacity / 2}</span></span>
-                        </button></li>
-                      ))}
-                    </ul>
-                  )}
-                  <div className="mt-3 border-t border-[#E5E7EB] pt-3">
-                    {roomsData?.vip ? (
-                      <form onSubmit={(event) => void createPrivate(event)} className="space-y-2">
-                        <p className="text-xs font-bold text-[#9CA3AF]">{t("bottle.roomCreate")}</p>
-                        <input value={roomForm.name} onChange={(event) => setRoomForm({ ...roomForm, name: event.target.value })} maxLength={30} placeholder={t("bottle.roomName")} aria-label={t("bottle.roomName")} className="h-10 w-full rounded-lg border border-[#D1D5DB] bg-white px-3 text-sm outline-none focus:border-[#EE8A2B]" />
-                        <input type="password" value={roomForm.pass} onChange={(event) => setRoomForm({ ...roomForm, pass: event.target.value })} maxLength={30} placeholder={t("bottle.roomPassOptional")} aria-label={t("bottle.roomPassOptional")} className="h-10 w-full rounded-lg border border-[#D1D5DB] bg-white px-3 text-sm outline-none focus:border-[#EE8A2B]" />
-                        <div role="radiogroup" aria-label={t("bottle.roomSize")} className="grid grid-cols-5 gap-1">
-                          {[2, 4, 6, 8, 10].map((size) => <button key={size} type="button" role="radio" aria-checked={roomForm.size === size} onClick={() => setRoomForm({ ...roomForm, size })} className={cn("h-9 rounded-lg text-sm font-bold", roomForm.size === size ? "bg-[#EE8A2B] text-white" : "bg-[#F3F4F6] text-[#4B5563]")}>{size}</button>)}
+            <div role="dialog" aria-modal="true" aria-label={t(`bottle.${panel}`)} onClick={(event) => event.stopPropagation()} className={cn("relative max-h-full w-full rounded-2xl p-3 shadow-2xl", panel === "tables" && "animate-[bottle-drop_0.45s_cubic-bezier(0.22,1.2,0.36,1)]", panel === "shop" ? "max-w-[420px] bg-[linear-gradient(180deg,#F26D7D,#F7A1A8)]" : panel === "wheel" || panel === "chances" ? "max-w-[380px] bg-[linear-gradient(180deg,#12998C,#7FD8C8)]" : panel === "top" ? "max-w-[300px] bg-[#EEF8FD]" : panel === "rooms" ? "max-w-[400px] border border-[#F5C451]/30 bg-[linear-gradient(165deg,#2B1D4E,#4E2D7C)]" : "max-w-[340px] bg-white")}>
+              <button onClick={() => setPanel(null)} aria-label={t("photos.close")} title={t("photos.close")} className={cn("absolute -right-2 -top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 bg-white shadow", panel === "shop" ? "border-[#EF4444] text-[#EF4444]" : panel === "wheel" || panel === "chances" ? "border-[#0E8478] text-[#0E8478]" : panel === "top" ? "border-[#3B9AD9] text-[#3B9AD9]" : panel === "rooms" ? "border-[#F5C451] text-[#C08A12]" : "border-[#8CC63F] text-[#8CC63F]")}><X size={18} strokeWidth={3} /></button>
+              <p className={cn("mb-1 text-center text-sm font-bold", panel === "shop" || panel === "wheel" || panel === "chances" || panel === "rooms" ? "mb-2 text-white" : "text-[#9CA3AF]", panel === "top" && "sr-only")}>{t(`bottle.${panel}`)}</p>
+              {panel === "rooms" ? (() => {
+                const passBox = (value: string, change: (next: string) => void, label: string, focus?: boolean) => (
+                  <span className="relative block min-w-0 flex-1">
+                    <KeyRound size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#C9B6F2]" />
+                    <input type={showPass ? "text" : "password"} value={value} onChange={(event) => change(event.target.value)} maxLength={30} placeholder={label} aria-label={label} autoFocus={focus} className="h-10 w-full rounded-xl border border-white/15 bg-white/10 pl-9 pr-10 text-sm text-white placeholder:text-[#B9A9DA] outline-none focus:border-[#F5C451]" />
+                    <button type="button" onClick={() => setShowPass(!showPass)} aria-label={t(showPass ? "bottle.passHide" : "bottle.passShow")} title={t(showPass ? "bottle.passHide" : "bottle.passShow")} className="absolute right-1.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg text-[#D8CCF2] hover:bg-white/10 hover:text-white">{showPass ? <EyeOff size={16} /> : <Eye size={16} />}</button>
+                  </span>
+                );
+                const genderCount = (count: number, half: number, female: boolean) => (
+                  <span className={cn("flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[11px] font-bold tabular-nums", female ? "bg-[#FF5FA2]/20 text-[#FFB3D4]" : "bg-[#4DA3FF]/20 text-[#A9D3FF]")} title={t(female ? "auth.female" : "auth.male")}>{female ? <Venus size={12} strokeWidth={2.6} /> : <Mars size={12} strokeWidth={2.6} />}{count}/{half}</span>
+                );
+                return (
+                  <div className="text-white">
+                    <div role="tablist" className="mb-3 grid grid-cols-2 gap-1 rounded-xl bg-black/25 p-1">
+                      {(["list", "create"] as const).map((tab) => <button key={tab} role="tab" aria-selected={roomTab === tab} onClick={() => { setRoomTab(tab); setRoomError(null); }} className={cn("flex h-9 items-center justify-center gap-1.5 rounded-lg text-sm font-bold transition-colors", roomTab === tab ? "bg-[linear-gradient(180deg,#F8D271,#E8A92B)] text-[#3A2400] shadow" : "text-[#D8CCF2] hover:text-white")}>{tab === "list" ? <><DoorOpen size={15} />{t("bottle.roomTabList")}</> : <><Crown size={15} />{t("bottle.roomCreate")}</>}</button>)}
+                    </div>
+                    {roomError ? <p role="alert" className="mb-2 rounded-xl bg-[#FF4D6D]/20 px-3 py-2 text-center text-xs font-semibold text-[#FFC2CE]">{roomError}</p> : null}
+                    {roomTab === "list" ? (
+                      <>
+                        <form onSubmit={(event) => { event.preventDefault(); void bottleRoomsList(roomSearch).then(setRoomsData); }} className="relative mb-2">
+                          <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#C9B6F2]" />
+                          <input value={roomSearch} onChange={(event) => setRoomSearch(event.target.value)} placeholder={t("bottle.roomSearch")} aria-label={t("bottle.roomSearch")} className="h-10 w-full rounded-xl border border-white/15 bg-white/10 pl-9 pr-3 text-sm text-white placeholder:text-[#B9A9DA] outline-none focus:border-[#F5C451]" />
+                        </form>
+                        {roomAsk ? (
+                          <form onSubmit={(event) => { event.preventDefault(); void joinPrivate(roomAsk.id, roomPass); }} className="mb-2 rounded-xl border border-[#F5C451]/40 bg-[#F5C451]/10 p-2.5">
+                            <p className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold text-[#FCE3A3]"><Lock size={14} />{roomAsk.name}</p>
+                            <div className="flex gap-1.5">
+                              {passBox(roomPass, setRoomPass, t("bottle.roomPass"), true)}
+                              <button type="submit" className="h-10 shrink-0 rounded-xl bg-[linear-gradient(180deg,#8EDB5A,#5DB13A)] px-4 text-sm font-bold text-white shadow">{t("bottle.roomEnter")}</button>
+                            </div>
+                          </form>
+                        ) : null}
+                        <ul className="max-h-[42cqmin] space-y-1.5 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                          {!roomsData ? <li className="py-6 text-center text-xs text-[#C9B6F2]">{t("bottle.songLoading")}</li> : roomsData.rooms.length === 0 ? <li className="py-6 text-center text-sm text-[#C9B6F2]">{t("bottle.roomNone")}</li> : roomsData.rooms.map((room) => (
+                            <li key={room.id}><button onClick={() => { setRoomError(null); if (room.locked && !room.mine) { setRoomPass(""); setRoomAsk({ id: room.id, name: room.name }); } else void joinPrivate(room.id, ""); }} disabled={room.id === net?.table} className="flex min-h-14 w-full items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.07] px-2.5 text-left transition-colors hover:border-[#F5C451]/50 hover:bg-white/[0.12] disabled:opacity-60">
+                              <img src={room.owner?.avatar || cartoonAvatar(2, false)} alt="" className="h-10 w-10 shrink-0 rounded-lg object-cover ring-2 ring-[#F5C451]/60" />
+                              <span className="min-w-0 flex-1"><span className="flex items-center gap-1 truncate text-sm font-bold">{room.locked ? <Lock size={13} className="shrink-0 text-[#F5C451]" /> : null}<span className="truncate">{room.name}</span></span><span className="block truncate text-[11px] text-[#C9B6F2]">{room.owner?.name ?? ""}{room.mine ? ` · ${t("bottle.roomMine")}` : ""}</span></span>
+                              <span className="flex shrink-0 flex-col items-end gap-1">{genderCount(room.girls, room.capacity / 2, true)}{genderCount(room.boys, room.capacity / 2, false)}</span>
+                            </button></li>
+                          ))}
+                        </ul>
+                      </>
+                    ) : roomsData?.vip ? (
+                      <form onSubmit={(event) => void createPrivate(event)} className="space-y-2.5">
+                        <input value={roomForm.name} onChange={(event) => setRoomForm({ ...roomForm, name: event.target.value })} maxLength={30} placeholder={t("bottle.roomName")} aria-label={t("bottle.roomName")} className="h-10 w-full rounded-xl border border-white/15 bg-white/10 px-3 text-sm text-white placeholder:text-[#B9A9DA] outline-none focus:border-[#F5C451]" />
+                        {passBox(roomForm.pass, (pass) => setRoomForm({ ...roomForm, pass }), t("bottle.roomPassOptional"))}
+                        <div>
+                          <p className="mb-1.5 text-xs font-semibold text-[#C9B6F2]">{t("bottle.roomSize")}</p>
+                          <div role="radiogroup" aria-label={t("bottle.roomSize")} className="grid grid-cols-5 gap-1.5">
+                            {[2, 4, 6, 8, 10].map((size) => <button key={size} type="button" role="radio" aria-checked={roomForm.size === size} onClick={() => setRoomForm({ ...roomForm, size })} className={cn("h-10 rounded-xl text-sm font-black transition-colors", roomForm.size === size ? "bg-[linear-gradient(180deg,#F8D271,#E8A92B)] text-[#3A2400] shadow" : "bg-white/10 text-[#E4DAF7] hover:bg-white/15")}>{size}</button>)}
+                          </div>
+                          <p className="mt-1.5 flex items-center gap-1.5 text-[11px] text-[#C9B6F2]">{t("bottle.roomSizeHint")}{genderCount(roomForm.size / 2, roomForm.size / 2, true)}{genderCount(roomForm.size / 2, roomForm.size / 2, false)}</p>
                         </div>
-                        <p className="text-[11px] text-[#6B7280]">{t("bottle.roomSizeHint")} {roomForm.size / 2} 👧 + {roomForm.size / 2} 👦</p>
-                        <button type="submit" className="h-10 w-full rounded-lg bg-[#7DC243] text-sm font-bold text-white hover:brightness-105">{t("bottle.roomOpen")}</button>
+                        <button type="submit" className="h-11 w-full rounded-xl bg-[linear-gradient(180deg,#8EDB5A,#5DB13A)] text-sm font-bold text-white shadow hover:brightness-105">{t("bottle.roomOpen")}</button>
                       </form>
-                    ) : <p className="rounded-lg bg-[#FEF3C7] p-2 text-center text-xs font-semibold text-[#92400E]">👑 {t("bottle.roomVipOnly")}</p>}
+                    ) : <p className="rounded-xl border border-[#F5C451]/40 bg-[#F5C451]/10 px-3 py-6 text-center text-sm font-semibold text-[#FCE3A3]"><Crown size={22} className="mx-auto mb-2 text-[#F5C451]" />{t("bottle.roomVipOnly")}</p>}
                   </div>
-                </div>
-              ) : panel === "tables" ? (() => {
+                );
+              })() : panel === "tables" ? (() => {
                 let recent: number[] = [];
                 try { recent = JSON.parse(window.localStorage.getItem("bottle-tables") ?? "[]") as number[]; } catch { /* storage is blocked */ }
                 const list = rooms?.tables ?? [];
@@ -1439,6 +1460,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         ) : null}
         <div className={cn("flex items-center gap-2 border-b border-border px-3 py-1.5", (picked !== null || dedicate) && "hidden")}>
           <p className="min-w-0 flex-1 truncate text-[11px] text-muted">{online ? (net?.room ? `🔒 ${net.room.name} · ${seated.length}/${net.room.capacity}` : `${t("bottle.liveNote")} ${net?.table ?? ""} · ${seated.length}/12`) : t("bottle.demoNote")}</p>
+          {net?.room ? <button onClick={leaveRoom} className="flex h-7 shrink-0 items-center gap-1 rounded-full bg-[#E5484D] px-2.5 text-xs font-bold text-white hover:bg-[#D13438]"><X size={13} strokeWidth={3} />{t("bottle.roomLeave")}</button> : null}
           {full && wide ? <button onClick={() => chooseMode(!dedicate)} aria-pressed={dedicate} aria-label={t("bottle.dedicate")} title={t("bottle.dedicate")} className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white", dedicate ? "bg-[#3E9B23] ring-2 ring-[#5CC93B]/40" : "bg-[#5CC93B] hover:bg-[#4DB52E]")}><Plus size={17} strokeWidth={3} /></button> : null}
           {full && wide ? <button onClick={onLeave} aria-label={t("photos.close")} title={t("photos.close")} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#B4B9C2] text-white hover:bg-[#9AA3AE]"><X size={15} strokeWidth={3} /></button> : null}
         </div>
