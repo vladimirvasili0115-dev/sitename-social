@@ -51,8 +51,6 @@ function noise(start: number, length: number, frequency: number, volume = 0.2, s
 }
 
 // Water being poured into a glass: a rushing stream whose pitch climbs as the glass fills, with small bubbles on top.
-// If the site has its own recording at /sounds/cocktail.mp3 (put it in the "public" folder), that file plays instead.
-let pourFile: HTMLAudioElement | null | undefined;
 function pourSynth() {
   noise(0, 1.5, 420, 0.22, 1700, 6);
   noise(0, 1.5, 1400, 0.07, 3800, 2);
@@ -62,15 +60,23 @@ function pourSynth() {
   }
   tone(2300, 1.5, 0.35, 0.05);
 }
-function pour() {
-  if (pourFile === undefined) {
-    pourFile = new Audio("/sounds/cocktail.mp3");
-    pourFile.addEventListener("error", () => { pourFile = null; }, { once: true });
-  }
-  if (!pourFile) return pourSynth();
-  const clip = pourFile.cloneNode() as HTMLAudioElement;
+// Recorded sounds. Any gift sound can be replaced by a real recording: put "<name>.mp3" into the site's public/sounds folder
+// (kiss.mp3, frog.mp3, cocktail.mp3 ...). A file that exists is played; for a missing one the synthesized sound is used.
+const clips = new Map<string, HTMLAudioElement | null>();
+function loadClip(name: string) {
+  if (clips.has(name) || typeof Audio === "undefined") return;
+  clips.set(name, null);
+  const audio = new Audio();
+  audio.preload = "auto";
+  audio.addEventListener("canplaythrough", () => clips.set(name, audio), { once: true });
+  audio.src = `/sounds/${name}.mp3`;
+}
+function playClip(name: string, fallback: () => void) {
+  const ready = clips.get(name);
+  if (!ready) { loadClip(name); return fallback(); }
+  const clip = ready.cloneNode() as HTMLAudioElement;
   clip.volume = level;
-  void clip.play().catch(() => pourSynth());
+  void clip.play().catch(fallback);
 }
 
 // A tone whose pitch slides from one frequency to another (animal calls, engines, springs).
@@ -161,10 +167,16 @@ export function playGiftSound(gift: string, moment: "send" | "land") {
   try {
     context ??= new (window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
     if (context.state === "suspended") void context.resume();
-    if (moment === "send") return noise(0, 0.35, 500, 0.1, 2400);
+    if (moment === "send") {
+      // Look for recordings ahead of time, so the right one is ready when the gift lands.
+      loadClip("cocktail");
+      Object.keys(sounds).forEach(loadClip);
+      return noise(0, 0.35, 500, 0.1, 2400);
+    }
     const name = gift.replace(/^e:/, "");
-    if (name === "🍸" || name === "🍹") return pour();
-    (sounds[soundOf.find(([, members]) => members.split(" ").includes(name))?.[0] ?? "pop"])();
+    if (name === "🍸" || name === "🍹") return playClip("cocktail", pourSynth);
+    const key = soundOf.find(([, members]) => members.split(" ").includes(name))?.[0] ?? "pop";
+    playClip(key, sounds[key]);
   } catch {
     // Audio is unavailable or blocked: the gift simply lands silently.
   }
