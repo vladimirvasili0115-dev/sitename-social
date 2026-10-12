@@ -8,6 +8,13 @@ import { Card } from "@/components/ui/Card";
 import { BottleCover } from "@/components/bottle/BottleArt";
 import { GameWindow } from "@/components/bottle/GameWindow";
 
+// The game picture: put your own picture at public/games/bottle.png and it is shown here (any size; it is fitted into the square).
+// Without that file the drawn picture is used.
+function BottleTile() {
+  const [own, setOwn] = useState(true);
+  return own ? <img src="/games/bottle.png" alt="" onError={() => setOwn(false)} className="h-full w-full object-cover" /> : <BottleCover className="h-full w-full" />;
+}
+
 // Emoji tiles stand in for game covers until each game has its own artwork.
 const tiles: Record<string, { emoji: string; from: string; to: string; text: TranslationKey }> = {
   nard: { emoji: "🎲", from: "#8B4A1F", to: "#D99A4E", text: "games.descNard" },
@@ -46,7 +53,7 @@ export default function GamesPage() {
         <ul className="space-y-1">
           <li>
             <button onClick={() => setPlaying(true)} className={`${row} bg-surface-2 hover:brightness-110`}>
-              <span aria-hidden="true" className={icon}><BottleCover className="h-full w-full" /></span>
+              <span aria-hidden="true" className={icon}><BottleTile /></span>
               <span className="min-w-0 flex-1">
                 <span className="block text-base font-bold text-text">{t("bottle.title")}</span>
                 <span className="mt-1 block text-[13px] leading-5 text-muted">{t("games.descBottle")}</span>

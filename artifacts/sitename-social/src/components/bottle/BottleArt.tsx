@@ -58,27 +58,47 @@ export function WoodTable({ className }: { className?: string }) {
 
 // Cover tile for the games list: the bottle on a wooden table with hearts and spin arrows.
 export function BottleCover({ className }: { className?: string }) {
-  const heart = "M0 9C-7 4-10 .5-10-3.500-10-7-7.500-9-4.800-9-2.800-9-1-8 0-6.300 1-8 2.800-9 4.800-9 7.500-9 10-7 10-3.500 10 .5 7 4 0 9z";
+  // Original tile: the bottle lies on our wood table, a glossy heart floats from its neck, the Azerbaijani flag waves on top.
+  const wave = "M18 8C30 4 38 12 50 8S70 4 78 8V30C66 26 58 34 46 30S26 26 18 30Z";
+  const star = Array.from({ length: 16 }, (_, i) => { const r = i % 2 ? 1.25 : 2.6; const a = (Math.PI / 8) * i - Math.PI / 2; return `${(52.6 + r * Math.cos(a)).toFixed(2)},${(19 + r * Math.sin(a)).toFixed(2)}`; }).join(" ");
   return (
     <svg viewBox="0 0 96 96" aria-hidden="true" className={className}>
       <defs>
-        <linearGradient id="bc-wood" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#F3B455" /><stop offset="1" stopColor="#C97A26" /></linearGradient>
-        <linearGradient id="bc-glass" x1="0" x2="1"><stop offset="0" stopColor="#2E9E3F" /><stop offset="0.45" stopColor="#9BE36B" /><stop offset="1" stopColor="#23802F" /></linearGradient>
+        <clipPath id="bc-flag"><path d={wave} /></clipPath>
+        <linearGradient id="bc-fold" x1="0" x2="1"><stop offset="0" stopColor="#FFFFFF" stopOpacity="0.25" /><stop offset="0.25" stopColor="#000000" stopOpacity="0.12" /><stop offset="0.5" stopColor="#FFFFFF" stopOpacity="0.2" /><stop offset="0.75" stopColor="#000000" stopOpacity="0.12" /><stop offset="1" stopColor="#FFFFFF" stopOpacity="0.15" /></linearGradient>
+        <linearGradient id="bc-glass" x1="0" x2="1"><stop offset="0" stopColor="#3F7F68" /><stop offset="0.3" stopColor="#B9E2CF" stopOpacity="0.85" /><stop offset="0.65" stopColor="#8CC7AE" stopOpacity="0.85" /><stop offset="1" stopColor="#2F6B55" /></linearGradient>
+        <radialGradient id="bc-heart" cx="0.35" cy="0.3" r="0.8"><stop offset="0" stopColor="#FF8A7A" /><stop offset="0.55" stopColor="#F2343F" /><stop offset="1" stopColor="#B3122A" /></radialGradient>
+        <radialGradient id="bc-light" cx="0.5" cy="0.55" r="0.6"><stop offset="0" stopColor="#FFE3A8" stopOpacity="0.55" /><stop offset="1" stopColor="#FFE3A8" stopOpacity="0" /></radialGradient>
       </defs>
-      <rect width="96" height="96" fill="url(#bc-wood)" />
-      <path d="M0 22q48 6 96-3M0 50q48-7 96 2M0 76q48 6 96-2" fill="none" stroke="#8A4B12" strokeWidth="1" opacity="0.25" />
-      <g fill="none" stroke="#A8641C" strokeWidth="5" strokeLinecap="round" opacity="0.75">
-        <path d="M70 20a34 34 0 0 1 12 34" /><path d="M26 76a34 34 0 0 1-12-34" />
+      <image href="/bottle/table.jpg" x="-40" y="-10" width="176" height="121" preserveAspectRatio="xMidYMid slice" />
+      <rect width="96" height="96" fill="url(#bc-light)" />
+      <line x1="17" y1="6" x2="17" y2="44" stroke="#6B4423" strokeWidth="1.8" strokeLinecap="round" />
+      <circle cx="17" cy="5.5" r="1.8" fill="#F5C451" />
+      <g clipPath="url(#bc-flag)">
+        <rect x="16" y="2" width="64" height="12.3" fill="#00B5E2" />
+        <rect x="16" y="13.3" width="64" height="11" fill="#EF3340" />
+        <rect x="16" y="23.3" width="64" height="12" fill="#509E2F" />
+        <circle cx="47.6" cy="19" r="4.2" fill="#FFFFFF" />
+        <circle cx="48.9" cy="19" r="3.4" fill="#EF3340" />
+        <polygon points={star} fill="#FFFFFF" />
+        <rect x="16" y="0" width="64" height="40" fill="url(#bc-fold)" />
       </g>
-      <path d="M86 50l-10 3 8 8zM10 46l10-3-8-8z" fill="#A8641C" opacity="0.75" />
-      <g transform="rotate(32 48 48)">
-        <ellipse cx="50" cy="52" rx="11" ry="30" fill="#000000" opacity="0.15" />
-        <path d="M44 14h8v16c0 7 8 11 8 24v22c0 5-3 8-7 8H43c-4 0-7-3-7-8V54c0-13 8-17 8-24z" fill="url(#bc-glass)" stroke="#1B6B28" strokeWidth="1.500" />
-        <rect x="43" y="11" width="10" height="5" rx="1.500" fill="#1B6B28" />
-        <path d="M41 44c-2 5-2 12-2 22" stroke="#EFFFE0" strokeWidth="2.500" strokeLinecap="round" fill="none" opacity="0.7" />
+      <path d={wave} fill="none" stroke="#000000" strokeOpacity="0.12" strokeWidth="0.6" />
+      <ellipse cx="50" cy="80" rx="30" ry="5" fill="#3B1C04" opacity="0.25" />
+      <g transform="translate(57 63) rotate(-60) scale(1.02) translate(-10 -32)">
+        <path d="M8 0h4v1.500c0 1 .5 1.500.5 3V14c0 5 7 8 7 17v28c0 3-2 5-5 5H6c-3 0-5-2-5-5V31c0-9 7-12 7-17V4.500c0-1.500.5-2 .5-3z" fill="url(#bc-glass)" stroke="#2E6652" strokeWidth="0.8" />
+        <rect x="7.5" y="-0.5" width="5" height="2.2" rx="0.6" fill="#CBEBDD" stroke="#2E6652" strokeWidth="0.5" />
+        <path d="M4.500 33v24" stroke="#FFFFFF" strokeWidth="1.600" strokeLinecap="round" opacity="0.75" />
+        <path d="M10 3v10" stroke="#FFFFFF" strokeWidth="0.9" strokeLinecap="round" opacity="0.6" />
       </g>
-      <g fill="#F4511E" stroke="#FFFFFF" strokeWidth="1.200">
-        <path d={heart} transform="translate(72 38) rotate(14) scale(1.150)" /><path d={heart} transform="translate(22 60) rotate(-12)" /><path d={heart} transform="translate(64 78) scale(.8)" />
+      <g transform="translate(25 50) rotate(-14) scale(1.15)">
+        <path d="M0 12C-10 5-14 0-14-5.500-14-10.500-10.500-13.500-6.500-13.500-3.500-13.500-1.200-12-0 -9.500 1.200-12 3.500-13.500 6.500-13.500 10.500-13.500 14-10.500 14-5.500 14 0 10 5 0 12z" fill="url(#bc-heart)" stroke="#FFFFFF" strokeWidth="1.300" />
+        <ellipse cx="-6" cy="-7.500" rx="3.500" ry="2.200" fill="#FFFFFF" opacity="0.7" transform="rotate(-30 -6 -7.500)" />
+      </g>
+      <g fill="#FFF3C4">
+        <path d="M80 44l1.200 3 3 1.200-3 1.200-1.200 3-1.200-3-3-1.200 3-1.200z" />
+        <path d="M12 72l.9 2.200 2.200.9-2.200.9-.9 2.200-.9-2.200-2.200-.9 2.200-.9z" opacity="0.85" />
+        <path d="M84 70l.7 1.700 1.700.7-1.700.7-.7 1.700-.7-1.700-1.700-.7 1.700-.7z" opacity="0.8" />
       </g>
     </svg>
   );
