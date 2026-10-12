@@ -545,6 +545,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (!online) for (const index of songTo()) say({ from: "me", to: players[index].id, song: title });
     setSongFor(null);
     setSongMany([]);
+    // After a song the gift panel closes so the video shows.
+    setPicked(null);
+    if (dedicate) chooseMode(false);
   }
   // A song costs the sender hearts and adds one to the receiver's song count (counted by the server when the table is live).
   function paySong(kind: "video" | "mp3") {
@@ -773,7 +776,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   };
   return (
     <div className={cn("relative flex h-full w-full bg-surface text-text", wide ? "flex-row" : "flex-col")}>
-      <div className={cn("relative shrink-0 overflow-hidden bg-[#E0A04E] [container-type:size]", wide ? "h-full w-[54%]" : "mx-auto aspect-[9/10] w-full max-w-[64dvh]")} onClick={() => setPicked(null)}>
+      <div className={cn("relative shrink-0 overflow-hidden bg-[#E0A04E] [container-type:size]", wide ? "h-full w-[54%]" : "mx-auto aspect-[9/10] w-full max-w-[64dvh]")} onClick={() => { setPicked(null); if (dedicate) chooseMode(false); }}>
         <WoodTable className="pointer-events-none absolute inset-0 h-full w-full" />
         <div className={cn("absolute z-10 flex items-center", wide ? "inset-y-0 left-0 w-[13%] flex-col gap-[2.2cqmin] py-[2.2cqmin]" : "inset-x-0 top-0 h-[10%] gap-[1.7cqmin] px-[2cqmin]")} onClick={(event) => event.stopPropagation()}>
           <button type="button" onClick={() => { setPayNote(false); setPanel("shop"); }} aria-label={`${t("bottle.shop")}: ${hearts}`} className={cn("flex items-center text-white hover:brightness-110", wide ? "flex-col" : "gap-1.5")} title={t("bottle.shop")}>
@@ -1224,7 +1227,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
 
       <div className={cn("relative flex min-h-0 min-w-0 flex-1 flex-col border-border", wide ? "border-l" : "border-t")}>
         {video && wide ? (
-          <div className="relative aspect-video max-h-[42%] w-full shrink-0 bg-black">
+          <div className={cn("relative w-full shrink-0 bg-black", picked !== null || dedicate ? "h-0 overflow-hidden" : "aspect-video max-h-[42%]")}>
             <iframe ref={frameRef} onLoad={() => window.setTimeout(pushMusic, 800)} src={`https://www.youtube-nocookie.com/embed/${video}?autoplay=1&rel=0&enablejsapi=1`} title="YouTube" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen className="h-full w-full" />
             <button onClick={() => setVideo(null)} aria-label={t("photos.close")} title={t("photos.close")} className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80"><X size={15} /></button>
           </div>
