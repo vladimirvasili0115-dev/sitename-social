@@ -25,7 +25,7 @@ type Line = { id: number; from: string; to?: string; text?: string; gift?: strin
 // Seat centres in percent of the table. Wide: a tool column on the left, seats in a rectangle. Tall (phone, window): a tool row on top, seats in an oval.
 type Seats = readonly (readonly [number, number])[];
 const layouts: Record<"wide" | "tall", { seats: Seats; cx: number; cy: number }> = {
-  wide: { seats: [[26, 15], [45.5, 15], [65, 15], [84, 15], [88, 39.5], [88, 62.5], [84, 85], [65, 85], [45.5, 85], [26, 85], [23, 62.5], [23, 39.5]], cx: 55.5, cy: 50 },
+  wide: { seats: [[24, 17.8], [44, 12.6], [64.2, 12.6], [84.3, 17.8], [88, 39.8], [88, 61.3], [84.3, 83.2], [64.2, 88.5], [44, 88.5], [24, 83.2], [20.2, 61.3], [20.2, 39.8]], cx: 54.1, cy: 48.7 },
   tall: { seats: [[17, 26], [39, 21], [61, 21], [83, 26], [87, 46], [87, 65.5], [83, 85], [61, 89.5], [39, 89.5], [17, 85], [13, 65.5], [13, 46]], cx: 50, cy: 55 },
 };
 const bots: Omit<Player, "avatar">[] = [
@@ -73,10 +73,28 @@ const lockedGifts: [string, number, number][] = [
 // Cocktails are the one gift that pays the receiver: every second cocktail gives them a heart (counted by the server).
 const cocktails = new Set(["e:🍸", "e:🍹"]);
 const headGifts = new Set(["crown", "e:👑", "e:⛑️", "e:🤠", "e:🎩", "e:👒", "e:🧢", "e:🎓", "e:🪖", "e:🎀", "e:🌸", "e:👳", "e:🔱"]);
+// Gift pictures are glossy 3D emoji (Fluent Emoji 3D, MIT) kept in public/gifts, named by their code points.
+const giftEmoji: Record<string, string> = { crown: "👑", diamond: "💎", rose: "🌹" };
+const giftSrc = (emoji: string) => `/gifts/${Array.from(emoji).map((char) => char.codePointAt(0)!.toString(16)).filter((hex) => hex !== "fe0f").join("-")}.webp`;
 function Gift({ id, className }: { id: string; className?: string }) {
   if (id.startsWith("song:")) id = id === "song:video" ? "e:🎬" : "e:🎵";
+  if (giftEmoji[id]) id = `e:${giftEmoji[id]}`;
   if (!id.startsWith("e:")) return <GiftArt id={id as GiftId} className={className} />;
-  return <span aria-hidden="true" className={cn("flex items-center justify-center leading-none [container-type:size]", className)}><span className="text-[82cqmin]">{id.slice(2)}</span></span>;
+  return <img src={giftSrc(id.slice(2))} alt="" aria-hidden="true" draggable={false} className={cn("select-none object-contain drop-shadow-[0_2px_2px_rgba(60,25,0,0.3)]", className)} />;
+}
+// The kiss counter on a photo is a pair of red lips with the number on it.
+function LipsBadge({ count }: { count: number }) {
+  return (
+    <span className="absolute -right-[1.6cqmin] -top-[1.6cqmin] z-[2] flex h-[5.2cqmin] w-[6.6cqmin] items-center justify-center">
+      <svg viewBox="0 0 60 44" aria-hidden="true" className="absolute inset-0 h-full w-full drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]">
+        <defs><linearGradient id="lips-red" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#FF4D5E" /><stop offset="1" stopColor="#C8102E" /></linearGradient></defs>
+        <path d="M2 21C8 9 17 3 24 6c3 1 4.500 3 6 3s3-2 6-3c7-3 16 3 22 15-5 12-15 21-28 21S7 33 2 21z" fill="url(#lips-red)" />
+        <path d="M5 21c8 2 17 3 25 3s17-1 25-3c-7 3-16 5-25 5S12 24 5 21z" fill="#8E0B21" opacity="0.7" />
+        <path d="M14 11c4-3 9-3 12 0" stroke="#FFB3BC" strokeWidth="2.500" strokeLinecap="round" fill="none" opacity="0.8" />
+      </svg>
+      <span className="relative text-[2.5cqmin] font-black tabular-nums leading-none text-white [text-shadow:0_1px_1px_rgba(0,0,0,0.5)]">{count}</span>
+    </span>
+  );
 }
 const SPIN_SECONDS = 8;
 const ANSWER_SECONDS = 9;
@@ -771,7 +789,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 {player.me || dedicate ? null : <span aria-hidden="true" className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-[14%] bg-black/35 opacity-0 transition-opacity group-hover:opacity-100"><GiftIcon className="h-[38%] w-[38%] text-white" strokeWidth={1.6} /></span>}
                 {dedicate && !player.me ? <span className="absolute inset-0 z-10 flex items-center justify-center rounded-[14%] bg-black/35"><span className="flex h-[7cqmin] w-[7cqmin] items-center justify-center rounded-full bg-[#8CC63F] text-[5cqmin] font-black leading-none text-white shadow">+</span></span> : null}
                 {topIds.has(player.id) ? <span className="absolute left-1/2 -top-[1.4cqmin] z-[1] -translate-x-1/2 rounded bg-[#FACC15] px-[0.8cqmin] text-[2.2cqmin] font-black leading-[1.5] text-[#713F12] shadow">TOP</span> : null}
-                {kisses[player.id] ? <span className="absolute -right-[1.2cqmin] -top-[1.2cqmin] flex h-[4.6cqmin] min-w-[4.6cqmin] items-center justify-center rounded-full bg-[#E5334B] px-1 text-[2.4cqmin] font-bold tabular-nums text-white shadow">{kisses[player.id]}</span> : null}
+                {kisses[player.id] ? <LipsBadge count={kisses[player.id]} /> : null}
                 {(() => {
                   const mine = stickers[player.id] ?? [];
                   const head = [...mine].reverse().find((gift) => headGifts.has(gift));
@@ -1210,11 +1228,11 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
               <p className="min-w-0 flex-1 text-[11px] leading-tight text-muted">{t("bottle.giftHint2")}<span className="block truncate text-sm font-bold text-text">{players[picked].name}, {players[picked].age} · 💋 {kisses[players[picked].id] ?? 0}</span></p>
               <button onClick={() => setPicked(null)} aria-label={t("photos.close")} title={t("photos.close")} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#8CC63F] text-white hover:bg-[#7AB532]"><X size={17} /></button>
             </div>
-            <div role="menu" className="grid min-h-0 flex-1 grid-cols-[repeat(auto-fill,minmax(58px,1fr))] content-start gap-0.5 overflow-y-auto p-2">
+            <div role="menu" className={cn("grid min-h-0 flex-1 content-start gap-0.5 overflow-y-auto bg-white p-2", wide ? "grid-cols-[repeat(auto-fill,minmax(68px,1fr))]" : "grid-cols-[repeat(auto-fill,minmax(56px,1fr))]")}>
               {[...giftChoices, ...lockedGifts].map(([gift, price, need], order) => (
-                <button key={`${gift}-${order}`} role="menuitem" aria-disabled={need === -1 ? !vip : Boolean(need)} onPointerDown={(event) => pressGift(picked, gift, price, need, event.clientX, event.clientY)} onPointerMove={(event) => { const state = pressed.current; if (state && !state.started && Math.hypot(event.clientX - state.x, event.clientY - state.y) > 8) cancelPress(); }} onPointerUp={() => releaseGift(picked, gift, price, need)} onPointerLeave={cancelPress} onPointerCancel={cancelPress} onContextMenu={(event) => event.preventDefault()} onKeyDown={(event) => { if (event.key === "Enter" && !event.repeat) giveGift(picked, gift, price, need); }} aria-label={`${t("gifts.send")} ${price}`} className={cn("flex touch-pan-y select-none flex-col items-center gap-0.5 rounded-xl p-1.5 hover:bg-surface-2", ((need === -1 ? !vip : Boolean(need)) || hearts < price) && "opacity-35 grayscale")}>
-                  <Gift id={gift} className="h-11 w-11" />
-                  <span className="flex items-center gap-1 text-xs font-bold tabular-nums text-text">{need === -1 ? <b className="rounded bg-[#F59E0B] px-1 text-[10px] text-white">VIP</b> : need ? <span aria-label={`${need}`}>🔒</span> : <><Heart size={12} fill="#FF6A1F" stroke="none" />{price}</>}</span>
+                <button key={`${gift}-${order}`} role="menuitem" aria-disabled={need === -1 ? !vip : Boolean(need)} onPointerDown={(event) => pressGift(picked, gift, price, need, event.clientX, event.clientY)} onPointerMove={(event) => { const state = pressed.current; if (state && !state.started && Math.hypot(event.clientX - state.x, event.clientY - state.y) > 8) cancelPress(); }} onPointerUp={() => releaseGift(picked, gift, price, need)} onPointerLeave={cancelPress} onPointerCancel={cancelPress} onContextMenu={(event) => event.preventDefault()} onKeyDown={(event) => { if (event.key === "Enter" && !event.repeat) giveGift(picked, gift, price, need); }} aria-label={`${t("gifts.send")} ${price}`} className={cn("group flex touch-pan-y select-none flex-col items-center gap-0.5 rounded-xl p-1 hover:bg-[#FFF4E5]", (need === -1 ? !vip : Boolean(need)) ? "grayscale [&>img]:opacity-75" : hearts < price && "opacity-50")}>
+                  <Gift id={gift} className={cn("transition-transform duration-150 group-hover:scale-110", wide ? "h-14 w-14" : "h-11 w-11")} />
+                  <span className="flex items-center gap-1 text-xs font-bold tabular-nums text-[#3F3F46]">{need === -1 ? <b className="rounded bg-[#F59E0B] px-1 text-[10px] text-white">VIP</b> : need ? <span aria-label={`${need}`} className="text-[11px] opacity-70">🔒</span> : <><Heart size={13} fill="#E8352B" stroke="none" />{price}</>}</span>
                 </button>
               ))}
             </div>
