@@ -85,5 +85,6 @@ const ka: Record<keyof typeof az, string> = {
   "profile.cropCancel":"გაუქმება",
   "profile.cropCover":"ყდის ფოტოს არჩევა","profile.cropHintCover":"გადაათრიე ფოტო სასურველ ადგილზე. ჩარჩოში მოქცეული ნაწილი გამოჩნდება პროფილის თავზე.",
   "bottle.songOn": "სიმღერა ჩართო", "bottle.songUploading": "სიმღერა იტვირთება…", "bottle.songFailLive": "სიმღერა ვერ ჩაირთო, სცადე თავიდან",
+  "bottle.top_kisses": "ყველაზე ნაკოცნი", "bottle.top_songs": "ყველაზე მეტი სიმღერა", "bottle.top_cocktails": "ყველაზე მეტი კოქტეილი", "bottle.top_smiles": "ყველაზე მეტი ღიმილი", "bottle.topAll": "ყველა დრო", "bottle.topWeek": "ამ კვირაში", "bottle.topDay": "დღეს", "bottle.topPeriod": "პერიოდი", "bottle.topEmpty": "ჯერ არავინაა", "bottle.topHelp": "როგორ მუშაობს რეიტინგი?", "bottle.topHelpText": "რეიტინგში საიტის ყველა მოთამაშეა. 💋 – ყველაზე ნაკოცნი, 🎵 – სიმღერები, 🍸 – კოქტეილები, 😊 – ღიმილები. პერიოდი ზემოთ აირჩიე. ყვითელი ხაზი შენი ადგილია.",
 };
 export default ka;

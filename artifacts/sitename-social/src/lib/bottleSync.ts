@@ -33,3 +33,6 @@ export const bottleTables = () => call<BottleTables>("bottle_tables_list");
 export const bottleMove = (table: number | null) => call<BottleMove>("bottle_move", { p_table: table });
 export const bottleQueueLeave = () => call<null>("bottle_queue_leave");
 export const bottlePlay = (to: string | null, kind: "youtube" | "mp3", ref: string, title: string) => call<number>("bottle_play", { p_to: to, p_kind: kind, p_ref: ref, p_title: title.slice(0, 120) });
+export type BottleTopRow = { id: string; name: string | null; avatar: string | null; count: number; place: number };
+export type BottleTop = { list: BottleTopRow[]; me: { place: number; count: number } | null };
+export const bottleTop = (kind: "kisses" | "songs" | "cocktails" | "smiles", period: "all" | "week" | "day") => call<BottleTop>("bottle_top", { p_kind: kind, p_period: period });

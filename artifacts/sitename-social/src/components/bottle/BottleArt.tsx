@@ -53,22 +53,24 @@ export function WoodTable({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 400 440" preserveAspectRatio="xMidYMid slice" aria-hidden="true" className={className}>
       <defs>
-        <radialGradient id="wd-light" cx="0.5" cy="0.5" r="0.75"><stop offset="0" stopColor="#D9A050" /><stop offset="0.5" stopColor="#BC7B31" /><stop offset="1" stopColor="#8A5220" /></radialGradient>
+        <radialGradient id="wd-light" cx="0.5" cy="0.5" r="0.75"><stop offset="0" stopColor="#EFB062" /><stop offset="0.55" stopColor="#D28B45" /><stop offset="1" stopColor="#A9672F" /></radialGradient>
         <filter id="wd-grain" x="0" y="0" width="100%" height="100%">
           <feTurbulence type="fractalNoise" baseFrequency="0.006 0.055" numOctaves="4" seed="11" />
           <feColorMatrix values="0 0 0 0 0.52  0 0 0 0 0.27  0 0 0 0 0.05  0 0 0 1.500 -0.620" />
         </filter>
         <filter id="wd-swirl" x="-5%" y="-5%" width="110%" height="110%">
           <feTurbulence type="fractalNoise" baseFrequency="0.011 0.004" numOctaves="2" seed="4" result="n" />
-          <feDisplacementMap in="SourceGraphic" in2="n" scale="46" />
+          <feDisplacementMap in="SourceGraphic" in2="n" scale="26" />
         </filter>
       </defs>
       <rect width="400" height="440" fill="url(#wd-light)" />
-      <g filter="url(#wd-swirl)" fill="none" stroke="#7A4515" strokeLinecap="round">
-        {[18, 52, 81, 118, 149, 186, 221, 252, 290, 324, 361, 396, 428].map((y, i) => <path key={y} d={`M-30 ${y}C80 ${y - 14} 150 ${y + 16} 230 ${y}S380 ${y - 12} 430 ${y + 6}`} strokeWidth={i % 3 === 0 ? 2.200 : 1.200} opacity={i % 2 ? 0.22 : 0.32} />)}
-        {[36, 100, 168, 236, 306, 378].map((y) => <path key={y} d={`M-30 ${y}C90 ${y + 10} 200 ${y - 12} 430 ${y + 4}`} stroke="#FFE2A6" strokeWidth="1.600" opacity="0.28" />)}
+      <g filter="url(#wd-swirl)" fill="none" stroke="#6E3A10" strokeLinecap="round">
+        {Array.from({ length: 34 }, (_, i) => 6 + i * 13 + ((i * 7) % 5)).map((y, i) => <path key={y} d={`M-30 ${y}C80 ${y - 6 - (i % 4) * 2} 150 ${y + 7} 230 ${y}S380 ${y - 5} 430 ${y + 3}`} strokeWidth={i % 5 === 0 ? 1.400 : 0.700} opacity={i % 3 ? 0.22 : 0.36} />)}
+        {[30, 96, 170, 240, 312, 384].map((y) => <path key={y} d={`M-30 ${y}C90 ${y + 6} 200 ${y - 8} 430 ${y + 3}`} stroke="#FFD9A0" strokeWidth="2.400" opacity="0.22" />)}
+        <ellipse cx="300" cy="150" rx="16" ry="5" stroke="#6E3A10" strokeWidth="1.200" opacity="0.35" /><ellipse cx="300" cy="150" rx="9" ry="2.500" stroke="#6E3A10" strokeWidth="1" opacity="0.35" />
+        <ellipse cx="90" cy="330" rx="14" ry="4" stroke="#6E3A10" strokeWidth="1.200" opacity="0.3" />
       </g>
-      <rect width="400" height="440" filter="url(#wd-grain)" opacity="0.5" />
+      <rect width="400" height="440" filter="url(#wd-grain)" opacity="0.35" />
     </svg>
   );
 }
