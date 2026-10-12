@@ -774,6 +774,76 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       </div>
     );
   };
+  // The profile card: on a computer it sits in the middle of the whole game, on a phone over the table.
+  const cardView = card && picked !== null ? (() => {
+          const player = players[picked];
+          const suitor = suitors[player.id];
+          const by = suitor ? byId(suitor.by) : null;
+          const action = cn(wide ? "h-[52px] w-[52px]" : "h-9 w-9 [&_svg]:h-[18px] [&_svg]:w-[18px]", "flex items-center justify-center rounded-full text-white shadow-[0_3px_6px_rgba(0,0,0,0.18)] ring-2 ring-white transition-transform hover:scale-105");
+          const seat = online ? net?.seats.find((item) => item.id === (player.me ? net.me : player.id)) : undefined;
+          const stats = [
+            { key: "statKisses", color: "#E0282E", icon: <Gift id="e:💋" className="h-[22px] w-[22px]" />, value: online ? seat?.total ?? 0 : kisses[player.id] ?? 0 },
+            { key: "statSongs", color: "#A23BC9", icon: <Music2 size={19} className="text-[#A23BC9]" strokeWidth={2.6} />, value: online ? seat?.songs ?? 0 : ((picked + 3) * 7919) % 900 },
+            { key: "statSmiles", color: "#F08A00", icon: <Gift id="e:😊" className="h-[21px] w-[21px]" />, value: online ? seat?.smiles ?? 0 : player.me ? mySmiles : ((picked + 5) * 104729) % 600 },
+          ] as const;
+          const profileHref = player.me ? "/profile" : online ? `/user?id=${player.id}` : null;
+          const sign = player.zodiac !== null && player.zodiac !== undefined ? zodiacSigns[player.zodiac] : null;
+          const signBadge = sign ? <button onClick={() => setSignOpen(!signOpen)} aria-expanded={signOpen} aria-label={t("bottle.zodiac")} title={t(`bottle.sign${player.zodiac}` as "bottle.sign0")} className="flex h-5 w-5 rotate-45 items-center justify-center rounded-[4px] bg-[#6D3BD8] text-white shadow ring-1 ring-white/70"><span className="-rotate-45 text-[11px] leading-none">{sign}</span></button> : null;
+          return (
+            <div className={cn("absolute inset-0 z-[45] flex items-center justify-center p-3", wide ? "bg-black/10" : "bg-black/35")} onClick={(event) => { event.stopPropagation(); setCard(false); }}>
+              <div role="dialog" aria-modal="true" aria-label={`${player.name}, ${player.age}`} onClick={(event) => event.stopPropagation()} className={cn("relative flex rounded-2xl bg-white shadow-[0_18px_50px_rgba(0,0,0,0.45)]", wide ? "w-[720px] max-w-[96%]" : "w-full max-w-[560px]")}>
+                <button onClick={() => setCard(false)} aria-label={t("photos.close")} title={t("photos.close")} className="absolute -right-3 -top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#5CC93B] bg-white text-[#5CC93B] shadow hover:bg-[#F0FBEA]"><X size={19} strokeWidth={3} /></button>
+                <div className={cn("relative aspect-square shrink-0 overflow-hidden rounded-l-2xl bg-[#E5E7EB]", wide ? "w-[400px] max-w-[56%]" : "w-[50%]")}>
+                  <img src={player.avatar} alt="" className="h-full w-full object-cover" />
+                  <div className={cn("absolute inset-x-0 bottom-0 flex items-center justify-center gap-2 bg-gradient-to-t from-black/70 via-black/30 to-transparent pb-2.5 pt-10", wide ? "px-10" : "pl-2 pr-9")}>
+                    {signBadge}
+                    <p className="truncate text-sm font-bold text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.6)]">{player.name}, {player.age}</p>
+                    {wide ? signBadge : null}
+                  </div>
+                  {signOpen && sign ? <span role="status" className="absolute bottom-11 left-1/2 z-10 -translate-x-1/2 rounded-full bg-black/80 px-3 py-1 text-sm font-semibold text-white">{t(`bottle.sign${player.zodiac}` as "bottle.sign0")}</span> : null}
+                  {profileHref ? <a href={profileHref} target="_blank" rel="noreferrer" aria-label={t("bottle.openProfile")} title={t("bottle.openProfile")} className="absolute bottom-2 left-2 flex h-8 w-8 items-center justify-center rounded-full text-white hover:bg-black/30"><ArrowUpRight size={24} strokeWidth={2.6} className="drop-shadow" /></a> : null}
+                  {player.me ? null : <button onClick={() => setFlagMenu(!flagMenu)} aria-expanded={flagMenu} aria-label={t("bottle.more")} title={t("bottle.more")} className="absolute bottom-2.5 right-2.5 flex h-6 w-6 items-center justify-center rounded-full bg-white text-[13px] font-black text-[#111827] shadow hover:bg-[#F3F4F6]">!</button>}
+                  {flagMenu && !player.me ? (
+                    <div role="menu" className="absolute bottom-10 right-1.5 z-10 w-44 overflow-hidden rounded-lg bg-white py-1 text-left text-xs font-semibold text-[#1F2937] shadow-xl">
+                      <button role="menuitem" onClick={() => { setMutedIds((list) => (list.includes(player.id) ? list.filter((id) => id !== player.id) : [...list, player.id])); setFlagMenu(false); setCardNote(t(muted.includes(player.id) ? "bottle.unrejected" : "bottle.rejected")); }} className="block w-full px-3 py-2 text-left hover:bg-black/5">{t(muted.includes(player.id) ? "bottle.unreject" : "bottle.reject")}</button>
+                      <button role="menuitem" onClick={() => { setDraft(`${player.name}, `); setFlagMenu(false); setCard(false); setPicked(null); window.setTimeout(() => chatRef.current?.focus(), 50); }} className="block w-full px-3 py-2 text-left hover:bg-black/5">{t("bottle.mention")}</button>
+                      <button role="menuitem" onClick={() => { setFlagMenu(false); setCardNote(t("bottle.reportSent")); }} className="block w-full px-3 py-2 text-left hover:bg-black/5">{t("bottle.report")}</button>
+                      <button role="menuitem" onClick={() => { setFlagMenu(false); setCardNote(t("bottle.friendSent")); }} className="block w-full px-3 py-2 text-left hover:bg-black/5">{t("bottle.addFriend")}</button>
+                      <Link role="menuitem" href="/friends" className="block px-3 py-2 hover:bg-black/5">{t("bottle.myFriends")}</Link>
+                    </div>
+                  ) : null}
+                </div>
+                <div className={cn("flex min-w-0 flex-1 flex-col text-[#1F2937]", wide ? "p-4" : "p-2.5")}>
+                  <div className="flex items-start gap-2">
+                    <div className="min-w-0 flex-1 space-y-2">
+                      {stats.map((item) => <p key={item.key} className="flex items-center gap-2.5 text-[15px] font-bold tabular-nums" style={{ color: item.color }}><span aria-hidden="true" className="flex w-[22px] justify-center">{item.icon}</span>{item.value.toLocaleString("ru-RU")}<span className="sr-only">{t(`bottle.${item.key}`)}</span></p>)}
+                    </div>
+                    {topIds.has(player.id) ? <Gift id="e:🏆" className="h-16 w-16 shrink-0" /> : null}
+                  </div>
+                  <div className="relative my-2.5 border-t border-[#E5E7EB]"><span aria-hidden="true" className="absolute left-1/2 top-0 h-3 w-6 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#E5E7EB] bg-white text-center text-[8px] leading-[10px] text-[#9CA3AF]">︿</span></div>
+                  <div className={cn("flex items-center", wide ? "gap-3" : "gap-2")}>
+                    {by ? <img src={by.avatar} alt="" className={cn("shrink-0 rounded-md object-cover shadow", wide ? "h-16 w-16" : "h-11 w-11")} /> : <span aria-hidden="true" className={cn("flex shrink-0 items-end justify-center overflow-hidden rounded-md border border-[#D9DEE5] bg-[#EEF1F5]", wide ? "h-16 w-16" : "h-11 w-11")}><UserRound size={wide ? 52 : 36} className="-mb-2 text-[#C3CAD4]" fill="#DDE2E9" strokeWidth={1.2} /></span>}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm text-[#6B7280]">{by ? <>{t("bottle.admirer")}: <b className="text-[#1F2937]">{by.me ? t("common.you") : by.name}</b></> : t("bottle.noAdmirer")}</p>
+                      <p className="flex items-center gap-1.5 text-[15px] font-bold tabular-nums text-[#1F2937]"><Heart size={17} fill="#F4511E" stroke="none" />{suitor ? suitor.amount : 1}</p>
+                      {suitor?.by === "me" || player.me ? null : <button onClick={() => court(picked)} className="mt-1 whitespace-nowrap rounded-sm bg-[#7DC243] px-2.5 py-1 text-[12px] font-semibold text-white shadow-sm hover:bg-[#6DB036]">{t("bottle.beAdmirer")}{suitor ? ` · ${suitor.amount + 1}` : ""}</button>}
+                    </div>
+                  </div>
+                  <div className="my-3 border-t border-[#E5E7EB]" />
+                  <div className={cn("mt-auto flex items-center justify-around", wide ? "gap-2" : "gap-1")}>
+                    {player.me ? null : <button onClick={() => setCardNote(t(vip ? "bottle.kickDemo" : "bottle.kickVip"))} aria-label={t("bottle.kick")} title={t("bottle.kick")} className={cn(action, "bg-[radial-gradient(circle_at_35%_30%,#FF7A7A,#D92B2B)]")}><Ban size={22} strokeWidth={2.4} /></button>}
+                    <button onClick={() => setCard(false)} aria-label={t("gifts.send")} title={t("gifts.send")} className={cn(action, "bg-[radial-gradient(circle_at_35%_30%,#FFA05C,#F0661E)]")}><GiftIcon size={23} strokeWidth={2.2} /></button>
+                    {player.me ? null : <>
+                    <button onClick={() => setCardNote(t("bottle.friendSent"))} aria-label={t("bottle.addFriend")} title={t("bottle.addFriend")} className={cn(action, "bg-[radial-gradient(circle_at_35%_30%,#FFD15C,#F5A300)]")}><BadgeCheck size={24} strokeWidth={2.2} /></button>
+                    <button onClick={() => openDm(player)} aria-label={t("bottle.write")} title={t("bottle.write")} className={cn(action, "bg-[radial-gradient(circle_at_35%_30%,#7CC6FF,#2E8FE0)]")}><Mail size={22} strokeWidth={2.2} /></button>
+                    </>}
+                  </div>
+                  {cardNote ? <p role="status" className="mt-2 rounded-md bg-[#FEF3C7] px-2 py-1 text-xs font-semibold text-[#92400E]">{cardNote}</p> : null}
+                </div>
+              </div>
+            </div>
+          );
+        })() : null;
   return (
     <div className={cn("relative flex h-full w-full bg-surface text-text", wide ? "flex-row" : "flex-col")}>
       <div className={cn("relative shrink-0 overflow-hidden bg-[#E0A04E] [container-type:size]", wide ? "h-full w-[54%]" : "mx-auto aspect-[9/10] w-full max-w-[64dvh]")} onClick={() => { setPicked(null); if (dedicate) chooseMode(false); }}>
@@ -861,75 +931,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           </>
         ) : null}
 
-        {card && picked !== null ? (() => {
-          const player = players[picked];
-          const suitor = suitors[player.id];
-          const by = suitor ? byId(suitor.by) : null;
-          const action = "flex h-[min(52px,9cqmin)] w-[min(52px,9cqmin)] items-center justify-center rounded-full text-white shadow-[0_3px_6px_rgba(0,0,0,0.18)] ring-2 ring-white transition-transform hover:scale-105";
-          const seat = online ? net?.seats.find((item) => item.id === (player.me ? net.me : player.id)) : undefined;
-          const stats = [
-            { key: "statKisses", color: "#E0282E", icon: <Gift id="e:💋" className="h-[22px] w-[22px]" />, value: online ? seat?.total ?? 0 : kisses[player.id] ?? 0 },
-            { key: "statSongs", color: "#A23BC9", icon: <Music2 size={19} className="text-[#A23BC9]" strokeWidth={2.6} />, value: online ? seat?.songs ?? 0 : ((picked + 3) * 7919) % 900 },
-            { key: "statSmiles", color: "#F08A00", icon: <Gift id="e:😊" className="h-[21px] w-[21px]" />, value: online ? seat?.smiles ?? 0 : player.me ? mySmiles : ((picked + 5) * 104729) % 600 },
-          ] as const;
-          const profileHref = player.me ? "/profile" : online ? `/user?id=${player.id}` : null;
-          const sign = player.zodiac !== null && player.zodiac !== undefined ? zodiacSigns[player.zodiac] : null;
-          const signBadge = sign ? <button onClick={() => setSignOpen(!signOpen)} aria-expanded={signOpen} aria-label={t("bottle.zodiac")} title={t(`bottle.sign${player.zodiac}` as "bottle.sign0")} className="flex h-5 w-5 rotate-45 items-center justify-center rounded-[4px] bg-[#6D3BD8] text-white shadow ring-1 ring-white/70"><span className="-rotate-45 text-[11px] leading-none">{sign}</span></button> : null;
-          return (
-            <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/35 p-3" onClick={(event) => { event.stopPropagation(); setCard(false); }}>
-              <div role="dialog" aria-modal="true" aria-label={`${player.name}, ${player.age}`} onClick={(event) => event.stopPropagation()} className={cn("relative flex w-full rounded-2xl bg-white shadow-[0_18px_50px_rgba(0,0,0,0.45)]", wide ? "max-w-[min(720px,96cqw)]" : "max-w-[560px]")}>
-                <button onClick={() => setCard(false)} aria-label={t("photos.close")} title={t("photos.close")} className="absolute -right-3 -top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#5CC93B] bg-white text-[#5CC93B] shadow hover:bg-[#F0FBEA]"><X size={19} strokeWidth={3} /></button>
-                <div className={cn("relative aspect-square shrink-0 overflow-hidden rounded-l-2xl bg-[#E5E7EB]", wide ? "w-[55%]" : "w-[50%]")}>
-                  <img src={player.avatar} alt="" className="h-full w-full object-cover" />
-                  <div className={cn("absolute inset-x-0 bottom-0 flex items-center justify-center gap-2 bg-gradient-to-t from-black/70 via-black/30 to-transparent pb-2.5 pt-10", wide ? "px-10" : "pl-2 pr-9")}>
-                    {signBadge}
-                    <p className="truncate text-sm font-bold text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.6)]">{player.name}, {player.age}</p>
-                    {wide ? signBadge : null}
-                  </div>
-                  {signOpen && sign ? <span role="status" className="absolute bottom-11 left-1/2 z-10 -translate-x-1/2 rounded-full bg-black/80 px-3 py-1 text-sm font-semibold text-white">{t(`bottle.sign${player.zodiac}` as "bottle.sign0")}</span> : null}
-                  {profileHref ? <a href={profileHref} target="_blank" rel="noreferrer" aria-label={t("bottle.openProfile")} title={t("bottle.openProfile")} className="absolute bottom-2 left-2 flex h-8 w-8 items-center justify-center rounded-full text-white hover:bg-black/30"><ArrowUpRight size={24} strokeWidth={2.6} className="drop-shadow" /></a> : null}
-                  {player.me ? null : <button onClick={() => setFlagMenu(!flagMenu)} aria-expanded={flagMenu} aria-label={t("bottle.more")} title={t("bottle.more")} className="absolute bottom-2.5 right-2.5 flex h-6 w-6 items-center justify-center rounded-full bg-white text-[13px] font-black text-[#111827] shadow hover:bg-[#F3F4F6]">!</button>}
-                  {flagMenu && !player.me ? (
-                    <div role="menu" className="absolute bottom-10 right-1.5 z-10 w-44 overflow-hidden rounded-lg bg-white py-1 text-left text-xs font-semibold text-[#1F2937] shadow-xl">
-                      <button role="menuitem" onClick={() => { setMutedIds((list) => (list.includes(player.id) ? list.filter((id) => id !== player.id) : [...list, player.id])); setFlagMenu(false); setCardNote(t(muted.includes(player.id) ? "bottle.unrejected" : "bottle.rejected")); }} className="block w-full px-3 py-2 text-left hover:bg-black/5">{t(muted.includes(player.id) ? "bottle.unreject" : "bottle.reject")}</button>
-                      <button role="menuitem" onClick={() => { setFlagMenu(false); setCardNote(t("bottle.reportSent")); }} className="block w-full px-3 py-2 text-left hover:bg-black/5">{t("bottle.report")}</button>
-                      <button role="menuitem" onClick={() => { setFlagMenu(false); setCardNote(t("bottle.friendSent")); }} className="block w-full px-3 py-2 text-left hover:bg-black/5">{t("bottle.addFriend")}</button>
-                      <Link role="menuitem" href="/friends" className="block px-3 py-2 hover:bg-black/5">{t("bottle.myFriends")}</Link>
-                    </div>
-                  ) : null}
-                </div>
-                <div className={cn("flex min-w-0 flex-1 flex-col text-[#1F2937]", wide ? "p-4" : "p-2.5")}>
-                  <div className="flex items-start gap-2">
-                    <div className="min-w-0 flex-1 space-y-2">
-                      {stats.map((item) => <p key={item.key} className="flex items-center gap-2.5 text-[15px] font-bold tabular-nums" style={{ color: item.color }}><span aria-hidden="true" className="flex w-[22px] justify-center">{item.icon}</span>{item.value.toLocaleString("ru-RU")}<span className="sr-only">{t(`bottle.${item.key}`)}</span></p>)}
-                    </div>
-                    {topIds.has(player.id) ? <Gift id="e:🏆" className="h-16 w-16 shrink-0" /> : null}
-                  </div>
-                  <div className="relative my-2.5 border-t border-[#E5E7EB]"><span aria-hidden="true" className="absolute left-1/2 top-0 h-3 w-6 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#E5E7EB] bg-white text-center text-[8px] leading-[10px] text-[#9CA3AF]">︿</span></div>
-                  <div className={cn("flex items-center", wide ? "gap-3" : "gap-2")}>
-                    {by ? <img src={by.avatar} alt="" className={cn("shrink-0 rounded-md object-cover shadow", wide ? "h-16 w-16" : "h-11 w-11")} /> : <span aria-hidden="true" className={cn("flex shrink-0 items-end justify-center overflow-hidden rounded-md border border-[#D9DEE5] bg-[#EEF1F5]", wide ? "h-16 w-16" : "h-11 w-11")}><UserRound size={wide ? 52 : 36} className="-mb-2 text-[#C3CAD4]" fill="#DDE2E9" strokeWidth={1.2} /></span>}
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm text-[#6B7280]">{by ? <>{t("bottle.admirer")}: <b className="text-[#1F2937]">{by.me ? t("common.you") : by.name}</b></> : t("bottle.noAdmirer")}</p>
-                      <p className="flex items-center gap-1.5 text-[15px] font-bold tabular-nums text-[#1F2937]"><Heart size={17} fill="#F4511E" stroke="none" />{suitor ? suitor.amount : 1}</p>
-                      {suitor?.by === "me" || player.me ? null : <button onClick={() => court(picked)} className="mt-1 whitespace-nowrap rounded-sm bg-[#7DC243] px-2.5 py-1 text-[12px] font-semibold text-white shadow-sm hover:bg-[#6DB036]">{t("bottle.beAdmirer")}{suitor ? ` · ${suitor.amount + 1}` : ""}</button>}
-                    </div>
-                  </div>
-                  <div className="my-3 border-t border-[#E5E7EB]" />
-                  <div className={cn("mt-auto flex flex-wrap items-center justify-around", wide ? "gap-2" : "gap-1.5")}>
-                    {player.me ? null : <button onClick={() => setCardNote(t(vip ? "bottle.kickDemo" : "bottle.kickVip"))} aria-label={t("bottle.kick")} title={t("bottle.kick")} className={cn(action, "bg-[radial-gradient(circle_at_35%_30%,#FF7A7A,#D92B2B)]")}><Ban size={22} strokeWidth={2.4} /></button>}
-                    <button onClick={() => setCard(false)} aria-label={t("gifts.send")} title={t("gifts.send")} className={cn(action, "bg-[radial-gradient(circle_at_35%_30%,#FFA05C,#F0661E)]")}><GiftIcon size={23} strokeWidth={2.2} /></button>
-                    {player.me ? null : <>
-                    <button onClick={() => setCardNote(t("bottle.friendSent"))} aria-label={t("bottle.addFriend")} title={t("bottle.addFriend")} className={cn(action, "bg-[radial-gradient(circle_at_35%_30%,#FFD15C,#F5A300)]")}><BadgeCheck size={24} strokeWidth={2.2} /></button>
-                    <button onClick={() => { setDraft(`${player.name}, `); setCard(false); setPicked(null); window.setTimeout(() => chatRef.current?.focus(), 50); }} aria-label={t("bottle.mention")} title={t("bottle.mention")} className={cn(action, "bg-[radial-gradient(circle_at_35%_30%,#B18AFF,#7C4DEB)]")}><AtSign size={22} strokeWidth={2.4} /></button>
-                    <button onClick={() => openDm(player)} aria-label={t("bottle.write")} title={t("bottle.write")} className={cn(action, "bg-[radial-gradient(circle_at_35%_30%,#7CC6FF,#2E8FE0)]")}><Mail size={22} strokeWidth={2.2} /></button>
-                    </>}
-                  </div>
-                  {cardNote ? <p role="status" className="mt-2 rounded-md bg-[#FEF3C7] px-2 py-1 text-xs font-semibold text-[#92400E]">{cardNote}</p> : null}
-                </div>
-              </div>
-            </div>
-          );
-        })() : null}
+        {wide ? null : cardView}
 
         {songFor !== null ? (() => {
           const shown = songTab === "fav" ? favs : songTab === "recent" ? recent : tracks;
@@ -1351,6 +1353,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           </form>
         </div>
       ) : null}
+      {wide ? cardView : null}
     </div>
   );
 }
