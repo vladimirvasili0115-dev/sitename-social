@@ -94,7 +94,8 @@ const tr: Record<keyof typeof az, string> = {
   "privacy.welcomeNoReply": "Bu hoş geldin mesajına cevap yazılamaz",
   "bottle.miniMove": "Sürükle", "bottle.miniSize": "Büyüt / küçült",
   "bottle.rooms": "Özel odalar", "bottle.roomSearch": "Oda adıyla ara", "bottle.roomPass": "Şifre", "bottle.roomEnter": "Gir", "bottle.roomNone": "Henüz özel oda yok", "bottle.roomMine": "senin odan", "bottle.roomCreate": "Yeni oda aç", "bottle.roomName": "Oda adı", "bottle.roomPassOptional": "Şifre (isteğe bağlı)", "bottle.roomSize": "Kaç kişilik", "bottle.roomSizeHint": "Bu odada:", "bottle.roomOpen": "Odayı aç", "bottle.roomVipOnly": "Özel oda açmak sadece VIP için", "bottle.roomErr_password": "Şifre yanlış", "bottle.roomErr_full": "Oda dolu", "bottle.roomErr_girls": "Bu odada kızlar için yer kalmadı", "bottle.roomErr_boys": "Bu odada erkekler için yer kalmadı", "bottle.roomErr_gone": "Bu oda artık yok", "bottle.roomErr_vip": "Oda açmak sadece VIP için", "bottle.roomErr_name": "Oda adı en az 2 harf olmalı", "bottle.roomErr_size": "Oda boyutunu seç", "bottle.admireLine": "hayranı oldu", "bottle.admireLost1": "artık", "bottle.admireLost2": "için senin yerini aldı", "bottle.admireFail": "Hayran olunamadı",
-  "bottle.needPair": "Oyun için odada en az 1 kız ve 1 erkek olmalı",
+  "bottle.needPair": "Oyun için odada en az 2 kişi olmalı",
   "bottle.passShow": "Şifreyi göster", "bottle.passHide": "Şifreyi gizle", "bottle.roomTabList": "Odalar", "bottle.roomLeave": "Odadan çık", "bottle.roomLeaveShort": "Çık",
+  "bottle.roomDelete": "Odayı sil", "bottle.roomDeleteShort": "Sil", "bottle.roomDeleteAsk": "Oda silinsin mi? Normal masaya geçeceksin.",
 };
 export default tr;

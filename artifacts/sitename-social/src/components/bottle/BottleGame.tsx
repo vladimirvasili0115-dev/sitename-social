@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type FormEvent, type PointerEvent as ReactPointerEvent } from "react";
 import Link from "next/link";
-import { AtSign, LifeBuoy, Clock, Flame, Search, Star, Ban, Flag, Mail, Gift as GiftIcon, Heart, Home, Maximize, ArrowUpRight, BadgeCheck, Crown, DoorOpen, Eye, EyeOff, KeyRound, Lock, Mars, Venus, BookOpen, MessageSquare, Check, Menu, UserRound, Minimize, Music, Plus, UserCheck, Music2, RefreshCw, SendHorizontal, Settings, Trophy, UserPlus, UserRoundCog, Users, Volume2, VolumeX, X } from "lucide-react";
+import { AtSign, LifeBuoy, Clock, Flame, Search, Star, Ban, Flag, Mail, Gift as GiftIcon, Heart, Home, Maximize, ArrowUpRight, BadgeCheck, Crown, DoorOpen, Eye, EyeOff, KeyRound, Lock, Mars, Trash2, Venus, BookOpen, MessageSquare, Check, Menu, UserRound, Minimize, Music, Plus, UserCheck, Music2, RefreshCw, SendHorizontal, Settings, Trophy, UserPlus, UserRoundCog, Users, Volume2, VolumeX, X } from "lucide-react";
 import type { GiftId } from "@/types";
 import { cartoonAvatar } from "./avatarArt";
 import { useTranslation } from "@/i18n/useTranslation";
@@ -13,7 +13,7 @@ import { playGiftSound, playSound, setVolume } from "./sound";
 import { supabase } from "@/lib/supabase";
 import { ensureMessagesLoaded, openRemoteChat, remoteChats, sendRemoteMessage } from "@/lib/messagesSync";
 import { uploadBlob } from "@/lib/media";
-import { bottleAnswer, bottleBuyChances, bottleJoin, bottleMove, bottleQueueLeave, bottleAdmire, bottleGift, bottlePlay, bottleRoomCreate, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState } from "@/lib/bottleSync";
+import { bottleAnswer, bottleBuyChances, bottleJoin, bottleMove, bottleQueueLeave, bottleAdmire, bottleGift, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState } from "@/lib/bottleSync";
 
 type Player = { id: string; name: string; age: number; female: boolean; avatar: string; me?: boolean; empty?: boolean; zodiac?: number | null };
 type Phase = "waiting" | "spinning" | "choice" | "kissed" | "declined";
@@ -136,7 +136,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
 
   const girlsHere = seated.filter((player) => player.female).length;
   // A private room plays with one girl and one boy; the common tables need at least two girls.
-  const enoughGirls = seated.length >= 2 && (net?.room ? girlsHere >= 1 && seated.length - girlsHere >= 1 : girlsHere >= 2);
+  const enoughGirls = seated.length >= 2 && (net?.room ? true : girlsHere >= 2);
+  // The owner may delete the private room once everyone else has gone.
+  const canDeleteRoom = Boolean(net?.room && net.room.owner === net.me && seated.length === 1);
   const [turn, setTurn] = useState(4);
   const [target, setTarget] = useState<number | null>(null);
   const [phase, setPhase] = useState<Phase>("waiting");
@@ -466,6 +468,11 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     void bottleTables().then(setRooms);
   }
   function leaveRoom() { void moveTo(null); }
+  async function deleteRoom() {
+    if (!window.confirm(t("bottle.roomDeleteAsk"))) return;
+    const result = await bottleRoomDelete();
+    if (result?.table) { setPicked(null); setCard(false); setLines([]); pullRef.current(); }
+  }
   function openPrivate() {
     setRoomTab("list");
     setShowPass(false);
@@ -1000,7 +1007,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           </span>
           <button onClick={() => setPanel("settings")} aria-label={t("bottle.settings")} title={t("bottle.settings")} className={tool}><Settings size={18} /></button>
           <span className="flex-1" />
-          <span className="text-center text-[max(10px,2.2cqmin)] font-bold leading-tight text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.7)]">{net?.room ? <><span aria-hidden="true">🔒</span><br /><span className="line-clamp-2 block max-w-[64px] break-words">{net.room.name}</span><button onClick={leaveRoom} aria-label={t("bottle.roomLeave")} title={t("bottle.roomLeave")} className="mx-auto mt-1 flex items-center gap-1 rounded-full bg-[#E5484D] px-2 py-0.5 text-[11px] font-bold text-white shadow hover:bg-[#D13438] [text-shadow:none]"><X size={12} strokeWidth={3} />{t("bottle.roomLeaveShort")}</button></> : <>{t("bottle.table")}<br />{online ? net?.table ?? "…" : tableNo}</>}</span>
+          <span className="text-center text-[max(10px,2.2cqmin)] font-bold leading-tight text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.7)]">{net?.room ? <><span aria-hidden="true">🔒</span><br /><span className="line-clamp-2 block max-w-[64px] break-words">{net.room.name}</span><button onClick={leaveRoom} aria-label={t("bottle.roomLeave")} title={t("bottle.roomLeave")} className="mx-auto mt-1 flex items-center gap-1 rounded-full bg-[#E5484D] px-2 py-0.5 text-[11px] font-bold text-white shadow hover:bg-[#D13438] [text-shadow:none]"><X size={12} strokeWidth={3} />{t("bottle.roomLeaveShort")}</button>{canDeleteRoom ? <button onClick={() => void deleteRoom()} aria-label={t("bottle.roomDelete")} title={t("bottle.roomDelete")} className="mx-auto mt-1 flex items-center gap-1 rounded-full bg-[#7C2D12] px-2 py-0.5 text-[11px] font-bold text-white shadow hover:bg-[#9A3412] [text-shadow:none]"><Trash2 size={12} strokeWidth={2.6} />{t("bottle.roomDeleteShort")}</button> : null}</> : <>{t("bottle.table")}<br />{online ? net?.table ?? "…" : tableNo}</>}</span>
           {myTurn
             ? <span aria-label={`${seconds}`} className={cn(tool, "text-[max(14px,3cqmin)] font-bold tabular-nums")}>{seconds}</span>
             : <button onClick={changeTable} aria-label={t("bottle.changeTable")} title={t("bottle.changeTable")} className={tool}><RefreshCw size={17} /></button>}
@@ -1460,6 +1467,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         ) : null}
         <div className={cn("flex items-center gap-2 border-b border-border px-3 py-1.5", (picked !== null || dedicate) && "hidden")}>
           <p className="min-w-0 flex-1 truncate text-[11px] text-muted">{online ? (net?.room ? `🔒 ${net.room.name} · ${seated.length}/${net.room.capacity}` : `${t("bottle.liveNote")} ${net?.table ?? ""} · ${seated.length}/12`) : t("bottle.demoNote")}</p>
+          {canDeleteRoom ? <button onClick={() => void deleteRoom()} className="flex h-7 shrink-0 items-center gap-1 rounded-full bg-[#7C2D12] px-2.5 text-xs font-bold text-white hover:bg-[#9A3412]"><Trash2 size={13} strokeWidth={2.6} />{t("bottle.roomDelete")}</button> : null}
           {net?.room ? <button onClick={leaveRoom} className="flex h-7 shrink-0 items-center gap-1 rounded-full bg-[#E5484D] px-2.5 text-xs font-bold text-white hover:bg-[#D13438]"><X size={13} strokeWidth={3} />{t("bottle.roomLeave")}</button> : null}
           {full && wide ? <button onClick={() => chooseMode(!dedicate)} aria-pressed={dedicate} aria-label={t("bottle.dedicate")} title={t("bottle.dedicate")} className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white", dedicate ? "bg-[#3E9B23] ring-2 ring-[#5CC93B]/40" : "bg-[#5CC93B] hover:bg-[#4DB52E]")}><Plus size={17} strokeWidth={3} /></button> : null}
           {full && wide ? <button onClick={onLeave} aria-label={t("photos.close")} title={t("photos.close")} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#B4B9C2] text-white hover:bg-[#9AA3AE]"><X size={15} strokeWidth={3} /></button> : null}

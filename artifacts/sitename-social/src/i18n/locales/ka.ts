@@ -94,7 +94,8 @@ const ka: Record<keyof typeof az, string> = {
   "privacy.welcomeNoReply": "მისალმების შეტყობინებაზე პასუხის გაცემა არ შეიძლება",
   "bottle.miniMove": "გადაადგილება", "bottle.miniSize": "ზომის შეცვლა",
   "bottle.rooms": "პირადი ოთახები", "bottle.roomSearch": "ოთახის სახელით ძებნა", "bottle.roomPass": "პაროლი", "bottle.roomEnter": "შესვლა", "bottle.roomNone": "პირადი ოთახები ჯერ არ არის", "bottle.roomMine": "შენი ოთახი", "bottle.roomCreate": "ახალი ოთახის გახსნა", "bottle.roomName": "ოთახის სახელი", "bottle.roomPassOptional": "პაროლი (სურვილისამებრ)", "bottle.roomSize": "რამდენკაციანი", "bottle.roomSizeHint": "ოთახში:", "bottle.roomOpen": "ოთახის გახსნა", "bottle.roomVipOnly": "პირად ოთახს მხოლოდ VIP ხსნის", "bottle.roomErr_password": "პაროლი არასწორია", "bottle.roomErr_full": "ოთახი სავსეა", "bottle.roomErr_girls": "გოგოებისთვის ადგილი აღარ არის", "bottle.roomErr_boys": "ბიჭებისთვის ადგილი აღარ არის", "bottle.roomErr_gone": "ეს ოთახი აღარ არსებობს", "bottle.roomErr_vip": "ოთახს მხოლოდ VIP ხსნის", "bottle.roomErr_name": "სახელი მინიმუმ 2 ასო", "bottle.roomErr_size": "აირჩიე ზომა", "bottle.admireLine": "თაყვანისმცემელი გახდა", "bottle.admireLost1": "ახლა თაყვანისმცემელია", "bottle.admireLost2": "შენ ნაცვლად", "bottle.admireFail": "ვერ მოხერხდა",
-  "bottle.needPair": "თამაშისთვის ოთახში საჭიროა მინიმუმ 1 გოგო და 1 ბიჭი",
+  "bottle.needPair": "თამაშისთვის ოთახში მინიმუმ 2 ადამიანია საჭირო",
   "bottle.passShow": "პაროლის ჩვენება", "bottle.passHide": "პაროლის დამალვა", "bottle.roomTabList": "ოთახები", "bottle.roomLeave": "ოთახიდან გასვლა", "bottle.roomLeaveShort": "გასვლა",
+  "bottle.roomDelete": "ოთახის წაშლა", "bottle.roomDeleteShort": "წაშლა", "bottle.roomDeleteAsk": "წავშალოთ ოთახი? ჩვეულებრივ მაგიდაზე გადახვალ.",
 };
 export default ka;

@@ -94,7 +94,8 @@ const ru: Record<keyof typeof az, string> = {
   "privacy.welcomeNoReply": "На приветственное сообщение нельзя ответить",
   "bottle.miniMove": "Перетащить", "bottle.miniSize": "Изменить размер",
   "bottle.rooms": "Приватные комнаты", "bottle.roomSearch": "Поиск по названию", "bottle.roomPass": "Пароль", "bottle.roomEnter": "Войти", "bottle.roomNone": "Приватных комнат пока нет", "bottle.roomMine": "ваша комната", "bottle.roomCreate": "Создать комнату", "bottle.roomName": "Название комнаты", "bottle.roomPassOptional": "Пароль (необязательно)", "bottle.roomSize": "На сколько человек", "bottle.roomSizeHint": "В комнате:", "bottle.roomOpen": "Открыть комнату", "bottle.roomVipOnly": "Создавать комнаты могут только VIP", "bottle.roomErr_password": "Неверный пароль", "bottle.roomErr_full": "Комната заполнена", "bottle.roomErr_girls": "Мест для девушек нет", "bottle.roomErr_boys": "Мест для парней нет", "bottle.roomErr_gone": "Этой комнаты уже нет", "bottle.roomErr_vip": "Создавать комнаты могут только VIP", "bottle.roomErr_name": "Название — минимум 2 буквы", "bottle.roomErr_size": "Выберите размер", "bottle.admireLine": "стал(а) поклонником", "bottle.admireLost1": "теперь поклонник", "bottle.admireLost2": "вместо вас", "bottle.admireFail": "Не удалось стать поклонником",
-  "bottle.needPair": "Для игры нужны хотя бы 1 девушка и 1 парень",
+  "bottle.needPair": "Для игры в комнате нужно хотя бы 2 человека",
   "bottle.passShow": "Показать пароль", "bottle.passHide": "Скрыть пароль", "bottle.roomTabList": "Комнаты", "bottle.roomLeave": "Выйти из комнаты", "bottle.roomLeaveShort": "Выйти",
+  "bottle.roomDelete": "Удалить комнату", "bottle.roomDeleteShort": "Удалить", "bottle.roomDeleteAsk": "Удалить комнату? Вы перейдёте за обычный стол.",
 };
 export default ru;

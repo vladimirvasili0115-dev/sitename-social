@@ -44,3 +44,4 @@ export type BottleRoomResult = { table?: number; error?: "password" | "full" | "
 export const bottleRoomsList = (search: string) => call<BottleRooms>("bottle_rooms_list", { p_search: search });
 export const bottleRoomJoin = (room: number, password: string) => call<BottleRoomResult>("bottle_room_join", { p_room: room, p_password: password });
 export const bottleRoomCreate = (name: string, password: string, capacity: number) => call<BottleRoomResult>("bottle_room_create", { p_name: name, p_password: password, p_capacity: capacity });
+export const bottleRoomDelete = () => call<BottleMove & { error?: string }>("bottle_room_delete");
