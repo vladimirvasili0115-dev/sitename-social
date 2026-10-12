@@ -102,5 +102,7 @@ const az = {
   "bottle.roomFriendsKnown": "Dostlar və tanışlar", "bottle.roomKnown": "Hədiyyələşdiyiniz oyunçu",
   "privacy.welcomeNoReply": "Bu xoş gəldin mesajına cavab yazmaq olmur",
   "bottle.miniMove": "Sürüşdür", "bottle.miniSize": "Böyüt / kiçilt",
+  "bottle.rooms": "Özəl otaqlar", "bottle.roomSearch": "Otaq adı ilə axtar", "bottle.roomPass": "Parol", "bottle.roomEnter": "Gir", "bottle.roomNone": "Hələ özəl otaq yoxdur", "bottle.roomMine": "sənin otağın", "bottle.roomCreate": "Yeni otaq aç", "bottle.roomName": "Otağın adı", "bottle.roomPassOptional": "Parol (istəsən)", "bottle.roomSize": "Neçə nəfərlik", "bottle.roomSizeHint": "Bu otaqda:", "bottle.roomOpen": "Otağı aç", "bottle.roomVipOnly": "Özəl otaq açmaq yalnız VIP üçündür", "bottle.roomErr_password": "Parol səhvdir", "bottle.roomErr_full": "Otaq doludur", "bottle.roomErr_girls": "Bu otaqda qızlar üçün yer qalmayıb", "bottle.roomErr_boys": "Bu otaqda oğlanlar üçün yer qalmayıb", "bottle.roomErr_gone": "Bu otaq artıq yoxdur", "bottle.roomErr_vip": "Otaq açmaq yalnız VIP üçündür", "bottle.roomErr_name": "Otağın adı ən azı 2 hərf olmalıdır", "bottle.roomErr_size": "Otaq ölçüsünü seç", "bottle.admireLine": "məftun oldu", "bottle.admireLost1": "artıq", "bottle.admireLost2": "üçün sənin yerini aldı — indi o məftundur", "bottle.admireFail": "Məftun olmaq alınmadı",
+  "bottle.needPair": "Oyun üçün otaqda ən azı 1 qız və 1 oğlan olmalıdır",
 } as const;
 export default az;
