@@ -84,5 +84,6 @@ const tr: Record<keyof typeof az, string> = {
   "profile.cropTitle":"Küçük resim seçimi","profile.cropZoom":"Yakınlaştır","profile.cropHint":"Fotoğrafı sürükleyerek yerini ayarla. Dairenin içi profilinde görünecek.",
   "profile.cropCancel":"İptal",
   "profile.cropCover":"Kapak fotoğrafı seçimi","profile.cropHintCover":"Fotoğrafı sürükleyerek yerini ayarla. Çerçevenin içi profilinin üstünde görünecek.",
+  "bottle.songOn": "şarkı açtı", "bottle.songUploading": "Şarkı yükleniyor…", "bottle.songFailLive": "Şarkı açılamadı, tekrar dene",
 };
 export default tr;

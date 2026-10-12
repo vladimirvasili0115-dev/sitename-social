@@ -2,13 +2,15 @@ import { supabase } from "./supabase";
 
 // Live tables of the bottle game. The database owns the game: seats, turns, where the bottle stops, answers and kisses.
 export type BottleSeat = { seat: number; id: string; name: string | null; avatar: string | null; gender: string | null; kisses: number; total?: number; smiles?: number; songs?: number; zodiac?: number | null; age: number | null };
-export type BottleChat = { id: number; from: string | null; to: string | null; kind: "text" | "kiss" | "wheel"; body: string | null };
+export type BottleChat = { id: number; from: string | null; to: string | null; kind: "text" | "kiss" | "wheel" | "song"; body: string | null };
 export type BottleState = {
   table: number; me: string; now: number; hearts: number; chances?: number; winner?: { name: string | null; amount: number } | null;
   phase: "waiting" | "spinning" | "choice" | "result"; phase_at: number;
   turn: string | null; target: string | null; spinner_answer: boolean | null; target_answer: boolean | null; round: number;
   seats: BottleSeat[]; chat: BottleChat[];
+  wheel?: boolean; track?: BottleTrack | null;
 };
+export type BottleTrack = { kind: "youtube" | "mp3"; ref: string; title: string | null; by: string | null; to: string | null; at: number };
 async function call<T>(name: string, args?: Record<string, unknown>): Promise<T | null> {
   if (!supabase) return null;
   const { data, error } = await supabase.rpc(name, args);
@@ -30,3 +32,4 @@ export type BottleMove = { table?: number; full?: boolean; position?: number; go
 export const bottleTables = () => call<BottleTables>("bottle_tables_list");
 export const bottleMove = (table: number | null) => call<BottleMove>("bottle_move", { p_table: table });
 export const bottleQueueLeave = () => call<null>("bottle_queue_leave");
+export const bottlePlay = (to: string | null, kind: "youtube" | "mp3", ref: string, title: string) => call<number>("bottle_play", { p_to: to, p_kind: kind, p_ref: ref, p_title: title.slice(0, 120) });

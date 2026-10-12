@@ -84,5 +84,6 @@ const ru: Record<keyof typeof az, string> = {
   "profile.cropTitle":"Выбор миниатюры","profile.cropZoom":"Масштаб","profile.cropHint":"Перетащи фото, чтобы выбрать область. В профиле будет видно то, что в круге.",
   "profile.cropCancel":"Отмена",
   "profile.cropCover":"Выбор обложки","profile.cropHintCover":"Перетащи фото, чтобы выбрать область. Она будет видна вверху профиля.",
+  "bottle.songOn": "включил(а) песню", "bottle.songUploading": "Песня загружается…", "bottle.songFailLive": "Не удалось включить песню, попробуйте ещё раз",
 };
 export default ru;

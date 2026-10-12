@@ -84,5 +84,6 @@ const en: Record<keyof typeof az, string> = {
   "profile.cropTitle":"Choose thumbnail","profile.cropZoom":"Zoom","profile.cropHint":"Drag the photo to position it. The part inside the circle will show on your profile.",
   "profile.cropCancel":"Cancel",
   "profile.cropCover":"Choose cover area","profile.cropHintCover":"Drag the photo to position it. The framed part will show on top of your profile.",
+  "bottle.songOn": "put on a song", "bottle.songUploading": "Uploading the song…", "bottle.songFailLive": "Could not put the song on, try again",
 };
 export default en;

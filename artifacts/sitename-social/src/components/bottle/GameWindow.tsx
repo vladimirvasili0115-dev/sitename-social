@@ -39,12 +39,12 @@ export function GameWindow({ onClose, startFull = false }: { onClose: () => void
   return (
     <div className={cn("fixed inset-0 z-[60] flex items-center justify-center", full ? "bg-bg" : "bg-[rgba(4,8,12,0.82)] p-0 sm:p-5")} onMouseDown={(event) => { if (!full && event.target === event.currentTarget) onClose(); }}>
       <div role="dialog" aria-modal="true" aria-label={t("bottle.title")} className={cn("flex flex-col overflow-hidden bg-[#12141B] shadow-2xl", full ? "h-full w-full" : "h-full w-full sm:h-[min(860px,calc(100dvh-40px))] sm:w-[430px] sm:rounded-[26px]")}>
-        <div className="flex h-12 shrink-0 items-center gap-3 px-4 text-white">
+        <div className="flex h-12 shrink-0 items-center gap-3 bg-[linear-gradient(180deg,#FFD23F,#FFB21E)] px-4 text-[#5A3200]">
           <h2 className="min-w-0 truncate text-sm font-bold">{t("bottle.title")}</h2>
-          <button onClick={() => setDedicate(!dedicate)} aria-pressed={dedicate} aria-label={t("bottle.dedicate")} title={t("bottle.dedicate")} className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white", dedicate ? "bg-[#8CC63F]" : "bg-white/15 hover:bg-white/25")}><Plus size={17} strokeWidth={3} /></button>
+          <button onClick={() => setDedicate(!dedicate)} aria-pressed={dedicate} aria-label={t("bottle.dedicate")} title={t("bottle.dedicate")} className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white", dedicate ? "bg-[#8CC63F]" : "bg-[#C96A00]/70 hover:bg-[#C96A00]")}><Plus size={17} strokeWidth={3} /></button>
           <span className="flex-1" />
-          <button onClick={() => setFull(!full)} className="hidden items-center gap-1 text-xs font-semibold text-[#6FB1FF] hover:underline sm:flex">{t(full ? "bottle.window" : "bottle.fullscreen")}{full ? <Minimize2 size={13} /> : <ArrowUpRight size={14} />}</button>
-          <button onClick={onClose} aria-label={t("photos.close")} title={t("photos.close")} className="flex h-9 w-9 items-center justify-center rounded-full text-white/80 hover:bg-white/10 hover:text-white"><X size={20} /></button>
+          <button onClick={() => setFull(!full)} className="hidden items-center gap-1 text-xs font-bold text-[#5A3200] hover:underline sm:flex">{t(full ? "bottle.window" : "bottle.fullscreen")}{full ? <Minimize2 size={13} /> : <ArrowUpRight size={14} />}</button>
+          <button onClick={onClose} aria-label={t("photos.close")} title={t("photos.close")} className="flex h-9 w-9 items-center justify-center rounded-full text-[#5A3200] hover:bg-black/10"><X size={20} strokeWidth={2.6} /></button>
         </div>
         <div className="relative min-h-0 flex-1">
           <BottleGame wide={full && desktop} full={full} onToggleFull={() => setFull(!full)} onLeave={onClose} dedicate={dedicate} onDedicate={setDedicate} />

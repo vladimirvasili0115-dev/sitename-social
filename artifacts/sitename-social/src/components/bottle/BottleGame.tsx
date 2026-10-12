@@ -12,7 +12,8 @@ import { BottleSvg, WaterBottleSvg, WoodTable } from "./BottleArt";
 import { playGiftSound, playSound, setVolume } from "./sound";
 import { supabase } from "@/lib/supabase";
 import { ensureMessagesLoaded, openRemoteChat, remoteChats, sendRemoteMessage } from "@/lib/messagesSync";
-import { bottleAnswer, bottleBuyChances, bottleCocktail, bottleJoin, bottleMove, bottleQueueLeave, bottleSong, bottleTables, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState } from "@/lib/bottleSync";
+import { uploadBlob } from "@/lib/media";
+import { bottleAnswer, bottleBuyChances, bottleCocktail, bottleJoin, bottleMove, bottleQueueLeave, bottlePlay, bottleTables, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState } from "@/lib/bottleSync";
 
 type Player = { id: string; name: string; age: number; female: boolean; avatar: string; me?: boolean; empty?: boolean; zodiac?: number | null };
 type Phase = "waiting" | "spinning" | "choice" | "kissed" | "declined";
@@ -296,7 +297,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         if (fresh.length) {
           lastChat.current = fresh[fresh.length - 1].id;
           const who = (id: string | null) => (id === data!.me ? "me" : id ?? "");
-          setLines((list) => [...list, ...fresh.map((item) => (item.kind === "kiss" ? { id: item.id, from: who(item.from), to: who(item.to) } : { id: item.id, from: who(item.from), text: item.body ?? "" }))].slice(-80));
+          setLines((list) => [...list, ...fresh.map((item) => (item.kind === "kiss" ? { id: item.id, from: who(item.from), to: who(item.to) } : item.kind === "song" ? { id: item.id, from: who(item.from), to: item.to ? who(item.to) : undefined, song: item.body || "♪" } : { id: item.id, from: who(item.from), text: item.body ?? "" }))].slice(-80));
         }
         setNet(data);
       } finally {
@@ -311,6 +312,17 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     window.addEventListener("pagehide", bye);
     return () => { alive = false; window.clearInterval(timer); window.removeEventListener("pagehide", bye); void bottleLeave(); };
   }, [online]);
+  // A song someone put on plays for the whole table (a song older than 5 minutes is not started for newcomers).
+  const trackAt = useRef(0);
+  const track = net?.track ?? null;
+  useEffect(() => {
+    if (!track || !net || track.at === trackAt.current) return;
+    const first = trackAt.current === 0;
+    trackAt.current = track.at;
+    if (first && net.now - track.at > 5 * 60 * 1000) return;
+    if (track.kind === "youtube") { setAudio(null); setVideo(track.ref); }
+    else if (track.by !== net.me) { setVideo(null); setAudio({ url: track.ref, name: track.title ?? "MP3" }); }
+  }, [track, net]);
   // Everything on screen follows what the server said.
   const spunRef = useRef("");
   useEffect(() => {
@@ -491,7 +503,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   }
   function finishSong(title: string) {
     if (songFor === null) return;
-    say({ from: "me", to: players[songFor].id, song: title });
+    if (!online) say({ from: "me", to: players[songFor].id, song: title });
     setSongFor(null);
     onDedicate(false);
   }
@@ -501,12 +513,22 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (heartsRef.current < price) return false;
     heartsRef.current -= price;
     setHearts(heartsRef.current);
-    const target = songFor !== null ? players[songFor] : null;
-    if (online) void (target && !target.me ? bottleSong(target.id, kind) : bottleSpend(price));
     return true;
   }
+  // Live table: the server takes the hearts, puts the song on for the whole table and writes "X put on a song" in the chat.
+  function playLive(kind: "youtube" | "mp3", ref: string, title: string) {
+    const target = songFor !== null ? players[songFor] : null;
+    void bottlePlay(target && !target.me ? target.id : null, kind, ref, title).then((left) => {
+      if (left === null || left < 0) return setGiftNote(t("bottle.songFailLive"));
+      heartsRef.current = left;
+      setHearts(left);
+      pullRef.current();
+    });
+  }
   function orderTrack(track: Track) {
-    if (!paySong("video")) return setGiftNote(t("bottle.noHearts"));
+    if (heartsRef.current < SONG_PRICE.video) return setGiftNote(t("bottle.noHearts"));
+    if (online) playLive("youtube", track.id, track.title);
+    else paySong("video");
     setAudio(null);
     setVideo(track.id);
     const next = [track, ...recent.filter((item) => item.id !== track.id)];
@@ -528,8 +550,17 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   function sendMp3(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!songFile) return setBadLink(true);
-    if (!paySong("mp3")) return setGiftNote(t("bottle.noHearts"));
+    if (heartsRef.current < SONG_PRICE.mp3) return setGiftNote(t("bottle.noHearts"));
     const name = songFile.name.replace(/\.[^.]+$/, "");
+    if (online) {
+      const file = songFile;
+      setGiftNote(t("bottle.songUploading"));
+      void uploadBlob(file, "music", "mp3").then((url) => {
+        if (!url) return setGiftNote(t("bottle.songFailLive"));
+        setGiftNote(null);
+        playLive("mp3", url, name);
+      });
+    } else paySong("mp3");
     setVideo(null);
     setAudio({ url: URL.createObjectURL(songFile), name });
     finishSong(name);
@@ -700,7 +731,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           </button>
           <span className="flex-1" />
           <button onClick={onToggleFull} aria-label={t("bottle.fullscreen")} title={t("bottle.fullscreen")} className={tool}>{full ? <Minimize size={17} /> : <Maximize size={17} />}</button>
-          <button onClick={() => { setWheelPrize(null); setPayNote(false); setPanel("wheel"); }} aria-label={t("bottle.wheel")} title={t("bottle.wheel")} className={tool}><LifeBuoy size={19} /></button>
+          {online && net && !net.wheel ? null : <button onClick={() => { setWheelPrize(null); setPayNote(false); setPanel("wheel"); }} aria-label={t("bottle.wheel")} title={t("bottle.wheel")} className={tool}><LifeBuoy size={19} /></button>}
           <button onClick={() => setPanel("top")} aria-label={t("bottle.top")} title={t("bottle.top")} className={tool}><Trophy size={18} /></button>
           <button onClick={() => setPanel("menu")} aria-label={t("bottle.menu")} title={t("bottle.menu")} className={tool}><Menu size={18} /></button>
           <button onClick={() => setPanel("settings")} aria-label={t("bottle.settings")} title={t("bottle.settings")} className={tool}><Settings size={18} /></button>
@@ -1163,7 +1194,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
               <div key={line.id} className="flex items-center gap-2 text-sm">
                 <img src={from.avatar} alt={from.name} title={from.name} className="h-8 w-8 shrink-0 rounded-md object-cover" />
                 {line.text ? <p className="min-w-0 break-words text-text"><span className="font-semibold text-muted">{from.me ? t("common.you") : from.name}: </span>{line.text}</p> : null}
-                {to ? <>{line.gift ? <Gift id={line.gift} className="h-7 w-7 shrink-0" /> : line.song ? <span className="flex min-w-0 items-center gap-1 text-text"><Music2 size={16} className="shrink-0 text-[#F59E0B]" /><span className="truncate">{line.song}</span></span> : <span className="shrink-0 text-lg">💋</span>}<span className="font-bold text-accent">»</span><img src={to.avatar} alt={to.name} title={to.name} className="h-8 w-8 shrink-0 rounded-md object-cover" /></> : null}
+                {line.song ? <p className="flex min-w-0 flex-1 items-center gap-1 text-text"><span className="shrink-0 font-semibold text-muted">{from.me ? t("common.you") : from.name} {t("bottle.songOn")}:</span><Music2 size={16} className="shrink-0 text-[#F59E0B]" /><span className="truncate">{line.song}</span></p> : null}
+                {to ? <>{line.gift ? <Gift id={line.gift} className="h-7 w-7 shrink-0" /> : line.song ? null : <span className="shrink-0 text-lg">💋</span>}<span className="font-bold text-accent">»</span><img src={to.avatar} alt={to.name} title={to.name} className="h-8 w-8 shrink-0 rounded-md object-cover" /></> : null}
               </div>
             );
           })}

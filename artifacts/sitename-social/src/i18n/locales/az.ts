@@ -93,5 +93,6 @@ const az = {
   "profile.cropTitle":"Miniatür seçimi","profile.cropZoom":"Böyüt","profile.cropHint":"Şəkli sürükləyib yerini düzəlt. Dairənin içi profilində görünəcək.",
   "profile.cropCancel":"Ləğv et",
   "profile.cropCover":"Örtük şəklinin seçimi","profile.cropHintCover":"Şəkli sürükləyib yerini düzəlt. Çərçivənin içi profilinin yuxarısında görünəcək.",
+  "bottle.songOn": "mahnı qoşdu", "bottle.songUploading": "Mahnı yüklənir…", "bottle.songFailLive": "Mahnını qoşmaq alınmadı, yenidən yoxla",
 } as const;
 export default az;

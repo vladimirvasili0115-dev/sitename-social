@@ -84,5 +84,6 @@ const ka: Record<keyof typeof az, string> = {
   "profile.cropTitle":"მინიატურის არჩევა","profile.cropZoom":"მასშტაბი","profile.cropHint":"გადაათრიე ფოტო სასურველ ადგილზე. პროფილზე გამოჩნდება წრეში მოქცეული ნაწილი.",
   "profile.cropCancel":"გაუქმება",
   "profile.cropCover":"ყდის ფოტოს არჩევა","profile.cropHintCover":"გადაათრიე ფოტო სასურველ ადგილზე. ჩარჩოში მოქცეული ნაწილი გამოჩნდება პროფილის თავზე.",
+  "bottle.songOn": "სიმღერა ჩართო", "bottle.songUploading": "სიმღერა იტვირთება…", "bottle.songFailLive": "სიმღერა ვერ ჩაირთო, სცადე თავიდან",
 };
 export default ka;
