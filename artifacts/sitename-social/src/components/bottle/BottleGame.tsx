@@ -148,6 +148,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [picked, setPicked] = useState<number | null>(null);
   // "+" mode: choose several receivers on the table, then every gift goes to all of them.
   const [chosen, setChosen] = useState<string[]>([]);
+  const [songMany, setSongMany] = useState<number[]>([]);
   const [flying, setFlying] = useState<{ key: number; gift: string; to: number; moved: boolean; ms: number }[]>([]);
   const heartsRef = useRef(12);
   const flyId = useRef(1);
@@ -534,12 +535,16 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     setRecent(stored("bottle-recent"));
     setSongTab("popular");
     setSongFor(index);
+    setSongMany([index]);
     void loadTracks("");
   }
+  // In the "+" mode a song goes to every chosen player; each one costs the full price.
+  const songTo = () => (songMany.length ? songMany : songFor !== null ? [songFor] : []).filter((index) => players[index] && !players[index].empty);
   function finishSong(title: string) {
     if (songFor === null) return;
-    if (!online) say({ from: "me", to: players[songFor].id, song: title });
+    if (!online) for (const index of songTo()) say({ from: "me", to: players[index].id, song: title });
     setSongFor(null);
+    setSongMany([]);
   }
   // A song costs the sender hearts and adds one to the receiver's song count (counted by the server when the table is live).
   function paySong(kind: "video" | "mp3") {
@@ -551,18 +556,22 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   }
   // Live table: the server takes the hearts, puts the song on for the whole table and writes "X put on a song" in the chat.
   function playLive(kind: "youtube" | "mp3", ref: string, title: string) {
-    const target = songFor !== null ? players[songFor] : null;
-    void bottlePlay(target && !target.me ? target.id : null, kind, ref, title).then((left) => {
-      if (left === null || left < 0) return setGiftNote(t("bottle.songFailLive"));
-      heartsRef.current = left;
-      setHearts(left);
+    const targets = songTo().map((index) => players[index]);
+    void (async () => {
+      for (const target of targets.length ? targets : [null]) {
+        const left = await bottlePlay(target && !target.me ? target.id : null, kind, ref, title);
+        if (left === null || left < 0) { setGiftNote(t("bottle.songFailLive")); break; }
+        heartsRef.current = left;
+        setHearts(left);
+      }
       pullRef.current();
-    });
+    })();
   }
   function orderTrack(track: Track) {
-    if (heartsRef.current < SONG_PRICE.video) return setGiftNote(t("bottle.noHearts"));
+    const count = Math.max(1, songTo().length);
+    if (heartsRef.current < SONG_PRICE.video * count) return setGiftNote(t("bottle.noHearts"));
     if (online) playLive("youtube", track.id, track.title);
-    else paySong("video");
+    else for (let n = 0; n < count; n++) paySong("video");
     setAudio(null);
     setVideo(track.id);
     const next = [track, ...recent.filter((item) => item.id !== track.id)];
@@ -584,7 +593,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   function sendMp3(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!songFile) return setBadLink(true);
-    if (heartsRef.current < SONG_PRICE.mp3) return setGiftNote(t("bottle.noHearts"));
+    const count = Math.max(1, songTo().length);
+    if (heartsRef.current < SONG_PRICE.mp3 * count) return setGiftNote(t("bottle.noHearts"));
     const name = songFile.name.replace(/\.[^.]+$/, "");
     if (online) {
       const file = songFile;
@@ -594,7 +604,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         setGiftNote(null);
         playLive("mp3", url, name);
       });
-    } else paySong("mp3");
+    } else for (let n = 0; n < count; n++) paySong("mp3");
     setVideo(null);
     setAudio({ url: URL.createObjectURL(songFile), name });
     finishSong(name);
@@ -717,7 +727,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   }
   function giveMany(targets: number[], gift: string, price: number, need?: number) {
     if (!targets.length) { setGiftNote(t("bottle.pickReceivers")); return false; }
-    if (gift.startsWith("song:")) return giveGift(targets[0], gift, price, need);
+    if (gift.startsWith("song:")) { giveGift(targets[0], gift, price, need); setSongMany(targets); return false; }
     let sent = false;
     for (const index of targets) { if (!giveGift(index, gift, price, need)) break; sent = true; }
     return sent;
@@ -920,7 +930,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   {tabs.map(([tab, Icon]) => <button key={tab} type="button" role="tab" aria-selected={songTab === tab} aria-label={t(`bottle.song${tab[0].toUpperCase()}${tab.slice(1)}` as "bottle.songPopular")} title={t(`bottle.song${tab[0].toUpperCase()}${tab.slice(1)}` as "bottle.songPopular")} onClick={() => { setSongTab(tab); if (tab === "popular") void loadTracks(""); if (tab === "search") { setTracks([]); setTrackState("idle"); } }} className={cn("flex h-10 w-10 items-center justify-center rounded-full", songTab === tab ? "bg-[#FFEDD5] text-[#EA580C]" : "text-[#9CA3AF] hover:bg-black/5")}><Icon size={22} fill={songTab === tab && (tab === "popular" || tab === "fav") ? "currentColor" : "none"} /></button>)}
                   <button type="button" role="tab" aria-selected={songTab === "mp3"} onClick={() => setSongTab("mp3")} className={cn("h-10 rounded-full px-3 text-xs font-bold", songTab === "mp3" ? "bg-[#FFEDD5] text-[#EA580C]" : "text-[#9CA3AF] hover:bg-black/5")}>MP3</button>
                 </div>
-                <p className="mb-2 mt-1 flex items-center gap-2 text-xs font-bold text-[#6B7280]"><img src={players[songFor].avatar} alt="" className="h-6 w-6 rounded object-cover" /><span className="min-w-0 flex-1 truncate">{t("bottle.dedicateTo")} {players[songFor].name}</span><span className="flex shrink-0 items-center gap-0.5 text-[#EA580C]"><Heart size={11} fill="currentColor" stroke="none" />{SONG_PRICE[songTab === "mp3" ? "mp3" : "video"]}</span></p>
+                <p className="mb-2 mt-1 flex items-center gap-2 text-xs font-bold text-[#6B7280]"><img src={players[songFor].avatar} alt="" className="h-6 w-6 rounded object-cover" /><span className="min-w-0 flex-1 truncate">{t("bottle.dedicateTo")} {songTo().map((index) => players[index].name).join(", ")}</span><span className="flex shrink-0 items-center gap-0.5 text-[#EA580C]"><Heart size={11} fill="currentColor" stroke="none" />{SONG_PRICE[songTab === "mp3" ? "mp3" : "video"] * Math.max(1, songTo().length)}</span></p>
                 {songTab === "search" ? (
                   <form onSubmit={searchTracks} className="mb-2 flex gap-1.5">
                     <input value={query} onChange={(event) => setQuery(event.target.value)} maxLength={120} aria-label={t("bottle.songSearch")} placeholder={t("bottle.songSearchHint")} autoComplete="off" className="h-10 min-w-0 flex-1 rounded-lg border border-[#D1D5DB] bg-white px-3 text-sm outline-none focus:border-[#EE8A2B]" />
