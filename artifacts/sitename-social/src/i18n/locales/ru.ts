@@ -86,5 +86,6 @@ const ru: Record<keyof typeof az, string> = {
   "profile.cropCover":"Выбор обложки","profile.cropHintCover":"Перетащи фото, чтобы выбрать область. Она будет видна вверху профиля.",
   "bottle.songOn": "включил(а) песню", "bottle.songUploading": "Песня загружается…", "bottle.songFailLive": "Не удалось включить песню, попробуйте ещё раз",
   "bottle.top_kisses": "Самые целуемые", "bottle.top_songs": "Больше всех песен", "bottle.top_cocktails": "Больше всех коктейлей", "bottle.top_smiles": "Больше всех улыбок", "bottle.topAll": "за всё время", "bottle.topWeek": "за неделю", "bottle.topDay": "за сегодня", "bottle.topPeriod": "Период", "bottle.topEmpty": "Пока никого нет", "bottle.topHelp": "Как работает рейтинг?", "bottle.topHelpText": "В рейтинге все игроки сайта. 💋 – самые целуемые, 🎵 – больше всех песен, 🍸 – больше всех коктейлей, 😊 – больше всех улыбок. Период выбирается сверху. Жёлтая строка — ваше место.",
+  "bottle.giftFor": "отправить подарок для",
 };
 export default ru;

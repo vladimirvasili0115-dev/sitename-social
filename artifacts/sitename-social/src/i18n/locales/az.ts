@@ -95,5 +95,6 @@ const az = {
   "profile.cropCover":"Örtük şəklinin seçimi","profile.cropHintCover":"Şəkli sürükləyib yerini düzəlt. Çərçivənin içi profilinin yuxarısında görünəcək.",
   "bottle.songOn": "mahnı qoşdu", "bottle.songUploading": "Mahnı yüklənir…", "bottle.songFailLive": "Mahnını qoşmaq alınmadı, yenidən yoxla",
   "bottle.top_kisses": "Ən çox öpülən", "bottle.top_songs": "Ən çox mahnı alan", "bottle.top_cocktails": "Ən çox kokteyl alan", "bottle.top_smiles": "Ən çox gülüş alan", "bottle.topAll": "hər zaman", "bottle.topWeek": "bu həftə", "bottle.topDay": "bu gün", "bottle.topPeriod": "Dövr", "bottle.topEmpty": "Hələ heç kim yoxdur", "bottle.topHelp": "Reytinq necə işləyir?", "bottle.topHelpText": "Reytinqdə saytın bütün oyunçuları var. 💋 – ən çox öpülənlər, 🎵 – ən çox mahnı alanlar, 🍸 – ən çox kokteyl alanlar, 😊 – ən çox gülüş alanlar. Yuxarıdan dövrü seç: hər zaman, bu həftə və ya bu gün. Sarı sətir sənin yerindir.",
+  "bottle.giftFor": "üçün hədiyyə göndər",
 } as const;
 export default az;

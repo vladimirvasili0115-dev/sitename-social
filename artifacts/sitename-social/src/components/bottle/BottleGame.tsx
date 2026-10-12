@@ -343,6 +343,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (track.kind === "youtube") { setAudio(null); setVideo(track.ref); }
     else if (track.by !== net.me) { setVideo(null); setAudio({ url: track.ref, name: track.title ?? "MP3" }); }
   }, [track, net]);
+  useEffect(() => { if (picked !== null && (!players[picked] || players[picked].empty)) setPicked(null); }, [picked, players]);
   // Everything on screen follows what the server said.
   const spunRef = useRef("");
   useEffect(() => {
@@ -754,8 +755,12 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         <WoodTable className="pointer-events-none absolute inset-0 h-full w-full" />
         <div className={cn("absolute z-10 flex items-center", wide ? "inset-y-0 left-0 w-[13%] flex-col gap-[2.2cqmin] py-[2.2cqmin]" : "inset-x-0 top-0 h-[10%] gap-[1.7cqmin] px-[2cqmin]")} onClick={(event) => event.stopPropagation()}>
           <button type="button" onClick={() => { setPayNote(false); setPanel("shop"); }} aria-label={`${t("bottle.shop")}: ${hearts}`} className={cn("flex items-center text-white hover:brightness-110", wide ? "flex-col" : "gap-1.5")} title={t("bottle.shop")}>
-            <Heart className="h-[8.5cqmin] max-h-11 w-[8.5cqmin] max-w-11" fill="#FF6A1F" stroke="#FFFFFF" strokeWidth={1.5} />
-            <span className="text-[max(12px,2.6cqmin)] font-bold tabular-nums leading-tight [text-shadow:0_1px_3px_rgba(0,0,0,0.6)]">{hearts}</span>
+            <svg viewBox="0 0 64 58" aria-hidden="true" className={cn("drop-shadow-[0_2px_3px_rgba(90,30,0,0.35)]", wide ? "h-[min(56px,10cqmin)] w-[min(62px,11cqmin)]" : "h-[8cqmin] max-h-10 w-[8.8cqmin] max-w-11")}>
+              <defs><linearGradient id="hud-heart" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#FF9A3C" /><stop offset="1" stopColor="#FF4E12" /></linearGradient></defs>
+              <path d="M32 54C14 42 3 31 3 18 3 9 10 3 18 3c6 0 11 3 14 8 3-5 8-8 14-8 8 0 15 6 15 15 0 13-11 24-29 36z" fill="url(#hud-heart)" stroke="#FFFFFF" strokeWidth="4" strokeLinejoin="round" />
+              <path d="M13 14c2-4 6-5 9-4" stroke="#FFFFFF" strokeWidth="3" strokeLinecap="round" fill="none" opacity="0.55" />
+            </svg>
+            <span className={cn("font-bold tabular-nums leading-tight [text-shadow:0_1px_2px_rgba(0,0,0,0.45)]", wide ? "text-[min(20px,3.4cqmin)]" : "text-[max(12px,2.6cqmin)]")}>{hearts}</span>
           </button>
           <span className="flex-1" />
           <button onClick={onToggleFull} aria-label={t("bottle.fullscreen")} title={t("bottle.fullscreen")} className={tool}>{full ? <Minimize size={17} /> : <Maximize size={17} />}</button>
@@ -1220,13 +1225,13 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             <button onClick={() => setAudio(null)} aria-label={t("photos.close")} title={t("photos.close")} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-2 text-text"><X size={15} /></button>
           </div>
         ) : null}
-        <p className={cn("border-b border-border px-3 py-1.5 text-[11px] text-muted", picked !== null && !wide && "hidden")}>{online ? `${t("bottle.liveNote")} ${net?.table ?? ""} · ${seated.length}/12` : t("bottle.demoNote")}</p>
+        <p className={cn("border-b border-border px-3 py-1.5 text-[11px] text-muted", picked !== null && "hidden")}>{online ? `${t("bottle.liveNote")} ${net?.table ?? ""} · ${seated.length}/12` : t("bottle.demoNote")}</p>
         {picked !== null ? (
           <div className="flex min-h-0 flex-1 flex-col">
-            <div className="flex items-center gap-2 border-b border-border px-3 py-1.5">
-              <button onClick={() => setCard(true)} aria-label={`${players[picked].name}, ${players[picked].age}`} className="shrink-0"><img src={players[picked].avatar} alt="" className={cn("rounded-lg object-cover shadow", wide ? "h-14 w-14" : "h-9 w-9")} /></button>
-              <p className="min-w-0 flex-1 text-[11px] leading-tight text-muted">{t("bottle.giftHint2")}<span className="block truncate text-sm font-bold text-text">{players[picked].name}, {players[picked].age} · 💋 {kisses[players[picked].id] ?? 0}</span></p>
-              <button onClick={() => setPicked(null)} aria-label={t("photos.close")} title={t("photos.close")} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#8CC63F] text-white hover:bg-[#7AB532]"><X size={17} /></button>
+            <div className="flex items-center gap-2 bg-white px-3 py-1.5">
+              <button onClick={() => setCard(true)} aria-label={`${players[picked].name}, ${players[picked].age}`} className="shrink-0"><img src={players[picked].avatar} alt="" className="h-7 w-7 rounded-full object-cover" /></button>
+              <p className="min-w-0 flex-1 text-[12px] leading-[1.15] text-[#B4B9C2]">{t("bottle.giftFor")}<span className="block truncate text-[13px] font-bold text-[#9AA3AE]">{players[picked].name}</span></p>
+              <button onClick={() => setPicked(null)} aria-label={t("photos.close")} title={t("photos.close")} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#5CC93B] text-white hover:bg-[#4DB52E]"><X size={15} strokeWidth={3} /></button>
             </div>
             <div role="menu" className={cn("grid min-h-0 flex-1 content-start gap-0.5 overflow-y-auto bg-white p-2", wide ? "grid-cols-[repeat(auto-fill,minmax(68px,1fr))]" : "grid-cols-[repeat(auto-fill,minmax(56px,1fr))]")}>
               {[...giftChoices, ...lockedGifts].map(([gift, price, need], order) => (
