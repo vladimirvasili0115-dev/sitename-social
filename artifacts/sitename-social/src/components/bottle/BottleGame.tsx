@@ -84,7 +84,7 @@ const packs: { hearts: number; price: number; bonus?: number; tag?: "best" | "hi
   { hearts: 6750, price: 5000, bonus: 35, tag: "best", art: "🛒" }, { hearts: 1350, price: 1000, bonus: 35, art: "🧰" }, { hearts: 650, price: 500, bonus: 30, art: "🛢️" },
   { hearts: 240, price: 200, bonus: 20, tag: "hit", art: "🍯" }, { hearts: 110, price: 100, bonus: 10, art: "👝" }, { hearts: 50, price: 50, art: "🎁" }, { hearts: 10, price: 10, art: "💕" },
 ];
-const tool = "flex h-[min(44px,8.5cqmin)] w-[min(44px,8.5cqmin)] shrink-0 items-center justify-center rounded-full bg-white/20 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.18)] hover:bg-white/30";
+const tool = "flex h-[min(50px,8cqmin)] w-[min(50px,8cqmin)] shrink-0 items-center justify-center rounded-full bg-[#E3893A]/85 text-white shadow-[0_2px_4px_rgba(90,40,0,0.25)] hover:bg-[#EE9545] [&_svg]:stroke-[2.4]";
 function youtubeId(value: string) {
   const match = value.trim().match(/(?:youtu\.be\/|[?&]v=|\/embed\/|\/shorts\/|\/live\/)([A-Za-z0-9_-]{11})/) ?? value.trim().match(/^([A-Za-z0-9_-]{11})$/);
   return match ? match[1] : null;

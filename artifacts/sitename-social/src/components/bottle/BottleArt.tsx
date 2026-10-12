@@ -1,26 +1,29 @@
-// Original artwork for the game: a plain green glass bottle, drawn here (no brand marks).
+// Original artwork for the game: a clear sea-green glass bottle (no brand marks); the table shows through the glass.
 export function BottleSvg({ className }: { className?: string }) {
+  const body = "M27 6h12v4c0 2 1 3 1 6v28c0 14 18 22 18 46v92c0 8-5 13-13 13H21c-8 0-13-5-13-13V90c0-24 18-32 18-46V16c0-3 1-4 1-6z";
   return (
     <svg viewBox="0 0 66 200" aria-hidden="true" className={className}>
       <defs>
         <linearGradient id="bt-glass" x1="0" x2="1">
-          <stop offset="0" stopColor="#2C7A12" /><stop offset="0.14" stopColor="#4FA524" /><stop offset="0.38" stopColor="#7CCB45" /><stop offset="0.62" stopColor="#57AE29" /><stop offset="0.88" stopColor="#3A8E18" /><stop offset="1" stopColor="#256A0E" />
+          <stop offset="0" stopColor="#3F7F68" stopOpacity="0.95" /><stop offset="0.12" stopColor="#7DB9A0" stopOpacity="0.75" /><stop offset="0.35" stopColor="#B9E2CF" stopOpacity="0.5" />
+          <stop offset="0.6" stopColor="#A6D7C2" stopOpacity="0.5" /><stop offset="0.86" stopColor="#6FAE94" stopOpacity="0.75" /><stop offset="1" stopColor="#3A7660" stopOpacity="0.95" />
         </linearGradient>
-        <linearGradient id="bt-depth" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#FFFFFF" stopOpacity="0.12" /><stop offset="0.55" stopColor="#FFFFFF" stopOpacity="0" /><stop offset="1" stopColor="#0E3D05" stopOpacity="0.35" /></linearGradient>
+        <linearGradient id="bt-depth" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#DFF5EA" stopOpacity="0.25" /><stop offset="0.6" stopColor="#FFFFFF" stopOpacity="0" /><stop offset="0.92" stopColor="#2F6B55" stopOpacity="0.25" /><stop offset="1" stopColor="#24594A" stopOpacity="0.55" /></linearGradient>
+        <radialGradient id="bt-shadow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stopColor="#3B1C04" stopOpacity="0.45" /><stop offset="1" stopColor="#3B1C04" stopOpacity="0" /></radialGradient>
       </defs>
-      <ellipse cx="33" cy="194" rx="27" ry="4" fill="#5A2E05" opacity="0.28" />
-      <path id="bt-body" d="M26 12h14v40c0 13 19 20 19 44v84c0 8-5 13-13 13H20c-8 0-13-5-13-13V96c0-24 19-31 19-44z" fill="url(#bt-glass)" />
-      <path d="M26 12h14v40c0 13 19 20 19 44v84c0 8-5 13-13 13H20c-8 0-13-5-13-13V96c0-24 19-31 19-44z" fill="url(#bt-depth)" />
-      <path d="M26 12h14v40c0 13 19 20 19 44v84c0 8-5 13-13 13H20c-8 0-13-5-13-13V96c0-24 19-31 19-44z" fill="none" stroke="#1F5F0B" strokeWidth="1.200" opacity="0.7" />
-      <rect x="23.500" y="3" width="19" height="6" rx="2.500" fill="#4FA524" stroke="#1F5F0B" strokeWidth="1" />
-      <rect x="24.500" y="9" width="17" height="5" rx="2" fill="#3A8E18" stroke="#1F5F0B" strokeWidth="1" />
-      <path d="M26.500 4.800h13" stroke="#C9F2A4" strokeWidth="1.200" strokeLinecap="round" opacity="0.8" />
-      <path d="M12 178c5 10 37 10 42 0" fill="none" stroke="#C9F2A4" strokeWidth="2.500" strokeLinecap="round" opacity="0.55" />
-      <path d="M14 186c6 6 32 6 38 0" fill="none" stroke="#1F5F0B" strokeWidth="1.500" strokeLinecap="round" opacity="0.5" />
-      <path d="M15 100c-1.500 20-1.500 48 0 70" stroke="#E4FBCB" strokeWidth="3.500" strokeLinecap="round" fill="none" opacity="0.5" />
-      <path d="M29.500 18v32" stroke="#E4FBCB" strokeWidth="2.200" strokeLinecap="round" fill="none" opacity="0.55" />
-      <path d="M52 104c1.200 18 1.200 44 0 62" stroke="#184F08" strokeWidth="2.500" strokeLinecap="round" fill="none" opacity="0.3" />
-      <path d="M22 70c-6 6-9 13-10 22" stroke="#E4FBCB" strokeWidth="2.500" strokeLinecap="round" fill="none" opacity="0.4" />
+      <ellipse cx="35" cy="196" rx="32" ry="5" fill="url(#bt-shadow)" />
+      <path d={body} fill="url(#bt-glass)" />
+      <path d={body} fill="url(#bt-depth)" />
+      <path d={body} fill="none" stroke="#2E6652" strokeWidth="1.100" opacity="0.65" />
+      <path d="M26 6h14v3.500H26z" fill="#CBEBDD" opacity="0.8" stroke="#2E6652" strokeWidth="0.800" />
+      <path d="M26.500 13c4 1.500 9 1.500 13 0" stroke="#2E6652" strokeWidth="0.900" fill="none" opacity="0.5" />
+      <path d="M11 186c6 7 38 7 44 0" fill="none" stroke="#24594A" strokeWidth="3" strokeLinecap="round" opacity="0.35" />
+      <path d="M13 181c6 5 34 5 40 0" fill="none" stroke="#E6FFF4" strokeWidth="1.400" strokeLinecap="round" opacity="0.55" />
+      <path d="M14 96c-1.500 22-1.500 52 0 78" stroke="#FFFFFF" strokeWidth="3.200" strokeLinecap="round" fill="none" opacity="0.6" />
+      <path d="M19 98c-0.800 20-0.800 44 0 66" stroke="#FFFFFF" strokeWidth="1.200" strokeLinecap="round" fill="none" opacity="0.35" />
+      <path d="M30 14v30" stroke="#FFFFFF" strokeWidth="1.800" strokeLinecap="round" fill="none" opacity="0.55" />
+      <path d="M21 62c-6 6-9 13-10 22" stroke="#FFFFFF" strokeWidth="2.200" strokeLinecap="round" fill="none" opacity="0.45" />
+      <path d="M52 100c1.200 20 1.200 46 0 66" stroke="#24594A" strokeWidth="2.200" strokeLinecap="round" fill="none" opacity="0.3" />
     </svg>
   );
 }
@@ -48,31 +51,9 @@ export function WaterBottleSvg({ className }: { className?: string }) {
   );
 }
 
-// The table top: warm honey wood with a soft light in the middle and flowing grain.
+// The table top: a real-looking honey wood texture (public/bottle/wood.jpg), lighter in the middle.
 export function WoodTable({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 400 440" preserveAspectRatio="xMidYMid slice" aria-hidden="true" className={className}>
-      <defs>
-        <radialGradient id="wd-light" cx="0.5" cy="0.5" r="0.75"><stop offset="0" stopColor="#EFB062" /><stop offset="0.55" stopColor="#D28B45" /><stop offset="1" stopColor="#A9672F" /></radialGradient>
-        <filter id="wd-grain" x="0" y="0" width="100%" height="100%">
-          <feTurbulence type="fractalNoise" baseFrequency="0.006 0.055" numOctaves="4" seed="11" />
-          <feColorMatrix values="0 0 0 0 0.52  0 0 0 0 0.27  0 0 0 0 0.05  0 0 0 1.500 -0.620" />
-        </filter>
-        <filter id="wd-swirl" x="-5%" y="-5%" width="110%" height="110%">
-          <feTurbulence type="fractalNoise" baseFrequency="0.011 0.004" numOctaves="2" seed="4" result="n" />
-          <feDisplacementMap in="SourceGraphic" in2="n" scale="26" />
-        </filter>
-      </defs>
-      <rect width="400" height="440" fill="url(#wd-light)" />
-      <g filter="url(#wd-swirl)" fill="none" stroke="#6E3A10" strokeLinecap="round">
-        {Array.from({ length: 34 }, (_, i) => 6 + i * 13 + ((i * 7) % 5)).map((y, i) => <path key={y} d={`M-30 ${y}C80 ${y - 6 - (i % 4) * 2} 150 ${y + 7} 230 ${y}S380 ${y - 5} 430 ${y + 3}`} strokeWidth={i % 5 === 0 ? 1.400 : 0.700} opacity={i % 3 ? 0.22 : 0.36} />)}
-        {[30, 96, 170, 240, 312, 384].map((y) => <path key={y} d={`M-30 ${y}C90 ${y + 6} 200 ${y - 8} 430 ${y + 3}`} stroke="#FFD9A0" strokeWidth="2.400" opacity="0.22" />)}
-        <ellipse cx="300" cy="150" rx="16" ry="5" stroke="#6E3A10" strokeWidth="1.200" opacity="0.35" /><ellipse cx="300" cy="150" rx="9" ry="2.500" stroke="#6E3A10" strokeWidth="1" opacity="0.35" />
-        <ellipse cx="90" cy="330" rx="14" ry="4" stroke="#6E3A10" strokeWidth="1.200" opacity="0.3" />
-      </g>
-      <rect width="400" height="440" filter="url(#wd-grain)" opacity="0.35" />
-    </svg>
-  );
+  return <div aria-hidden="true" className={className} style={{ backgroundColor: "#D2924C", backgroundImage: "url(/bottle/wood.jpg)", backgroundSize: "cover", backgroundPosition: "center" }} />;
 }
 
 // Cover tile for the games list: the bottle on a wooden table with hearts and spin arrows.
