@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
 import Link from "next/link";
-import { AtSign, LifeBuoy, Clock, Flame, Search, Star, Ban, Flag, Mail, Gift as GiftIcon, Heart, Home, Maximize, Menu, Minimize, Music, Plus, Music2, RefreshCw, SendHorizontal, Settings, Trophy, UserPlus, UserRoundCog, Users, Volume2, VolumeX, X } from "lucide-react";
+import { AtSign, LifeBuoy, Clock, Flame, Search, Star, Ban, Flag, Mail, Gift as GiftIcon, Heart, Home, Maximize, Check, Menu, Minimize, Music, Plus, UserCheck, Music2, RefreshCw, SendHorizontal, Settings, Trophy, UserPlus, UserRoundCog, Users, Volume2, VolumeX, X } from "lucide-react";
 import type { GiftId } from "@/types";
 import { cartoonAvatar } from "./avatarArt";
 import { useTranslation } from "@/i18n/useTranslation";
@@ -146,6 +146,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [lines, setLines] = useState<Line[]>([{ id: 1, from: "b3", text: smallTalk[0] }, { id: 2, from: "b6", to: "b1" }]);
   const [draft, setDraft] = useState("");
   const [picked, setPicked] = useState<number | null>(null);
+  // "+" mode: choose several receivers on the table, then every gift goes to all of them.
+  const [chosen, setChosen] = useState<string[]>([]);
   const [flying, setFlying] = useState<{ key: number; gift: string; to: number; moved: boolean; ms: number }[]>([]);
   const heartsRef = useRef(12);
   const flyId = useRef(1);
@@ -344,6 +346,10 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     else if (track.by !== net.me) { setVideo(null); setAudio({ url: track.ref, name: track.title ?? "MP3" }); }
   }, [track, net]);
   useEffect(() => { if (picked !== null && (!players[picked] || players[picked].empty)) setPicked(null); }, [picked, players]);
+  useEffect(() => { setChosen((list) => { const next = list.filter((id) => players.some((player) => player.id === id && !player.empty && !player.me)); return next.length === list.length ? list : next; }); }, [players]);
+  useEffect(() => { if (!dedicate) setChosen([]); }, [dedicate]);
+  const chooseMode = (on: boolean) => { setChosen(on && picked !== null && !players[picked]?.me && !players[picked]?.empty ? [players[picked].id] : []); setGiftNote(null); onDedicate(on); };
+  const giftTargets = dedicate ? chosen.map((id) => players.findIndex((player) => player.id === id)).filter((index) => index >= 0) : picked !== null ? [picked] : [];
   // Everything on screen follows what the server said.
   const spunRef = useRef("");
   useEffect(() => {
@@ -534,7 +540,6 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (songFor === null) return;
     if (!online) say({ from: "me", to: players[songFor].id, song: title });
     setSongFor(null);
-    onDedicate(false);
   }
   // A song costs the sender hearts and adds one to the receiver's song count (counted by the server when the table is live).
   function paySong(kind: "video" | "mp3") {
@@ -710,18 +715,25 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (!sendGift(index, gift, price)) { setGiftNote(t("bottle.noHearts")); return false; }
     return true;
   }
-  function pressGift(index: number, gift: string, price: number, need: number | undefined, x: number, y: number) {
+  function giveMany(targets: number[], gift: string, price: number, need?: number) {
+    if (!targets.length) { setGiftNote(t("bottle.pickReceivers")); return false; }
+    if (gift.startsWith("song:")) return giveGift(targets[0], gift, price, need);
+    let sent = false;
+    for (const index of targets) { if (!giveGift(index, gift, price, need)) break; sent = true; }
+    return sent;
+  }
+  function pressGift(targets: number[], gift: string, price: number, need: number | undefined, x: number, y: number) {
     cancelPress();
     const state = { started: false, x, y, timer: window.setTimeout(() => {
       state.started = true;
-      if (giveGift(index, gift, price, need)) hold.current = window.setInterval(() => { if (!sendGift(index, gift, price, 1000)) stopHold(); }, 300);
+      if (giveMany(targets, gift, price, need) && !gift.startsWith("song:")) hold.current = window.setInterval(() => { for (const index of targets) if (!sendGift(index, gift, price, 1000)) return stopHold(); }, 300);
     }, 380) };
     pressed.current = state;
   }
-  function releaseGift(index: number, gift: string, price: number, need?: number) {
+  function releaseGift(targets: number[], gift: string, price: number, need?: number) {
     const state = pressed.current;
     cancelPress();
-    if (state && !state.started) giveGift(index, gift, price, need);
+    if (state && !state.started) giveMany(targets, gift, price, need);
   }
   // A curved arrow from the player who answered to the other one. Green means a kiss, red a refusal.
   const arrow = (answer: boolean | null, leftToRight: boolean, drop: number) => {
@@ -764,7 +776,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           </button>
           <span className="flex-1" />
           <button onClick={onToggleFull} aria-label={t("bottle.fullscreen")} title={t("bottle.fullscreen")} className={tool}>{full ? <Minimize size={17} /> : <Maximize size={17} />}</button>
-          {full && !wide ? <button onClick={() => onDedicate(!dedicate)} aria-pressed={dedicate} aria-label={t("bottle.dedicate")} title={t("bottle.dedicate")} className={cn(tool, dedicate && "bg-[#8CC63F]")}><Plus size={19} strokeWidth={3} /></button> : null}
+          {full && !wide ? <button onClick={() => chooseMode(!dedicate)} aria-pressed={dedicate} aria-label={t("bottle.dedicate")} title={t("bottle.dedicate")} className={cn(tool, dedicate && "bg-[#8CC63F]")}><Plus size={19} strokeWidth={3} /></button> : null}
           {online && net && !net.wheel ? null : <button onClick={() => { setWheelPrize(null); setPayNote(false); setPanel("wheel"); }} aria-label={t("bottle.wheel")} title={t("bottle.wheel")} className={tool}><LifeBuoy size={19} /></button>}
           <button onClick={() => { setTopKind("kisses"); setPanel("top"); }} aria-label={t("bottle.top")} title={t("bottle.top")} className={tool}><Trophy size={18} /></button>
           <button onClick={() => setPanel("menu")} aria-label={t("bottle.menu")} title={t("bottle.menu")} className={tool}><Menu size={18} /></button>
@@ -789,10 +801,12 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           const active = index === turn || index === target;
           return (
             <div key={player.id} className={cn("absolute -translate-x-1/2 -translate-y-1/2 transition-[left,top]", wide ? "w-[17cqmin]" : "w-[16cqmin]", " duration-[1100ms] ease-in-out motion-reduce:duration-0", staged && active ? "pointer-events-none z-30" : index === turn && "z-10")} style={staged && active ? { left: `calc(${CENTER_X}% ${index === turn ? "-" : "+"} 12.5cqmin)`, top: `${STAGE_Y}%` } : { left: `${seats[index][0]}%`, top: `${seats[index][1]}%` }}>
-              <button type="button" onClick={(event) => { event.stopPropagation(); if (dedicate) return player.me ? undefined : openSong(index); setGiftNote(null); setCardNote(null); setFlagMenu(false); setSignOpen(false); setCard(picked === index || Boolean(player.me)); setPicked(index); }} aria-label={`${player.name}, ${player.age}`} className={cn("group relative block aspect-square w-full rounded-[14%] bg-surface-2 shadow-[0_4px_10px_rgba(0,0,0,0.4)]", staged && index === target ? "ring-[0.9cqmin] ring-[#FFE2A8]" : active ? "ring-4 ring-white" : picked === index ? "ring-4 ring-[#8CC63F]" : player.me ? "ring-2 ring-white/80" : "")}>
+              <button type="button" onClick={(event) => { event.stopPropagation(); if (dedicate) { if (!player.me) setChosen((list) => (list.includes(player.id) ? list.filter((id) => id !== player.id) : [...list, player.id])); return; } setGiftNote(null); setCardNote(null); setFlagMenu(false); setSignOpen(false); setCard(picked === index || Boolean(player.me)); setPicked(index); }} aria-label={`${player.name}, ${player.age}`} className={cn("group relative block aspect-square w-full rounded-[14%] bg-surface-2 shadow-[0_4px_10px_rgba(0,0,0,0.4)]", staged && index === target ? "ring-[0.9cqmin] ring-[#FFE2A8]" : active ? "ring-4 ring-white" : picked === index ? "ring-4 ring-[#8CC63F]" : player.me ? "ring-2 ring-white/80" : "")}>
                 <img src={player.avatar} alt="" className="h-full w-full rounded-[14%] object-cover" style={player.me && frame ? { boxShadow: `0 0 0 0.9cqmin ${frame}, 0 0 2.4cqmin ${frame}` } : undefined} />
                 {player.me || dedicate ? null : <span aria-hidden="true" className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-[14%] bg-black/35 opacity-0 transition-opacity group-hover:opacity-100"><GiftIcon className="h-[38%] w-[38%] text-white" strokeWidth={1.6} /></span>}
-                {dedicate && !player.me ? <span className="absolute inset-0 z-10 flex items-center justify-center rounded-[14%] bg-black/35"><span className="flex h-[7cqmin] w-[7cqmin] items-center justify-center rounded-full bg-[#8CC63F] text-[5cqmin] font-black leading-none text-white shadow">+</span></span> : null}
+                {dedicate && !player.me ? (chosen.includes(player.id)
+                  ? <span className="absolute inset-0 z-10 flex items-center justify-center rounded-[14%] bg-[#8CC63F]/85 ring-[0.5cqmin] ring-[#B678E8]"><Check className="h-[45%] w-[45%] text-white drop-shadow" strokeWidth={4} /></span>
+                  : <span className="absolute inset-0 z-10 flex items-center justify-center rounded-[14%] bg-black/25"><Plus className="h-[45%] w-[45%] text-white drop-shadow-[0_2px_3px_rgba(0,0,0,0.5)]" strokeWidth={3.5} /></span>) : null}
                 {topIds.has(player.id) ? <span className="absolute left-1/2 -top-[1.4cqmin] z-[1] -translate-x-1/2 rounded bg-[#FACC15] px-[0.8cqmin] text-[2.2cqmin] font-black leading-[1.5] text-[#713F12] shadow">TOP</span> : null}
                 {kisses[player.id] ? <LipsBadge count={kisses[player.id]} /> : null}
                 {(() => {
@@ -1225,22 +1239,31 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             <button onClick={() => setAudio(null)} aria-label={t("photos.close")} title={t("photos.close")} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-2 text-text"><X size={15} /></button>
           </div>
         ) : null}
-        <div className={cn("flex items-center gap-2 border-b border-border px-3 py-1.5", picked !== null && "hidden")}>
+        <div className={cn("flex items-center gap-2 border-b border-border px-3 py-1.5", (picked !== null || dedicate) && "hidden")}>
           <p className="min-w-0 flex-1 truncate text-[11px] text-muted">{online ? `${t("bottle.liveNote")} ${net?.table ?? ""} · ${seated.length}/12` : t("bottle.demoNote")}</p>
-          {full && wide ? <button onClick={() => onDedicate(!dedicate)} aria-pressed={dedicate} aria-label={t("bottle.dedicate")} title={t("bottle.dedicate")} className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white", dedicate ? "bg-[#3E9B23] ring-2 ring-[#5CC93B]/40" : "bg-[#5CC93B] hover:bg-[#4DB52E]")}><Plus size={17} strokeWidth={3} /></button> : null}
+          {full && wide ? <button onClick={() => chooseMode(!dedicate)} aria-pressed={dedicate} aria-label={t("bottle.dedicate")} title={t("bottle.dedicate")} className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white", dedicate ? "bg-[#3E9B23] ring-2 ring-[#5CC93B]/40" : "bg-[#5CC93B] hover:bg-[#4DB52E]")}><Plus size={17} strokeWidth={3} /></button> : null}
           {full && wide ? <button onClick={onLeave} aria-label={t("photos.close")} title={t("photos.close")} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#B4B9C2] text-white hover:bg-[#9AA3AE]"><X size={15} strokeWidth={3} /></button> : null}
         </div>
-        {picked !== null ? (
+        {picked !== null || dedicate ? (
           <div className="flex min-h-0 flex-1 flex-col">
+            {dedicate ? (
+              <div className="flex items-center gap-2 bg-white px-3 py-2">
+                <p className="min-w-0 flex-1 truncate text-[13px] text-[#B4B9C2]">{t("bottle.pickReceivers")}{chosen.length ? <b className="ml-1 text-[#5CC93B]">· {chosen.length}</b> : null}</p>
+                <button onClick={() => setChosen(players.filter((player) => !player.empty && !player.me).map((player) => player.id))} aria-label={t("bottle.pickAll")} title={t("bottle.pickAll")} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#5CC93B] text-white hover:bg-[#4DB52E]"><Users size={15} strokeWidth={2.6} /></button>
+                <button onClick={() => setChosen(picked !== null && !players[picked].me && !players[picked].empty ? [players[picked].id] : [])} aria-label={t("bottle.pickProfile")} title={t("bottle.pickProfile")} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#5CC93B] text-white hover:bg-[#4DB52E]"><UserCheck size={15} strokeWidth={2.6} /></button>
+                <button onClick={() => chooseMode(false)} aria-label={t("photos.close")} title={t("photos.close")} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#EF2D2D] text-white hover:bg-[#D81F1F]"><X size={15} strokeWidth={3} /></button>
+              </div>
+            ) : picked !== null ? (
             <div className="flex items-center gap-2 bg-white px-3 py-1.5">
               <button onClick={() => setCard(true)} aria-label={`${players[picked].name}, ${players[picked].age}`} className="shrink-0"><img src={players[picked].avatar} alt="" className="h-7 w-7 rounded-full object-cover" /></button>
               <p className="min-w-0 flex-1 text-[12px] leading-[1.15] text-[#B4B9C2]">{t("bottle.giftFor")}<span className="block truncate text-[13px] font-bold text-[#9AA3AE]">{players[picked].name}</span></p>
-              {players[picked].me ? null : <button onClick={() => openSong(picked)} aria-label={t("bottle.dedicate")} title={t("bottle.dedicate")} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#5CC93B] text-white hover:bg-[#4DB52E]"><Plus size={17} strokeWidth={3} /></button>}
+              {players[picked].me ? null : <button onClick={() => chooseMode(true)} aria-label={t("bottle.dedicate")} title={t("bottle.dedicate")} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#5CC93B] text-white hover:bg-[#4DB52E]"><Plus size={17} strokeWidth={3} /></button>}
               <button onClick={() => setPicked(null)} aria-label={t("photos.close")} title={t("photos.close")} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#B4B9C2] text-white hover:bg-[#9AA3AE]"><X size={15} strokeWidth={3} /></button>
             </div>
+            ) : null}
             <div role="menu" className={cn("grid min-h-0 flex-1 content-start gap-0.5 overflow-y-auto bg-white p-2", wide ? "grid-cols-[repeat(auto-fill,minmax(68px,1fr))]" : "grid-cols-[repeat(auto-fill,minmax(56px,1fr))]")}>
               {[...giftChoices, ...lockedGifts].map(([gift, price, need], order) => (
-                <button key={`${gift}-${order}`} role="menuitem" aria-disabled={need === -1 ? !vip : Boolean(need)} onPointerDown={(event) => pressGift(picked, gift, price, need, event.clientX, event.clientY)} onPointerMove={(event) => { const state = pressed.current; if (state && !state.started && Math.hypot(event.clientX - state.x, event.clientY - state.y) > 8) cancelPress(); }} onPointerUp={() => releaseGift(picked, gift, price, need)} onPointerLeave={cancelPress} onPointerCancel={cancelPress} onContextMenu={(event) => event.preventDefault()} onKeyDown={(event) => { if (event.key === "Enter" && !event.repeat) giveGift(picked, gift, price, need); }} aria-label={`${t("gifts.send")} ${price}`} className={cn("group flex touch-pan-y select-none flex-col items-center gap-0.5 rounded-xl p-1 hover:bg-[#FFF4E5]", (need === -1 ? !vip : Boolean(need)) ? "grayscale [&>img]:opacity-75" : hearts < price && "opacity-50")}>
+                <button key={`${gift}-${order}`} role="menuitem" aria-disabled={need === -1 ? !vip : Boolean(need)} onPointerDown={(event) => pressGift(giftTargets, gift, price, need, event.clientX, event.clientY)} onPointerMove={(event) => { const state = pressed.current; if (state && !state.started && Math.hypot(event.clientX - state.x, event.clientY - state.y) > 8) cancelPress(); }} onPointerUp={() => releaseGift(giftTargets, gift, price, need)} onPointerLeave={cancelPress} onPointerCancel={cancelPress} onContextMenu={(event) => event.preventDefault()} onKeyDown={(event) => { if (event.key === "Enter" && !event.repeat) giveMany(giftTargets, gift, price, need); }} aria-label={`${t("gifts.send")} ${price}`} className={cn("group flex touch-pan-y select-none flex-col items-center gap-0.5 rounded-xl p-1 hover:bg-[#FFF4E5]", (need === -1 ? !vip : Boolean(need)) ? "grayscale [&>img]:opacity-75" : hearts < price && "opacity-50")}>
                   <Gift id={gift} className={cn("transition-transform duration-150 group-hover:scale-110", wide ? "h-14 w-14" : "h-11 w-11")} />
                   <span className="flex items-center gap-1 text-xs font-bold tabular-nums text-[#3F3F46]">{need === -1 ? <b className="rounded bg-[#F59E0B] px-1 text-[10px] text-white">VIP</b> : need ? <span aria-label={`${need}`} className="text-[11px] opacity-70">🔒</span> : <><Heart size={13} fill="#E8352B" stroke="none" />{price}</>}</span>
                 </button>

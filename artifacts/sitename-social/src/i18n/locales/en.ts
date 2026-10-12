@@ -87,5 +87,6 @@ const en: Record<keyof typeof az, string> = {
   "bottle.songOn": "put on a song", "bottle.songUploading": "Uploading the song…", "bottle.songFailLive": "Could not put the song on, try again",
   "bottle.top_kisses": "Most kissed", "bottle.top_songs": "Most songs received", "bottle.top_cocktails": "Most cocktails received", "bottle.top_smiles": "Most smiles received", "bottle.topAll": "all time", "bottle.topWeek": "this week", "bottle.topDay": "today", "bottle.topPeriod": "Period", "bottle.topEmpty": "Nobody here yet", "bottle.topHelp": "How does the rating work?", "bottle.topHelpText": "The rating includes every player on the site. 💋 – most kissed, 🎵 – most songs, 🍸 – most cocktails, 😊 – most smiles. Pick the period at the top. The yellow row is your place.",
   "bottle.giftFor": "send a gift to",
+  "bottle.pickReceivers": "Choose receivers", "bottle.pickAll": "Choose everyone", "bottle.pickProfile": "Choose the person whose profile you opened",
 };
 export default en;
