@@ -980,9 +980,13 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         <div className={cn("absolute z-10 flex items-center", wide ? "inset-y-0 left-0 w-[13%] flex-col gap-[2.2cqmin] py-[2.2cqmin]" : "inset-x-0 top-0 h-[10%] gap-[1.3cqmin] px-[2cqmin]")} onClick={(event) => event.stopPropagation()}>
           <button type="button" onClick={() => { setPayNote(false); setPanel("shop"); }} aria-label={`${t("bottle.shop")}: ${hearts}`} className={cn("flex items-center text-white hover:brightness-110", wide ? "flex-col" : "gap-1.5")} title={t("bottle.shop")}>
             <svg viewBox="0 0 64 58" aria-hidden="true" className={cn("drop-shadow-[0_2px_3px_rgba(90,30,0,0.35)]", wide ? "h-[min(56px,10cqmin)] w-[min(62px,11cqmin)]" : "h-[8cqmin] max-h-10 w-[8.8cqmin] max-w-11")}>
-              <defs><linearGradient id="hud-heart" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#FF9A3C" /><stop offset="1" stopColor="#FF4E12" /></linearGradient></defs>
+              <defs>
+                <radialGradient id="hud-heart" cx="0.38" cy="0.3" r="0.85"><stop offset="0" stopColor="#FF6B5E" /><stop offset="0.45" stopColor="#F2222F" /><stop offset="1" stopColor="#B80F1F" /></radialGradient>
+                <linearGradient id="hud-shine" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#FFFFFF" stopOpacity="0.85" /><stop offset="1" stopColor="#FFFFFF" stopOpacity="0" /></linearGradient>
+              </defs>
               <path d="M32 54C14 42 3 31 3 18 3 9 10 3 18 3c6 0 11 3 14 8 3-5 8-8 14-8 8 0 15 6 15 15 0 13-11 24-29 36z" fill="url(#hud-heart)" stroke="#FFFFFF" strokeWidth="4" strokeLinejoin="round" />
-              <path d="M13 14c2-4 6-5 9-4" stroke="#FFFFFF" strokeWidth="3" strokeLinecap="round" fill="none" opacity="0.55" />
+              <ellipse cx="18" cy="15" rx="8" ry="5" fill="url(#hud-shine)" transform="rotate(-28 18 15)" />
+              <circle cx="44" cy="14" r="2.200" fill="#FFFFFF" opacity="0.6" />
             </svg>
             <span className={cn("font-bold tabular-nums leading-tight [text-shadow:0_1px_2px_rgba(0,0,0,0.45)]", wide ? "text-[min(20px,3.4cqmin)]" : "text-[max(12px,2.6cqmin)]")}>{hearts}</span>
           </button>
