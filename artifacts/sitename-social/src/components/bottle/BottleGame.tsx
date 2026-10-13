@@ -1530,7 +1530,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       </div>
       </div>
 
-      <div className={cn("relative flex min-h-0 min-w-0 flex-1 flex-col border-border", wide ? "border-l" : "-mt-px")}>
+      <div className={cn("relative flex min-h-0 min-w-0 flex-1 flex-col", wide ? "-ml-px" : "-mt-px")}>
         {video && wide ? (
           <div className={cn("relative w-full shrink-0 bg-black", picked !== null || dedicate ? "h-0 overflow-hidden" : "aspect-video max-h-[42%]")}>
             <iframe ref={frameRef} onLoad={() => window.setTimeout(pushMusic, 800)} src={`https://www.youtube-nocookie.com/embed/${video}?autoplay=1&rel=0&enablejsapi=1`} title="YouTube" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen className="h-full w-full" />
