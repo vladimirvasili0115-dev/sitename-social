@@ -45,3 +45,12 @@ button { cursor: pointer; }
   src: url("/fonts/lilita-one.woff2") format("woff2");
   font-display: block;
 }
+
+@keyframes medal-shine {
+  0%, 60% { background-position: 150% 0; }
+  100% { background-position: -50% 0; }
+}
+@keyframes bottle-pop {
+  from { transform: scale(0.85); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}

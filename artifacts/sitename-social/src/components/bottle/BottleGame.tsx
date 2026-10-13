@@ -8,6 +8,8 @@ import { useTranslation } from "@/i18n/useTranslation";
 import { GiftArt } from "@/components/gifts/GiftArt";
 import { useProfile } from "@/components/profile/useProfile";
 import { cn } from "@/lib/utils";
+import { AchievementsPanel } from "./AchievementsPanel";
+import { bumpStat, markVisit, readStats } from "./achievements";
 import { BottleSvg, WaterBottleSvg, WoodTable } from "./BottleArt";
 import { playGiftSound, playSound, setVolume } from "./sound";
 import { supabase } from "@/lib/supabase";
@@ -490,6 +492,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     const result = await bottleRoomJoin(id, password);
     if (!result) return setRoomError(roomErrorText("gone"));
     if (result.error) return setRoomError(roomErrorText(result.error));
+    bumpStat("roomsJoined");
     enteredRoom();
   }
   async function createPrivate(event: FormEvent<HTMLFormElement>) {
@@ -498,6 +501,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (!result) return setRoomError(roomErrorText("gone"));
     if (result.error) return setRoomError(roomErrorText(result.error));
     setRoomForm({ name: "", pass: "", size: 4 });
+    bumpStat("roomsCreated");
     enteredRoom();
   }
   async function moveTo(table: number | null) {
@@ -506,6 +510,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (result.gone) { setWaitFor(null); setRoomNote(true); return void bottleTables().then(setRooms); }
     if (result.full && result.table) return setWaitFor({ table: result.table, position: result.position ?? 1 });
     setWaitFor(null);
+    bumpStat("tables");
     setPicked(null);
     setCard(false);
     setLines([]);
@@ -562,6 +567,22 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     return () => { alive = false; };
   }, [panel, topKind, topPeriod, online]);
   const row = "flex min-h-11 w-full items-center gap-3 rounded-lg px-2 text-left text-sm text-[#1F2937] hover:bg-black/5";
+  // Achievements: most counts are kept in this browser; kisses, songs and smiles received come from the live table.
+  useEffect(() => { markVisit(); }, []);
+  const imTop = topIds.has("me");
+  useEffect(() => { if (imTop) bumpStat("top", 1, true); }, [imTop]);
+  const statsStamp = panel === "achievements";
+  const achValue = useMemo(() => {
+    void statsStamp;
+    const stats = readStats();
+    const mine = online ? net?.seats.find((seat) => seat.id === net.me) : undefined;
+    return (metric: string) => {
+      if (metric === "kissesGot") return Math.max(stats.kissesGot ?? 0, online ? mine?.total ?? 0 : kisses.me ?? 0);
+      if (metric === "songsGot") return Math.max(stats.songsGot ?? 0, mine?.songs ?? 0);
+      if (metric === "smilesGot") return Math.max(stats.smilesGot ?? 0, online ? mine?.smiles ?? 0 : mySmiles);
+      return stats[metric] ?? 0;
+    };
+  }, [statsStamp, online, net, kisses, mySmiles]);
   // The game menu opens as a small list next to its button, with coloured icons.
   const menuItems = [
     { key: "messages", label: t("nav.messages"), go: () => { window.location.href = "/messages"; }, icon: <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[linear-gradient(180deg,#5AA8FF,#2F7FF0)]"><MessageSquare size={15} className="text-white" fill="#FFFFFF" /></span> },
@@ -575,6 +596,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   function handleChat(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!draft.trim()) return;
+    bumpStat("chat");
     if (online) void bottleSay(draft.trim().slice(0, 200)).then(pullRef.current);
     else say({ from: "me", text: draft.trim().slice(0, 200) });
     setDraft("");
@@ -631,6 +653,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const songTo = () => (songMany.length ? songMany : songFor !== null ? [songFor] : []).filter((index) => players[index] && !players[index].empty);
   function finishSong(title: string) {
     if (songFor === null) return;
+    bumpStat("songsSent", Math.max(1, songTo().length));
     if (!online) for (const index of songTo()) say({ from: "me", to: players[index].id, song: title });
     setSongFor(null);
     setSongMany([]);
@@ -708,6 +731,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (!players[meIndex].female && !vip) return setDmNote(true);
     const text = dmDraft.trim().slice(0, 300);
     setDmDraft("");
+    bumpStat("dm");
     if (online) return void sendRemoteMessage(dm.id, { text });
     const id = dm.id;
     setDms((value) => ({ ...value, [id]: [...(value[id] ?? []), { mine: true, text }] }));
@@ -791,6 +815,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       say({ from: "me", to: player.id, gift });
     }, ms + 100);
     setSent((value) => ({ ...value, [player.id]: (value[player.id] ?? 0) + 1 }));
+    bumpStat("giftsSent");
+    bumpStat(`gift:${gift}`);
     return true;
   }
   // A gift another player sent: it flies from their seat to the receiver, then sits on the photo and goes into the chat.
@@ -828,6 +854,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (online) {
       void bottleAdmire(player.id).then((left) => {
         if (left === null || left < 0) return setCardNote(t("bottle.admireFail"));
+        bumpStat("admire");
         heartsRef.current = left;
         setHearts(left);
         pullRef.current();
@@ -837,6 +864,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     heartsRef.current -= price;
     setHearts(heartsRef.current);
     setSuitors((value) => ({ ...value, [player.id]: { by: "me", amount: price } }));
+    bumpStat("admire");
     say({ from: "me", text: `${t("bottle.courtStarted")} ${player.name} ❤ ${price}` });
   }
   // Press and hold a gift: it keeps going until the finger is lifted (or the hearts run out).
@@ -857,6 +885,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (gift.startsWith("song:")) { giveGift(targets[0], gift, price, need); setSongMany(targets); return false; }
     let sent = false;
     for (const index of targets) { if (!giveGift(index, gift, price, need)) break; sent = true; }
+    if (sent && targets.length > 1) bumpStat("multi");
     return sent;
   }
   function pressGift(targets: number[], gift: string, price: number, need: number | undefined, x: number, y: number) {
@@ -1016,7 +1045,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           {!wide && !full ? <button onClick={onLeave} aria-label={t("photos.close")} title={t("photos.close")} className={cn(tool, "bg-[#E5484D]/90 hover:bg-[#E5484D] sm:hidden")}><X size={19} strokeWidth={3} /></button> : null}
         </div>
 
-        <button type="button" disabled={staged} onClick={(event) => { event.stopPropagation(); if (myTurn) return online ? void bottleSpin().then(pullRef.current) : spin(); setWaitNote(true); window.setTimeout(() => setWaitNote(false), 1800); }} aria-label={t("bottle.spin")} className={cn("absolute h-[30cqmin] transition-transform duration-[3200ms] ease-[cubic-bezier(0.15,0.6,0.2,1)] motion-reduce:duration-0", staged ? "pointer-events-none" : myTurn ? "z-20 cursor-pointer" : "cursor-default")} style={{ left: `${CENTER_X}%`, top: `${STAGE_Y}%`, transform: `translate(-50%, -50%) rotate(${rotation}deg)`, filter: skinFilter(skin) }}>
+        <button type="button" disabled={staged} onClick={(event) => { event.stopPropagation(); if (myTurn) { bumpStat("spins"); return online ? void bottleSpin().then(pullRef.current) : spin(); } setWaitNote(true); window.setTimeout(() => setWaitNote(false), 1800); }} aria-label={t("bottle.spin")} className={cn("absolute h-[30cqmin] transition-transform duration-[3200ms] ease-[cubic-bezier(0.15,0.6,0.2,1)] motion-reduce:duration-0", staged ? "pointer-events-none" : myTurn ? "z-20 cursor-pointer" : "cursor-default")} style={{ left: `${CENTER_X}%`, top: `${STAGE_Y}%`, transform: `translate(-50%, -50%) rotate(${rotation}deg)`, filter: skinFilter(skin) }}>
           <SkinBottle className={cn("h-full drop-shadow-[0_6px_10px_rgba(0,0,0,0.45)] transition-opacity duration-700", staged && "opacity-0")} />
         </button>
         {myTurn ? <div className="pointer-events-none absolute z-20 -translate-x-1/2 -translate-y-1/2" style={{ left: `${CENTER_X}%`, top: `${STAGE_Y}%` }}><p role="status" className="animate-bounce whitespace-nowrap rounded-full bg-white px-[3cqmin] py-[1cqmin] text-[3.2cqmin] font-bold text-[#C2410C] shadow-lg motion-reduce:animate-none">{t("bottle.clickBottle")}</p></div> : null}
@@ -1069,8 +1098,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             </div>
             {canAnswer && myRole ? (
               <div className="absolute z-30 flex -translate-x-1/2 gap-[2.5cqmin]" style={{ left: `${CENTER_X}%`, top: `calc(${STAGE_Y}% + 14.5cqmin)` }}>
-                <button onClick={() => { setAnswers((value) => ({ ...value, [myRole]: false })); if (online) void bottleAnswer(false).then(pullRef.current); }} className="h-[7.5cqmin] w-[20cqmin] rounded-[1.8cqmin] bg-[#E2401F] text-[3cqmin] font-bold text-white shadow-lg hover:brightness-110">{t("bottle.no")}</button>
-                <button onClick={() => { setAnswers((value) => ({ ...value, [myRole]: true })); if (online) void bottleAnswer(true).then(pullRef.current); }} className="h-[7.5cqmin] w-[20cqmin] rounded-[1.8cqmin] bg-[#8CC63F] text-[3cqmin] font-bold text-white shadow-lg hover:brightness-110">{t("bottle.yes")}</button>
+                <button onClick={() => { bumpStat("refusals"); setAnswers((value) => ({ ...value, [myRole]: false })); if (online) void bottleAnswer(false).then(pullRef.current); }} className="h-[7.5cqmin] w-[20cqmin] rounded-[1.8cqmin] bg-[#E2401F] text-[3cqmin] font-bold text-white shadow-lg hover:brightness-110">{t("bottle.no")}</button>
+                <button onClick={() => { bumpStat("kissesGiven"); setAnswers((value) => ({ ...value, [myRole]: true })); if (online) void bottleAnswer(true).then(pullRef.current); }} className="h-[7.5cqmin] w-[20cqmin] rounded-[1.8cqmin] bg-[#8CC63F] text-[3cqmin] font-bold text-white shadow-lg hover:brightness-110">{t("bottle.yes")}</button>
               </div>
             ) : null}
           </>
@@ -1129,9 +1158,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
 
         {panel ? (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/35 p-3" onClick={(event) => { event.stopPropagation(); setPanel(null); }}>
-            <div role="dialog" aria-modal="true" aria-label={t(`bottle.${panel}`)} onClick={(event) => event.stopPropagation()} className={cn("relative max-h-full w-full rounded-2xl p-3 shadow-2xl", panel === "tables" && "animate-[bottle-drop_0.45s_cubic-bezier(0.22,1.2,0.36,1)]", panel === "shop" ? "max-w-[420px] bg-[linear-gradient(180deg,#F26D7D,#F7A1A8)]" : panel === "wheel" || panel === "chances" ? "max-w-[380px] bg-[linear-gradient(180deg,#12998C,#7FD8C8)]" : panel === "top" ? "max-w-[300px] bg-[#EEF8FD]" : panel === "rooms" ? "max-w-[400px] border border-[#F5C451]/30 bg-[linear-gradient(165deg,#2B1D4E,#4E2D7C)]" : "max-w-[340px] bg-white")}>
+            <div role="dialog" aria-modal="true" aria-label={t(`bottle.${panel}`)} onClick={(event) => event.stopPropagation()} className={cn("relative max-h-full w-full rounded-2xl p-3 shadow-2xl", panel === "tables" && "animate-[bottle-drop_0.45s_cubic-bezier(0.22,1.2,0.36,1)]", panel === "shop" ? "max-w-[420px] bg-[linear-gradient(180deg,#F26D7D,#F7A1A8)]" : panel === "wheel" || panel === "chances" ? "max-w-[380px] bg-[linear-gradient(180deg,#12998C,#7FD8C8)]" : panel === "top" ? "max-w-[300px] bg-[#EEF8FD]" : panel === "achievements" ? "max-w-[400px] bg-white" : panel === "rooms" ? "max-w-[400px] border border-[#F5C451]/30 bg-[linear-gradient(165deg,#2B1D4E,#4E2D7C)]" : "max-w-[340px] bg-white")}>
               <button onClick={() => setPanel(null)} aria-label={t("photos.close")} title={t("photos.close")} className={cn("absolute -right-2 -top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 bg-white shadow", panel === "shop" ? "border-[#EF4444] text-[#EF4444]" : panel === "wheel" || panel === "chances" ? "border-[#0E8478] text-[#0E8478]" : panel === "top" ? "border-[#3B9AD9] text-[#3B9AD9]" : panel === "rooms" ? "border-[#F5C451] text-[#C08A12]" : "border-[#8CC63F] text-[#8CC63F]")}><X size={18} strokeWidth={3} /></button>
-              <p className={cn("mb-1 text-center text-sm font-bold", panel === "shop" || panel === "wheel" || panel === "chances" || panel === "rooms" ? "mb-2 text-white" : "text-[#9CA3AF]", panel === "top" && "sr-only")}>{t(`bottle.${panel}`)}</p>
+              <p className={cn("mb-1 text-center text-sm font-bold", panel === "shop" || panel === "wheel" || panel === "chances" || panel === "rooms" ? "mb-2 text-white" : "text-[#9CA3AF]", (panel === "top" || panel === "achievements") && "sr-only")}>{t(`bottle.${panel}`)}</p>
               {panel === "rooms" ? (() => {
                 const passBox = (value: string, change: (next: string) => void, label: string, focus?: boolean) => (
                   <span className="relative block min-w-0 flex-1">
@@ -1375,11 +1404,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   <button onClick={() => setPanel("rules")} className={row}><span aria-hidden="true" className="w-6 text-center text-lg">📖</span>{t("bottle.rules")}</button>
                 </div>
               ) : panel === "achievements" ? (
-                <ul className="max-h-[70cqmin] space-y-1 overflow-y-auto">
-                  {([[1, (kisses.me ?? 0) > 0], [2, (kisses.me ?? 0) >= 10], [3, Object.keys(sent).length > 0], [4, Object.values(suitors).some((item) => item.by === "me")], [5, ownedSkins.length > 1]] as const).map(([n, done]) => (
-                    <li key={n} className={cn("flex min-h-10 items-center gap-2 rounded-lg px-2 text-sm", done ? "bg-[#ECFCCB] font-semibold text-[#3F6212]" : "text-[#6B7280]")}><span aria-hidden="true">{done ? "✅" : "🔒"}</span>{t(`bottle.ach${n}` as "bottle.ach1")}</li>
-                  ))}
-                </ul>
+                <AchievementsPanel values={achValue} />
               ) : panel === "vip" ? (
                 <div className="max-h-[78cqmin] overflow-y-auto text-[#1F2937]">
                   <ul className="space-y-1 text-sm">{[1, 2, 3, 4, 5, 6].map((n) => <li key={n} className="flex gap-2"><span aria-hidden="true">👑</span>{t(`bottle.vip${n}` as "bottle.vip1")}</li>)}</ul>
