@@ -54,3 +54,8 @@ button { cursor: pointer; }
   from { transform: scale(0.85); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
 }
+
+@keyframes spin-hint {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-1.2cqmin, -0.8cqmin); }
+}

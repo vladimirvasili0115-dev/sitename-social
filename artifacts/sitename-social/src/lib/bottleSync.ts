@@ -1,14 +1,14 @@
 import { supabase } from "./supabase";
 
 // Live tables of the bottle game. The database owns the game: seats, turns, where the bottle stops, answers and kisses.
-export type BottleSeat = { seat: number; id: string; name: string | null; avatar: string | null; gender: string | null; kisses: number; total?: number; smiles?: number; songs?: number; zodiac?: number | null; age: number | null; status?: string | null; admirer?: { id: string; name: string | null; avatar: string | null; amount: number } | null };
+export type BottleSeat = { seat: number; id: string; name: string | null; avatar: string | null; gender: string | null; kisses: number; total?: number; smiles?: number; songs?: number; zodiac?: number | null; age: number | null; status?: string | null; frame?: number; admirer?: { id: string; name: string | null; avatar: string | null; amount: number } | null };
 export type BottleChat = { id: number; from: string | null; to: string | null; kind: "text" | "kiss" | "wheel" | "song" | "gift" | "admire" | "admire_lost"; body: string | null };
 export type BottleState = {
   table: number; me: string; now: number; hearts: number; chances?: number; winner?: { name: string | null; amount: number } | null;
   phase: "waiting" | "spinning" | "choice" | "result"; phase_at: number;
   turn: string | null; target: string | null; spinner_answer: boolean | null; target_answer: boolean | null; round: number;
   seats: BottleSeat[]; chat: BottleChat[];
-  wheel?: boolean; track?: BottleTrack | null; vip?: boolean; room?: { name: string; capacity: number; owner: string } | null;
+  wheel?: boolean; track?: BottleTrack | null; vip?: boolean; frames?: number[]; room?: { name: string; capacity: number; owner: string } | null;
 };
 export type BottleTrack = { kind: "youtube" | "mp3"; ref: string; title: string | null; by: string | null; to: string | null; at: number };
 async function call<T>(name: string, args?: Record<string, unknown>): Promise<T | null> {
@@ -45,3 +45,4 @@ export const bottleRoomsList = (search: string) => call<BottleRooms>("bottle_roo
 export const bottleRoomJoin = (room: number, password: string) => call<BottleRoomResult>("bottle_room_join", { p_room: room, p_password: password });
 export const bottleRoomCreate = (name: string, password: string, capacity: number) => call<BottleRoomResult>("bottle_room_create", { p_name: name, p_password: password, p_capacity: capacity });
 export const bottleRoomDelete = () => call<BottleMove & { error?: string }>("bottle_room_delete");
+export const bottleFrame = (frame: number) => call<{ hearts?: number; frame?: number; frames?: number[]; error?: "hearts" | "vip" | "bad" }>("bottle_frame", { p_frame: frame });

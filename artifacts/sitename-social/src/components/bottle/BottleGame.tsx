@@ -9,13 +9,14 @@ import { GiftArt } from "@/components/gifts/GiftArt";
 import { useProfile } from "@/components/profile/useProfile";
 import { cn } from "@/lib/utils";
 import { AchievementsPanel } from "./AchievementsPanel";
+import { FRAME_PRICE, FrameArt, frameLooks } from "./FrameArt";
 import { bumpStat, markVisit, readStats } from "./achievements";
 import { BottleSvg, WaterBottleSvg, WoodTable } from "./BottleArt";
 import { playGiftSound, playSound, setVolume } from "./sound";
 import { supabase } from "@/lib/supabase";
 import { ensureMessagesLoaded, openRemoteChat, remoteChats, sendRemoteMessage } from "@/lib/messagesSync";
 import { uploadBlob } from "@/lib/media";
-import { bottleAnswer, bottleBuyChances, bottleJoin, bottleMove, bottleQueueLeave, bottleAdmire, bottleGift, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState } from "@/lib/bottleSync";
+import { bottleAnswer, bottleBuyChances, bottleJoin, bottleMove, bottleQueueLeave, bottleAdmire, bottleFrame, bottleGift, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState } from "@/lib/bottleSync";
 
 type Player = { id: string; name: string; age: number; female: boolean; avatar: string; me?: boolean; empty?: boolean; zodiac?: number | null };
 type Phase = "waiting" | "spinning" | "choice" | "kissed" | "declined";
@@ -48,7 +49,6 @@ const wheelSectors: { hearts?: number; chances?: number; kisses?: number; smiles
 const prizeText = (item: (typeof wheelSectors)[number]) => (item.hearts ? `❤ ${item.hearts}` : item.chances ? `🎲 ${item.chances}` : item.kisses ? `💋 ${item.kisses}` : item.smiles ? `😊 ${item.smiles}` : "");
 const chancePacks: [number, number][] = [[300, 900], [50, 150], [15, 45], [5, 20], [1, 5]];
 const vipPlans: [number, number][] = [[7, 300], [30, 900], [90, 2200]];
-const frames = ["#FACC15", "#F472B6", "#60A5FA", "#34D399", "#A78BFA", "#F97316", "#EF4444"];
 // Put the channel link here (for example "https://t.me/kanal_adi"); while empty, the settings row says it is not set yet.
 const TELEGRAM_URL = "";
 // Zodiac signs in calendar order starting from Capricorn (22 December).
@@ -238,8 +238,11 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [sent, setSent] = useState<Record<string, number>>({});
   const [skin, setSkin] = useState(0);
   const [ownedSkins, setOwnedSkins] = useState<number[]>([0]);
-  const [frame, setFrame] = useState<string | null>(null);
-  const [ownedFrames, setOwnedFrames] = useState<string[]>([]);
+  // Photo frames: the live table keeps them on the server (everyone sees them); the demo keeps them here.
+  const [localFrame, setLocalFrame] = useState(0);
+  const [localFrames, setLocalFrames] = useState<number[]>([]);
+  const [framePick, setFramePick] = useState<number | null>(null);
+  const [frameNote, setFrameNote] = useState<string | null>(null);
   const [payNote, setPayNote] = useState(false);
   const [tableNo, setTableNo] = useState(60);
   const [copied, setCopied] = useState(false);
@@ -546,6 +549,27 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   function invite() {
     void navigator.clipboard?.writeText(`${window.location.origin}/games`).then(() => { setCopied(true); window.setTimeout(() => setCopied(false), 2000); });
   }
+  const myFrame = online ? net?.seats.find((seat) => seat.id === net.me)?.frame ?? 0 : localFrame;
+  const myFrames = online ? net?.frames ?? [] : localFrames;
+  const frameOf = (player: Player) => (player.me ? myFrame : online ? net?.seats.find((seat) => seat.id === player.id)?.frame ?? 0 : 0);
+  async function applyFrame(id: number) {
+    setFrameNote(null);
+    const look = frameLooks[id - 1];
+    if (id && !myFrames.includes(id)) {
+      if (look?.vip && !vip && !online) return setFrameNote(t("bottle.frameVip"));
+      if (heartsRef.current < FRAME_PRICE) return setFrameNote(t("bottle.noHearts"));
+    }
+    if (online) {
+      const result = await bottleFrame(id);
+      if (!result || result.error) return setFrameNote(t(result?.error === "vip" ? "bottle.frameVip" : result?.error === "hearts" ? "bottle.noHearts" : "bottle.frameFail"));
+      if (typeof result.hearts === "number") { heartsRef.current = result.hearts; setHearts(result.hearts); }
+      pullRef.current();
+    } else {
+      if (id && !localFrames.includes(id)) { heartsRef.current -= FRAME_PRICE; setHearts(heartsRef.current); setLocalFrames((list) => [...list, id]); }
+      setLocalFrame(id);
+    }
+    setFrameNote(t("bottle.frameDone"));
+  }
   const pay = (price: number) => {
     if (heartsRef.current < price) return false;
     heartsRef.current -= price;
@@ -589,7 +613,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     { key: "ach", label: t("bottle.achievements"), dot: !(kisses.me ?? 0), go: () => setPanel("achievements"), icon: <BadgeCheck size={24} className="text-white" fill="#F5B400" strokeWidth={2} /> },
     { key: "rating", label: t("bottle.menuRatings"), go: () => { setTopKind("kisses"); setPanel("top"); }, icon: <svg viewBox="0 0 24 24" className="h-6 w-6"><rect x="2" y="12" width="6" height="8" rx="1" fill="#5BA4F5" /><rect x="9" y="6" width="6" height="14" rx="1" fill="#2F7FF0" /><rect x="16" y="9" width="6" height="11" rx="1" fill="#5BA4F5" /><rect x="1" y="20" width="22" height="2" rx="1" fill="#1E5FC2" /></svg> },
     { key: "bottles", label: t("bottle.menuBottles"), go: () => { setPayNote(false); setPanel("bottles"); }, icon: <span className="relative h-6 w-6"><BottleSvg className="absolute left-0 top-0 h-6 -rotate-[35deg]" /><BottleSvg className="absolute left-2.5 top-0.5 h-5 -rotate-[35deg] saturate-150" /></span> },
-    { key: "frames", label: t("bottle.menuStyle"), go: () => { setPayNote(false); setPanel("frames"); }, icon: <svg viewBox="0 0 24 24" className="h-6 w-6"><rect x="2.5" y="2.5" width="19" height="19" rx="2" fill="#FFD25E" stroke="#E79A00" strokeWidth="2" /><rect x="6.5" y="6.5" width="11" height="11" rx="1" fill="#6FB6FF" stroke="#E79A00" strokeWidth="1.5" /></svg> },
+    { key: "frames", label: t("bottle.menuStyle"), go: () => { setFramePick(null); setFrameNote(null); setPanel("frames"); }, icon: <svg viewBox="0 0 24 24" className="h-6 w-6"><rect x="2.5" y="2.5" width="19" height="19" rx="2" fill="#FFD25E" stroke="#E79A00" strokeWidth="2" /><rect x="6.5" y="6.5" width="11" height="11" rx="1" fill="#6FB6FF" stroke="#E79A00" strokeWidth="1.5" /></svg> },
     { key: "boosters", label: t("bottle.boosters"), go: () => { setPayNote(false); setPanel("boosters"); }, icon: <svg viewBox="0 0 24 24" className="h-6 w-6"><g fill="#3D7BE0">{[0, 45, 90, 135, 180, 225, 270, 315].map((angle) => <ellipse key={angle} cx="12" cy="5" rx="3" ry="4.2" transform={`rotate(${angle} 12 12)`} />)}</g><circle cx="12" cy="12" r="4" fill="#FFC83D" stroke="#FFFFFF" strokeWidth="1.2" /></svg> },
     { key: "rules", label: t("bottle.rules"), go: () => setPanel("rules"), icon: <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[linear-gradient(180deg,#7CD35B,#3FA62B)]"><BookOpen size={15} className="text-white" strokeWidth={2.4} /></span> },
   ];
@@ -1048,7 +1072,15 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         <button type="button" disabled={staged} onClick={(event) => { event.stopPropagation(); if (myTurn) { bumpStat("spins"); return online ? void bottleSpin().then(pullRef.current) : spin(); } setWaitNote(true); window.setTimeout(() => setWaitNote(false), 1800); }} aria-label={t("bottle.spin")} className={cn("absolute h-[30cqmin] transition-transform duration-[3200ms] ease-[cubic-bezier(0.15,0.6,0.2,1)] motion-reduce:duration-0", staged ? "pointer-events-none" : myTurn ? "z-20 cursor-pointer" : "cursor-default")} style={{ left: `${CENTER_X}%`, top: `${STAGE_Y}%`, transform: `translate(-50%, -50%) rotate(${rotation}deg)`, filter: skinFilter(skin) }}>
           <SkinBottle className={cn("h-full drop-shadow-[0_6px_10px_rgba(0,0,0,0.45)] transition-opacity duration-700", staged && "opacity-0")} />
         </button>
-        {myTurn ? <div className="pointer-events-none absolute z-20 -translate-x-1/2 -translate-y-1/2" style={{ left: `${CENTER_X}%`, top: `${STAGE_Y}%` }}><p role="status" className="animate-bounce whitespace-nowrap rounded-full bg-white px-[3cqmin] py-[1cqmin] text-[3.2cqmin] font-bold text-[#C2410C] shadow-lg motion-reduce:animate-none">{t("bottle.clickBottle")}</p></div> : null}
+        {myTurn && !staged ? (
+          <div role="status" className="pointer-events-none absolute z-20 h-[19cqmin] w-[24cqmin] animate-[spin-hint_1.6s_ease-in-out_infinite] motion-reduce:animate-none" style={{ left: `${CENTER_X + 1}%`, top: `${STAGE_Y + 2}%` }}>
+            <svg viewBox="0 0 120 90" aria-hidden="true" className="absolute inset-0 h-full w-full overflow-visible drop-shadow-[0_2px_3px_rgba(0,0,0,0.45)]">
+              <path d="M98 50C96 22 64 10 22 18" fill="none" stroke="#FFFFFF" strokeWidth="3.5" strokeLinecap="round" />
+              <path d="M30 9L18 18.5L31 26" fill="none" stroke="#FFFFFF" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <p className="absolute left-[30%] top-[58%] whitespace-nowrap text-center text-[4.3cqmin] font-bold leading-[1.05] text-white [text-shadow:0_2px_4px_rgba(0,0,0,0.55)]">{t("bottle.spinHint1")}<br />{t("bottle.spinHint2")}</p>
+          </div>
+        ) : null}
 
         {waitNote && !myTurn && !staged ? <p role="status" className="pointer-events-none absolute z-30 -translate-x-1/2 whitespace-nowrap rounded-full bg-black/75 px-[3cqmin] py-[1cqmin] text-[3.2cqmin] font-bold text-white" style={{ left: `${CENTER_X}%`, top: `calc(${STAGE_Y}% + 17cqmin)` }}>{t("bottle.waitTurn")}</p> : null}
         {phase === "waiting" && !myTurn ? <p className="pointer-events-none absolute w-[40cqmin] -translate-x-1/2 -translate-y-1/2 text-center text-[3.4cqmin] font-bold leading-tight text-white [text-shadow:0_2px_6px_rgba(0,0,0,0.85)]" style={{ left: `${CENTER_X}%`, top: `${STAGE_Y}%` }}>{t(enoughGirls ? "bottle.waitingSpin" : net?.room ? "bottle.needPair" : "bottle.needGirls")}</p> : null}
@@ -1059,7 +1091,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           return (
             <div key={player.id} className={cn("absolute -translate-x-1/2 -translate-y-1/2 transition-[left,top]", wide ? "w-[17cqmin]" : "w-[16cqmin]", " duration-[1100ms] ease-in-out motion-reduce:duration-0", staged && active ? "pointer-events-none z-30" : index === turn && "z-10")} style={staged && active ? { left: `calc(${CENTER_X}% ${index === turn ? "-" : "+"} 12.5cqmin)`, top: `${STAGE_Y}%` } : { left: `${seats[index][0]}%`, top: `${seats[index][1]}%` }}>
               <button type="button" onClick={(event) => { event.stopPropagation(); if (dedicate) { if (!player.me) setChosen((list) => (list.includes(player.id) ? list.filter((id) => id !== player.id) : [...list, player.id])); return; } setGiftNote(null); setCardNote(null); setFlagMenu(false); setSignOpen(false); setCard(picked === index || Boolean(player.me)); setPicked(index); }} aria-label={`${player.name}, ${player.age}`} className={cn("group relative block aspect-square w-full rounded-[14%] bg-surface-2 shadow-[0_4px_10px_rgba(0,0,0,0.4)]", staged && index === target ? "ring-[0.9cqmin] ring-[#FFE2A8]" : active ? "ring-4 ring-white" : picked === index ? "ring-4 ring-[#8CC63F]" : player.me ? "ring-2 ring-white/80" : "")}>
-                <img src={player.avatar} alt="" className="h-full w-full rounded-[14%] object-cover" style={player.me && frame ? { boxShadow: `0 0 0 0.9cqmin ${frame}, 0 0 2.4cqmin ${frame}` } : undefined} />
+                <img src={player.avatar} alt="" className="h-full w-full rounded-[14%] object-cover" />
+                {frameOf(player) ? <FrameArt id={frameOf(player)} className="pointer-events-none absolute -inset-[9%] z-[1] h-[118%] w-[118%]" /> : null}
                 {player.me || dedicate ? null : <span aria-hidden="true" className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-[14%] bg-black/35 opacity-0 transition-opacity group-hover:opacity-100"><GiftIcon className="h-[38%] w-[38%] text-white" strokeWidth={1.6} /></span>}
                 {dedicate && !player.me ? (chosen.includes(player.id)
                   ? <span className="absolute inset-0 z-10 flex items-center justify-center rounded-[14%] bg-[#8CC63F]/85 ring-[0.5cqmin] ring-[#B678E8]"><Check className="h-[45%] w-[45%] text-white drop-shadow" strokeWidth={4} /></span>
@@ -1158,7 +1191,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
 
         {panel ? (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/35 p-3" onClick={(event) => { event.stopPropagation(); setPanel(null); }}>
-            <div role="dialog" aria-modal="true" aria-label={t(`bottle.${panel}`)} onClick={(event) => event.stopPropagation()} className={cn("relative max-h-full w-full rounded-2xl p-3 shadow-2xl", panel === "tables" && "animate-[bottle-drop_0.45s_cubic-bezier(0.22,1.2,0.36,1)]", panel === "shop" ? "max-w-[420px] bg-[linear-gradient(180deg,#F26D7D,#F7A1A8)]" : panel === "wheel" || panel === "chances" ? "max-w-[380px] bg-[linear-gradient(180deg,#12998C,#7FD8C8)]" : panel === "top" ? "max-w-[300px] bg-[#EEF8FD]" : panel === "achievements" ? "max-w-[400px] bg-white" : panel === "rooms" ? "max-w-[400px] border border-[#F5C451]/30 bg-[linear-gradient(165deg,#2B1D4E,#4E2D7C)]" : "max-w-[340px] bg-white")}>
+            <div role="dialog" aria-modal="true" aria-label={t(`bottle.${panel}`)} onClick={(event) => event.stopPropagation()} className={cn("relative max-h-full w-full rounded-2xl p-3 shadow-2xl", panel === "tables" && "animate-[bottle-drop_0.45s_cubic-bezier(0.22,1.2,0.36,1)]", panel === "shop" ? "max-w-[420px] bg-[linear-gradient(180deg,#F26D7D,#F7A1A8)]" : panel === "wheel" || panel === "chances" ? "max-w-[380px] bg-[linear-gradient(180deg,#12998C,#7FD8C8)]" : panel === "top" ? "max-w-[300px] bg-[#EEF8FD]" : panel === "achievements" ? "max-w-[400px] bg-white" : panel === "frames" ? "max-w-[440px] bg-[#F7F7F8]" : panel === "rooms" ? "max-w-[400px] border border-[#F5C451]/30 bg-[linear-gradient(165deg,#2B1D4E,#4E2D7C)]" : "max-w-[340px] bg-white")}>
               <button onClick={() => setPanel(null)} aria-label={t("photos.close")} title={t("photos.close")} className={cn("absolute -right-2 -top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 bg-white shadow", panel === "shop" ? "border-[#EF4444] text-[#EF4444]" : panel === "wheel" || panel === "chances" ? "border-[#0E8478] text-[#0E8478]" : panel === "top" ? "border-[#3B9AD9] text-[#3B9AD9]" : panel === "rooms" ? "border-[#F5C451] text-[#C08A12]" : "border-[#8CC63F] text-[#8CC63F]")}><X size={18} strokeWidth={3} /></button>
               <p className={cn("mb-1 text-center text-sm font-bold", panel === "shop" || panel === "wheel" || panel === "chances" || panel === "rooms" ? "mb-2 text-white" : "text-[#9CA3AF]", (panel === "top" || panel === "achievements") && "sr-only")}>{t(`bottle.${panel}`)}</p>
               {panel === "rooms" ? (() => {
@@ -1444,18 +1477,45 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   </div>
                   {payNote ? <p role="status" className="rounded-lg bg-[#FEF3C7] p-2 text-center text-xs font-semibold text-[#92400E]">{t("bottle.noHearts")}</p> : null}
                 </div>
-              ) : panel === "frames" ? (
-                <div>
-                  <ul className="grid grid-cols-4 gap-2">
-                    <li><button onClick={() => setFrame(null)} aria-pressed={!frame} className={cn("flex aspect-square w-full items-center justify-center rounded-xl border-2 text-xs font-bold text-[#6B7280]", !frame ? "border-[#8CC63F]" : "border-[#E5E7EB]")}>✕</button></li>
-                    {frames.map((color) => {
-                      const owned = ownedFrames.includes(color);
-                      return <li key={color}><button onClick={() => { if (!owned) { if (!pay(3)) return setPayNote(true); setOwnedFrames((list) => [...list, color]); } setFrame(color); }} aria-pressed={frame === color} aria-label={`${t("bottle.frames")} ${color}`} className={cn("flex aspect-square w-full items-end justify-center rounded-xl border-2 pb-0.5 text-[10px] font-bold text-[#374151]", frame === color ? "border-[#8CC63F]" : "border-transparent")} style={{ boxShadow: `inset 0 0 0 5px ${color}` }}>{owned ? "✓" : "❤ 3"}</button></li>;
-                    })}
-                  </ul>
-                  {payNote ? <p role="status" className="mt-2 rounded-lg bg-[#FEF3C7] p-2 text-center text-xs font-semibold text-[#92400E]">{t("bottle.noHearts")}</p> : null}
-                </div>
-              ) : (
+              ) : panel === "frames" ? (() => {
+                const pick = framePick ?? myFrame;
+                const owned = (id: number) => id === 0 || myFrames.includes(id);
+                const me = players[meIndex];
+                return (
+                  <div className="-mx-3 -mb-3 text-[#1F2937]">
+                    <div className="flex items-center gap-4 border-b border-[#E5E7EB] px-4 pb-3 pt-1">
+                      <span className="relative block h-24 w-24 shrink-0 p-[9%]">
+                        <img src={me.avatar} alt="" className="h-full w-full rounded-lg object-cover" />
+                        {pick ? <FrameArt id={pick} className="pointer-events-none absolute inset-0 h-full w-full" /> : null}
+                        <span className="absolute inset-x-[9%] bottom-[9%] truncate rounded-b-lg bg-black/45 px-1 text-center text-[10px] font-semibold text-white">{me.name}, {me.age}</span>
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm leading-snug">{t(pick ? "bottle.frameHint" : "bottle.frameNone")}</p>
+                        <button onClick={() => void applyFrame(pick)} disabled={pick === myFrame} className="mt-2 flex h-9 items-center gap-1.5 rounded-lg bg-[linear-gradient(180deg,#8EDB5A,#5DB13A)] px-4 text-sm font-bold text-white shadow disabled:bg-none disabled:bg-[#D1D5DB] disabled:shadow-none">{owned(pick) ? t("bottle.frameApply") : <><Heart size={14} fill="#FFFFFF" stroke="none" />{FRAME_PRICE} · {t("bottle.frameBuy")}</>}</button>
+                        {frameNote ? <p role="status" className="mt-1.5 text-xs font-semibold text-[#B45309]">{frameNote}</p> : null}
+                      </div>
+                    </div>
+                    <ul className="grid h-[calc(100cqh-230px)] max-h-[440px] min-h-[220px] grid-cols-4 content-start gap-2 overflow-y-auto p-3 [scrollbar-width:thin] sm:grid-cols-5">
+                      {[0, ...frameLooks.map((_, n) => n + 1)].map((id) => {
+                        const look = frameLooks[id - 1];
+                        const mine = owned(id);
+                        return (
+                          <li key={id}>
+                            <button onClick={() => { setFramePick(id); setFrameNote(null); }} aria-pressed={pick === id} aria-label={`${t("bottle.frames")} ${id}`} className={cn("flex w-full flex-col items-center gap-0.5 rounded-xl border-2 bg-white p-1 shadow-sm transition-transform hover:-translate-y-0.5", pick === id ? "border-[#8CC63F] bg-[#F4FBEA]" : "border-transparent")}>
+                              <span className="relative block aspect-square w-full">
+                                {id ? <FrameArt id={id} className="h-full w-full" /> : <span className="flex h-full w-full items-center justify-center rounded-lg border-2 border-dashed border-[#D1D5DB] text-[#9CA3AF]"><X size={18} /></span>}
+                              </span>
+                              <span className="flex h-4 items-center gap-0.5 text-xs font-bold tabular-nums">
+                                {id === myFrame ? <Check size={14} strokeWidth={3} className="text-[#65A30D]" /> : mine ? <span className="text-[10px] text-[#65A30D]">{t("bottle.frameOwned")}</span> : look?.vip && !vip ? <span className="rounded bg-[#F59E0B] px-1 text-[9px] text-white">VIP</span> : <><Heart size={12} fill="#E8352B" stroke="none" />{FRAME_PRICE}</>}
+                              </span>
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                );
+              })() : (
                 <ol className="max-h-[70cqmin] list-decimal space-y-1.5 overflow-y-auto pl-6 pr-1 text-sm text-[#1F2937]">
                   {[1, 2, 3, 4].map((n) => <li key={n}>{t(`bottle.rule${n}` as "bottle.rule1")}</li>)}
                 </ol>
