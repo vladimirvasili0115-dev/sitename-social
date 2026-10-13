@@ -47,7 +47,7 @@ export default function GamesPage() {
     );
   };
   return (
-    <div className="mx-auto max-w-[640px]">
+    <div className="w-full">
       <Card className="p-3 sm:p-4">
         <h1 className="mb-3 px-2 pt-1 text-[22px] font-bold tracking-[-0.03em]">{t("nav.games")}</h1>
         <ul className="space-y-1">
