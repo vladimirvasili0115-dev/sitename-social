@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type FormEvent, type PointerEvent as ReactPointerEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type FormEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { AtSign, LifeBuoy, Clock, Flame, Search, Star, Ban, Flag, Mail, Gift as GiftIcon, Heart, Home, Maximize, ArrowUpRight, BadgeCheck, Crown, DoorOpen, Eye, EyeOff, KeyRound, Lock, Mars, Trash2, Venus, BookOpen, MessageSquare, Check, Menu, UserRound, Minimize, Music, Plus, UserCheck, Music2, RefreshCw, SendHorizontal, Settings, Trophy, UserPlus, UserRoundCog, Users, Volume2, VolumeX, X } from "lucide-react";
 import type { GiftId } from "@/types";
@@ -102,7 +102,7 @@ function youtubeId(value: string) {
   return match ? match[1] : null;
 }
 
-export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedicate }: { wide: boolean; full: boolean; onToggleFull: () => void; onLeave: () => void; dedicate: boolean; onDedicate: (value: boolean) => void }) {
+export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedicate, header }: { wide: boolean; full: boolean; onToggleFull: () => void; onLeave: () => void; dedicate: boolean; onDedicate: (value: boolean) => void; header?: ReactNode }) {
   const { t } = useTranslation();
   const { user, details } = useProfile();
   // With the database connected the table is live: real players, and the server decides everything. Without it, the demo with bots runs.
@@ -971,9 +971,13 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         })() : null;
   return (
     <div className={cn("relative flex h-full w-full bg-surface text-text", wide ? "flex-row" : "flex-col")}>
-      <div className={cn("relative shrink-0 overflow-hidden bg-[#E0A04E] [container-type:size]", wide ? "h-full w-[54%]" : "mx-auto aspect-[9/10] w-full max-w-[64dvh]")} onClick={() => { setPicked(null); if (dedicate) chooseMode(false); }}>
-        <WoodTable className="pointer-events-none absolute inset-0 h-full w-full" />
-        <div className={cn("absolute z-10 flex items-center", wide ? "inset-y-0 left-0 w-[13%] flex-col gap-[2.2cqmin] py-[2.2cqmin]" : "inset-x-0 top-0 h-[10%] gap-[1.7cqmin] px-[2cqmin]")} onClick={(event) => event.stopPropagation()}>
+      {/* On a phone-shaped window the title bar sits on the same wood as the table, with no seam between them. */}
+      <div className={cn("relative shrink-0", wide ? "h-full w-[54%]" : "mx-auto w-full max-w-[64dvh]")}>
+      {wide ? null : <WoodTable className="pointer-events-none absolute inset-0 h-full w-full" />}
+      {wide ? null : header}
+      <div className={cn("relative shrink-0 overflow-hidden [container-type:size]", wide ? "h-full w-full bg-[#E0A04E]" : "aspect-[9/10] w-full")} onClick={() => { setPicked(null); if (dedicate) chooseMode(false); }}>
+        {wide ? <WoodTable className="pointer-events-none absolute inset-0 h-full w-full" /> : null}
+        <div className={cn("absolute z-10 flex items-center", wide ? "inset-y-0 left-0 w-[13%] flex-col gap-[2.2cqmin] py-[2.2cqmin]" : "inset-x-0 top-0 h-[10%] gap-[1.3cqmin] px-[2cqmin]")} onClick={(event) => event.stopPropagation()}>
           <button type="button" onClick={() => { setPayNote(false); setPanel("shop"); }} aria-label={`${t("bottle.shop")}: ${hearts}`} className={cn("flex items-center text-white hover:brightness-110", wide ? "flex-col" : "gap-1.5")} title={t("bottle.shop")}>
             <svg viewBox="0 0 64 58" aria-hidden="true" className={cn("drop-shadow-[0_2px_3px_rgba(90,30,0,0.35)]", wide ? "h-[min(56px,10cqmin)] w-[min(62px,11cqmin)]" : "h-[8cqmin] max-h-10 w-[8.8cqmin] max-w-11")}>
               <defs><linearGradient id="hud-heart" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#FF9A3C" /><stop offset="1" stopColor="#FF4E12" /></linearGradient></defs>
@@ -983,8 +987,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             <span className={cn("font-bold tabular-nums leading-tight [text-shadow:0_1px_2px_rgba(0,0,0,0.45)]", wide ? "text-[min(20px,3.4cqmin)]" : "text-[max(12px,2.6cqmin)]")}>{hearts}</span>
           </button>
           <span className="flex-1" />
-          <button onClick={onToggleFull} aria-label={t("bottle.fullscreen")} title={t("bottle.fullscreen")} className={tool}>{full ? <Minimize size={17} /> : <Maximize size={17} />}</button>
-          {full && !wide ? <button onClick={() => chooseMode(!dedicate)} aria-pressed={dedicate} aria-label={t("bottle.dedicate")} title={t("bottle.dedicate")} className={cn(tool, dedicate && "bg-[#8CC63F]")}><Plus size={19} strokeWidth={3} /></button> : null}
+          <button onClick={onToggleFull} aria-label={t("bottle.fullscreen")} title={t("bottle.fullscreen")} className={cn(tool, !wide && "max-sm:hidden")}>{full ? <Minimize size={17} /> : <Maximize size={17} />}</button>
+          {!wide ? <button onClick={() => chooseMode(!dedicate)} aria-pressed={dedicate} aria-label={t("bottle.dedicate")} title={t("bottle.dedicate")} className={cn(tool, dedicate && "bg-[#8CC63F]", !full && "sm:hidden")}><Plus size={19} strokeWidth={3} /></button> : null}
           <button onClick={openPrivate} aria-label={t("bottle.rooms")} title={t("bottle.rooms")} className={tool}><DoorOpen size={19} /></button>
           {online && net && !net.wheel ? null : <button onClick={() => { setWheelPrize(null); setPayNote(false); setPanel("wheel"); }} aria-label={t("bottle.wheel")} title={t("bottle.wheel")} className={tool}><LifeBuoy size={19} /></button>}
           <button onClick={() => { setTopKind("kisses"); setPanel("top"); }} aria-label={t("bottle.top")} title={t("bottle.top")} className={tool}><Trophy size={18} /></button>
@@ -1005,6 +1009,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           {myTurn
             ? <span aria-label={`${seconds}`} className={cn(tool, "text-[max(14px,3cqmin)] font-bold tabular-nums")}>{seconds}</span>
             : <button onClick={changeTable} aria-label={t("bottle.changeTable")} title={t("bottle.changeTable")} className={tool}><RefreshCw size={17} /></button>}
+          {!wide && !full ? <button onClick={onLeave} aria-label={t("photos.close")} title={t("photos.close")} className={cn(tool, "bg-[#E5484D]/90 hover:bg-[#E5484D] sm:hidden")}><X size={19} strokeWidth={3} /></button> : null}
         </div>
 
         <button type="button" disabled={staged} onClick={(event) => { event.stopPropagation(); if (myTurn) return online ? void bottleSpin().then(pullRef.current) : spin(); setWaitNote(true); window.setTimeout(() => setWaitNote(false), 1800); }} aria-label={t("bottle.spin")} className={cn("absolute h-[30cqmin] transition-transform duration-[3200ms] ease-[cubic-bezier(0.15,0.6,0.2,1)] motion-reduce:duration-0", staged ? "pointer-events-none" : myTurn ? "z-20 cursor-pointer" : "cursor-default")} style={{ left: `${CENTER_X}%`, top: `${STAGE_Y}%`, transform: `translate(-50%, -50%) rotate(${rotation}deg)`, filter: skinFilter(skin) }}>
@@ -1430,6 +1435,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           </div>
         ) : null}
       </div>
+      </div>
 
       <div className={cn("relative flex min-h-0 min-w-0 flex-1 flex-col border-border", wide ? "border-l" : "border-t")}>
         {video && wide ? (
@@ -1459,7 +1465,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             <button onClick={() => setAudio(null)} aria-label={t("photos.close")} title={t("photos.close")} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-2 text-text"><X size={15} /></button>
           </div>
         ) : null}
-        <div className={cn("flex items-center gap-2 border-b border-border px-3 py-1.5", (picked !== null || dedicate) && "hidden")}>
+        <div className={cn("flex items-center gap-2 border-b border-border px-3 py-1.5", (picked !== null || dedicate || !wide) && "hidden")}>
           <p className="min-w-0 flex-1 truncate text-[11px] text-muted">{online ? (net?.room ? `🔒 ${net.room.name} · ${seated.length}/${net.room.capacity}` : `${t("bottle.liveNote")} ${net?.table ?? ""} · ${seated.length}/12`) : t("bottle.demoNote")}</p>
           {canDeleteRoom ? <button onClick={() => void deleteRoom()} className="flex h-7 shrink-0 items-center gap-1 rounded-full bg-[#7C2D12] px-2.5 text-xs font-bold text-white hover:bg-[#9A3412]"><Trash2 size={13} strokeWidth={2.6} />{t("bottle.roomDelete")}</button> : null}
           {net?.room ? <button onClick={leaveRoom} className="flex h-7 shrink-0 items-center gap-1 rounded-full bg-[#E5484D] px-2.5 text-xs font-bold text-white hover:bg-[#D13438]"><X size={13} strokeWidth={3} />{t("bottle.roomLeave")}</button> : null}

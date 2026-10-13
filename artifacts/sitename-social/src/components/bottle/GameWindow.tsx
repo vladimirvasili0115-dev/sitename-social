@@ -6,7 +6,17 @@ import { cn } from "@/lib/utils";
 import { BottleGame } from "./BottleGame";
 
 // Small repeating doodles (hearts, notes, gifts) for the loading screen.
-const pattern = `url("data:image/svg+xml;utf8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" fill="#FFFFFF" fill-opacity="0.11"><path d="M28 40c-9-6-13-10-13-15 0-4 3-7 7-7 3 0 5 2 6 4 1-2 3-4 6-4 4 0 7 3 7 7 0 5-4 9-13 15z"/><path d="M104 18h5v20a6 6 0 1 1-4-5.6V24l14-3v14a6 6 0 1 1-4-5.6V20z"/><rect x="20" y="104" width="30" height="24" rx="4"/><rect x="16" y="98" width="38" height="9" rx="3"/><path d="M33 98c-10-12-18 0 0 0 18 0 10-12 0 0z"/><path d="M118 132l7-20 10 12 10-12 7 20z"/><path d="M148 62c-5 0-9 3-11 6-2-3-6-6-11-6-6 0-9 4-9 8 0 6 9 12 20 12s20-6 20-12c0-4-3-8-9-8z" transform="translate(-6 0)"/><path d="M80 74h6v8c0 3 4 5 4 10v22c0 3-2 5-5 5h-4c-3 0-5-2-5-5V92c0-5 4-7 4-10z" transform="rotate(-30 83 96)"/><circle cx="160" cy="160" r="6"/><circle cx="70" cy="150" r="4"/><circle cx="160" cy="20" r="3.5"/></svg>')}")`;
+const pattern = `url("data:image/svg+xml;utf8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="220" height="220" fill="none" stroke="#E9F5D2" stroke-opacity="0.22" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(26 22) rotate(9) scale(1)"><path d="M0 6c-6-4-9-7-9-10.5 0-3 2.200-5 4.700-5 1.800 0 3.300 1 4.300 2.600 1-1.600 2.500-2.600 4.300-2.600 2.500 0 4.700 2 4.700 5C9 -1 6 2 0 6z"/></g><g transform="translate(80 40) rotate(17) scale(1)"><path d="M-11 0c4-6 8-7 11-4 3-3 7-2 11 4-4 6-8 7-11 7s-7-1-11-7z"/><path d="M-11 0c7 2 15 2 22 0"/></g><g transform="translate(140 18) rotate(20) scale(1.15)"><path d="M-3 6V-8l9-2v12"/><circle cx="-6" cy="6" r="3"/><circle cx="3" cy="4" r="3"/></g><g transform="translate(196 44) rotate(30) scale(1.15)"><rect x="-8" y="-3" width="16" height="12" rx="1.500"/><rect x="-10" y="-7" width="20" height="5" rx="1"/><path d="M0-7v16M0-7c-5-6-9 0 0 0 9 0 5-6 0 0"/></g><g transform="translate(40 82) rotate(11) scale(1.15)"><path d="M-10 6l-2-12 6 5 6-8 6 8 6-5-2 12z"/></g><g transform="translate(108 96) rotate(-29) scale(1)"><path d="M-2-11h4v5c0 2 3 3 3 7v9c0 1.500-1 2.500-2.500 2.500h-5C-4 12.500-5 11.500-5 10V1c0-4 3-5 3-7z"/></g><g transform="translate(172 100) rotate(19) scale(0.85)"><circle cx="0" cy="0" r="3"/></g><g transform="translate(16 140) rotate(11) scale(0.85)"><path d="M0 6c-6-4-9-7-9-10.5 0-3 2.200-5 4.700-5 1.800 0 3.300 1 4.300 2.600 1-1.600 2.500-2.600 4.300-2.600 2.500 0 4.700 2 4.700 5C9 -1 6 2 0 6z"/></g><g transform="translate(70 150) rotate(27) scale(0.85)"><path d="M-11 0c4-6 8-7 11-4 3-3 7-2 11 4-4 6-8 7-11 7s-7-1-11-7z"/><path d="M-11 0c7 2 15 2 22 0"/></g><g transform="translate(130 160) rotate(-23) scale(1)"><path d="M-3 6V-8l9-2v12"/><circle cx="-6" cy="6" r="3"/><circle cx="3" cy="4" r="3"/></g><g transform="translate(200 170) rotate(0) scale(0.85)"><rect x="-8" y="-3" width="16" height="12" rx="1.500"/><rect x="-10" y="-7" width="20" height="5" rx="1"/><path d="M0-7v16M0-7c-5-6-9 0 0 0 9 0 5-6 0 0"/></g><g transform="translate(46 204) rotate(-6) scale(1.15)"><path d="M-10 6l-2-12 6 5 6-8 6 8 6-5-2 12z"/></g><g transform="translate(156 212) rotate(-24) scale(1.15)"><path d="M-2-11h4v5c0 2 3 3 3 7v9c0 1.500-1 2.500-2.500 2.500h-5C-4 12.500-5 11.500-5 10V1c0-4 3-5 3-7z"/></g><g transform="translate(98 200) rotate(-15) scale(0.85)"><circle cx="0" cy="0" r="3"/></g><g transform="translate(214 124) rotate(16) scale(0.85)"><path d="M0 6c-6-4-9-7-9-10.5 0-3 2.200-5 4.700-5 1.800 0 3.300 1 4.300 2.600 1-1.600 2.500-2.600 4.300-2.600 2.500 0 4.700 2 4.700 5C9 -1 6 2 0 6z"/></g><g transform="translate(150 64) rotate(-4) scale(1)"><path d="M-11 0c4-6 8-7 11-4 3-3 7-2 11 4-4 6-8 7-11 7s-7-1-11-7z"/><path d="M-11 0c7 2 15 2 22 0"/></g><g transform="translate(60 120) rotate(-19) scale(1)"><path d="M-3 6V-8l9-2v12"/><circle cx="-6" cy="6" r="3"/><circle cx="3" cy="4" r="3"/></g></svg>')}")`;
+
+// One bouncy letter of the title: yellow-to-orange face with a darker orange edge underneath.
+function Letter({ char, size, lift, turn }: { char: string; size: string; lift: number; turn: number }) {
+  return (
+    <span className="relative inline-block" style={{ fontSize: size, transform: `translateY(${lift}%) rotate(${turn}deg)` }}>
+      <span aria-hidden="true" className="absolute left-0 top-[0.05em] text-[#D2650A] [-webkit-text-stroke:0.06em_#D2650A]">{char}</span>
+      <span className="relative bg-[linear-gradient(180deg,#FFE15A_15%,#FFB523_55%,#FF9414)] bg-clip-text text-transparent">{char}</span>
+    </span>
+  );
+}
 
 // The game opens in a phone-sized window over the site, like an app; "Tam ekran" stretches it over the whole screen.
 export function GameWindow({ onClose, startFull = false }: { onClose: () => void; startFull?: boolean }) {
@@ -37,23 +47,23 @@ export function GameWindow({ onClose, startFull = false }: { onClose: () => void
 
   return (
     <div className={cn("fixed inset-0 z-[60] flex items-center justify-center", full ? "bg-bg" : "bg-[rgba(4,8,12,0.82)] p-0 sm:p-5")} onMouseDown={(event) => { if (!full && event.target === event.currentTarget) onClose(); }}>
-      <div role="dialog" aria-modal="true" aria-label={t("bottle.title")} className={cn("relative flex flex-col overflow-hidden bg-[#12141B] shadow-2xl", full ? "h-full w-full" : "h-full w-full sm:h-[min(860px,calc(100dvh-40px))] sm:w-[430px] sm:rounded-[26px]")}>
-        <div className={cn("h-12 shrink-0 items-center gap-3 px-4 text-white", full ? "hidden" : "flex")}>
-          <h2 className="min-w-0 truncate text-sm font-bold">{t("bottle.title")}</h2>
-          <button onClick={() => setDedicate(!dedicate)} aria-pressed={dedicate} aria-label={t("bottle.dedicate")} title={t("bottle.dedicate")} className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white", dedicate ? "bg-[#8CC63F]" : "bg-white/15 hover:bg-white/25")}><Plus size={17} strokeWidth={3} /></button>
-          <span className="flex-1" />
-          <button onClick={() => setFull(!full)} className="hidden items-center gap-1 text-xs font-semibold text-[#6FB1FF] hover:underline sm:flex">{t(full ? "bottle.window" : "bottle.fullscreen")}{full ? <Minimize2 size={13} /> : <ArrowUpRight size={14} />}</button>
-          <button onClick={onClose} aria-label={t("photos.close")} title={t("photos.close")} className="flex h-9 w-9 items-center justify-center rounded-full text-white/80 hover:bg-white/10 hover:text-white"><X size={20} /></button>
-        </div>
+      <div role="dialog" aria-modal="true" aria-label={t("bottle.title")} className={cn("relative flex flex-col overflow-hidden bg-[#D9954E] shadow-2xl", full ? "h-full w-full" : "h-full w-full sm:h-[min(860px,calc(100dvh-40px))] sm:w-[430px] sm:rounded-[26px]")}>
         <div className="relative min-h-0 flex-1">
-          <BottleGame wide={full && desktop} full={full} onToggleFull={() => setFull(!full)} onLeave={onClose} dedicate={dedicate} onDedicate={setDedicate} />
+          <BottleGame wide={full && desktop} full={full} onToggleFull={() => setFull(!full)} onLeave={onClose} dedicate={dedicate} onDedicate={setDedicate} header={
+          <div className={cn("h-12 shrink-0 items-center gap-3 relative z-20 px-4 text-white [text-shadow:0_1px_2px_rgba(80,40,0,0.5)]", full ? "hidden" : "hidden sm:flex")}>
+        <h2 className="min-w-0 truncate text-sm font-bold">{t("bottle.title")}</h2>
+        <button onClick={() => setDedicate(!dedicate)} aria-pressed={dedicate} aria-label={t("bottle.dedicate")} title={t("bottle.dedicate")} className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white", dedicate ? "bg-[#8CC63F]" : "bg-[#E3893A]/90 hover:bg-[#EE9545]")}><Plus size={17} strokeWidth={3} /></button>
+        <span className="flex-1" />
+        <button onClick={() => setFull(!full)} className="hidden items-center gap-1 text-xs font-bold text-white hover:underline sm:flex">{t(full ? "bottle.window" : "bottle.fullscreen")}{full ? <Minimize2 size={13} /> : <ArrowUpRight size={14} />}</button>
+        <button onClick={onClose} aria-label={t("photos.close")} title={t("photos.close")} className="flex h-8 w-8 items-center justify-center rounded-full bg-[#E5484D]/90 text-white hover:bg-[#E5484D]"><X size={18} strokeWidth={3} /></button>
+      </div>
+          } />
         </div>
         {loading ? (
-          <div role="status" aria-label={t("bottle.loading")} className="absolute inset-0 z-[80] flex items-center justify-center bg-[#79A84C]" style={{ backgroundImage: `radial-gradient(ellipse at 50% 48%, rgba(150,196,96,0.95), rgba(120,168,76,0) 62%), ${pattern}` }}>
-            <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&display=swap" />
-            <p className="-rotate-[4deg] text-center leading-[0.82] [font-family:'Lilita_One',system-ui,sans-serif]">
-              <span className="block bg-[linear-gradient(180deg,#FFD84A_10%,#FFAE1F_55%,#F38A12)] bg-clip-text text-[clamp(84px,30vw,150px)] tracking-wide text-transparent [filter:drop-shadow(0_4px_0_#D9700A)_drop-shadow(0_10px_14px_rgba(60,40,0,0.3))]">SPIN</span>
-              <span className="mt-1 block bg-[linear-gradient(180deg,#FFD84A_10%,#FFAE1F_55%,#F38A12)] bg-clip-text text-[clamp(40px,14vw,72px)] text-transparent [filter:drop-shadow(0_3px_0_#D9700A)_drop-shadow(0_8px_12px_rgba(60,40,0,0.3))]"><span className="text-[0.8em]">the</span> Bottle</span>
+          <div role="status" aria-label={t("bottle.loading")} className="absolute inset-0 z-[80] flex items-center justify-center bg-[#73A148]" style={{ backgroundImage: `radial-gradient(ellipse 75% 55% at 50% 50%, rgba(140,190,90,0.9), rgba(115,161,72,0) 70%), ${pattern}` }}>
+            <p aria-hidden="true" className="-rotate-[3deg] select-none text-center leading-[0.8] [font-family:'Lilita_One',system-ui,sans-serif] [filter:drop-shadow(0_6px_8px_rgba(40,60,10,0.35))]">
+              <span className="block">{["S", "p", "i", "N"].map((char, n) => <Letter key={n} char={char} size="clamp(78px,27vw,140px)" lift={[0, 8, -6, 4][n]} turn={[-4, 3, -2, 5][n]} />)}</span>
+              <span className="mt-1 block">{["t", "h", "e"].map((char, n) => <Letter key={n} char={char} size="clamp(34px,11vw,58px)" lift={[4, -2, 6][n]} turn={[-6, 4, -3][n]} />)}<span className="inline-block w-3" />{["B", "o", "t", "t", "l", "e"].map((char, n) => <Letter key={n} char={char} size={n ? "clamp(42px,14vw,72px)" : "clamp(52px,17vw,88px)"} lift={[0, 5, -4, 3, -5, 4][n]} turn={[-4, 5, -3, 4, -5, 3][n]} />)}</span>
             </p>
           </div>
         ) : null}

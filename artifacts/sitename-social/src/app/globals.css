@@ -39,3 +39,9 @@ button { cursor: pointer; }
   from { transform: translateY(-110vh); opacity: 0.4; }
   to { transform: translateY(0); opacity: 1; }
 }
+
+@font-face {
+  font-family: "Lilita One";
+  src: url("/fonts/lilita-one.woff2") format("woff2");
+  font-display: block;
+}
