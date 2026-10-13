@@ -1460,7 +1460,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             <button onClick={() => setAudio(null)} aria-label={t("photos.close")} title={t("photos.close")} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-2 text-text"><X size={15} /></button>
           </div>
         ) : null}
-        <div className={cn("flex items-center gap-2 border-b border-border px-3 py-1.5", (picked !== null || dedicate) && "hidden")}>
+        <div className={cn("flex items-center gap-2 border-b border-border px-3 py-1.5", (picked !== null || dedicate || !wide) && "hidden")}>
           <p className="min-w-0 flex-1 truncate text-[11px] text-muted">{online ? (net?.room ? `🔒 ${net.room.name} · ${seated.length}/${net.room.capacity}` : `${t("bottle.liveNote")} ${net?.table ?? ""} · ${seated.length}/12`) : t("bottle.demoNote")}</p>
           {canDeleteRoom ? <button onClick={() => void deleteRoom()} className="flex h-7 shrink-0 items-center gap-1 rounded-full bg-[#7C2D12] px-2.5 text-xs font-bold text-white hover:bg-[#9A3412]"><Trash2 size={13} strokeWidth={2.6} />{t("bottle.roomDelete")}</button> : null}
           {net?.room ? <button onClick={leaveRoom} className="flex h-7 shrink-0 items-center gap-1 rounded-full bg-[#E5484D] px-2.5 text-xs font-bold text-white hover:bg-[#D13438]"><X size={13} strokeWidth={3} />{t("bottle.roomLeave")}</button> : null}
