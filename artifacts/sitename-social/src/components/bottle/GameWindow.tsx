@@ -23,6 +23,8 @@ export function GameWindow({ onClose, startFull = false }: { onClose: () => void
   const { t } = useTranslation();
   const [full, setFull] = useState(startFull);
   const [loading, setLoading] = useState(true);
+  // Your own loading picture: put it at public/games/loading.png and it fills the whole screen; without it the drawn title is shown.
+  const [ownSplash, setOwnSplash] = useState(true);
   const [dedicate, setDedicate] = useState(false);
   const [desktop, setDesktop] = useState(false);
   useEffect(() => {
@@ -61,6 +63,7 @@ export function GameWindow({ onClose, startFull = false }: { onClose: () => void
         </div>
         {loading ? (
           <div role="status" aria-label={t("bottle.loading")} className="absolute inset-0 z-[80] flex items-center justify-center bg-[#73A148]" style={{ backgroundImage: `radial-gradient(ellipse 75% 55% at 50% 50%, rgba(140,190,90,0.9), rgba(115,161,72,0) 70%), ${pattern}` }}>
+            {ownSplash ? <img src="/games/loading.png" alt="" onError={() => setOwnSplash(false)} className="absolute inset-0 z-10 h-full w-full object-cover" /> : null}
             <p aria-hidden="true" className="-rotate-[3deg] select-none text-center leading-[0.8] [font-family:'Lilita_One',system-ui,sans-serif] [filter:drop-shadow(0_6px_8px_rgba(40,60,10,0.35))]">
               <span className="block">{["S", "p", "i", "N"].map((char, n) => <Letter key={n} char={char} size="clamp(78px,27vw,140px)" lift={[0, 8, -6, 4][n]} turn={[-4, 3, -2, 5][n]} />)}</span>
               <span className="mt-1 block">{["t", "h", "e"].map((char, n) => <Letter key={n} char={char} size="clamp(34px,11vw,58px)" lift={[4, -2, 6][n]} turn={[-6, 4, -3][n]} />)}<span className="inline-block w-3" />{["B", "o", "t", "t", "l", "e"].map((char, n) => <Letter key={n} char={char} size={n ? "clamp(42px,14vw,72px)" : "clamp(52px,17vw,88px)"} lift={[0, 5, -4, 3, -5, 4][n]} turn={[-4, 5, -3, 4, -5, 3][n]} />)}</span>
