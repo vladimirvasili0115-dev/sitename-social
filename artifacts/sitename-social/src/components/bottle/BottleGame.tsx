@@ -93,6 +93,7 @@ function LipsBadge({ count }: { count: number }) {
   );
 }
 const SPIN_SECONDS = 8;
+const PILE_MS = 45000;
 const ANSWER_SECONDS = 9;
 const packs: { hearts: number; price: number; bonus?: number; tag?: "best" | "hit"; art: string }[] = [
   { hearts: 6750, price: 5000, bonus: 35, tag: "best", art: "🛒" }, { hearts: 1350, price: 1000, bonus: 35, art: "🧰" }, { hearts: 650, price: 500, bonus: 30, art: "🛢️" },
@@ -143,6 +144,23 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [seconds, setSeconds] = useState(0);
   const [kisses, setKisses] = useState<Record<string, number>>({ b1: 3, b4: 8, b7: 1 });
   const [stickers, setStickers] = useState<Record<string, string[]>>({ b2: ["tea"], b5: ["rose"] });
+  // Gifts that just arrived lie scattered over the photo for a while (PILE_MS), then fade away.
+  const [piles, setPiles] = useState<Record<string, { key: number; gift: string; x: number; y: number; r: number; s: number; at: number }[]>>({});
+  const [pileNow, setPileNow] = useState(0);
+  const pileKey = useRef(1);
+  const hasPiles = Object.values(piles).some((list) => list.length > 0);
+  useEffect(() => {
+    if (!hasPiles) return;
+    const timer = window.setInterval(() => {
+      const now = Date.now();
+      setPileNow(now);
+      setPiles((value) => Object.fromEntries(Object.entries(value).map(([id, list]) => [id, list.filter((item) => now - item.at < PILE_MS)]).filter(([, list]) => list.length)));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [hasPiles]);
+  const addPile = useCallback((id: string, gift: string) => {
+    setPiles((value) => ({ ...value, [id]: [...(value[id] ?? []), { key: pileKey.current++, gift, x: 4 + Math.random() * 62, y: 4 + Math.random() * 62, r: Math.round(Math.random() * 50 - 25), s: 30 + Math.random() * 16, at: Date.now() }].slice(-30) }));
+  }, []);
   const [lines, setLines] = useState<Line[]>([{ id: 1, from: "b3", text: smallTalk[0] }, { id: 2, from: "b6", to: "b1" }]);
   const [draft, setDraft] = useState("");
   const [picked, setPicked] = useState<number | null>(null);
@@ -840,6 +858,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       setFlying((list) => list.filter((item) => item.key !== key));
       playGiftSound(gift, "land");
       setStickers((value) => ({ ...value, [player.id]: [...(value[player.id] ?? []), gift].slice(-6) }));
+      addPile(player.id, gift);
       say({ from: "me", to: player.id, gift });
     }, ms + 100);
     setSent((value) => ({ ...value, [player.id]: (value[player.id] ?? 0) + 1 }));
@@ -860,6 +879,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       setFlying((list) => list.filter((item) => item.key !== key));
       playGiftSound(gift, "land");
       setStickers((value) => ({ ...value, [toId]: [...(value[toId] ?? []), gift].slice(-6) }));
+      addPile(toId, gift);
       say({ from: fromId, to: toId, gift });
     }, ms + 100);
   };
@@ -1108,6 +1128,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   const head = [...mine].reverse().find((gift) => headGifts.has(gift));
                   const rest = mine.filter((gift) => !headGifts.has(gift)).slice(-2).reverse();
                   return <>
+                    {(piles[player.id] ?? []).map((item) => <span key={item.key} className="pointer-events-none absolute z-[2] animate-[gift-drop_0.35s_ease-out] transition-opacity duration-[2000ms]" style={{ left: `${item.x}%`, top: `${item.y}%`, width: `${item.s}%`, height: `${item.s}%`, transform: `rotate(${item.r}deg)`, opacity: pileNow - item.at > PILE_MS - 3000 ? 0 : 1 }}><Gift id={item.gift} className="h-full w-full drop-shadow-[0_2px_2px_rgba(0,0,0,0.35)]" /></span>)}
                     {head ? <Gift id={head} className="absolute -left-[2.6cqmin] -top-[2.8cqmin] h-[50%] w-[50%] -rotate-[24deg] drop-shadow" /> : null}
                     {rest.map((gift, position) => <Gift key={`${gift}-${position}`} id={gift} className={cn("absolute -bottom-[1.6cqmin] h-[48%] w-[48%] drop-shadow", position ? "-left-[1.6cqmin]" : "-right-[1.6cqmin]")} />)}
                   </>;

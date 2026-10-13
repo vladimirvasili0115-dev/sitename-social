@@ -59,3 +59,8 @@ button { cursor: pointer; }
   0%, 100% { transform: translate(0, 0); }
   50% { transform: translate(-1.2cqmin, -0.8cqmin); }
 }
+
+@keyframes gift-drop {
+  from { scale: 1.6; opacity: 0; }
+  to { scale: 1; opacity: 1; }
+}
