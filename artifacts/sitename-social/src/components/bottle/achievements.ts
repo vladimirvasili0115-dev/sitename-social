@@ -1,3 +1,5 @@
+import { bottleStatBump, bottleStatsMerge } from "@/lib/bottleSync";
+
 // The game's achievements: 95 medals built from a few counted things (kisses, spins, gifts, songs, chat...).
 // Most counters live in this browser; kisses, songs and smiles received come from the live table when there is one.
 
@@ -53,6 +55,19 @@ export function bumpStat(metric: string, by = 1, max = false) {
     stats[metric] = max ? Math.max(stats[metric] ?? 0, by) : (stats[metric] ?? 0) + by;
     window.localStorage.setItem(KEY, JSON.stringify(stats));
   } catch { /* storage is blocked */ }
+  // The server keeps the same counters, so every device shows the same medals (does nothing without a server).
+  void bottleStatBump(metric, Math.min(50, Math.max(1, by)), max);
+}
+// Joins this device's counters with the server's: the bigger number of each stays everywhere.
+export async function syncStats() {
+  const server = await bottleStatsMerge(readStats());
+  if (!server) return false;
+  try {
+    const stats = readStats();
+    for (const [key, value] of Object.entries(server)) stats[key] = Math.max(stats[key] ?? 0, value);
+    window.localStorage.setItem(KEY, JSON.stringify(stats));
+  } catch { /* storage is blocked */ }
+  return true;
 }
 // Counts a day of play once per calendar day, and late-night play (00:00–05:00) once per night.
 export function markVisit() {

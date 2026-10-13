@@ -10,7 +10,7 @@ import { useProfile } from "@/components/profile/useProfile";
 import { cn } from "@/lib/utils";
 import { AchievementsPanel } from "./AchievementsPanel";
 import { FRAME_PRICE, FrameArt, frameLooks } from "./FrameArt";
-import { bumpStat, markVisit, readStats } from "./achievements";
+import { bumpStat, markVisit, readStats, syncStats } from "./achievements";
 import { BottleSvg, WaterBottleSvg, WoodTable } from "./BottleArt";
 import { playGiftSound, playSound, setVolume } from "./sound";
 import { supabase } from "@/lib/supabase";
@@ -592,12 +592,16 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   }, [panel, topKind, topPeriod, online]);
   const row = "flex min-h-11 w-full items-center gap-3 rounded-lg px-2 text-left text-sm text-[#1F2937] hover:bg-black/5";
   // Achievements: most counts are kept in this browser; kisses, songs and smiles received come from the live table.
-  useEffect(() => { markVisit(); }, []);
+  const [statsTick, setStatsTick] = useState(0);
+  useEffect(() => { markVisit(); void syncStats().then((ok) => { if (ok) setStatsTick((n) => n + 1); }); }, []);
+  const achOpen = panel === "achievements";
+  useEffect(() => { if (achOpen) void syncStats().then((ok) => { if (ok) setStatsTick((n) => n + 1); }); }, [achOpen]);
   const imTop = topIds.has("me");
   useEffect(() => { if (imTop) bumpStat("top", 1, true); }, [imTop]);
   const statsStamp = panel === "achievements";
   const achValue = useMemo(() => {
     void statsStamp;
+    void statsTick;
     const stats = readStats();
     const mine = online ? net?.seats.find((seat) => seat.id === net.me) : undefined;
     return (metric: string) => {
@@ -606,7 +610,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       if (metric === "smilesGot") return Math.max(stats.smilesGot ?? 0, online ? mine?.smiles ?? 0 : mySmiles);
       return stats[metric] ?? 0;
     };
-  }, [statsStamp, online, net, kisses, mySmiles]);
+  }, [statsStamp, statsTick, online, net, kisses, mySmiles]);
   // The game menu opens as a small list next to its button, with coloured icons.
   const menuItems = [
     { key: "messages", label: t("nav.messages"), go: () => { window.location.href = "/messages"; }, icon: <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[linear-gradient(180deg,#5AA8FF,#2F7FF0)]"><MessageSquare size={15} className="text-white" fill="#FFFFFF" /></span> },
