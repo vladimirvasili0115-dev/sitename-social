@@ -69,3 +69,19 @@ button { cursor: pointer; }
   0%, 100% { box-shadow: 0 0 0 0 rgba(245, 180, 0, 0.55); }
   50% { box-shadow: 0 0 0 6px rgba(245, 180, 0, 0); }
 }
+
+@keyframes panel-drop {
+  0% { transform: translateY(-115vh) rotate(0deg); }
+  55% { transform: translateY(2.5%) rotate(0deg); }
+  70% { transform: translateY(-1%) rotate(-1.6deg); }
+  84% { transform: translateY(0.4%) rotate(0.9deg); }
+  100% { transform: translateY(0) rotate(0deg); }
+}
+@keyframes panel-up {
+  from { transform: translateY(0); opacity: 1; }
+  to { transform: translateY(-115vh); opacity: 0.6; }
+}
+@keyframes panel-fade {
+  from { background-color: rgba(0, 0, 0, 0); }
+  to { background-color: rgba(0, 0, 0, 0.35); }
+}
