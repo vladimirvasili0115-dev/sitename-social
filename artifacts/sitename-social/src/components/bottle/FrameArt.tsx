@@ -1,7 +1,7 @@
 // Decorative photo frames for the "Style" shop: drawn here, with bevelled metal, corner ornaments and gems.
 // Each frame sits over the photo; the middle stays clear.
 
-type Look = { metal: [string, string, string]; inner: string; gem: string; corner: "gem" | "diamond" | "star" | "flower" | "heart" | "crown"; edge: "plain" | "dots" | "chain" | "stripes" | "wave"; vip?: boolean };
+type Look = { metal: [string, string, string]; inner: string; gem: string; corner: "gem" | "diamond" | "star" | "flower" | "heart" | "crown"; edge: "plain" | "dots" | "chain" | "stripes" | "wave"; vip?: boolean; pass?: boolean };
 
 export const FRAME_PRICE = 500;
 export const frameLooks: Look[] = [
@@ -29,6 +29,8 @@ export const frameLooks: Look[] = [
   { metal: ["#FFE0E0", "#E63946", "#7A0E17"], inner: "#FF9AA2", gem: "#FFFFFF", corner: "crown", edge: "dots" },
   { metal: ["#E0FBFF", "#1FB6C9", "#0B5966"], inner: "#9CEAF3", gem: "#E8559B", corner: "heart", edge: "chain" },
   { metal: ["#FFFFFF", "#B9C2CC", "#5E6772"], inner: "#E7ECF1", gem: "#FFC21A", corner: "crown", edge: "stripes", vip: true },
+  // 25: "Nitro" — only from the season pass (level 35, premium); cannot be bought.
+  { metal: ["#FFE89A", "#C8920A", "#2A1A00"], inner: "#1B1B1F", gem: "#B44CFF", corner: "crown", edge: "chain", pass: true },
 ];
 
 function Ornament({ kind, gem, metal, x, y, id }: { kind: Look["corner"]; gem: string; metal: Look["metal"]; x: number; y: number; id: string }) {

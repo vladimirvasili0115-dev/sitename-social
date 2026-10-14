@@ -10,6 +10,7 @@ import { useProfile } from "@/components/profile/useProfile";
 import { cn } from "@/lib/utils";
 import { AchievementsPanel } from "./AchievementsPanel";
 import { FRAME_PRICE, FrameArt, frameLooks } from "./FrameArt";
+import { PassPanel, type PassData } from "./PassPanel";
 import { ActivePanel, ComplimentPill, ComplimentsPanel, InvitePanel, ShopPanel, emojiSrc } from "./ShopPanels";
 import { bumpStat, markVisit, readStats, syncStats } from "./achievements";
 import { BottleSvg, WaterBottleSvg, WoodTable } from "./BottleArt";
@@ -17,7 +18,7 @@ import { playGiftSound, playSound, setVolume } from "./sound";
 import { supabase } from "@/lib/supabase";
 import { ensureMessagesLoaded, openRemoteChat, remoteChats, sendRemoteMessage } from "@/lib/messagesSync";
 import { uploadBlob } from "@/lib/media";
-import { bottleAnswer, bottleBuyChances, bottleJoin, bottleMove, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleGift, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState } from "@/lib/bottleSync";
+import { bottleAnswer, bottleBuyChances, bottleJoin, bottleMove, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleGift, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState } from "@/lib/bottleSync";
 
 type Player = { id: string; name: string; age: number; female: boolean; avatar: string; me?: boolean; empty?: boolean; zodiac?: number | null };
 type Phase = "waiting" | "spinning" | "choice" | "kissed" | "declined";
@@ -232,7 +233,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [volume, setVolumeLevel] = useState(80);
   const [music, setMusic] = useState(60);
   const [accept, setAccept] = useState(true);
-  const [panel, setPanel] = useState<"settings" | "top" | "rules" | "shop" | "menu" | "vip" | "bottles" | "frames" | "achievements" | "boosters" | "wheel" | "chances" | "tables" | "rooms" | "active" | "invite" | "compliments" | "kick" | null>(null);
+  const [panel, setPanel] = useState<"settings" | "top" | "rules" | "shop" | "menu" | "vip" | "bottles" | "frames" | "achievements" | "boosters" | "wheel" | "chances" | "tables" | "rooms" | "active" | "invite" | "compliments" | "kick" | "pass" | null>(null);
+  const [passData, setPassData] = useState<PassData | null>(null);
+  const [passNote, setPassNote] = useState<string | null>(null);
   const [kickFor, setKickFor] = useState<{ id: string; name: string; avatar: string } | null>(null);
   const [kickNote, setKickNote] = useState<string | null>(null);
   const [complimentIn, setComplimentIn] = useState<{ name: string; avatar: string; kind: number } | null>(null);
@@ -590,6 +593,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     setFrameNote(null);
     const look = frameLooks[id - 1];
     if (id && !myFrames.includes(id)) {
+      if (look?.pass) return setFrameNote(t("bottle.framePass"));
       if (look?.vip && !vip && !online) return setFrameNote(t("bottle.frameVip"));
       if (heartsRef.current < FRAME_PRICE) return setFrameNote(t("bottle.noHearts"));
     }
@@ -605,8 +609,24 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     setFrameNote(t("bottle.frameDone"));
   }
   const liveVip = online ? Boolean(net?.vip) : vip;
+  const hasPass = (player: Player) => (online ? Boolean(net?.seats.find((seat) => seat.id === (player.me ? net.me : player.id))?.pass) : false);
   const activeSecs = online ? net?.active?.secs ?? 0 : Math.floor((Date.now() - localActive) / 1000);
   const [localCompliments, setLocalCompliments] = useState(0);
+  // Season pass: levels from play, free and premium rewards (server only).
+  function openPass() {
+    setPassNote(null);
+    setPanel("pass");
+    if (online) void bottlePass().then((data) => setPassData(data));
+  }
+  const passHearts = (left?: number) => { if (typeof left === "number") { heartsRef.current = left; setHearts(left); } };
+  async function passAction(kind: "buy" | "chest" | { level: number; premium: boolean }) {
+    const result = kind === "buy" ? await bottlePassBuy() : kind === "chest" ? await bottlePassChest() : await bottlePassClaim(kind.level, kind.premium);
+    if (!result || result.error) { setPassNote(t(result?.error === "hearts" ? "bottle.noHearts" : "bottle.passFail")); return; }
+    passHearts(result.hearts);
+    setPassNote(kind === "buy" ? t("bottle.passBought") : "prize" in result && result.prize ? `+${result.prize} ❤` : null);
+    void bottlePass().then((data) => setPassData(data));
+    pullRef.current();
+  }
   function openInvite() {
     setPanel("invite");
     if (online) void bottleRefStatus().then((info) => { if (!info) return; setRefInfo({ invited: info.invited, done: info.done }); if (info.paid) { heartsRef.current = info.hearts; setHearts(info.hearts); } });
@@ -684,6 +704,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // The game menu opens as a small list next to its button, with coloured icons.
   const menuItems = [
     { key: "messages", label: t("nav.messages"), go: () => { window.location.href = "/messages"; }, icon: <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[linear-gradient(180deg,#5AA8FF,#2F7FF0)]"><MessageSquare size={15} className="text-white" fill="#FFFFFF" /></span> },
+    { key: "pass", label: t("bottle.passPremium"), go: openPass, icon: <img src={emojiSrc("🎟️")} alt="" className="h-6 w-6" /> },
     { key: "ach", label: t("bottle.achievements"), dot: !(kisses.me ?? 0), go: () => setPanel("achievements"), icon: <BadgeCheck size={24} className="text-white" fill="#F5B400" strokeWidth={2} /> },
     { key: "rating", label: t("bottle.menuRatings"), go: () => { setTopKind("kisses"); setPanel("top"); }, icon: <svg viewBox="0 0 24 24" className="h-6 w-6"><rect x="2" y="12" width="6" height="8" rx="1" fill="#5BA4F5" /><rect x="9" y="6" width="6" height="14" rx="1" fill="#2F7FF0" /><rect x="16" y="9" width="6" height="11" rx="1" fill="#5BA4F5" /><rect x="1" y="20" width="22" height="2" rx="1" fill="#1E5FC2" /></svg> },
     { key: "bottles", label: t("bottle.menuBottles"), go: () => { setPayNote(false); setPanel("bottles"); }, icon: <span className="relative h-6 w-6"><BottleSvg className="absolute left-0 top-0 h-6 -rotate-[35deg]" /><BottleSvg className="absolute left-2.5 top-0.5 h-5 -rotate-[35deg] saturate-150" /></span> },
@@ -1199,7 +1220,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   </div>
                 );
               })()}
-              <p className="mt-px truncate text-center text-[2.6cqmin] font-semibold leading-tight text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.8)]">{player.me ? t("common.you") : player.name}, {player.age}</p>
+              <p className={cn("mt-px truncate text-center text-[2.6cqmin] font-semibold leading-tight [text-shadow:0_1px_3px_rgba(0,0,0,0.8)]", hasPass(player) ? "font-black text-[#FFD54A]" : "text-white")}>{player.me ? t("common.you") : player.name}, {player.age}</p>
               {index === turn && !staged ? <p className={cn("absolute whitespace-nowrap", seats[index][1] > 80 ? "bottom-full mb-[0.4cqmin]" : "top-full", "rounded-full bg-black/45 px-[1.6cqmin] text-[2.3cqmin] font-semibold text-white", seats[index][0] > 75 ? "right-0" : seats[index][0] < 25 ? "left-0" : "left-1/2 -translate-x-1/2")}>{seats[index][1] > 80 ? "↓" : "↑"} {t("bottle.spinsBottle")}</p> : null}
             </div>
           );
@@ -1281,9 +1302,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
 
         {panel ? (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/35 p-3" onClick={(event) => { event.stopPropagation(); setPanel(null); }}>
-            <div role="dialog" aria-modal="true" aria-label={t(`bottle.${panel}`)} onClick={(event) => event.stopPropagation()} className={cn("relative max-h-full w-full rounded-2xl p-3 shadow-2xl", panel === "tables" && "animate-[bottle-drop_0.45s_cubic-bezier(0.22,1.2,0.36,1)]", panel === "shop" ? "max-w-[440px] bg-[linear-gradient(180deg,#F26D7D,#F9B4B9)]" : panel === "wheel" || panel === "chances" ? "max-w-[380px] bg-[linear-gradient(180deg,#12998C,#7FD8C8)]" : panel === "top" ? "max-w-[300px] bg-[#EEF8FD]" : panel === "achievements" ? "max-w-[400px] bg-white" : panel === "frames" ? "max-w-[440px] bg-[#F7F7F8]" : panel === "rooms" ? "max-w-[400px] border border-[#F5C451]/30 bg-[linear-gradient(165deg,#2B1D4E,#4E2D7C)]" : "max-w-[340px] bg-white")}>
+            <div role="dialog" aria-modal="true" aria-label={t(`bottle.${panel}`)} onClick={(event) => event.stopPropagation()} className={cn("relative max-h-full w-full rounded-2xl p-3 shadow-2xl", panel === "tables" && "animate-[bottle-drop_0.45s_cubic-bezier(0.22,1.2,0.36,1)]", panel === "shop" ? "max-w-[440px] bg-[linear-gradient(180deg,#F26D7D,#F9B4B9)]" : panel === "wheel" || panel === "chances" ? "max-w-[380px] bg-[linear-gradient(180deg,#12998C,#7FD8C8)]" : panel === "top" ? "max-w-[300px] bg-[#EEF8FD]" : panel === "achievements" ? "max-w-[400px] bg-white" : panel === "frames" ? "max-w-[440px] bg-[#F7F7F8]" : panel === "pass" ? "max-w-[420px] overflow-y-auto overflow-x-hidden bg-[linear-gradient(180deg,#36A6FF,#1C7FE6)] [scrollbar-width:none]" : panel === "rooms" ? "max-w-[400px] border border-[#F5C451]/30 bg-[linear-gradient(165deg,#2B1D4E,#4E2D7C)]" : "max-w-[340px] bg-white")}>
               <button onClick={() => setPanel(null)} aria-label={t("photos.close")} title={t("photos.close")} className={cn("absolute -right-2 -top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 bg-white shadow", panel === "shop" ? "border-[#EF4444] text-[#EF4444]" : panel === "wheel" || panel === "chances" ? "border-[#0E8478] text-[#0E8478]" : panel === "top" ? "border-[#3B9AD9] text-[#3B9AD9]" : panel === "rooms" ? "border-[#F5C451] text-[#C08A12]" : "border-[#8CC63F] text-[#8CC63F]")}><X size={18} strokeWidth={3} /></button>
-              <p className={cn("mb-1 text-center text-sm font-bold", panel === "shop" || panel === "wheel" || panel === "chances" || panel === "rooms" ? "mb-2 text-white" : "text-[#9CA3AF]", (panel === "top" || panel === "achievements") && "sr-only")}>{t(`bottle.${panel}`)}</p>
+              <p className={cn("mb-1 text-center text-sm font-bold", panel === "shop" || panel === "wheel" || panel === "chances" || panel === "rooms" || panel === "pass" ? "mb-2 text-white" : "text-[#9CA3AF]", (panel === "top" || panel === "achievements") && "sr-only")}>{t(`bottle.${panel}`)}</p>
               {panel === "rooms" ? (() => {
                 const passBox = (value: string, change: (next: string) => void, label: string, focus?: boolean) => (
                   <span className="relative block min-w-0 flex-1">
@@ -1431,7 +1452,12 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   <button onClick={() => setPanel("wheel")} className="mt-2 w-full text-center text-xs font-bold text-white underline">{t("bottle.wheelBack")}</button>
                 </div>
               ) : panel === "shop" ? (
-                <ShopPanel hearts={hearts} activeSecs={activeSecs} payNote={payNote} onActive={() => setPanel("active")} onTelegram={() => (TELEGRAM_URL ? window.open(TELEGRAM_URL, "_blank", "noopener") : setPayNote(true))} onVip={() => { setPayNote(false); setPanel("vip"); }} onInvite={openInvite} onCompliments={() => setPanel("compliments")} onPack={() => setPayNote(true)} />
+                <ShopPanel hearts={hearts} activeSecs={activeSecs} payNote={payNote} onActive={() => setPanel("active")} onTelegram={() => (TELEGRAM_URL ? window.open(TELEGRAM_URL, "_blank", "noopener") : setPayNote(true))} onVip={() => { setPayNote(false); setPanel("vip"); }} onInvite={openInvite} onCompliments={() => setPanel("compliments")} onPack={() => setPayNote(true)} onPass={openPass} />
+              ) : panel === "pass" ? (
+                <>
+                  <PassPanel data={online ? passData : null} hearts={hearts} now={net?.now ?? Date.now()} onBuy={() => void passAction("buy")} onClaim={(level, premium) => void passAction({ level, premium })} onChest={() => void passAction("chest")} />
+                  {passNote ? <p role="status" className="absolute inset-x-3 bottom-3 z-10 rounded-xl bg-[#111827]/85 px-3 py-2 text-center text-sm font-bold text-white">{passNote}</p> : null}
+                </>
               ) : panel === "active" ? (
                 <ActivePanel secs={activeSecs} claimed={net?.active?.claimed ?? 0} live={online} onClaim={(level) => void bottleActiveClaim(level).then((left) => { if (left !== null && left >= 0) { heartsRef.current = left; setHearts(left); pullRef.current(); } })} />
               ) : panel === "invite" ? (
@@ -1599,7 +1625,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                                 {id ? <FrameArt id={id} className="h-full w-full" /> : <span className="flex h-full w-full items-center justify-center rounded-lg border-2 border-dashed border-[#D1D5DB] text-[#9CA3AF]"><X size={18} /></span>}
                               </span>
                               <span className="flex h-4 items-center gap-0.5 text-xs font-bold tabular-nums">
-                                {id === myFrame ? <Check size={14} strokeWidth={3} className="text-[#65A30D]" /> : mine ? <span className="text-[10px] text-[#65A30D]">{t("bottle.frameOwned")}</span> : look?.vip && !vip ? <span className="rounded bg-[#F59E0B] px-1 text-[9px] text-white">VIP</span> : <><Heart size={12} fill="#E8352B" stroke="none" />{FRAME_PRICE}</>}
+                                {id === myFrame ? <Check size={14} strokeWidth={3} className="text-[#65A30D]" /> : mine ? <span className="text-[10px] text-[#65A30D]">{t("bottle.frameOwned")}</span> : look?.pass ? <span className="rounded bg-[#7C3AED] px-1 text-[9px] text-white">PASS</span> : look?.vip && !vip ? <span className="rounded bg-[#F59E0B] px-1 text-[9px] text-white">VIP</span> : <><Heart size={12} fill="#E8352B" stroke="none" />{FRAME_PRICE}</>}
                               </span>
                             </button>
                           </li>

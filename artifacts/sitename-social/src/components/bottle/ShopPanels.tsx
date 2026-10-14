@@ -19,8 +19,8 @@ export const shopPacks: { hearts: number; price: number; bonus?: number; tag?: "
 export const activeLevels: [number, number][] = [[30, 5], [60, 10], [120, 20]];
 export const formatActive = (secs: number, t: (key: TranslationKey) => string) => `${Math.floor(secs / 3600)}${t("bottle.hourShort")} ${Math.floor((secs % 3600) / 60)}${t("bottle.minShort")}`;
 
-export function ShopPanel({ hearts, activeSecs, payNote, onActive, onTelegram, onVip, onInvite, onCompliments, onPack }: {
-  hearts: number; activeSecs: number; payNote: boolean; onActive: () => void; onTelegram: () => void; onVip: () => void; onInvite: () => void; onCompliments: () => void; onPack: () => void;
+export function ShopPanel({ hearts, activeSecs, payNote, onActive, onTelegram, onVip, onInvite, onCompliments, onPack, onPass }: {
+  hearts: number; activeSecs: number; payNote: boolean; onActive: () => void; onTelegram: () => void; onVip: () => void; onInvite: () => void; onCompliments: () => void; onPack: () => void; onPass: () => void;
 }) {
   const { t } = useTranslation();
   const tile = "relative flex flex-col items-center rounded-2xl bg-white p-2 text-center shadow-[0_2px_6px_rgba(150,30,50,0.15)]";
@@ -33,6 +33,11 @@ export function ShopPanel({ hearts, activeSecs, payNote, onActive, onTelegram, o
         <div className="min-w-0 flex-1"><p className="text-sm font-black leading-tight text-[#1F2937]">{t("bottle.activeTitle")}</p><p className="text-xs font-semibold text-[#7C3AED]">{t("bottle.activeToday")}: {formatActive(activeSecs, t)}</p></div>
         <button onClick={onActive} className="flex h-9 shrink-0 items-center rounded-xl bg-[linear-gradient(180deg,#A16BFF,#7C3AED)] px-3 text-xs font-bold text-white shadow hover:brightness-110">{t("bottle.more2")}<ChevronRight size={14} /></button>
       </div>
+      <button onClick={onPass} className="flex w-full items-center gap-3 rounded-2xl bg-[linear-gradient(180deg,#FFC94A,#F59E0B)] p-2.5 text-left text-[#3A2400] shadow-[0_2px_6px_rgba(160,90,0,0.3)] hover:brightness-105">
+        <Pic e="🎟️" className="h-11 w-11 shrink-0" />
+        <span className="min-w-0 flex-1"><span className="block text-sm font-black leading-tight">{t("bottle.passPremium")}</span><span className="block text-[11px] font-semibold">{t("bottle.passShort")}</span></span>
+        <ChevronRight size={20} />
+      </button>
       <div className="flex items-center gap-3 rounded-2xl bg-[linear-gradient(180deg,#36A6FF,#1C7FE6)] p-2.5 text-white shadow-[0_2px_6px_rgba(20,80,160,0.3)]">
         <Pic e="🔔" className="h-11 w-11 shrink-0" />
         <p className="min-w-0 flex-1 text-sm font-black leading-tight">{t("bottle.channelJoin")}</p>

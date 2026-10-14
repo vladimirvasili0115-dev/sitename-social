@@ -1,7 +1,7 @@
 import { supabase } from "./supabase";
 
 // Live tables of the bottle game. The database owns the game: seats, turns, where the bottle stops, answers and kisses.
-export type BottleSeat = { seat: number; id: string; name: string | null; avatar: string | null; gender: string | null; kisses: number; total?: number; smiles?: number; songs?: number; zodiac?: number | null; age: number | null; status?: string | null; frame?: number; kicked?: { by: string; at: number } | null; admirer?: { id: string; name: string | null; avatar: string | null; amount: number } | null };
+export type BottleSeat = { seat: number; id: string; name: string | null; avatar: string | null; gender: string | null; kisses: number; total?: number; smiles?: number; songs?: number; zodiac?: number | null; age: number | null; status?: string | null; frame?: number; pass?: boolean; kicked?: { by: string; at: number } | null; admirer?: { id: string; name: string | null; avatar: string | null; amount: number } | null };
 export type BottleChat = { id: number; from: string | null; to: string | null; kind: "text" | "kiss" | "wheel" | "song" | "gift" | "admire" | "admire_lost" | "kick" | "saved" | "kicked" | "compliment"; body: string | null };
 export type BottleState = {
   table: number; me: string; now: number; hearts: number; chances?: number; winner?: { name: string | null; amount: number } | null;
@@ -54,3 +54,7 @@ export const bottleCompliment = (to: string, kind: number) => call<{ count?: num
 export const bottleActiveClaim = (level: number) => call<number>("bottle_active_claim", { p_level: level });
 export const bottleRefSet = (inviter: string) => call<boolean>("bottle_ref_set", { p_inviter: inviter });
 export const bottleRefStatus = () => call<{ invited: number; done: number; paid: number; hearts: number }>("bottle_ref_status");
+export const bottlePass = () => call<import("@/components/bottle/PassPanel").PassData>("bottle_pass");
+export const bottlePassClaim = (level: number, premium: boolean) => call<{ hearts?: number; prize?: number; frame?: number | null; error?: string }>("bottle_pass_claim", { p_level: level, p_premium: premium });
+export const bottlePassBuy = () => call<{ hearts?: number; error?: string }>("bottle_pass_buy");
+export const bottlePassChest = () => call<{ hearts?: number; prize?: number; error?: string }>("bottle_pass_chest");
