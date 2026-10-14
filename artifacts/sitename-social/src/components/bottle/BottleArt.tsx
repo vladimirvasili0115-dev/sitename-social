@@ -51,9 +51,9 @@ export function WaterBottleSvg({ className }: { className?: string }) {
   );
 }
 
-// The table top: a real-looking honey wood texture (public/bottle/table.jpg), lighter in the middle.
+// The table top: a real-looking honey wood texture (public/bottle/table2.jpg), lighter in the middle.
 export function WoodTable({ className }: { className?: string }) {
-  return <div aria-hidden="true" className={className} style={{ backgroundColor: "#D2924C", backgroundImage: "url(/bottle/table.jpg)", backgroundSize: "cover", backgroundPosition: "center" }} />;
+  return <div aria-hidden="true" className={className} style={{ backgroundColor: "#D2924C", backgroundImage: "url(/bottle/table2.jpg)", backgroundSize: "cover", backgroundPosition: "center" }} />;
 }
 
 // Cover tile for the games list: the bottle on a wooden table with hearts and spin arrows.
@@ -70,7 +70,7 @@ export function BottleCover({ className }: { className?: string }) {
         <radialGradient id="bc-heart" cx="0.35" cy="0.3" r="0.8"><stop offset="0" stopColor="#FF8A7A" /><stop offset="0.55" stopColor="#F2343F" /><stop offset="1" stopColor="#B3122A" /></radialGradient>
         <radialGradient id="bc-light" cx="0.5" cy="0.55" r="0.6"><stop offset="0" stopColor="#FFE3A8" stopOpacity="0.55" /><stop offset="1" stopColor="#FFE3A8" stopOpacity="0" /></radialGradient>
       </defs>
-      <image href="/bottle/table.jpg" x="-40" y="-10" width="176" height="121" preserveAspectRatio="xMidYMid slice" />
+      <image href="/bottle/table2.jpg" x="-40" y="-10" width="176" height="121" preserveAspectRatio="xMidYMid slice" />
       <rect width="96" height="96" fill="url(#bc-light)" />
       <line x1="17" y1="6" x2="17" y2="44" stroke="#6B4423" strokeWidth="1.8" strokeLinecap="round" />
       <circle cx="17" cy="5.5" r="1.8" fill="#F5C451" />
