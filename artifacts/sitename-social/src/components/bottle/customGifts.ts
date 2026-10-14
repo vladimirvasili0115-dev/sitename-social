@@ -6,6 +6,8 @@ const prices: [RegExp, number][] = [
   [/^(ring\w+|watch\w+|pocketclock|revolver|unicorn|prankcake_\w+)$/, 3],
   [/^(sweet\d|strawberry\d|tomato\d|wholeegg|smoothie|slug_\d)$/, 1],
   [/^(crown\d|blackcrown|icecrown|gem\d|goldenmic|dollar|djmixer\d*|drumkit\d*|makarov|bed|eiffeltower|clutch|knight|labubu\d*|monomachhat|blackring|kingcap)$/, 3],
+  [/^(ruby\w+|oscar|iwatch|goldenapple|honeybarrel|kokoshnik|manekineko|sheriffstar|londonphone|mobile)$/, 3],
+  [/^(ges_\w+|heart\d|notes\d|hamburger|tea|poop|heineken)$/, 1],
   [/^(air_kiss\d|candy\d+|egg\d|flower\d+|orchid|colander|maracas\d|nipple\d|pepper\d|cocoscocktail|bear\d)$/, 1],
 ];
 export const customPrice = (name: string) => prices.find(([test]) => test.test(name))?.[1] ?? 2;
