@@ -1198,12 +1198,12 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           <SkinBottle className={cn("h-full drop-shadow-[0_6px_10px_rgba(0,0,0,0.45)] transition-opacity duration-700", staged && "opacity-0")} />
         </button>
         {myTurn && !staged ? (
-          <div role="status" className="pointer-events-none absolute z-20 h-[19cqmin] w-[24cqmin] animate-[spin-hint_1.6s_ease-in-out_infinite] motion-reduce:animate-none" style={{ left: `${CENTER_X + 1}%`, top: `${STAGE_Y + 2}%` }}>
+          <div role="status" className="pointer-events-none absolute z-20 h-[16cqmin] w-[20cqmin] animate-[spin-hint_1.6s_ease-in-out_infinite] motion-reduce:animate-none" style={{ left: `${CENTER_X + 1}%`, top: `${STAGE_Y + 2}%` }}>
             <svg viewBox="0 0 120 90" aria-hidden="true" className="absolute inset-0 h-full w-full overflow-visible drop-shadow-[0_2px_3px_rgba(0,0,0,0.45)]">
               <path d="M98 50C96 22 64 10 22 18" fill="none" stroke="#FFFFFF" strokeWidth="3.5" strokeLinecap="round" />
               <path d="M30 9L18 18.5L31 26" fill="none" stroke="#FFFFFF" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            <p className="absolute left-[30%] top-[58%] whitespace-nowrap text-center text-[4.3cqmin] font-bold leading-[1.05] text-white [text-shadow:0_2px_4px_rgba(0,0,0,0.55)]">{t("bottle.spinHint1")}<br />{t("bottle.spinHint2")}</p>
+            <p className="absolute left-[30%] top-[58%] whitespace-nowrap text-center text-[3.3cqmin] font-bold leading-[1.05] text-white [text-shadow:0_2px_4px_rgba(0,0,0,0.55)]">{t("bottle.spinHint1")}<br />{t("bottle.spinHint2")}</p>
           </div>
         ) : null}
 
