@@ -9,7 +9,8 @@ import { GiftArt } from "@/components/gifts/GiftArt";
 import { useProfile } from "@/components/profile/useProfile";
 import { cn } from "@/lib/utils";
 import { customFile, useCustomArt } from "@/lib/customArt";
-import { customGiftNames, customPlace, customPrice } from "./customGifts";
+import { customGiftNames, customPlace, customPrice, landedName } from "./customGifts";
+const landed = (gift: string) => (gift.startsWith("c:") ? `c:${landedName(gift.slice(2))}` : gift);
 import { AchievementsPanel } from "./AchievementsPanel";
 import { FRAME_PRICE, FrameArt, frameLooks } from "./FrameArt";
 import { PassPanel, type PassData } from "./PassPanel";
@@ -957,8 +958,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     window.setTimeout(() => {
       setFlying((list) => list.filter((item) => item.key !== key));
       playGiftSound(gift, "land");
-      setStickers((value) => ({ ...value, [player.id]: [...(value[player.id] ?? []), gift].slice(-6) }));
-      addPile(player.id, gift);
+      setStickers((value) => ({ ...value, [player.id]: [...(value[player.id] ?? []), landed(gift)].slice(-6) }));
+      addPile(player.id, landed(gift));
       say({ from: "me", to: player.id, gift });
     }, ms + 100);
     setSent((value) => ({ ...value, [player.id]: (value[player.id] ?? 0) + 1 }));
@@ -978,8 +979,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     window.setTimeout(() => {
       setFlying((list) => list.filter((item) => item.key !== key));
       playGiftSound(gift, "land");
-      setStickers((value) => ({ ...value, [toId]: [...(value[toId] ?? []), gift].slice(-6) }));
-      addPile(toId, gift);
+      setStickers((value) => ({ ...value, [toId]: [...(value[toId] ?? []), landed(gift)].slice(-6) }));
+      addPile(toId, landed(gift));
       say({ from: fromId, to: toId, gift });
     }, ms + 100);
   };
@@ -1227,10 +1228,12 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   const mine = stickers[player.id] ?? [];
                   const placeOf = (gift: string) => (gift.startsWith("c:") ? customPlace(gift.slice(2)) : headGifts.has(gift) ? "head" : "body");
                   const ears = [...mine].reverse().find((gift) => placeOf(gift) === "ears");
+                  const face = mine.length && placeOf(mine[mine.length - 1]) === "face" ? mine[mine.length - 1] : null;
                   const head = [...mine].reverse().find((gift) => placeOf(gift) === "head");
                   const rest = mine.filter((gift) => placeOf(gift) === "body").slice(-2).reverse();
                   return <>
                     {(piles[player.id] ?? []).map((item) => <span key={item.key} className="pointer-events-none absolute z-[2] animate-[gift-drop_0.35s_ease-out] transition-opacity duration-[2000ms]" style={{ left: `${item.x}%`, top: `${item.y}%`, width: `${item.s}%`, height: `${item.s}%`, transform: `rotate(${item.r}deg)`, opacity: pileNow - item.at > PILE_MS - 3000 ? 0 : 1 }}><Gift id={item.gift} className="h-full w-full drop-shadow-[0_2px_2px_rgba(0,0,0,0.35)]" /></span>)}
+                    {face ? <Gift id={face} className="absolute left-[8%] top-[10%] z-[2] h-[84%] w-[84%] animate-[gift-drop_0.35s_ease-out]" /> : null}
                     {ears ? <Gift id={ears} className="absolute -top-[16%] left-[-10%] z-[1] h-[40%] w-[120%] drop-shadow" /> : null}
                     {head ? <Gift id={head} className="absolute -left-[2.6cqmin] -top-[2.8cqmin] h-[50%] w-[50%] -rotate-[24deg] drop-shadow" /> : null}
                     {rest.map((gift, position) => <Gift key={`${gift}-${position}`} id={gift} className={cn("absolute -bottom-[1.6cqmin] h-[48%] w-[48%] drop-shadow", position ? "-left-[1.6cqmin]" : "-right-[1.6cqmin]")} />)}

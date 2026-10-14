@@ -1,15 +1,18 @@
 // Gift pictures from public/custom/gifts. Known names get a price and a place on the photo;
 // any other picture put into that folder is added to the gift list automatically (price 2).
-export type Place = "head" | "ears" | "body";
+export type Place = "head" | "ears" | "face" | "body";
 const prices: [RegExp, number][] = [
-  [/^(bugatti|hammer|motorcycle|aircraft|helicopter|gwatch|manygifts\d*)$/, 5],
+  [/^(bugatti|hammer|motorcycle|aircraft|helicopter|gwatch|manygifts\d*|retrocar|tank|rolex\w*|vip\w+|sphinx|weddingring\d|tsarscup|suitcase)$/, 5],
+  [/^(ring\w+|watch\w+|pocketclock|revolver|unicorn|prankcake_\w+)$/, 3],
+  [/^(sweet\d|strawberry\d|tomato\d|wholeegg|smoothie|slug_\d)$/, 1],
   [/^(crown\d|blackcrown|icecrown|gem\d|goldenmic|dollar|djmixer\d*|drumkit\d*|makarov|bed|eiffeltower|clutch|knight|labubu\d*|monomachhat|blackring|kingcap)$/, 3],
   [/^(air_kiss\d|candy\d+|egg\d|flower\d+|orchid|colander|maracas\d|nipple\d|pepper\d|cocoscocktail|bear\d)$/, 1],
 ];
 export const customPrice = (name: string) => prices.find(([test]) => test.test(name))?.[1] ?? 2;
 export const customPlace = (name: string): Place =>
   /^(ears|horns)/.test(name) ? "ears"
-    : /(cap|crown|hat|cylinder|cowboy|napoleon|musketeer|nurse|clown|bezkoz|indianhat|carnivalmask|horsehead|knight|bow)/.test(name) ? "head"
+    : /^(prankcake_\w+2|tomato[23])$/.test(name) ? "face"
+    : /(cap|crown|hat|cylinder|cowboy|napoleon|musketeer|nurse|clown|bezkoz|indianhat|carnivalmask|horsehead|knight|bow|pharaoh|pilotka|pirat|rasta|sombrero|sparta|sultan|ushanka|viking|glasses)/.test(name) ? "head"
     : "body";
 // The order the pictures appear in the gift list (the rest follow in name order).
 export const customOrder = [
@@ -28,5 +31,14 @@ export function customGiftNames(files: Set<string>) {
   const names = [...files].filter((file) => file.startsWith("gifts/") && !file.includes("README")).map((file) => file.slice(6).replace(/\.[^.]+$/, ""));
   const unique = [...new Set(names)];
   const rank = (name: string) => { const at = customOrder.indexOf(name); return at < 0 ? 10000 : at; };
-  return unique.sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
+  return unique.filter(isListed).sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
 }
+// Pictures that are only shown after landing (a thrown cake or tomato splats on the face), not sold on their own.
+const hidden = /^(prankcake_\w+2|tomato[23]|slug_[23])$/;
+// What lands on the photo when this gift arrives.
+export function landedName(name: string) {
+  if (/^prankcake_\w+1$/.test(name)) return name.replace(/1$/, "2");
+  if (name === "tomato1") return Math.random() < 0.5 ? "tomato2" : "tomato3";
+  return name;
+}
+export const isListed = (name: string) => !hidden.test(name);
