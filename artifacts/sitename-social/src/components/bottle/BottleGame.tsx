@@ -302,7 +302,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     const next = options[Math.floor(Math.random() * options.length)];
     setTarget(next);
     setAnswers({ spinner: null, target: null });
-    setRotation((current) => current - (current % 360) + 1440 + (((angleTo(next) % 360) + 360) % 360));
+    setRotation((current) => current - (current % 360) + 2160 + (((angleTo(next) % 360) + 360) % 360));
     setPhase("spinning");
   }, [players, turn, angleTo, accept]);
 
@@ -322,7 +322,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       return () => { window.clearInterval(tick); window.clearTimeout(timer); };
     }
     if (phase === "spinning") {
-      const timer = window.setTimeout(() => { playSound("chosen"); setPhase("choice"); }, 3400);
+      const timer = window.setTimeout(() => { playSound("chosen"); setPhase("choice"); }, 4700);
       return () => window.clearTimeout(timer);
     }
     if (phase === "kissed" || phase === "declined") {
@@ -453,7 +453,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     const key = `${net.round}:${net.target}`;
     if (net.phase === "spinning" && targetAt >= 0 && spunRef.current !== key) {
       spunRef.current = key;
-      setRotation((current) => current - (current % 360) + 1440 + (((angleTo(targetAt) % 360) + 360) % 360));
+      setRotation((current) => current - (current % 360) + 2160 + (((angleTo(targetAt) % 360) + 360) % 360));
     }
   }, [net, players, angleTo]);
   const chats = useSyncExternalStore(remoteChats.subscribe, remoteChats.get, remoteChats.getServer);
@@ -1166,7 +1166,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           {!wide && !full ? <button onClick={onLeave} aria-label={t("photos.close")} title={t("photos.close")} className={cn(tool, "bg-[#E5484D]/90 hover:bg-[#E5484D] sm:hidden")}><X size={19} strokeWidth={3} /></button> : null}
         </div>
 
-        <button type="button" disabled={staged} onClick={(event) => { event.stopPropagation(); if (myTurn) { bumpStat("spins"); return online ? void bottleSpin().then(pullRef.current) : spin(); } setWaitNote(true); window.setTimeout(() => setWaitNote(false), 1800); }} aria-label={t("bottle.spin")} className={cn("absolute h-[30cqmin] transition-transform duration-[3200ms] ease-[cubic-bezier(0.15,0.6,0.2,1)] motion-reduce:duration-0", staged ? "pointer-events-none" : myTurn ? "z-20 cursor-pointer" : "cursor-default")} style={{ left: `${CENTER_X}%`, top: `${STAGE_Y}%`, transform: `translate(-50%, -50%) rotate(${rotation}deg)`, filter: skinFilter(skin) }}>
+        <button type="button" disabled={staged} onClick={(event) => { event.stopPropagation(); if (myTurn) { bumpStat("spins"); return online ? void bottleSpin().then(pullRef.current) : spin(); } setWaitNote(true); window.setTimeout(() => setWaitNote(false), 1800); }} aria-label={t("bottle.spin")} className={cn("absolute h-[30cqmin] transition-transform duration-[4500ms] ease-[cubic-bezier(0.15,0.6,0.2,1)] motion-reduce:duration-0", staged ? "pointer-events-none" : myTurn ? "z-20 cursor-pointer" : "cursor-default")} style={{ left: `${CENTER_X}%`, top: `${STAGE_Y}%`, transform: `translate(-50%, -50%) rotate(${rotation}deg)`, filter: skinFilter(skin) }}>
           <SkinBottle className={cn("h-full drop-shadow-[0_6px_10px_rgba(0,0,0,0.45)] transition-opacity duration-700", staged && "opacity-0")} />
         </button>
         {myTurn && !staged ? (
