@@ -1,4 +1,4 @@
-// Small synthesized sounds (no audio files): a turn chime, a "chosen" ping and a kiss.
+// Game sounds: recordings from public/sounds (turn, kiss, gift, cocktail) with synthesized sounds as a fallback.
 let context: AudioContext | null = null;
 let level = 1;
 export const setVolume = (value: number) => { level = Math.min(1, Math.max(0, value)); };
@@ -21,9 +21,9 @@ export function playSound(kind: "turn" | "chosen" | "kiss" | "decline") {
   try {
     context ??= new (window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
     if (context.state === "suspended") void context.resume();
-    if (kind === "turn") { tone(880, 0, 0.16); tone(1175, 0.14, 0.24); }
+    if (kind === "turn") return playClip("turn", () => { tone(880, 0, 0.16); tone(1175, 0.14, 0.24); });
     if (kind === "chosen") { tone(660, 0, 0.14, 0.14, "triangle"); tone(990, 0.12, 0.3, 0.14, "triangle"); }
-    if (kind === "kiss") { tone(1320, 0, 0.09); tone(1760, 0.08, 0.12); tone(2093, 0.2, 0.3, 0.12); }
+    if (kind === "kiss") return playClip("kiss", () => { tone(1320, 0, 0.09); tone(1760, 0.08, 0.12); tone(2093, 0.2, 0.3, 0.12); });
     if (kind === "decline") tone(220, 0, 0.3, 0.12, "sawtooth");
   } catch {
     // Audio is unavailable or blocked: the game stays silent.
@@ -162,6 +162,8 @@ const soundOf: [string, string][] = [
   ["spooky", "💀 🕸️ 🎭 🧙"], ["rattle", "🎲 🃏 🧩 🎯"], ["tick", "⌚ ⏰ 🕰️ ⏱️ ⏲️ ⏳"], ["ring", "☎️ 📱"], ["toot", "💩"], ["whip", "🤺 ⚔️ 🏹 🪁"],
   ["boing", "⛑️ 🤠 🎩 👒 🧢 🎓 🪖 👳 🕶️ 😎 🥸 👢 👠 👡 🥾 🥿 🧣 🧤 👜 🧳 👘 🤵 🕴️"],
 ];
+// Drinks from the own gift pictures that are poured like a cocktail.
+const cocktails = /^(love|martini|mojito|pinacolada|bluelagoon|b52|daiquiri|sexonthebeach|bloodymary|cherry|vanilla|universal|lifestyle|milkcoctail|tequilashot|juice|romcola|tarhun|cocoscocktail|smoothie|healthdrink|cognacglass|wine|whiskey|champagne|vipchampagne)$/;
 export function playGiftSound(gift: string, moment: "send" | "land") {
   if (level === 0 || typeof window === "undefined") return;
   try {
@@ -169,15 +171,19 @@ export function playGiftSound(gift: string, moment: "send" | "land") {
     if (context.state === "suspended") void context.resume();
     if (moment === "send") {
       // Look for recordings ahead of time, so the right one is ready when the gift lands.
-      loadClip("cocktail");
+      ["cocktail", "gift", "kiss"].forEach(loadClip);
       Object.keys(sounds).forEach(loadClip);
       return noise(0, 0.35, 500, 0.1, 2400);
     }
-    const name = gift.replace(/^e:/, "");
-    if (name === "🍸" || name === "🍹") return playClip("cocktail", pourSynth);
-    const key = soundOf.find(([, members]) => members.split(" ").includes(name))?.[0] ?? "pop";
-    playClip(key, sounds[key]);
+    const name = gift.replace(/^[ec]:/, "");
+    if (name === "🍸" || name === "🍹" || cocktails.test(name)) return playClip("cocktail", pourSynth);
+    const key = soundOf.find(([, members]) => members.split(" ").includes(name))?.[0] ?? (/kiss/.test(name) ? "kiss" : "pop");
+    // Kisses smack; every other gift lands with the recorded hit sound (the matching synthesized sound if it is missing).
+    playClip(key === "kiss" ? "kiss" : "gift", sounds[key]);
   } catch {
     // Audio is unavailable or blocked: the gift simply lands silently.
   }
 }
+
+// The recorded game sounds are small: get them ready as soon as the game loads.
+if (typeof window !== "undefined") ["turn", "kiss", "gift", "cocktail"].forEach(loadClip);
