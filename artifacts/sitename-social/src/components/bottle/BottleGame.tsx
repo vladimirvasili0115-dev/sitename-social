@@ -8,6 +8,8 @@ import { useTranslation } from "@/i18n/useTranslation";
 import { GiftArt } from "@/components/gifts/GiftArt";
 import { useProfile } from "@/components/profile/useProfile";
 import { cn } from "@/lib/utils";
+import { customFile, useCustomArt } from "@/lib/customArt";
+import { customGiftNames, customPlace, customPrice } from "./customGifts";
 import { AchievementsPanel } from "./AchievementsPanel";
 import { FRAME_PRICE, FrameArt, frameLooks } from "./FrameArt";
 import { PassPanel, type PassData } from "./PassPanel";
@@ -74,11 +76,35 @@ const headGifts = new Set(["crown", "e:👑", "e:⛑️", "e:🤠", "e:🧢", "e
 // Gift pictures are glossy 3D emoji (Fluent Emoji 3D, MIT) kept in public/gifts, named by their code points.
 const giftEmoji: Record<string, string> = { crown: "👑", diamond: "💎", rose: "🌹" };
 const giftSrc = (emoji: string) => `/gifts/${Array.from(emoji).map((char) => char.codePointAt(0)!.toString(16)).filter((hex) => hex !== "fe0f").join("-")}.webp`;
+// File name for an own gift picture in public/custom/gifts (e.g. 1f9f8.png for 🧸, tea.png for the tea glass).
+export const giftFileName = (id: string): string => (id.startsWith("e:") ? Array.from(id.slice(2)).map((char) => char.codePointAt(0)!.toString(16)).filter((hex) => hex !== "fe0f").join("-") : giftEmoji[id] ? giftFileName(`e:${giftEmoji[id]}`) : id.replace(":", "-"));
 function Gift({ id, className }: { id: string; className?: string }) {
+  const custom = customFile(useCustomArt(), `gifts/${id.startsWith("c:") ? id.slice(2) : giftFileName(id)}`);
+  if (custom) return <img src={custom} alt="" aria-hidden="true" draggable={false} className={cn("select-none object-contain drop-shadow-[0_2px_2px_rgba(60,25,0,0.3)]", className)} />;
   if (id.startsWith("song:")) id = id === "song:video" ? "e:🎬" : "e:🎵";
   if (giftEmoji[id]) id = `e:${giftEmoji[id]}`;
   if (!id.startsWith("e:")) return <GiftArt id={id as GiftId} className={className} />;
   return <img src={giftSrc(id.slice(2))} alt="" aria-hidden="true" draggable={false} className={cn("select-none object-contain drop-shadow-[0_2px_2px_rgba(60,25,0,0.3)]", className)} />;
+}
+// An own bottle from public/custom/bottles/<n>/: shadow under it, the bottle, then colour and light layers on top.
+function LayeredBottle({ set, n, className }: { set: Set<string>; n: number; className?: string }) {
+  const layer = (name: string) => customFile(set, `bottles/${n}/${name}`);
+  const base = layer("base");
+  const main = base ?? layer("normal");
+  const shadow = layer("shadow");
+  return (
+    <span className={cn("relative inline-block aspect-[1/3.2]", className)}>
+      {shadow ? <img src={shadow} alt="" draggable={false} className="absolute -inset-[6%] h-[112%] w-[112%] translate-x-[5%] translate-y-[3%] object-contain opacity-80" /> : null}
+      {main ? <img src={main} alt="" draggable={false} className="absolute inset-0 h-full w-full object-contain" /> : null}
+      {!base && layer("color") ? <img src={layer("color")!} alt="" className="absolute inset-0 h-full w-full object-contain mix-blend-color" /> : null}
+      {!base && layer("luminosity") ? <img src={layer("luminosity")!} alt="" className="absolute inset-0 h-full w-full object-contain mix-blend-screen" /> : null}
+    </span>
+  );
+}
+// Bottle number n (1–30): an own layered bottle when its pictures exist, otherwise the drawn one.
+function SkinArt({ set, n, className }: { set: Set<string>; n: number; className?: string }) {
+  if (customFile(set, `bottles/${n}/base`) || customFile(set, `bottles/${n}/normal`)) return <LayeredBottle set={set} n={n} className={className} />;
+  return n - 1 >= 15 ? <WaterBottleSvg className={className} /> : <BottleSvg className={className} />;
 }
 // The kiss counter on a photo is a pair of red lips with the number on it.
 function LipsBadge({ count }: { count: number }) {
@@ -669,7 +695,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   };
   const topIds = new Set(seated.map((player) => ({ id: player.id, count: kisses[player.id] ?? 0 })).filter((item) => item.count > 0).sort((a, b) => b.count - a.count).slice(0, 3).map((item) => item.id));
   const skinFilter = (n: number) => (n % 15 ? `hue-rotate(${(n % 15) * 24}deg) saturate(${n % 3 === 0 ? 1.4 : 1.1})` : undefined);
-  const SkinBottle = skin >= 15 ? WaterBottleSvg : BottleSvg;
+  const art = useCustomArt();
+  const SkinBottle = useCallback(({ className }: { className?: string }) => <SkinArt set={art} n={skin + 1} className={className} />, [art, skin]);
   const skinPrice = (n: number) => (n ? 3 + Math.floor(n / 5) * 2 : 0);
   // Rating: the server counts the whole site; without a server only this table's kisses are shown.
   useEffect(() => {
@@ -1198,10 +1225,13 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 {kisses[player.id] ? <LipsBadge count={kisses[player.id]} /> : null}
                 {(() => {
                   const mine = stickers[player.id] ?? [];
-                  const head = [...mine].reverse().find((gift) => headGifts.has(gift));
-                  const rest = mine.filter((gift) => !headGifts.has(gift)).slice(-2).reverse();
+                  const placeOf = (gift: string) => (gift.startsWith("c:") ? customPlace(gift.slice(2)) : headGifts.has(gift) ? "head" : "body");
+                  const ears = [...mine].reverse().find((gift) => placeOf(gift) === "ears");
+                  const head = [...mine].reverse().find((gift) => placeOf(gift) === "head");
+                  const rest = mine.filter((gift) => placeOf(gift) === "body").slice(-2).reverse();
                   return <>
                     {(piles[player.id] ?? []).map((item) => <span key={item.key} className="pointer-events-none absolute z-[2] animate-[gift-drop_0.35s_ease-out] transition-opacity duration-[2000ms]" style={{ left: `${item.x}%`, top: `${item.y}%`, width: `${item.s}%`, height: `${item.s}%`, transform: `rotate(${item.r}deg)`, opacity: pileNow - item.at > PILE_MS - 3000 ? 0 : 1 }}><Gift id={item.gift} className="h-full w-full drop-shadow-[0_2px_2px_rgba(0,0,0,0.35)]" /></span>)}
+                    {ears ? <Gift id={ears} className="absolute -top-[16%] left-[-10%] z-[1] h-[40%] w-[120%] drop-shadow" /> : null}
                     {head ? <Gift id={head} className="absolute -left-[2.6cqmin] -top-[2.8cqmin] h-[50%] w-[50%] -rotate-[24deg] drop-shadow" /> : null}
                     {rest.map((gift, position) => <Gift key={`${gift}-${position}`} id={gift} className={cn("absolute -bottom-[1.6cqmin] h-[48%] w-[48%] drop-shadow", position ? "-left-[1.6cqmin]" : "-right-[1.6cqmin]")} />)}
                   </>;
@@ -1573,7 +1603,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                       return (
                         <li key={n}>
                           <button onClick={() => { if (owned) return setSkin(n); if (!pay(skinPrice(n))) return setPayNote(true); setOwnedSkins((list) => [...list, n]); setSkin(n); }} aria-pressed={skin === n} aria-label={`${t("bottle.bottles")} ${n + 1}`} className={cn("flex w-full flex-col items-center rounded-lg border-2 bg-[#FDF3E1] py-1", skin === n ? "border-[#8CC63F]" : "border-transparent")}>
-                            <span className="h-12" style={{ filter: skinFilter(n) }}>{n >= 15 ? <WaterBottleSvg className="h-full" /> : <BottleSvg className="h-full" />}</span>
+                            <span className="h-12" style={{ filter: skinFilter(n) }}><SkinArt set={art} n={n + 1} className="h-full" /></span>
                             <span className="flex items-center gap-0.5 text-[10px] font-bold tabular-nums text-[#7C2D12]">{owned ? "✓" : <><Heart size={10} fill="#F4511E" stroke="none" />{skinPrice(n)}</>}</span>
                           </button>
                         </li>
@@ -1698,7 +1728,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             </div>
             ) : null}
             <div role="menu" className={cn("grid min-h-0 flex-1 content-start gap-0.5 overflow-y-auto bg-white p-2", wide ? "grid-cols-[repeat(auto-fill,minmax(68px,1fr))]" : "grid-cols-[repeat(auto-fill,minmax(56px,1fr))]")}>
-              {[...giftChoices, ...lockedGifts].map(([gift, price, need], order) => (
+              {[...giftChoices.slice(0, 2), ...customGiftNames(art).map((name) => [`c:${name}`, customPrice(name)] as [string, number]), ...giftChoices.slice(2), ...lockedGifts].map(([gift, price, need], order) => (
                 <button key={`${gift}-${order}`} role="menuitem" aria-disabled={need === -1 ? !vip : Boolean(need)} onPointerDown={(event) => pressGift(giftTargets, gift, price, need, event.clientX, event.clientY)} onPointerMove={(event) => { const state = pressed.current; if (state && !state.started && Math.hypot(event.clientX - state.x, event.clientY - state.y) > 8) cancelPress(); }} onPointerUp={() => releaseGift(giftTargets, gift, price, need)} onPointerLeave={cancelPress} onPointerCancel={cancelPress} onContextMenu={(event) => event.preventDefault()} onKeyDown={(event) => { if (event.key === "Enter" && !event.repeat) giveMany(giftTargets, gift, price, need); }} aria-label={`${t("gifts.send")} ${price}`} className={cn("group flex touch-pan-y select-none flex-col items-center gap-0.5 rounded-xl p-1 hover:bg-[#FFF4E5]", (need === -1 ? !vip : Boolean(need)) ? "grayscale [&>img]:opacity-75" : hearts < price && "opacity-50")}>
                   <Gift id={gift} className={cn("transition-transform duration-150 group-hover:scale-110", wide ? "h-14 w-14" : "h-11 w-11")} />
                   <span className="flex items-center gap-1 text-xs font-bold tabular-nums text-[#3F3F46]">{need === -1 ? <b className="rounded bg-[#F59E0B] px-1 text-[10px] text-white">VIP</b> : need ? <span aria-label={`${need}`} className="text-[11px] opacity-70">🔒</span> : <><Heart size={13} fill="#E8352B" stroke="none" />{price}</>}</span>
