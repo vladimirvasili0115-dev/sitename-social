@@ -27,6 +27,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     document.documentElement.dataset.theme = settings.theme;
   }, [settings.theme]);
+  // An invite link (?ref=<user id>) is remembered until the new player opens the bottle game.
+  useEffect(() => {
+    const ref = new URLSearchParams(window.location.search).get("ref");
+    if (ref && /^[0-9a-f-]{36}$/i.test(ref)) { try { window.localStorage.setItem("sitename-ref", ref); } catch { /* storage is blocked */ } }
+  }, []);
 
   useEffect(() => {
     if (!ready || publicRoute) return;

@@ -10,20 +10,21 @@ import { useProfile } from "@/components/profile/useProfile";
 import { cn } from "@/lib/utils";
 import { AchievementsPanel } from "./AchievementsPanel";
 import { FRAME_PRICE, FrameArt, frameLooks } from "./FrameArt";
+import { ActivePanel, ComplimentPill, ComplimentsPanel, InvitePanel, ShopPanel, emojiSrc } from "./ShopPanels";
 import { bumpStat, markVisit, readStats, syncStats } from "./achievements";
 import { BottleSvg, WaterBottleSvg, WoodTable } from "./BottleArt";
 import { playGiftSound, playSound, setVolume } from "./sound";
 import { supabase } from "@/lib/supabase";
 import { ensureMessagesLoaded, openRemoteChat, remoteChats, sendRemoteMessage } from "@/lib/messagesSync";
 import { uploadBlob } from "@/lib/media";
-import { bottleAnswer, bottleBuyChances, bottleJoin, bottleMove, bottleQueueLeave, bottleAdmire, bottleFrame, bottleGift, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState } from "@/lib/bottleSync";
+import { bottleAnswer, bottleBuyChances, bottleJoin, bottleMove, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleGift, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState } from "@/lib/bottleSync";
 
 type Player = { id: string; name: string; age: number; female: boolean; avatar: string; me?: boolean; empty?: boolean; zodiac?: number | null };
 type Phase = "waiting" | "spinning" | "choice" | "kissed" | "declined";
 type Track = { id: string; title: string; duration?: string };
 const stored = (key: string): Track[] => { try { return JSON.parse(window.localStorage.getItem(key) ?? "[]") as Track[]; } catch { return []; } };
 const keep = (key: string, list: Track[]) => { try { window.localStorage.setItem(key, JSON.stringify(list.slice(0, 40))); } catch { /* storage is full or blocked */ } };
-type Line = { id: number; from: string; to?: string; text?: string; gift?: string; song?: string; admire?: { amount?: number; by?: string; avatar?: string; target?: string; lost?: boolean } };
+type Line = { id: number; from: string; to?: string; text?: string; gift?: string; song?: string; admire?: { amount?: number; by?: string; avatar?: string; target?: string; lost?: boolean }; event?: { kind: "kick" | "saved" | "kicked"; a: string; b: string } };
 
 // Seat centres in percent of the table. Wide: a tool column on the left, seats in a rectangle. Tall (phone, window): a tool row on top, seats in an oval.
 type Seats = readonly (readonly [number, number])[];
@@ -231,7 +232,15 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [volume, setVolumeLevel] = useState(80);
   const [music, setMusic] = useState(60);
   const [accept, setAccept] = useState(true);
-  const [panel, setPanel] = useState<"settings" | "top" | "rules" | "shop" | "menu" | "vip" | "bottles" | "frames" | "achievements" | "boosters" | "wheel" | "chances" | "tables" | "rooms" | null>(null);
+  const [panel, setPanel] = useState<"settings" | "top" | "rules" | "shop" | "menu" | "vip" | "bottles" | "frames" | "achievements" | "boosters" | "wheel" | "chances" | "tables" | "rooms" | "active" | "invite" | "compliments" | "kick" | null>(null);
+  const [kickFor, setKickFor] = useState<{ id: string; name: string; avatar: string } | null>(null);
+  const [kickNote, setKickNote] = useState<string | null>(null);
+  const [complimentIn, setComplimentIn] = useState<{ name: string; avatar: string; kind: number } | null>(null);
+  const [kickedToast, setKickedToast] = useState(false);
+  const [refInfo, setRefInfo] = useState<{ invited: number; done: number }>({ invited: 0, done: 0 });
+  const [localActive] = useState(() => Date.now());
+  const names = useRef<Record<string, { name: string; avatar: string }>>({});
+  useEffect(() => { if (!kickedToast) return; const timer = window.setTimeout(() => setKickedToast(false), 12000); return () => window.clearTimeout(timer); }, [kickedToast]);
   // Private rooms (VIP opens them; anyone with the password can come in).
   const [roomsData, setRoomsData] = useState<BottleRooms | null>(null);
   const [roomSearch, setRoomSearch] = useState("");
@@ -361,6 +370,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
 
   // Live table: sit down, then ask the server for the table once a second (this is also the "I am here" signal).
   const lastChat = useRef(0);
+  // The first answer from the server only fills the chat; later ones also play the events (gifts, compliments, kicks).
+  const primed = useRef(false);
   const pullRef = useRef<() => void>(() => {});
   useEffect(() => {
     if (!online) return;
@@ -373,17 +384,22 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         let data = await bottleSync(lastChat.current);
         if (!data) { await bottleJoin(); data = await bottleSync(lastChat.current); }
         if (!alive || !data) return;
-        const first = lastChat.current === 0;
+        const first = !primed.current;
+        primed.current = true;
         const all = data.chat.filter((item) => item.id > lastChat.current && item.kind !== "wheel");
         const who = (id: string | null) => (id === data!.me ? "me" : id ?? "");
         // Gifts from other players fly across the table on every screen; my own gifts were already shown when I sent them.
         const gifts = all.filter((item) => item.kind === "gift" && item.from !== data!.me);
         if (!first) gifts.forEach((item, order) => window.setTimeout(() => remoteGift.current(who(item.from), who(item.to), item.body ?? "", gifts.length > 1 ? 1000 : 2000), order * 150));
+        for (const seat of data.seats) names.current[seat.id] = { name: (seat.name ?? "").split(" ")[0] || "?", avatar: seat.avatar ?? "" };
+        const nameOf = (id: string | null) => (id === data!.me ? t("common.you") : names.current[id ?? ""]?.name ?? "?");
+        if (!first) all.filter((item) => item.kind === "compliment" && item.to === data!.me).forEach((item) => setComplimentIn({ name: names.current[item.from ?? ""]?.name ?? "?", avatar: names.current[item.from ?? ""]?.avatar || cartoonAvatar(3, false), kind: Number(item.body) || 1 }));
+        if (!first && all.some((item) => item.kind === "kick" && item.to === data!.me)) setKickedToast(true);
         if (!first) all.filter((item) => item.kind === "admire_lost" && item.to === data!.me).forEach((item) => { try { setLostToast(JSON.parse(item.body ?? "{}") as { by?: string; avatar?: string; target?: string }); } catch { /* bad body */ } });
-        const fresh = all.filter((item) => (item.kind !== "admire_lost" || item.to === data!.me) && (item.kind !== "gift" || (first && item.from !== data!.me)));
+        const fresh = all.filter((item) => item.kind !== "compliment" && (item.kind !== "admire_lost" || item.to === data!.me) && (item.kind !== "gift" || (first && item.from !== data!.me)));
         if (all.length) lastChat.current = all[all.length - 1].id;
         if (fresh.length) {
-          setLines((list) => [...list, ...fresh.map((item) => (item.kind === "kiss" ? { id: item.id, from: who(item.from), to: who(item.to) } : item.kind === "gift" ? { id: item.id, from: who(item.from), to: who(item.to), gift: item.body ?? "" } : item.kind === "admire" || item.kind === "admire_lost" ? { id: item.id, from: who(item.from), to: item.kind === "admire" ? who(item.to) : undefined, admire: { ...(() => { try { return JSON.parse(item.body ?? "{}") as { amount?: number; by?: string; avatar?: string; target?: string }; } catch { return {}; } })(), lost: item.kind === "admire_lost" } } : item.kind === "song" ? { id: item.id, from: who(item.from), to: item.to ? who(item.to) : undefined, song: item.body || "♪" } : { id: item.id, from: who(item.from), text: item.body ?? "" }))].slice(-80));
+          setLines((list) => [...list, ...fresh.map((item) => (item.kind === "kiss" ? { id: item.id, from: who(item.from), to: who(item.to) } : item.kind === "gift" ? { id: item.id, from: who(item.from), to: who(item.to), gift: item.body ?? "" } : item.kind === "admire" || item.kind === "admire_lost" ? { id: item.id, from: who(item.from), to: item.kind === "admire" ? who(item.to) : undefined, admire: { ...(() => { try { return JSON.parse(item.body ?? "{}") as { amount?: number; by?: string; avatar?: string; target?: string }; } catch { return {}; } })(), lost: item.kind === "admire_lost" } } : item.kind === "song" ? { id: item.id, from: who(item.from), to: item.to ? who(item.to) : undefined, song: item.body || "♪" } : item.kind === "kick" || item.kind === "saved" || item.kind === "kicked" ? { id: item.id, from: who(item.from), event: { kind: item.kind, a: nameOf(item.from), b: nameOf(item.to) } } : { id: item.id, from: who(item.from), text: item.body ?? "" }))].slice(-80));
         }
         setNet(data);
       } finally {
@@ -528,7 +544,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   async function moveTo(table: number | null) {
     const result = await bottleMove(table);
     if (!result) return;
-    if (result.gone) { setWaitFor(null); setRoomNote(true); return void bottleTables().then(setRooms); }
+    if (result.gone || result.banned) { setWaitFor(null); setRoomNote(true); return void bottleTables().then(setRooms); }
     if (result.full && result.table) return setWaitFor({ table: result.table, position: result.position ?? 1 });
     setWaitFor(null);
     bumpStat("tables");
@@ -588,6 +604,42 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     }
     setFrameNote(t("bottle.frameDone"));
   }
+  const liveVip = online ? Boolean(net?.vip) : vip;
+  const activeSecs = online ? net?.active?.secs ?? 0 : Math.floor((Date.now() - localActive) / 1000);
+  const [localCompliments, setLocalCompliments] = useState(0);
+  function openInvite() {
+    setPanel("invite");
+    if (online) void bottleRefStatus().then((info) => { if (!info) return; setRefInfo({ invited: info.invited, done: info.done }); if (info.paid) { heartsRef.current = info.hearts; setHearts(info.hearts); } });
+  }
+  async function sendCompliment(to: string, kind: number): Promise<string | null> {
+    bumpStat("chat");
+    if (!online) { const next = (localCompliments + 1) % 10; setLocalCompliments(next); if (!next) { heartsRef.current += 10; setHearts(heartsRef.current); return "bonus"; } return null; }
+    const result = await bottleCompliment(to, kind);
+    if (!result || result.error) return result?.error ?? "bad";
+    if (typeof result.hearts === "number") { heartsRef.current = result.hearts; setHearts(result.hearts); }
+    pullRef.current();
+    return result.bonus ? "bonus" : null;
+  }
+  function askKick(player: Player) {
+    setKickNote(null);
+    setKickFor({ id: player.id, name: player.name, avatar: player.avatar });
+    setCard(false);
+    setPanel("kick");
+  }
+  async function doKick() {
+    if (!kickFor) return;
+    if (!online) { setKickNote(t("bottle.kickDemo")); return; }
+    const result = await bottleKick(kickFor.id);
+    if (result === "ok") { setPanel(null); pullRef.current(); }
+    else setKickNote(t(result === "vip" ? "bottle.kickNeedVip" : "bottle.kickFail"));
+  }
+  // Invited by a friend's link: tell the server once, the inviter gets hearts when we reach 50 kisses.
+  useEffect(() => {
+    if (!online) return;
+    let ref: string | null = null;
+    try { ref = window.localStorage.getItem("sitename-ref"); } catch { /* storage is blocked */ }
+    if (ref) void bottleRefSet(ref).then(() => { try { window.localStorage.removeItem("sitename-ref"); } catch { /* storage is blocked */ } });
+  }, [online]);
   const pay = (price: number) => {
     if (heartsRef.current < price) return false;
     heartsRef.current -= price;
@@ -1033,7 +1085,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   </div>
                   <div className="my-3 border-t border-[#E5E7EB]" />
                   <div className={cn("mt-auto flex items-center justify-around", wide ? "gap-2" : "gap-1")}>
-                    {player.me ? null : <button onClick={() => setCardNote(t(vip ? "bottle.kickDemo" : "bottle.kickVip"))} aria-label={t("bottle.kick")} title={t("bottle.kick")} className={cn(action, "bg-[radial-gradient(circle_at_35%_30%,#FF7A7A,#D92B2B)]")}><Ban size={22} strokeWidth={2.4} /></button>}
+                    {player.me ? null : <button onClick={() => askKick(player)} aria-label={t("bottle.kick")} title={t("bottle.kick")} className={cn(action, "bg-[radial-gradient(circle_at_35%_30%,#FF7A7A,#D92B2B)]")}><Ban size={22} strokeWidth={2.4} /></button>}
                     <button onClick={() => setCard(false)} aria-label={t("gifts.send")} title={t("gifts.send")} className={cn(action, "bg-[radial-gradient(circle_at_35%_30%,#FFA05C,#F0661E)]")}><GiftIcon size={23} strokeWidth={2.2} /></button>
                     {player.me ? null : <>
                     <button onClick={() => setCardNote(t("bottle.friendSent"))} aria-label={t("bottle.addFriend")} title={t("bottle.addFriend")} className={cn(action, "bg-[radial-gradient(circle_at_35%_30%,#FFD15C,#F5A300)]")}><BadgeCheck size={24} strokeWidth={2.2} /></button>
@@ -1134,8 +1186,21 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   </>;
                 })()}
               </button>
+              {(() => {
+                const kick = online ? net?.seats.find((seat) => seat.id === (player.me ? net.me : player.id))?.kicked : null;
+                if (!kick || !net) return null;
+                const left = Math.max(0, Math.ceil(30 - (net.now - kick.at) / 1000));
+                const canSave = !player.me && kick.by !== net.me;
+                return (
+                  <div className="absolute left-0 top-0 z-[3] flex aspect-square w-full flex-col items-center justify-center rounded-[14%] bg-[#7F1D1D]/60 ring-[0.6cqmin] ring-[#EF4444]">
+                    <img src={emojiSrc("🦶")} alt="" className="h-[42%] w-[42%] animate-pulse" />
+                    <span className="text-[3.4cqmin] font-black tabular-nums text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.7)]">{left}</span>
+                    {canSave ? <button onClick={(event) => { event.stopPropagation(); void bottleSave(player.id).then(pullRef.current); }} className="absolute -bottom-[2.4cqmin] flex items-center gap-[0.6cqmin] rounded-full bg-[linear-gradient(180deg,#9BD65A,#5DB13A)] px-[1.6cqmin] py-[0.5cqmin] text-[2.4cqmin] font-bold text-white shadow-lg"><img src={emojiSrc("🛟")} alt="" className="h-[3cqmin] w-[3cqmin]" />{t("bottle.saveBtn")}</button> : null}
+                  </div>
+                );
+              })()}
               <p className="mt-px truncate text-center text-[2.6cqmin] font-semibold leading-tight text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.8)]">{player.me ? t("common.you") : player.name}, {player.age}</p>
-              {index === turn && !staged ? <p className={cn("absolute top-full whitespace-nowrap rounded-full bg-black/45 px-[1.6cqmin] text-[2.3cqmin] font-semibold text-white", seats[index][0] > 75 ? "right-0" : seats[index][0] < 25 ? "left-0" : "left-1/2 -translate-x-1/2")}>↑ {t("bottle.spinsBottle")}</p> : null}
+              {index === turn && !staged ? <p className={cn("absolute whitespace-nowrap", seats[index][1] > 80 ? "bottom-full mb-[0.4cqmin]" : "top-full", "rounded-full bg-black/45 px-[1.6cqmin] text-[2.3cqmin] font-semibold text-white", seats[index][0] > 75 ? "right-0" : seats[index][0] < 25 ? "left-0" : "left-1/2 -translate-x-1/2")}>{seats[index][1] > 80 ? "↓" : "↑"} {t("bottle.spinsBottle")}</p> : null}
             </div>
           );
         })}
@@ -1216,7 +1281,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
 
         {panel ? (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/35 p-3" onClick={(event) => { event.stopPropagation(); setPanel(null); }}>
-            <div role="dialog" aria-modal="true" aria-label={t(`bottle.${panel}`)} onClick={(event) => event.stopPropagation()} className={cn("relative max-h-full w-full rounded-2xl p-3 shadow-2xl", panel === "tables" && "animate-[bottle-drop_0.45s_cubic-bezier(0.22,1.2,0.36,1)]", panel === "shop" ? "max-w-[420px] bg-[linear-gradient(180deg,#F26D7D,#F7A1A8)]" : panel === "wheel" || panel === "chances" ? "max-w-[380px] bg-[linear-gradient(180deg,#12998C,#7FD8C8)]" : panel === "top" ? "max-w-[300px] bg-[#EEF8FD]" : panel === "achievements" ? "max-w-[400px] bg-white" : panel === "frames" ? "max-w-[440px] bg-[#F7F7F8]" : panel === "rooms" ? "max-w-[400px] border border-[#F5C451]/30 bg-[linear-gradient(165deg,#2B1D4E,#4E2D7C)]" : "max-w-[340px] bg-white")}>
+            <div role="dialog" aria-modal="true" aria-label={t(`bottle.${panel}`)} onClick={(event) => event.stopPropagation()} className={cn("relative max-h-full w-full rounded-2xl p-3 shadow-2xl", panel === "tables" && "animate-[bottle-drop_0.45s_cubic-bezier(0.22,1.2,0.36,1)]", panel === "shop" ? "max-w-[440px] bg-[linear-gradient(180deg,#F26D7D,#F9B4B9)]" : panel === "wheel" || panel === "chances" ? "max-w-[380px] bg-[linear-gradient(180deg,#12998C,#7FD8C8)]" : panel === "top" ? "max-w-[300px] bg-[#EEF8FD]" : panel === "achievements" ? "max-w-[400px] bg-white" : panel === "frames" ? "max-w-[440px] bg-[#F7F7F8]" : panel === "rooms" ? "max-w-[400px] border border-[#F5C451]/30 bg-[linear-gradient(165deg,#2B1D4E,#4E2D7C)]" : "max-w-[340px] bg-white")}>
               <button onClick={() => setPanel(null)} aria-label={t("photos.close")} title={t("photos.close")} className={cn("absolute -right-2 -top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 bg-white shadow", panel === "shop" ? "border-[#EF4444] text-[#EF4444]" : panel === "wheel" || panel === "chances" ? "border-[#0E8478] text-[#0E8478]" : panel === "top" ? "border-[#3B9AD9] text-[#3B9AD9]" : panel === "rooms" ? "border-[#F5C451] text-[#C08A12]" : "border-[#8CC63F] text-[#8CC63F]")}><X size={18} strokeWidth={3} /></button>
               <p className={cn("mb-1 text-center text-sm font-bold", panel === "shop" || panel === "wheel" || panel === "chances" || panel === "rooms" ? "mb-2 text-white" : "text-[#9CA3AF]", (panel === "top" || panel === "achievements") && "sr-only")}>{t(`bottle.${panel}`)}</p>
               {panel === "rooms" ? (() => {
@@ -1366,25 +1431,28 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   <button onClick={() => setPanel("wheel")} className="mt-2 w-full text-center text-xs font-bold text-white underline">{t("bottle.wheelBack")}</button>
                 </div>
               ) : panel === "shop" ? (
-                <div className="max-h-[78cqmin] overflow-y-auto pt-2">
-                  <p className="mb-3 flex items-center justify-center gap-1.5 rounded-lg bg-white/90 py-1.5 text-sm font-bold text-[#7F1D1D]">{t("bottle.balance")}: <Heart size={15} fill="#F4511E" stroke="none" /><span className="tabular-nums">{hearts}</span></p>
-                  <ul className="grid grid-cols-4 gap-1.5">
-                    <li className="flex flex-col items-center rounded-xl bg-white p-1.5 text-center">
-                      <span className="text-[13px] font-black leading-tight text-[#F59E0B]">VIP<span className="block text-[9px] font-bold">{t("bottle.vipStatus")}</span></span>
-                      <span aria-hidden="true" className="my-1 text-3xl">👑</span>
-                      <button onClick={() => { setPayNote(false); setPanel("vip"); }} className="mt-auto h-7 w-full rounded-md bg-[#3B82F6] text-[11px] font-bold text-white hover:brightness-110">{t("bottle.vipMore")}</button>
-                    </li>
-                    {packs.map((pack) => (
-                      <li key={pack.hearts} className="relative flex flex-col items-center rounded-xl bg-white p-1.5 text-center">
-                        {pack.tag ? <span className={cn("absolute -top-1.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded px-1.5 text-[9px] font-bold text-white", pack.tag === "best" ? "bg-[#E11D8F]" : "bg-[#7C3AED]")}>{t(pack.tag === "best" ? "bottle.packBest" : "bottle.packHit")}</span> : null}
-                        <span className="flex items-center gap-0.5 text-[13px] font-black tabular-nums leading-tight text-[#EA580C]"><Heart size={12} fill="#F4511E" stroke="none" />{pack.hearts}</span>
-                        <span className="h-3 text-[9px] font-bold leading-3 text-[#F59E0B]">{pack.bonus ? `${pack.bonus}% ${t("bottle.bonus")}` : ""}</span>
-                        <span aria-hidden="true" className="my-1 text-3xl">{pack.art}</span>
-                        <button onClick={() => setPayNote(true)} className="mt-auto h-7 w-full rounded-md bg-[#8CC63F] text-[11px] font-bold tabular-nums text-white hover:brightness-110">{pack.price} {t("bottle.currency")}</button>
-                      </li>
-                    ))}
-                  </ul>
-                  {payNote ? <p role="status" className="mt-2 rounded-lg bg-white/90 p-2 text-center text-xs font-semibold text-[#7F1D1D]">{t("bottle.paySoon")}</p> : null}
+                <ShopPanel hearts={hearts} activeSecs={activeSecs} payNote={payNote} onActive={() => setPanel("active")} onTelegram={() => (TELEGRAM_URL ? window.open(TELEGRAM_URL, "_blank", "noopener") : setPayNote(true))} onVip={() => { setPayNote(false); setPanel("vip"); }} onInvite={openInvite} onCompliments={() => setPanel("compliments")} onPack={() => setPayNote(true)} />
+              ) : panel === "active" ? (
+                <ActivePanel secs={activeSecs} claimed={net?.active?.claimed ?? 0} live={online} onClaim={(level) => void bottleActiveClaim(level).then((left) => { if (left !== null && left >= 0) { heartsRef.current = left; setHearts(left); pullRef.current(); } })} />
+              ) : panel === "invite" ? (
+                <InvitePanel link={online && net ? `${window.location.origin}/register?ref=${net.me}` : null} invited={refInfo.invited} done={refInfo.done} />
+              ) : panel === "compliments" ? (
+                <ComplimentsPanel people={seated.filter((player) => !player.me).map((player) => ({ id: player.id, name: player.name, avatar: player.avatar }))} left={10 - (net?.compliments ?? localCompliments)} onSend={sendCompliment} />
+              ) : panel === "kick" && kickFor ? (
+                <div className="text-[#1F2937]">
+                  <div className="flex items-center gap-3">
+                    <span className="relative shrink-0"><img src={kickFor.avatar} alt="" className="h-16 w-16 rounded-xl object-cover shadow" /><img src={emojiSrc("🦶")} alt="" className="absolute -bottom-2 -right-2 h-8 w-8 -rotate-12" /></span>
+                    <p className="text-sm leading-snug">{t("bottle.kickAsk1")} <b>{kickFor.name}</b> {t("bottle.kickAsk2")}</p>
+                  </div>
+                  <p className="mt-3 rounded-lg bg-[#FEF3C7] px-2.5 py-2 text-xs font-semibold leading-snug text-[#92400E]">{t("bottle.kickWarn")}</p>
+                  {!liveVip ? <p className="mt-2 text-center text-xs text-[#6B7280]">{t("bottle.kickNeedVip")}</p> : null}
+                  {kickNote ? <p role="status" className="mt-2 text-center text-xs font-semibold text-[#B91C1C]">{kickNote}</p> : null}
+                  <div className="mt-3 flex gap-2">
+                    <button onClick={() => setPanel(null)} className="h-10 flex-1 rounded-xl border-2 border-[#8CC63F] text-sm font-bold text-[#5B8C24] hover:bg-[#F4FBEA]">{t("common.cancel")}</button>
+                    {liveVip
+                      ? <button onClick={() => void doKick()} className="h-10 flex-1 rounded-xl bg-[linear-gradient(180deg,#FF7A7A,#D92B2B)] text-sm font-bold text-white shadow hover:brightness-110">{t("bottle.kickDo")}</button>
+                      : <button onClick={() => setPanel("vip")} className="h-10 flex-1 rounded-xl bg-[linear-gradient(180deg,#4FA8FF,#2B7DE0)] text-sm font-bold text-white shadow hover:brightness-110">{t("bottle.kickVipBtn")}</button>}
+                  </div>
                 </div>
               ) : panel === "settings" ? (
                 <div className="max-h-[70cqmin] overflow-y-auto">
@@ -1618,6 +1686,12 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           {lines.filter((line) => !line.text || !muted.includes(line.from)).map((line) => {
             const from = byId(line.from);
             const to = line.to ? byId(line.to) : null;
+            if (line.event) return (
+              <p key={line.id} className={cn("rounded-lg px-2.5 py-1.5 text-[13px] font-semibold", line.event.kind === "saved" ? "bg-[#DCFCE7]/10 text-[#86EFAC]" : "bg-[#FEE2E2]/10 text-[#FCA5A5]")}>
+                <img src={emojiSrc(line.event.kind === "saved" ? "🛟" : "🦶")} alt="" className="mr-1.5 inline h-5 w-5 align-[-5px]" />
+                {line.event.kind === "kicked" ? <><b>{line.event.b}</b> {t("bottle.kickedLine")}</> : <><b>{line.event.a}</b> {t(line.event.kind === "kick" ? "bottle.kickLine" : "bottle.saveLine")} <b>{line.event.b}</b></>}
+              </p>
+            );
             if (line.admire) return (
               <div key={line.id} className="flex items-center gap-2 text-sm">
                 <img src={from?.avatar || line.admire.avatar || cartoonAvatar(3, false)} alt="" className="h-8 w-8 shrink-0 rounded-md object-cover" />
@@ -1644,6 +1718,27 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           <button type="submit" disabled={!draft.trim()} aria-label={t("messages.send")} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#EE8A2B] text-white disabled:opacity-40"><SendHorizontal size={17} /></button>
         </form>
       </div>
+      {complimentIn ? (
+        <div className="absolute inset-0 z-[58] flex items-center justify-center bg-black/30 p-4" onClick={() => setComplimentIn(null)}>
+          <div role="dialog" aria-label={t("bottle.cmpGot")} onClick={(event) => event.stopPropagation()} className="relative w-full max-w-[330px] animate-[bottle-pop_0.25s_ease-out] rounded-2xl bg-white p-4 text-[#1F2937] shadow-2xl">
+            <button onClick={() => setComplimentIn(null)} aria-label={t("photos.close")} title={t("photos.close")} className="absolute -right-2 -top-2 flex h-8 w-8 items-center justify-center rounded-full border-2 border-[#F87171] bg-white text-[#F87171] shadow"><X size={16} strokeWidth={3} /></button>
+            <p className="text-center text-lg font-black">{t("bottle.cmpGot")}</p>
+            <div className="mt-3 flex items-center gap-3">
+              <img src={complimentIn.avatar} alt="" className="h-20 w-20 shrink-0 rounded-xl object-cover shadow" />
+              <p className="min-w-0 text-sm leading-snug"><b className="block truncate text-[#E11D48]">{complimentIn.name}</b><span className="text-[#6B7280]">{t("bottle.cmpSaid1")} {complimentIn.name} {t("bottle.cmpSaid2")}</span></p>
+            </div>
+            <div className="mt-3"><ComplimentPill kind={complimentIn.kind} big /></div>
+            <button onClick={() => setComplimentIn(null)} className="mt-3 h-11 w-full rounded-xl bg-[linear-gradient(180deg,#F87171,#E5484D)] text-sm font-bold text-white shadow hover:brightness-110">{t("bottle.cmpThanks")} 💗</button>
+          </div>
+        </div>
+      ) : null}
+      {kickedToast ? (
+        <div role="alert" className="absolute left-1/2 top-3 z-[57] flex w-[min(360px,calc(100%-24px))] -translate-x-1/2 items-center gap-2 rounded-2xl border border-[#FCA5A5] bg-white p-2 text-[#1F2937] shadow-2xl">
+          <img src={emojiSrc("🦶")} alt="" className="h-9 w-9 shrink-0" />
+          <p className="min-w-0 flex-1 text-sm font-semibold">{t("bottle.kickedYou")}</p>
+          <button onClick={() => setKickedToast(false)} aria-label={t("photos.close")} title={t("photos.close")} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#6B7280] hover:text-[#111827]"><X size={16} /></button>
+        </div>
+      ) : null}
       {lostToast ? (
         <div role="status" className="absolute left-1/2 top-3 z-[57] flex w-[min(360px,calc(100%-24px))] -translate-x-1/2 items-center gap-2 rounded-2xl border border-[#F9A8C4] bg-white p-2 text-[#1F2937] shadow-2xl">
           <span aria-hidden="true" className="text-2xl">💔</span>
