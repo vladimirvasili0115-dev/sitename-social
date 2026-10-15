@@ -10,7 +10,7 @@ const prices: [RegExp, number][] = [
   [/^(ges_\w+|heart\d|notes\d|hamburger|tea|poop|heineken)$/, 1],
   [/^(air_kiss\d|candy\d+|egg\d|flower\d+|orchid|colander|maracas\d|nipple\d|pepper\d|cocoscocktail|bear\d)$/, 1],
 ];
-export const customPrice = (name: string) => prices.find(([test]) => test.test(name))?.[1] ?? 2;
+export const customPrice = (name: string) => (drinkNames.test(name) ? 2 : prices.find(([test]) => test.test(name))?.[1] ?? 2);
 export const customPlace = (name: string): Place =>
   /^(ears|horns)/.test(name) ? "ears"
     : /^(prankcake_\w+2|tomato[23])$/.test(name) ? "face"
@@ -44,6 +44,6 @@ export function landedName(name: string) {
   return name;
 }
 export const isListed = (name: string) => !hidden.test(name);
-// Drinks: poured through a glass spiral to the receiver, who gets +1 heart (the server pays it, see bottle_is_drink).
-const drinkNames = /^(love|martini|mojito|pinacolada|bluelagoon|b52|daiquiri|sexonthebeach|bloodymary|cherry|vanilla|universal|lifestyle|milkcoctail|tequilashot|juice|romcola|tarhun|cocoscocktail|smoothie|healthdrink|cognacglass|wine|whiskey|champagne|vipchampagne)$/;
+// Cocktails cost 2 hearts and give the receiver 1 heart (the server pays it, see bottle_is_drink).
+const drinkNames = /^(love|martini|mojito|pinacolada|bluelagoon|b52|daiquiri|sexonthebeach|bloodymary|cherry|vanilla|universal|lifestyle|milkcoctail|tequilashot|romcola|cocoscocktail)$/;
 export const isDrink = (gift: string) => gift === "e:🍸" || gift === "e:🍹" || (gift.startsWith("c:") && drinkNames.test(gift.slice(2)));
