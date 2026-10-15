@@ -2,7 +2,7 @@ import { supabase } from "./supabase";
 
 // Live tables of the bottle game. The database owns the game: seats, turns, where the bottle stops, answers and kisses.
 export type BottleSeat = { seat: number; id: string; name: string | null; avatar: string | null; gender: string | null; kisses: number; total?: number; smiles?: number; songs?: number; zodiac?: number | null; age: number | null; status?: string | null; frame?: number; pass?: boolean; kicked?: { by: string; at: number } | null; admirer?: { id: string; name: string | null; avatar: string | null; amount: number } | null };
-export type BottleChat = { id: number; from: string | null; to: string | null; kind: "text" | "kiss" | "wheel" | "song" | "gift" | "admire" | "admire_lost" | "kick" | "saved" | "kicked" | "compliment"; body: string | null };
+export type BottleChat = { id: number; from: string | null; to: string | null; kind: "text" | "kiss" | "wheel" | "song" | "gift" | "admire" | "admire_lost" | "kick" | "saved" | "kicked" | "compliment" | "bottle"; body: string | null };
 export type BottleState = {
   table: number; me: string; now: number; hearts: number; chances?: number; winner?: { name: string | null; amount: number } | null;
   phase: "waiting" | "spinning" | "choice" | "result"; phase_at: number;
