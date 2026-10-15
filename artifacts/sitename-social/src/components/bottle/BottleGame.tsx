@@ -14,7 +14,7 @@ import { HeartBurst } from "./PourTube";
 import { customGiftNames, customPlace, customPrice, landedName, isDrink } from "./customGifts";
 const landed = (gift: string) => (gift.startsWith("c:") ? `c:${landedName(gift.slice(2))}` : gift);
 import { AchievementsPanel } from "./AchievementsPanel";
-import { FRAME_PRICE, FrameArt, frameLooks } from "./FrameArt";
+import { FIRST_ORIGINAL, FRAME_PRICE, FrameArt, ORIGINAL_FRAMES, frameLooks, frameStone } from "./FrameArt";
 import { PassPanel, type PassData } from "./PassPanel";
 import { ActivePanel, ComplimentPill, ComplimentsPanel, InvitePanel, ShopPanel, emojiSrc } from "./ShopPanels";
 import { bumpStat, markVisit, readStats, syncStats } from "./achievements";
@@ -227,7 +227,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // Price of a gift by its id (used by the "send it back" button in the chat).
   const priceOf = (gift: string) => gift.startsWith("c:") ? customPrice(gift.slice(2)) : [...giftChoices, ...lockedGifts].find(([id]) => id === gift)?.[1] ?? 0;
   // A small gem next to the name in the chat for players with a frame or the premium pass.
-  const decorOf = (id: string) => { const seat = net?.seats.find((item) => item.id === (id === "me" ? net.me : id)); return Boolean(seat && ((seat.frame ?? 0) > 0 || seat.pass)); };
+  const decorOf = (id: string): string | null => { const seat = net?.seats.find((item) => item.id === (id === "me" ? net.me : id)); if (!seat) return null; const frame = seat.frame ?? 0; return frameStone(frame) ?? (frame > 0 || seat.pass ? "💎" : null); };
   // Long press / double click on a chat message opens a small menu (reply, translate, report).
   const [lineMenu, setLineMenu] = useState<number | null>(null);
   const pressTimer = useRef(0);
@@ -1848,14 +1848,14 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                       </div>
                     </div>
                     <ul className="grid h-[calc(100cqh-230px)] max-h-[440px] min-h-[220px] grid-cols-4 content-start gap-2 overflow-y-auto p-3 [scrollbar-width:thin] sm:grid-cols-5">
-                      {[0, ...frameLooks.map((_, n) => n + 1)].map((id) => {
+                      {[0, ...ORIGINAL_FRAMES.map((_, n) => FIRST_ORIGINAL + n), ...frameLooks.map((_, n) => n + 1)].map((id) => {
                         const look = frameLooks[id - 1];
                         const mine = owned(id);
                         return (
                           <li key={id}>
                             <button onClick={() => { setFramePick(id); setFrameNote(null); }} aria-pressed={pick === id} aria-label={`${t("bottle.frames")} ${id}`} className={cn("flex w-full flex-col items-center gap-0.5 rounded-xl border-2 bg-white p-1 shadow-sm transition-transform hover:-translate-y-0.5", pick === id ? "border-[#8CC63F] bg-[#F4FBEA]" : "border-transparent")}>
                               <span className="relative block aspect-square w-full">
-                                {id ? <FrameArt id={id} className="h-full w-full" /> : <span className="flex h-full w-full items-center justify-center rounded-lg border-2 border-dashed border-[#D1D5DB] text-[#9CA3AF]"><X size={18} /></span>}
+                                {id ? <FrameArt id={id} still className="h-full w-full" /> : <span className="flex h-full w-full items-center justify-center rounded-lg border-2 border-dashed border-[#D1D5DB] text-[#9CA3AF]"><X size={18} /></span>}
                               </span>
                               <span className="flex h-4 items-center gap-0.5 text-xs font-bold tabular-nums">
                                 {id === myFrame ? <Check size={14} strokeWidth={3} className="text-[#65A30D]" /> : mine ? <span className="text-[10px] text-[#65A30D]">{t("bottle.frameOwned")}</span> : look?.pass ? <span className="rounded bg-[#7C3AED] px-1 text-[9px] text-white">PASS</span> : look?.vip && !vip ? <span className="rounded bg-[#F59E0B] px-1 text-[9px] text-white">VIP</span> : <><Heart size={12} fill="#E8352B" stroke="none" />{FRAME_PRICE}</>}
@@ -2011,7 +2011,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 {line.text ? (
                   <div className="min-w-0">
                     <p onDoubleClick={() => !from.me && setLineMenu(line.id)} onContextMenu={(event) => { if (from.me) return; event.preventDefault(); setLineMenu(line.id); }} onTouchStart={() => { if (from.me) return; window.clearTimeout(pressTimer.current); pressTimer.current = window.setTimeout(() => setLineMenu(line.id), 500); }} onTouchEnd={() => window.clearTimeout(pressTimer.current)} onTouchMove={() => window.clearTimeout(pressTimer.current)} className={cn("break-words rounded-md text-text", lineMenu === line.id && "bg-white/10")}>
-                      <span className="font-semibold text-muted">{from.me ? t("common.you") : from.name}</span>{decorOf(line.from) ? <span title="VIP" className="ml-0.5 text-[11px]">💎</span> : null}<span className="font-semibold text-muted">: </span>{line.text}
+                      <span className="font-semibold text-muted">{from.me ? t("common.you") : from.name}</span>{(() => { const decor = decorOf(line.from); return decor ? decor.startsWith("/") ? <img src={decor} alt="" className="ml-0.5 inline h-4 w-4 align-[-3px]" /> : <span title="VIP" className="ml-0.5 text-[11px]">💎</span> : null; })()}<span className="font-semibold text-muted">: </span>{line.text}
                     </p>
                     {!from.me && /[а-яёА-ЯЁ]|[\u0600-\u06FF]|[\u10A0-\u10FF]/.test(line.text) ? <a href={`https://translate.google.com/?sl=auto&tl=${lang}&text=${encodeURIComponent(line.text)}`} target="_blank" rel="noreferrer" className="text-[11px] font-semibold text-[#8AB4F8] hover:underline">{t("bottle.translate")}</a> : null}
                     {lineMenu === line.id ? (

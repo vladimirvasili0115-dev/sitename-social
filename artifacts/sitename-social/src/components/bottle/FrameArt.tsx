@@ -47,7 +47,17 @@ function Ornament({ kind, gem, metal, x, y, id }: { kind: Look["corner"]; gem: s
   return <g>{base}<path d={`M${x - 5.4} ${y + 3}L${x - 5.4} ${y - 3.4}L${x - 2.6} ${y - 0.6}L${x} ${y - 5}L${x + 2.6} ${y - 0.6}L${x + 5.4} ${y - 3.4}L${x + 5.4} ${y + 3}Z`} fill={gemFill} stroke={metal[2]} strokeWidth="0.5" /></g>;
 }
 
-export function FrameArt({ id, className }: { id: number; className?: string }) {
+// The original game's frames (public/custom/frames): ids 26 and up, in this order. Most of them move (frames/anim).
+export const ORIGINAL_FRAMES = ["amber", "amethyst", "angel", "carameldecor", "cardsdecor", "chipsdecor", "cinemadecor", "daydecor", "demon", "diamond", "discodecor", "eastdecor", "egyptdecor", "emerald", "fruitjellydecor", "gold", "greendecor", "hatreddecor", "heartsdecor", "icedecor", "kissesdecor", "lavadecor", "loungedecor", "lovedecor", "mambadecor", "marsdecor", "naturedecor", "nightdecor", "nitrodecor", "pearls", "pitviperdecor", "platinum", "rockdecor", "romedecor", "ruby", "sapphire", "silver", "stonedecor", "theatredecor", "topaz", "tourismdecor", "turbodecor", "venusdecor", "violetdecor", "westdecor"];
+const STILL_ONLY = new Set(["amber", "gold", "platinum", "silver"]);
+export const FIRST_ORIGINAL = 26;
+export const originalFrame = (id: number) => (id >= FIRST_ORIGINAL ? ORIGINAL_FRAMES[id - FIRST_ORIGINAL] ?? null : null);
+// The small stone shown next to the name in the chat for a player wearing an original frame.
+export const frameStone = (id: number) => { const type = originalFrame(id); return type ? `/custom/stones/${type}.webp` : null; };
+
+export function FrameArt({ id, className, still }: { id: number; className?: string; still?: boolean }) {
+  const type = originalFrame(id);
+  if (type) return <img src={`/custom/frames/${still || STILL_ONLY.has(type) ? "" : "anim/"}${type}.webp`} alt="" aria-hidden="true" draggable={false} className={`select-none object-contain ${className ?? ""}`} />;
   const look = frameLooks[id - 1];
   if (!look) return null;
   const key = `fr${id}`;
