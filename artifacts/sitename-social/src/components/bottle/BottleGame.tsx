@@ -1893,7 +1893,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             {giftNote ? <p role="status" className="border-t border-border px-3 py-2 text-center text-xs font-semibold text-text">{giftNote}</p> : null}
           </div>
         ) : null}
-        <div ref={listRef} className={cn("min-h-0 flex-1 space-y-2 overflow-y-auto p-3", picked !== null && "hidden")}>
+        <div ref={listRef} className={cn("min-h-0 flex-1 space-y-2 overflow-y-auto p-3", (picked !== null || (dedicate && !wide)) && "hidden")}>
           {lines.filter((line) => !line.text || !muted.includes(line.from)).map((line) => {
             const from = byId(line.from);
             const to = line.to ? byId(line.to) : null;
