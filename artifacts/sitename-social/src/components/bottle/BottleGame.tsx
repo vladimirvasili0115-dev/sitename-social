@@ -80,6 +80,10 @@ const giftEmoji: Record<string, string> = { crown: "👑", diamond: "💎", rose
 const giftSrc = (emoji: string) => `/gifts/${Array.from(emoji).map((char) => char.codePointAt(0)!.toString(16)).filter((hex) => hex !== "fe0f").join("-")}.webp`;
 // File name for an own gift picture in public/custom/gifts (e.g. 1f9f8.png for 🧸, tea.png for the tea glass).
 export const giftFileName = (id: string): string => (id.startsWith("e:") ? Array.from(id.slice(2)).map((char) => char.codePointAt(0)!.toString(16)).filter((hex) => hex !== "fe0f").join("-") : giftEmoji[id] ? giftFileName(`e:${giftEmoji[id]}`) : id.replace(":", "-"));
+// Little dancing bars for the music player.
+function Equalizer({ className }: { className?: string }) {
+  return <span aria-hidden="true" className={cn("flex items-end gap-[3px]", className)}>{[0.9, 0.5, 1.1, 0.7, 0.95].map((speed, n) => <span key={n} className="w-[4px] rounded-full bg-[linear-gradient(180deg,#F9A8D4,#EC4899)]" style={{ height: "100%", transformOrigin: "bottom", animation: `eq-bar ${speed}s ease-in-out ${n * 0.12}s infinite alternate` }} />)}</span>;
+}
 function Gift({ id, className, anim }: { id: string; className?: string; anim?: boolean }) {
   const art = useCustomArt();
   const name = id.startsWith("c:") ? id.slice(2) : giftFileName(id);
@@ -318,6 +322,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const frameRef = useRef<HTMLIFrameElement>(null);
   const [hearts, setHearts] = useState(12);
   const [video, setVideo] = useState<string | null>(null);
+  // Songs from the MP3 tab play in "music mode": a small square player with the title, no big video.
+  const [musicMode, setMusicMode] = useState(false);
+  const [videoTitle, setVideoTitle] = useState("");
   const [badLink, setBadLink] = useState(false);
   const lineId = useRef(3);
   const listRef = useRef<HTMLDivElement>(null);
@@ -463,7 +470,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     const first = trackAt.current === 0;
     trackAt.current = track.at;
     if (first && net.now - track.at > 5 * 60 * 1000) return;
-    if (track.kind === "youtube") { setAudio(null); setVideo(track.ref); }
+    if (track.kind === "youtube") { setAudio(null); setVideo(track.ref); setMusicMode((track.title ?? "").startsWith("♫ ")); setVideoTitle((track.title ?? "").replace(/^♫ /, "")); }
     else if (track.by !== net.me) { setVideo(null); setAudio({ url: track.ref, name: track.title ?? "MP3" }); }
   }, [track, net]);
   useEffect(() => { if (picked !== null && (!players[picked] || players[picked].empty)) setPicked(null); }, [picked, players]);
@@ -872,13 +879,15 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       pullRef.current();
     })();
   }
-  function orderTrack(track: Track) {
+  function orderTrack(track: Track, music = false) {
     const count = Math.max(1, songTo().length);
     if (heartsRef.current < SONG_PRICE.video * count) return setGiftNote(t("bottle.noHearts"));
-    if (online) playLive("youtube", track.id, track.title);
+    if (online) playLive("youtube", track.id, music ? `♫ ${track.title}` : track.title);
     else for (let n = 0; n < count; n++) paySong("video");
     setAudio(null);
     setVideo(track.id);
+    setMusicMode(music);
+    setVideoTitle(track.title);
     const next = [track, ...recent.filter((item) => item.id !== track.id)];
     setRecent(next);
     keep("bottle-recent", next);
@@ -1079,7 +1088,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const stopHold = () => { if (hold.current) window.clearInterval(hold.current); hold.current = null; };
   const cancelPress = () => { if (pressed.current) window.clearTimeout(pressed.current.timer); pressed.current = null; stopHold(); };
   function giveGift(index: number, gift: string, price: number, need?: number) {
-    if (gift.startsWith("song:")) { openSong(index); if (gift === "song:mp3") setSongTab("mp3"); return false; }
+    if (gift.startsWith("song:")) { openSong(index); if (gift === "song:mp3") { setSongTab("mp3"); if (!tracks.length) void loadTracks(""); } return false; }
     if (need === -1 && !vip) { setGiftNote(t("bottle.vipOnly")); return false; }
     if (need && need > 0) { setGiftNote(`${t("bottle.needKisses")} (${need})`); return false; }
     setGiftNote(null);
@@ -1353,9 +1362,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 <button type="button" onClick={() => setSongFor(null)} aria-label={t("photos.close")} title={t("photos.close")} className="absolute -right-2 -top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#8CC63F] bg-white text-[#8CC63F] shadow"><X size={18} strokeWidth={3} /></button>
                 <div role="tablist" className="flex items-center justify-center gap-3">
                   {tabs.map(([tab, Icon]) => <button key={tab} type="button" role="tab" aria-selected={songTab === tab} aria-label={t(`bottle.song${tab[0].toUpperCase()}${tab.slice(1)}` as "bottle.songPopular")} title={t(`bottle.song${tab[0].toUpperCase()}${tab.slice(1)}` as "bottle.songPopular")} onClick={() => { setSongTab(tab); if (tab === "popular") void loadTracks(""); if (tab === "search") { setTracks([]); setTrackState("idle"); } }} className={cn("flex h-10 w-10 items-center justify-center rounded-full", songTab === tab ? "bg-[#FFEDD5] text-[#EA580C]" : "text-[#9CA3AF] hover:bg-black/5")}><Icon size={22} fill={songTab === tab && (tab === "popular" || tab === "fav") ? "currentColor" : "none"} /></button>)}
-                  <button type="button" role="tab" aria-selected={songTab === "mp3"} onClick={() => setSongTab("mp3")} className={cn("h-10 rounded-full px-3 text-xs font-bold", songTab === "mp3" ? "bg-[#FFEDD5] text-[#EA580C]" : "text-[#9CA3AF] hover:bg-black/5")}>MP3</button>
+                  <button type="button" role="tab" aria-selected={songTab === "mp3"} onClick={() => { setSongTab("mp3"); if (!tracks.length) void loadTracks(""); }} className={cn("h-10 rounded-full px-3 text-xs font-bold", songTab === "mp3" ? "bg-[#FFEDD5] text-[#EA580C]" : "text-[#9CA3AF] hover:bg-black/5")}>MP3</button>
                 </div>
-                <p className="mb-2 mt-1 flex items-center gap-2 text-xs font-bold text-[#6B7280]"><img src={players[songFor].avatar} alt="" className="h-6 w-6 rounded object-cover" /><span className="min-w-0 flex-1 truncate">{t("bottle.dedicateTo")} {songTo().map((index) => players[index].name).join(", ")}</span><span className="flex shrink-0 items-center gap-0.5 text-[#EA580C]"><Heart size={11} fill="currentColor" stroke="none" />{SONG_PRICE[songTab === "mp3" ? "mp3" : "video"] * Math.max(1, songTo().length)}</span></p>
+                <p className="mb-2 mt-1 flex items-center gap-2 text-xs font-bold text-[#6B7280]"><img src={players[songFor].avatar} alt="" className="h-6 w-6 rounded object-cover" /><span className="min-w-0 flex-1 truncate">{t("bottle.dedicateTo")} {songTo().map((index) => players[index].name).join(", ")}</span><span className="flex shrink-0 items-center gap-0.5 text-[#EA580C]"><Heart size={11} fill="currentColor" stroke="none" />{SONG_PRICE.video * Math.max(1, songTo().length)}</span></p>
                 {songTab === "search" ? (
                   <form onSubmit={searchTracks} className="mb-2 flex gap-1.5">
                     <input value={query} onChange={(event) => setQuery(event.target.value)} maxLength={120} aria-label={t("bottle.songSearch")} placeholder={t("bottle.songSearchHint")} autoComplete="off" className="h-10 min-w-0 flex-1 rounded-lg border border-[#D1D5DB] bg-white px-3 text-sm outline-none focus:border-[#EE8A2B]" />
@@ -1363,10 +1372,39 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   </form>
                 ) : null}
                 {songTab === "mp3" ? (
-                  <form onSubmit={sendMp3}>
-                    <input type="file" accept="audio/mpeg,audio/mp3,.mp3" aria-label="MP3" onChange={(event) => { setSongFile(event.target.files?.[0] ?? null); setBadLink(false); }} className={cn("w-full rounded-lg border p-2 text-xs", badLink ? "border-[#DC2626]" : "border-[#D1D5DB]")} />
-                    <button type="submit" className="mt-3 h-10 w-full rounded-lg bg-[#8CC63F] text-sm font-bold text-white hover:brightness-110">{t("bottle.dedicateSend")}</button>
-                  </form>
+                  <div className="flex min-h-0 flex-col">
+                    <form onSubmit={searchTracks} className="mb-2 flex gap-1.5">
+                      <input value={query} onChange={(event) => setQuery(event.target.value)} maxLength={120} aria-label={t("bottle.mp3Search")} placeholder={t("bottle.mp3Search")} autoComplete="off" className="h-10 min-w-0 flex-1 rounded-full border border-[#D1D5DB] bg-white px-4 text-sm outline-none focus:border-[#7C3AED]" />
+                      <button type="submit" aria-label={t("bottle.songSearch")} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,#8B5CF6,#EC4899)] text-white"><Search size={18} /></button>
+                    </form>
+                    <div className="max-h-[42vh] min-h-[120px] overflow-y-auto rounded-xl bg-[linear-gradient(180deg,#1E1B3A,#2D1B4E)] p-1.5">
+                      {trackState === "loading" ? <p role="status" className="py-8 text-center text-xs text-white/70">{t("bottle.songLoading")}</p> : null}
+                      {trackState === "nokey" ? <p role="status" className="rounded-lg bg-[#FEF3C7] p-3 text-xs font-semibold text-[#92400E]">{t("bottle.songNoKey")}</p> : null}
+                      {trackState === "fail" ? <p role="status" className="rounded-lg bg-[#FEE2E2] p-3 text-xs font-semibold text-[#991B1B]">{t("bottle.songFail")}</p> : null}
+                      <ul>
+                        {tracks.map((track) => {
+                          const [artist, title] = track.title.includes(" - ") ? [track.title.split(" - ")[0], track.title.split(" - ").slice(1).join(" - ")] : ["", track.title];
+                          return (
+                            <li key={track.id}>
+                              <button type="button" onClick={() => orderTrack(track, true)} className="group flex w-full items-center gap-2.5 rounded-lg p-1.5 text-left text-white hover:bg-white/10">
+                                <span className="relative h-11 w-11 shrink-0 overflow-hidden rounded-full border-2 border-white/20 bg-black"><img src={`https://i.ytimg.com/vi/${track.id}/mqdefault.jpg`} alt="" loading="lazy" className="h-full w-full scale-150 object-cover" /><span className="absolute left-1/2 top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#1E1B3A] ring-2 ring-white/40" /></span>
+                                <span className="min-w-0 flex-1"><span className="block truncate text-[13px] font-semibold">{title}</span>{artist ? <span className="block truncate text-[11px] text-white/60">{artist}</span> : null}</span>
+                                {track.duration ? <span className="shrink-0 text-[11px] tabular-nums text-white/50">{track.duration}</span> : null}
+                                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/15 text-sm group-hover:bg-[#EC4899]">▶</span>
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                    <details className="mt-2 rounded-lg border border-[#E5E7EB] px-2 py-1.5">
+                      <summary className="cursor-pointer text-xs font-bold text-[#6B7280]">{t("bottle.mp3Own")} · <Heart size={10} fill="#EA580C" stroke="none" className="inline" />{SONG_PRICE.mp3 * Math.max(1, songTo().length)}</summary>
+                      <form onSubmit={sendMp3} className="mt-2">
+                        <input type="file" accept="audio/mpeg,audio/mp3,.mp3" aria-label="MP3" onChange={(event) => { setSongFile(event.target.files?.[0] ?? null); setBadLink(false); }} className={cn("w-full rounded-lg border p-2 text-xs", badLink ? "border-[#DC2626]" : "border-[#D1D5DB]")} />
+                        <button type="submit" className="mt-2 h-9 w-full rounded-lg bg-[#8CC63F] text-sm font-bold text-white hover:brightness-110">{t("bottle.dedicateSend")}</button>
+                      </form>
+                    </details>
+                  </div>
                 ) : (
                   <div className="min-h-[120px] overflow-y-auto">
                     {remote && trackState === "loading" ? <p role="status" className="py-8 text-center text-xs text-[#6B7280]">{t("bottle.songLoading")}</p> : null}
@@ -1738,7 +1776,23 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       </div>
 
       <div className={cn("relative flex min-h-0 min-w-0 flex-1 flex-col", wide ? "-ml-px" : "-mt-px")}>
-        {video && wide ? (
+        {video && wide && musicMode ? (
+          <div className={cn("relative w-full shrink-0 overflow-hidden bg-[linear-gradient(120deg,#1E1B3A,#4C1D95_60%,#BE185D)]", picked !== null || dedicate ? "h-0" : "h-[216px]")}>
+            <div className="flex h-full items-center gap-3 p-2">
+              <div className="h-[200px] w-[200px] shrink-0 overflow-hidden rounded-xl bg-black shadow-lg"><iframe ref={frameRef} onLoad={() => window.setTimeout(pushMusic, 800)} src={ytSrc(video)} title="YouTube" allow="autoplay; encrypted-media; picture-in-picture" className="h-full w-full" /></div>
+              <div className="min-w-0 flex-1 pr-8 text-white">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-white/60">♫ {t("bottle.musicNow")}</p>
+                <p className="mt-1 line-clamp-3 text-base font-black leading-snug">{videoTitle.includes(" - ") ? videoTitle.split(" - ").slice(1).join(" - ") : videoTitle}</p>
+                {videoTitle.includes(" - ") ? <p className="mt-0.5 truncate text-sm text-white/70">{videoTitle.split(" - ")[0]}</p> : null}
+                <Equalizer className="mt-3 h-6" />
+                <div className="mt-3 flex items-center gap-2"><button onClick={() => setMusic(music ? 0 : 60)} aria-label={t(music ? "videos.mute" : "videos.unmute")} title={t(music ? "videos.mute" : "videos.unmute")} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/15 hover:bg-white/25">{music ? <Volume2 size={16} /> : <VolumeX size={16} />}</button><input type="range" min={0} max={100} value={music} onChange={(event) => setMusic(Number(event.target.value))} aria-label={t("bottle.music")} className="min-w-0 flex-1 accent-[#EC4899]" /></div>
+              </div>
+            </div>
+            {soundPill}
+            <button onClick={() => setVideo(null)} aria-label={t("photos.close")} title={t("photos.close")} className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/40 text-white hover:bg-black/70"><X size={15} /></button>
+          </div>
+        ) : null}
+        {video && wide && !musicMode ? (
           <div className={cn("relative w-full shrink-0 bg-black", picked !== null || dedicate ? "h-0 overflow-hidden" : "aspect-video max-h-[42%]")}>
             <iframe ref={frameRef} onLoad={() => window.setTimeout(pushMusic, 800)} src={ytSrc(video)} title="YouTube" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen className="h-full w-full" />
             {soundPill}
@@ -1746,11 +1800,12 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           </div>
         ) : null}
         {video && !wide ? (
-          <div ref={miniRef} style={mini.x === null ? { right: 0, top: mini.y, width: mini.w } : { left: mini.x, top: mini.y, width: mini.w }} className={cn("absolute z-20 overflow-hidden border border-border bg-surface shadow-lg", mini.x === null ? "rounded-l-2xl border-r-0" : "rounded-2xl")}>
+          <div ref={miniRef} style={mini.x === null ? { right: 0, top: mini.y, width: musicMode ? Math.max(mini.w, 262) : mini.w } : { left: mini.x, top: mini.y, width: musicMode ? Math.max(mini.w, 262) : mini.w }} className={cn("absolute z-20 overflow-hidden border shadow-lg", musicMode ? "border-[#4C1D95] bg-[linear-gradient(160deg,#1E1B3A,#4C1D95_65%,#BE185D)] text-white" : "border-border bg-surface", mini.x === null ? "rounded-l-2xl border-r-0" : "rounded-2xl")}>
             <div className="flex items-center">
               <img src={players[meIndex].avatar} alt="" title={t("bottle.miniMove")} onPointerDown={(event) => startMini(event, "move")} className="mx-2 h-10 w-10 shrink-0 cursor-move touch-none select-none rounded-full border-2 border-border object-cover" draggable={false} />
-              <div className={cn("aspect-video min-w-0 flex-1 bg-black", miniBusy && "pointer-events-none")}><iframe ref={frameRef} onLoad={() => window.setTimeout(pushMusic, 800)} src={ytSrc(video)} title="YouTube" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen className="h-full w-full" /></div>
+              <div className={cn(musicMode ? "my-1 mr-1 h-[200px] w-[200px] shrink-0 overflow-hidden rounded-xl" : "aspect-video min-w-0 flex-1", "bg-black", miniBusy && "pointer-events-none")}><iframe ref={frameRef} onLoad={() => window.setTimeout(pushMusic, 800)} src={ytSrc(video)} title="YouTube" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen className="h-full w-full" /></div>
             </div>
+            {musicMode ? <div className="flex items-center gap-2 px-2 pt-0.5"><Equalizer className="h-4 shrink-0" /><p className="min-w-0 flex-1 truncate text-xs font-bold">{videoTitle}</p></div> : null}
             {soundPill}
             <div className="flex items-center gap-1.5 px-2 py-1">
               <button onClick={() => setMusic(music ? 0 : 60)} aria-label={t(music ? "videos.mute" : "videos.unmute")} title={t(music ? "videos.mute" : "videos.unmute")} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted hover:text-text">{music ? <Volume2 size={17} /> : <VolumeX size={17} />}</button>
