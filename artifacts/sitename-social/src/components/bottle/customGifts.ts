@@ -44,6 +44,6 @@ export function landedName(name: string) {
   return name;
 }
 export const isListed = (name: string) => !hidden.test(name);
-// Cocktails cost 2 hearts and give the receiver 1 heart (the server pays it, see bottle_is_drink).
-const drinkNames = /^(love|martini|mojito|pinacolada|bluelagoon|b52|daiquiri|sexonthebeach|bloodymary|cherry|vanilla|universal|lifestyle|milkcoctail|tequilashot|romcola|cocoscocktail)$/;
-export const isDrink = (gift: string) => gift === "e:🍸" || gift === "e:🍹" || (gift.startsWith("c:") && drinkNames.test(gift.slice(2)));
+// The cocktail (only "cherry") costs 2 hearts and gives the receiver 1 heart (the server pays it, see bottle_is_drink).
+const drinkNames = /^cherry$/;
+export const isDrink = (gift: string) => gift === "c:cherry";
