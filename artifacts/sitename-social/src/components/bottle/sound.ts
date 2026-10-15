@@ -210,11 +210,11 @@ export function playGiftSound(gift: string, moment: "send" | "land") {
       return playClip(`sfx/${name}`, moment === "send" ? () => noise(0, 0.35, 500, 0.1, 2400) : isDrink(gift) ? pourSynth : sounds.pop);
     }
     if (moment === "send") return noise(0, 0.35, 500, 0.1, 2400);
-    playClip("gift", sounds.pop);
+    sounds.pop();
   } catch {
     // Audio is unavailable or blocked: the gift simply lands silently.
   }
 }
 
 // The recorded game sounds are small: get them ready as soon as the game loads.
-if (typeof window !== "undefined") { ["turn", "gift", "sfx/kissing_our", "sfx/kissing2", "sfx/kissing3", "sfx/tick", "sfx/light_tap", "sfx/snow"].forEach(loadClip); loadGiftSfx(); }
+if (typeof window !== "undefined") { ["turn", "sfx/kissing_our", "sfx/kissing2", "sfx/kissing3", "sfx/tick", "sfx/light_tap", "sfx/snow"].forEach(loadClip); loadGiftSfx(); }
