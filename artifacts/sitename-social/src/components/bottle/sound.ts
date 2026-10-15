@@ -24,7 +24,7 @@ export function playSound(kind: "turn" | "chosen" | "kiss" | "decline") {
     if (context.state === "suspended") void context.resume();
     if (kind === "turn") return playClip("turn", () => { tone(880, 0, 0.16); tone(1175, 0.14, 0.24); });
     if (kind === "chosen") { tone(660, 0, 0.14, 0.14, "triangle"); tone(990, 0.12, 0.3, 0.14, "triangle"); }
-    if (kind === "kiss") return playClip("kiss", () => { tone(1320, 0, 0.09); tone(1760, 0.08, 0.12); tone(2093, 0.2, 0.3, 0.12); });
+    if (kind === "kiss") return playClip(`sfx/${pick(["kissing_our", "kissing2", "kissing3"])}`, () => { tone(1320, 0, 0.09); tone(1760, 0.08, 0.12); tone(2093, 0.2, 0.3, 0.12); });
     if (kind === "decline") tone(220, 0, 0.3, 0.12, "sawtooth");
   } catch {
     // Audio is unavailable or blocked: the game stays silent.
@@ -163,26 +163,58 @@ const soundOf: [string, string][] = [
   ["spooky", "💀 🕸️ 🎭 🧙"], ["rattle", "🎲 🃏 🧩 🎯"], ["tick", "⌚ ⏰ 🕰️ ⏱️ ⏲️ ⏳"], ["ring", "☎️ 📱"], ["toot", "💩"], ["whip", "🤺 ⚔️ 🏹 🪁"],
   ["boing", "⛑️ 🤠 🎩 👒 🧢 🎓 🪖 👳 🕶️ 😎 🥸 👢 👠 👡 🥾 🥿 🧣 🧤 👜 🧳 👘 🤵 🕴️"],
 ];
+// The original game sounds (public/sounds/sfx/<name>.mp3). Every gift has a sound when it is sent and one when it
+// lands; the list for the own gift pictures is public/sounds/gifts.json, the emoji gifts use the table below.
+let giftSfx: Record<string, [string[], string[]]> = {};
+let giftSfxAsked = false;
+function loadGiftSfx() {
+  if (giftSfxAsked || typeof fetch === "undefined") return;
+  giftSfxAsked = true;
+  void fetch("/sounds/gifts.json").then((res) => (res.ok ? res.json() : {})).then((data: Record<string, [string[], string[]]>) => { giftSfx = data ?? {}; }).catch(() => {});
+}
+const kindSfx: Record<string, [string[], string[]]> = {
+  kiss: [["kissing_our", "kissing2", "kissing3"], ["tick"]], splat: [["snow"], ["tomato1", "tomato2"]], frog: [["frog"], ["tick"]],
+  cat: [["cat"], ["tick"]], dog: [["bark", "dog"], ["tick"]], pig: [["piglet"], ["tick"]], rooster: [["cock"], ["tick"]], monkey: [["monkey"], ["tick"]],
+  neigh: [["horse"], ["tick"]], fanfare: [["fanfare1", "fanfare2"], ["tick"]], sparkle: [["sparkling1", "sparkling2"], ["tick"]], cash: [["jackpot_coins"], ["tick"]],
+  heartbeat: [["heartbeat"], ["tick"]], chime: [["snow"], ["beer_tap"]], clink: [["snow"], ["beer_tap"]], fizz: [["beer_pouring"], ["beer_tap"]],
+  cork: [["sparkling1"], ["beer_tap"]], sip: [["coffee"], ["light_tap"]], bite: [["snow"], ["light_tap"]], pop: [["snow"], ["tick"]],
+  strum: [["guitar"], ["tick"]], piano: [["grand_piano"], ["tick"]], drum: [["drum"], ["tick"]], shake: [["maracas"], ["tick"]], violin: [["spanish_guitar"], ["tick"]],
+  trumpet: [["trumpet"], ["tick"]], mic: [["goldenmic"], ["tick"]], radio: [["note1", "note2", "note3", "note4"], ["tick"]], boom: [["boom1", "boom2"], ["tick"]],
+  car: [["engine"], ["tick"]], moto: [["engine"], ["tick"]], plane: [["engine"], ["tick"]], chopper: [["engine"], ["tick"]], rocket: [["astro"], ["tick"]],
+  horn: [["ship_horn"], ["tick"]], ufo: [["astro"], ["tick"]], spooky: [["ghost", "witch_laughter_1"], ["tick"]], ring: [["nokia"], ["tick"]],
+  toot: [["fart"], ["tick"]], whip: [["whip"], ["tick"]], boing: [["spring2"], ["tick"]], tick: [["cuckoo"], ["tick"]],
+};
+const pick = (list: string[]) => list[Math.floor(Math.random() * list.length)];
+// Plays one original sound by name (nothing happens when the file is missing).
+export function playSfx(name: string) {
+  if (level === 0 || typeof window === "undefined" || !name) return;
+  playClip(`sfx/${name}`, () => {});
+}
+function sfxOf(gift: string): [string[], string[]] | null {
+  const name = gift.replace(/^[ec]:/, "");
+  if (giftSfx[name]) return giftSfx[name];
+  const key = soundOf.find(([, members]) => members.split(" ").includes(name))?.[0] ?? (/kiss/.test(name) ? "kiss" : "pop");
+  return kindSfx[key] ?? null;
+}
 export function playGiftSound(gift: string, moment: "send" | "land") {
   if (level === 0 || typeof window === "undefined") return;
+  loadGiftSfx();
   try {
     context ??= new (window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
     if (context.state === "suspended") void context.resume();
-    if (moment === "send") {
-      // Look for recordings ahead of time, so the right one is ready when the gift lands.
-      ["cocktail", "gift", "kiss"].forEach(loadClip);
-      Object.keys(sounds).forEach(loadClip);
-      return noise(0, 0.35, 500, 0.1, 2400);
+    const sfx = sfxOf(gift);
+    const list = sfx ? sfx[moment === "send" ? 0 : 1] : [];
+    if (list.length) {
+      const name = pick(list);
+      if (moment === "send") list.forEach((item) => loadClip(`sfx/${item}`));
+      return playClip(`sfx/${name}`, moment === "send" ? () => noise(0, 0.35, 500, 0.1, 2400) : isDrink(gift) ? pourSynth : sounds.pop);
     }
-    const name = gift.replace(/^[ec]:/, "");
-    if (isDrink(gift)) return playClip("cocktail", pourSynth);
-    const key = soundOf.find(([, members]) => members.split(" ").includes(name))?.[0] ?? (/kiss/.test(name) ? "kiss" : "pop");
-    // Kisses smack; every other gift lands with the recorded hit sound (the matching synthesized sound if it is missing).
-    playClip(key === "kiss" ? "kiss" : "gift", sounds[key]);
+    if (moment === "send") return noise(0, 0.35, 500, 0.1, 2400);
+    playClip("gift", sounds.pop);
   } catch {
     // Audio is unavailable or blocked: the gift simply lands silently.
   }
 }
 
 // The recorded game sounds are small: get them ready as soon as the game loads.
-if (typeof window !== "undefined") ["turn", "kiss", "gift", "cocktail"].forEach(loadClip);
+if (typeof window !== "undefined") { ["turn", "gift", "sfx/kissing_our", "sfx/kissing2", "sfx/kissing3", "sfx/tick", "sfx/light_tap", "sfx/snow"].forEach(loadClip); loadGiftSfx(); }

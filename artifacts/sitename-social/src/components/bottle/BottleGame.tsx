@@ -19,7 +19,7 @@ import { PassPanel, type PassData } from "./PassPanel";
 import { ActivePanel, ComplimentPill, ComplimentsPanel, InvitePanel, ShopPanel, emojiSrc } from "./ShopPanels";
 import { bumpStat, markVisit, readStats, syncStats } from "./achievements";
 import { BottleSvg, WaterBottleSvg, WoodTable } from "./BottleArt";
-import { playGiftSound, playSound, setVolume } from "./sound";
+import { playGiftSound, playSfx, playSound, setVolume } from "./sound";
 import { supabase } from "@/lib/supabase";
 import { ensureMessagesLoaded, openRemoteChat, remoteChats, sendRemoteMessage } from "@/lib/messagesSync";
 import { uploadBlob } from "@/lib/media";
@@ -1043,6 +1043,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     wheelLock.current = true;
     setWheelBusy(true);
     setWheelPrize(null);
+    playSfx("roulette_spin");
     let sector = 0;
     let after: { hearts: number; chances: number };
     if (online) {
@@ -1067,7 +1068,11 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       setHearts(after.hearts);
       setChances(after.chances);
       setWheelPrize(sector);
-      playSound(prizeText(wheelSectors[sector]) ? "kiss" : "decline");
+      // Original wheel sounds: a reward jingle, a fanfare for the big prizes.
+      const prize = wheelSectors[sector];
+      if (!prizeText(prize)) playSound("decline");
+      else if ((prize.hearts ?? 0) >= 50) { playSfx("jackpot_fanfare"); playSfx("jackpot_coins"); }
+      else playSfx("roulette_reward");
       wheelLock.current = false;
       setWheelBusy(false);
     }, 4300);
@@ -1128,6 +1133,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (!gift || toAt < 0) return;
     const key = flyId.current++;
     const pour = isDrink(gift) && fromAt >= 0 && fromAt !== toAt;
+    playGiftSound(gift, "send");
     {
       setFlying((list) => [...list, { key, gift, from: fromAt >= 0 ? fromAt : toAt, to: toAt, moved: false, ms }]);
       window.setTimeout(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))), 40);
