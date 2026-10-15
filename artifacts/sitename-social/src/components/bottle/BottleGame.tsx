@@ -1821,11 +1821,13 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           </div>
         ) : null}
         {audio || (video && musicMode) ? (
-          <div className="relative shrink-0 overflow-hidden bg-[linear-gradient(120deg,#1E1B3A,#4C1D95_60%,#BE185D)] p-2.5 text-white">
+          // PC: a bar above the chat. Phone: a small square window like the video one, which can be moved and resized.
+          <div ref={wide ? undefined : miniRef} style={wide ? undefined : mini.x === null ? { right: 4, top: mini.y, width: Math.min(mini.w, 220) } : { left: mini.x, top: mini.y, width: Math.min(mini.w, 220) }} className={cn("overflow-hidden bg-[linear-gradient(120deg,#1E1B3A,#4C1D95_60%,#BE185D)] text-white", wide ? "relative shrink-0 p-2.5" : "absolute z-20 rounded-2xl border border-white/15 p-2 pt-7 shadow-xl", miniBusy && !wide && "select-none")}>
             {audio ? <audio src={audio.url} autoPlay playsInline ref={(node) => { audioRef.current = node; if (node) node.volume = music / 100; }} onPlay={() => setTune((v) => ({ ...v, playing: true }))} onPause={() => setTune((v) => ({ ...v, playing: false }))} onEnded={() => setTune((v) => ({ ...v, playing: false }))} onLoadedMetadata={(event) => { const dur = event.currentTarget.duration || 0; setTune((v) => ({ ...v, dur })); }} onTimeUpdate={(event) => { const cur = event.currentTarget.currentTime; setTune((v) => ({ ...v, cur })); }} className="hidden" /> : null}
             {/* Songs from the MP3 tab: the YouTube player plays behind the card, only the music player is seen. */}
             {!audio && video ? <iframe ref={frameRef} onLoad={() => { window.setTimeout(pushMusic, 800); frameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: "listening", id: 1 }), "*"); }} src={ytSrc(video)} title="YouTube" allow="autoplay; encrypted-media" tabIndex={-1} aria-hidden="true" className="pointer-events-none absolute left-0 top-0 h-[200px] w-[200px] opacity-0" /> : null}
-            <div className="relative flex items-center gap-3 pr-8">
+            {wide ? (
+              <div className="relative flex items-center gap-3 pr-8">
               <span className={cn("flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-4 border-white/20 bg-[radial-gradient(circle,#BE185D_20%,#111_21%,#2a2a2a_45%,#111_46%,#333_70%,#111_71%)] bg-cover bg-center shadow-lg", tune.playing && "animate-[spin_3s_linear_infinite]")} style={!audio && video ? { backgroundImage: `radial-gradient(circle,#1E1B3A 14%,transparent 15%),url(https://i.ytimg.com/vi/${video}/mqdefault.jpg)` } : undefined}><span className="h-2 w-2 rounded-full bg-white/80" /></span>
               <div className="min-w-0 flex-1">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-white/60">♫ {t("bottle.musicNow")}</p>
@@ -1839,8 +1841,21 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 </div>
               </div>
             </div>
+            ) : (
+            <div className="flex flex-col items-center">
+              <span title={t("bottle.miniMove")} onPointerDown={(event) => startMini(event, "move")} className="flex w-full cursor-move touch-none select-none justify-center pb-1.5 pt-0.5"><span className={cn("flex shrink-0 items-center justify-center rounded-full border-4 border-white/20 bg-[radial-gradient(circle,#BE185D_20%,#111_21%,#2a2a2a_45%,#111_46%,#333_70%,#111_71%)] bg-cover bg-center shadow-lg", tune.playing && "animate-[spin_3s_linear_infinite]", "h-auto w-[58%] aspect-square")} style={!audio && video ? { backgroundImage: `radial-gradient(circle,#1E1B3A 14%,transparent 15%),url(https://i.ytimg.com/vi/${video}/mqdefault.jpg)` } : undefined}><span className="h-2 w-2 rounded-full bg-white/80" /></span></span>
+              <p className="w-full truncate text-center text-xs font-black">{audio ? audio.name : videoTitle}</p>
+              <div className="mt-1.5 flex w-full items-center gap-1.5">
+                <button onClick={() => { const node = audio ? audioRef.current : null; if (node) { if (node.paused) void node.play().catch(() => {}); else node.pause(); return; } setTouched(true); ytCall(tune.playing ? "pauseVideo" : "playVideo"); if (!tune.playing) ytCall("unMute"); }} aria-label={tune.playing ? "Pause" : "Play"} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-[#4C1D95] shadow">{tune.playing ? <Pause size={14} fill="currentColor" /> : <Play size={14} fill="currentColor" className="translate-x-px" />}</button>
+                <input type="range" min={0} max={Math.max(1, Math.floor(tune.dur))} value={Math.floor(tune.cur)} onChange={(event) => { const at = Number(event.target.value); const node = audio ? audioRef.current : null; if (node) node.currentTime = at; else ytCall("seekTo", [at, true]); setTune((v) => ({ ...v, cur: at })); }} aria-label={audio ? audio.name : videoTitle} className="min-w-0 flex-1 accent-[#EC4899]" />
+                <Equalizer className={cn("h-4 shrink-0", !tune.playing && "opacity-40 [&>span]:![animation-play-state:paused]")} />
+              </div>
+              <p className="mt-0.5 w-full text-center text-[10px] tabular-nums text-white/60">{clock(tune.cur)} / {clock(tune.dur)}</p>
+            </div>
+            )}
             {!audio && soundPill}
-            <button onClick={() => { if (audio) setAudio(null); else setVideo(null); }} aria-label={t("photos.close")} title={t("photos.close")} className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/40 text-white hover:bg-black/70"><X size={14} /></button>
+            <button onClick={() => { if (audio) setAudio(null); else setVideo(null); }} aria-label={t("photos.close")} title={t("photos.close")} className={cn("absolute flex items-center justify-center rounded-full bg-black/40 text-white hover:bg-black/70", wide ? "right-2 top-2 h-7 w-7" : "right-1.5 top-1.5 h-6 w-6")}><X size={14} /></button>
+            {wide ? null : <span role="separator" aria-label={t("bottle.miniSize")} title={t("bottle.miniSize")} onPointerDown={(event) => startMini(event, "size")} className="absolute bottom-0 left-0 h-5 w-5 cursor-nesw-resize touch-none bg-[linear-gradient(225deg,transparent_50%,rgba(255,255,255,0.45)_50%)]" />}
           </div>
         ) : null}
         <div className={cn("flex items-center gap-2 border-b border-border px-3 py-1.5", (picked !== null || dedicate || !wide) && "hidden")}>
