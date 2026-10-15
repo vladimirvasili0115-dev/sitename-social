@@ -22,7 +22,7 @@ import { playGiftSound, playSound, setVolume } from "./sound";
 import { supabase } from "@/lib/supabase";
 import { ensureMessagesLoaded, openRemoteChat, remoteChats, sendRemoteMessage } from "@/lib/messagesSync";
 import { uploadBlob } from "@/lib/media";
-import { bottleAnswer, bottleSkin, bottleBuyChances, bottleJoin, bottleMove, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleGift, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState } from "@/lib/bottleSync";
+import { bottleAnswer, bottleAchSync, bottleSkin, bottleBuyChances, bottleJoin, bottleMove, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleGift, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState } from "@/lib/bottleSync";
 
 type Player = { id: string; name: string; age: number; female: boolean; avatar: string; me?: boolean; empty?: boolean; zodiac?: number | null };
 type Phase = "waiting" | "spinning" | "choice" | "kissed" | "declined";
@@ -780,6 +780,27 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   useEffect(() => { markVisit(); void syncStats().then((ok) => { if (ok) setStatsTick((n) => n + 1); }); }, []);
   const achOpen = panel === "achievements";
   useEffect(() => { if (achOpen) void syncStats().then((ok) => { if (ok) setStatsTick((n) => n + 1); }); }, [achOpen]);
+  // On a live table the server counts the achievements and pays every new star into the balance.
+  const [achServer, setAchServer] = useState<Record<string, number> | null>(null);
+  const pullAch = useRef<() => void>(() => {});
+  pullAch.current = () => {
+    if (!online) return;
+    void bottleAchSync().then((result) => {
+      if (!result) return;
+      setAchServer(result.values ?? {});
+      if (result.gained > 0) {
+        if (typeof result.hearts === "number") { heartsRef.current = result.hearts; setHearts(result.hearts); }
+        say({ from: "me", text: t("bottle.achReward").replace("{n}", String(result.gained)) });
+        playSound("kiss");
+      }
+    });
+  };
+  useEffect(() => {
+    pullAch.current();
+    const timer = window.setInterval(() => pullAch.current(), 60000);
+    return () => window.clearInterval(timer);
+  }, [online]);
+  useEffect(() => { if (achOpen) pullAch.current(); }, [achOpen]);
   const imTop = topIds.has("me");
   useEffect(() => { if (imTop) bumpStat("top", 1, true); }, [imTop]);
   const statsStamp = panel === "achievements";
@@ -789,12 +810,13 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     const stats = readStats();
     const mine = online ? net?.seats.find((seat) => seat.id === net.me) : undefined;
     return (metric: string) => {
+      if (online && achServer) return achServer[metric] ?? 0;
       if (metric === "kissesGot") return Math.max(stats.kissesGot ?? 0, online ? mine?.total ?? 0 : kisses.me ?? 0);
       if (metric === "songsGot") return Math.max(stats.songsGot ?? 0, mine?.songs ?? 0);
       if (metric === "smilesGot") return Math.max(stats.smilesGot ?? 0, online ? mine?.smiles ?? 0 : mySmiles);
       return stats[metric] ?? 0;
     };
-  }, [statsStamp, statsTick, online, net, kisses, mySmiles]);
+  }, [statsStamp, statsTick, online, net, kisses, mySmiles, achServer]);
   // The game menu opens as a small list next to its button, with coloured icons.
   const menuItems = [
     { key: "messages", label: t("nav.messages"), go: () => { window.location.href = "/messages"; }, icon: <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[linear-gradient(180deg,#5AA8FF,#2F7FF0)]"><MessageSquare size={15} className="text-white" fill="#FFFFFF" /></span> },

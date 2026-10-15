@@ -47,6 +47,7 @@ export const bottleRoomCreate = (name: string, password: string, capacity: numbe
 export const bottleRoomDelete = () => call<BottleMove & { error?: string }>("bottle_room_delete");
 export const bottleFrame = (frame: number) => call<{ hearts?: number; frame?: number; frames?: number[]; error?: "hearts" | "vip" | "bad" }>("bottle_frame", { p_frame: frame });
 export const bottleSkin = (skin: number) => call<boolean>("bottle_skin", { p_skin: skin });
+export const bottleAchSync = () => call<{ values: Record<string, number>; gained: number; new: string[]; hearts: number | null }>("bottle_ach_sync");
 export const bottleStatBump = (metric: string, by: number, max: boolean) => call<null>("bottle_stat_bump", { p_metric: metric, p_by: by, p_max: max });
 export const bottleStatsMerge = (stats: Record<string, number>) => call<Record<string, number>>("bottle_stats_merge", { p_stats: stats });
 export const bottleKick = (to: string) => call<"ok" | "vip" | "bad">("bottle_kick", { p_to: to });

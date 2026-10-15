@@ -1,48 +1,49 @@
 import { bottleStatBump, bottleStatsMerge } from "@/lib/bottleSync";
 
-// The game's achievements: 95 medals built from a few counted things (kisses, spins, gifts, songs, chat...).
-// Most counters live in this browser; kisses, songs and smiles received come from the live table when there is one.
+// The game's achievements: 48 medals with 3 stars each, built from counted things (kisses, spins, gifts, songs, chat...).
+// On a live table the server counts and pays; the counters in this browser are only for the demo table.
 
 export type Metric =
   | "kissesGot" | "kissesGiven" | "refusals" | "spins" | "giftsSent" | "songsSent" | "songsGot" | "smilesGot"
-  | "admire" | "tables" | "chat" | "dm" | "roomsCreated" | "roomsJoined" | "multi" | "days" | "top" | "night"
+  | "admire" | "tables" | "chat" | "dm" | "roomsCreated" | "roomsJoined" | "multi" | "days" | "top" | "night" | "cocktailsGot"
   | `gift:${string}`;
 
-export type Achievement = { id: string; metric: Metric; need: number; stars: 1 | 2 | 3; icon: string; series: string; level: number; levels: number; gift?: string };
+// Medals: every row of the game has 3 medals (I, II, III) and every medal has 3 stars.
+// Each star is a step; reaching it pays hearts into the balance (the server counts and pays, see bottle_ach_def —
+// the numbers here must stay the same as there).
+export type Achievement = { id: string; metric: Metric; series: string; level: number; levels: number; steps: number[]; rewards: number[]; icon: string; gift?: string };
 
-const series: { metric: Metric; key: string; steps: [number, string][] }[] = [
-  { metric: "kissesGot", key: "kissesGot", steps: [[1, "💋"], [10, "💌"], [50, "💘"], [100, "💖"], [500, "💝"], [1000, "💞"], [5000, "👑"]] },
-  { metric: "kissesGiven", key: "kissesGiven", steps: [[1, "😘"], [10, "😚"], [100, "😙"], [500, "🥰"], [1000, "😍"]] },
-  { metric: "refusals", key: "refusals", steps: [[1, "🙅"], [10, "✋"], [100, "🚫"]] },
-  { metric: "spins", key: "spins", steps: [[1, "🍾"], [10, "🔄"], [100, "🌀"], [500, "🎡"], [1000, "🌪️"], [5000, "🏆"]] },
-  { metric: "giftsSent", key: "giftsSent", steps: [[1, "🎁"], [10, "🎀"], [50, "🛍️"], [100, "💐"], [500, "🎊"], [1000, "💎"], [5000, "🏰"]] },
-  { metric: "songsSent", key: "songsSent", steps: [[1, "🎵"], [10, "🎶"], [50, "🎸"], [100, "🎤"]] },
-  { metric: "songsGot", key: "songsGot", steps: [[1, "🎧"], [10, "📻"], [100, "🎼"]] },
-  { metric: "smilesGot", key: "smilesGot", steps: [[1, "😊"], [10, "😄"], [100, "🤩"]] },
-  { metric: "admire", key: "admire", steps: [[1, "💘"], [10, "🏹"], [50, "💍"]] },
-  { metric: "tables", key: "tables", steps: [[1, "🚪"], [10, "🧭"], [50, "🗺️"]] },
-  { metric: "chat", key: "chat", steps: [[1, "💬"], [50, "🗨️"], [500, "📢"], [2000, "📣"]] },
-  { metric: "dm", key: "dm", steps: [[1, "✉️"], [10, "📨"], [100, "📮"]] },
-  { metric: "roomsCreated", key: "roomsCreated", steps: [[1, "🏠"], [10, "🏰"]] },
-  { metric: "roomsJoined", key: "roomsJoined", steps: [[1, "🔑"], [10, "🗝️"], [50, "🎟️"]] },
-  { metric: "multi", key: "multi", steps: [[1, "👥"], [10, "🎉"]] },
-  { metric: "days", key: "days", steps: [[1, "📅"], [7, "🗓️"], [30, "🌙"], [100, "⭐"]] },
-  { metric: "top", key: "top", steps: [[1, "🏅"]] },
-  { metric: "night", key: "night", steps: [[1, "🦉"], [10, "🌌"]] },
+// First step's reward is `base`; later steps pay more, in proportion to how much harder they are.
+export const achReward = (base: number, first: number, need: number) => Math.max(1, Math.round(base * Math.pow(need / first, 0.68)));
+
+const rows: [Metric, string, number[], [string, string, string]][] = [
+  ["songsSent", "songsSent", [50, 250, 1000, 2500, 5000, 10000, 20000, 35000, 50000], ["🎵", "🎸", "🎤"]],
+  ["kissesGot", "kissesGot", [50, 250, 1000, 2500, 5000, 10000, 20000, 35000, 50000], ["💋", "💖", "👑"]],
+  ["kissesGiven", "kissesGiven", [50, 250, 1000, 2500, 5000, 10000, 20000, 35000, 50000], ["😘", "🥰", "😍"]],
+  ["giftsSent", "giftsSent", [100, 500, 2000, 5000, 10000, 20000, 30000, 40000, 50000], ["🎁", "💐", "💎"]],
+  ["spins", "spins", [100, 500, 2000, 5000, 10000, 20000, 30000, 40000, 50000], ["🍾", "🌀", "🏆"]],
+  ["chat", "chat", [200, 1000, 3000, 6000, 10000, 20000, 30000, 40000, 50000], ["💬", "📢", "📣"]],
+  ["songsGot", "songsGot", [20, 100, 300, 600, 1000, 2000, 4000, 7000, 10000], ["🎧", "📻", "🎼"]],
+  ["smilesGot", "smilesGot", [50, 250, 1000, 2000, 4000, 7000, 10000, 15000, 20000], ["😊", "😄", "🤩"]],
+  ["cocktailsGot", "cocktailsGot", [20, 100, 300, 600, 1000, 2000, 4000, 7000, 10000], ["🍹", "🍸", "🥂"]],
+  ["admire", "admire", [5, 20, 50, 100, 200, 400, 700, 1000, 2000], ["💘", "🏹", "💍"]],
+  ["refusals", "refusals", [20, 100, 300, 600, 1000, 2000, 3000, 4000, 5000], ["🙅", "✋", "🚫"]],
 ];
-
-// Gifts with their own collection medals (10 and 100 sent).
+// Gifts with their own collection medal (10, 100 and 1000 sent).
 const collected: [string, string][] = [
   ["rose", "🌹"], ["crown", "👑"], ["e:🍓", "🍓"], ["e:🍸", "🍸"], ["tea", "🫖"], ["e:🍺", "🍺"], ["e:🧸", "🧸"], ["diamond", "💎"],
   ["e:🐸", "🐸"], ["e:🦆", "🦆"], ["e:🍰", "🍰"], ["e:🥂", "🥂"], ["e:🍷", "🍷"], ["e:☕", "☕"], ["e:💋", "💋"],
 ];
 
-const starsOf = (level: number, levels: number) => (levels === 1 ? 2 : Math.min(3, Math.max(1, Math.ceil((3 * (level + 1)) / levels)))) as 1 | 2 | 3;
-
 export const achievements: Achievement[] = [
-  ...series.flatMap(({ metric, key, steps }) => steps.map(([need, icon], level) => ({ id: `${key}-${need}`, metric, need, icon, series: key, level, levels: steps.length, stars: starsOf(level, steps.length) }))),
-  ...collected.flatMap(([gift, icon]) => [10, 100].map((need, level) => ({ id: `gift-${icon}-${need}`, metric: `gift:${gift}` as Metric, need, icon, series: "gift", level, levels: 2, stars: (level ? 3 : 1) as 1 | 3, gift: icon }))),
+  ...rows.flatMap(([metric, series, steps, icons]) => [0, 1, 2].map((level) => {
+    const mine = steps.slice(level * 3, level * 3 + 3);
+    return { id: `${series}-${level}`, metric, series, level, levels: 3, steps: mine, rewards: mine.map((need) => achReward(5, steps[0], need)), icon: icons[level] };
+  })),
+  ...collected.map(([gift, icon]) => ({ id: `gift-${icon}`, metric: `gift:${gift}` as Metric, series: "gift", level: 0, levels: 1, steps: [10, 100, 1000], rewards: [10, 100, 1000].map((need) => achReward(3, 10, need)), icon, gift: icon })),
 ];
+// How many stars of this medal are reached (0–3).
+export const starsOf = (item: Achievement, have: number) => item.steps.filter((need) => have >= need).length;
 
 const KEY = "bottle-stats";
 export type Stats = Record<string, number>;
