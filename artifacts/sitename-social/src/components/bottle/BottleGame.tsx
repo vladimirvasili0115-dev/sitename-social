@@ -852,6 +852,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const lockNote = (kind: RuleKind, left: number) => (kind === "vip" ? t("bottle.vipOnly") : t(`bottle.lock_${kind}` as "bottle.lock_kisses").replace("{n}", left.toLocaleString("ru-RU")));
   // A smiley shown for a few seconds over the sender's photo on the table.
   const [seatGes, setSeatGes] = useState<Record<string, { id: string; key: number }>>({});
+  // "Not enough kisses" window for a locked gift or smiley: what is missing and how to get it.
+  const [lock, setLock] = useState<{ gift?: string; gesture?: string; kind: RuleKind; total: number } | null>(null);
+  const openLock = (kind: RuleKind, total: number, item: { gift?: string; gesture?: string }) => setLock({ ...item, kind, total });
   const gesKey = useRef(0);
   const showSeatGesture = useCallback((who: string, id: string) => {
     const key = gesKey.current++;
@@ -860,7 +863,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   }, []);
   function sendGesture(id: string, price: number, rule: [RuleKind, number]) {
     const left = missing(rule, progress);
-    if (left) return setFrameNote(left < 0 ? t("bottle.vipOnly") : lockNote(rule[0], left));
+    if (left) return openLock(left < 0 ? "vip" : rule[0], rule[1], { gesture: id });
     if (heartsRef.current < price) return setFrameNote(t("bottle.noHearts"));
     setFrameNote(null);
     closePanel();
@@ -1218,8 +1221,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const cancelPress = () => { if (pressed.current) window.clearTimeout(pressed.current.timer); pressed.current = null; stopHold(); };
   function giveGift(index: number, gift: string, price: number, need?: number) {
     if (gift.startsWith("song:")) { openSong(index); if (gift === "song:mp3") { setSongTab("mp3"); if (!tracks.length) void loadTracks(""); } return false; }
-    if (need === -1 && !vip) { setGiftNote(t("bottle.vipOnly")); return false; }
-    if (need && need > 0) { const rule = GIFT_RULES[gift]; setGiftNote(lockNote(rule ? rule[0] : "kisses", need)); return false; }
+    if (need === -1 && !vip) { openLock("vip", 1, { gift }); return false; }
+    if (need && need > 0) { const rule = GIFT_RULES[gift] ?? ["kisses", lockedGifts.find(([id]) => id === gift)?.[2] ?? need]; openLock(rule[0], rule[1], { gift }); return false; }
     setGiftNote(null);
     if (!sendGift(index, gift, price)) { setGiftNote(t("bottle.noHearts")); return false; }
     return true;
@@ -2101,6 +2104,31 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           <button type="submit" disabled={!draft.trim()} aria-label={t("messages.send")} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#EE8A2B] text-white disabled:opacity-40"><SendHorizontal size={17} /></button>
         </form>
       </div>
+      {lock ? (() => {
+        const have = lock.kind === "vip" ? 0 : Math.min(lock.total, progress[lock.kind as "kisses"] ?? 0);
+        const icon = lock.kind === "dj" ? "🎵" : lock.kind === "friends" ? "👥" : lock.kind === "gestures" ? "😊" : "💋";
+        const more = () => { setLock(null); if (lock.kind === "friends") openInvite(); else if (lock.kind === "vip") { setPayNote(false); setPanel("shop"); } else setPanel("rules"); };
+        return (
+          <div className="absolute inset-0 z-[60] flex items-center justify-center bg-black/35 p-4" onClick={() => setLock(null)}>
+            <div role="dialog" aria-label={t(`bottle.lockTitle_${lock.kind}` as "bottle.lockTitle_kisses")} onClick={(event) => event.stopPropagation()} className="relative w-full max-w-[380px] animate-[bottle-pop_0.25s_ease-out] rounded-2xl bg-white px-5 pb-5 pt-4 text-center text-[#1F2937] shadow-2xl">
+              <button onClick={() => setLock(null)} aria-label={t("photos.close")} title={t("photos.close")} className="absolute -right-2 -top-2 flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#8CC63F] bg-white text-[#8CC63F] shadow"><X size={18} strokeWidth={3} /></button>
+              <p className="text-sm font-bold text-[#C4C9D0]">{t(`bottle.lockTitle_${lock.kind}` as "bottle.lockTitle_kisses")}</p>
+              <div className="mx-auto mt-3 flex h-20 w-20 items-center justify-center">{lock.gesture ? <img src={`/custom/anim/ges_${lock.gesture}.webp`} alt="" className="h-full w-full object-contain" /> : lock.gift ? <Gift id={lock.gift} className="h-full w-full" /> : null}</div>
+              <p className="mt-3 text-[15px] leading-snug">{t(`bottle.lockText_${lock.kind}` as "bottle.lockText_kisses")}</p>
+              {lock.kind === "vip" ? null : (
+                <>
+                  <div className="mx-auto mt-3 h-2 w-[70%] overflow-hidden rounded-full bg-[#EEF0F3]"><span className="block h-full rounded-full bg-[linear-gradient(90deg,#FF6B81,#E8352B)] transition-[width]" style={{ width: `${Math.max(2, (have / Math.max(1, lock.total)) * 100)}%` }} /></div>
+                  <p className="mt-2 flex items-center justify-center gap-1.5 text-base"><span className="text-lg">{icon}</span><b className="tabular-nums">{have.toLocaleString("ru-RU")}</b><span className="tabular-nums text-[#6B7280]">/{lock.total.toLocaleString("ru-RU")}</span></p>
+                </>
+              )}
+              <div className="mt-4 flex justify-center gap-3">
+                <button onClick={() => setLock(null)} className="h-10 min-w-[110px] rounded-lg border-2 border-[#8CC63F] px-4 text-sm font-semibold text-[#5B9A1F] hover:bg-[#F3FAE9]">{t("bottle.lockOk")}</button>
+                <button onClick={more} className="h-10 min-w-[110px] rounded-lg bg-[#2F80ED] px-4 text-sm font-semibold text-white hover:bg-[#2670D6]">{t(lock.kind === "vip" ? "bottle.lockVip" : "bottle.lockMore")}</button>
+              </div>
+            </div>
+          </div>
+        );
+      })() : null}
       {complimentIn ? (
         <div className="absolute inset-0 z-[58] flex items-center justify-center bg-black/30 p-4" onClick={() => setComplimentIn(null)}>
           <div role="dialog" aria-label={t("bottle.cmpGot")} onClick={(event) => event.stopPropagation()} className="relative w-full max-w-[330px] animate-[bottle-pop_0.25s_ease-out] rounded-2xl bg-white p-4 text-[#1F2937] shadow-2xl">

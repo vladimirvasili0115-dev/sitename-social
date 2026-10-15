@@ -115,6 +115,7 @@ const az = {
   "bottle.achT_cocktailsGot": "Kokteyl sevən", "bottle.achC_cocktailsGot": "{n} kokteyl al", "bottle.achPays": "Hər ulduz qazanılanda ürəklər avtomatik balansına yazılır.", "bottle.achReward": "🏅 Nailiyyət: +{n} ❤️ balansına yazıldı!",
   "bottle.bottleChanged": "butulkanı dəyişdi", "bottle.translate": "Tərcümə et", "bottle.reply": "Cavab ver", "bottle.giftBack": "Geri göndər", "bottle.songBusy": "Mahnı yenicə qoşulub — {n} saniyə sonra dəyişə bilərsən",
   "bottle.gestures": "Smayliklər", "bottle.lock_kisses": "{n} öpüş sonra açılacaq", "bottle.lock_dj": "Daha {n} mahnı həsr et — açılacaq", "bottle.lock_friends": "Daha {n} dost dəvət et — açılacaq", "bottle.lock_gestures": "Daha {n} smaylik göndər — açılacaq", "bottle.lock_free": "",
+  "bottle.lockTitle_kisses": "Öpüş çatmır", "bottle.lockTitle_dj": "Mahnı çatmır", "bottle.lockTitle_friends": "Dost çatmır", "bottle.lockTitle_gestures": "Smaylik çatmır", "bottle.lockTitle_vip": "Yalnız VIP üçün", "bottle.lockTitle_free": "", "bottle.lockText_kisses": "Bunu açmaq üçün daha çox öpüş topla", "bottle.lockText_dj": "Bunu açmaq üçün daha çox mahnı həsr et", "bottle.lockText_friends": "Bunu açmaq üçün daha çox dost dəvət et", "bottle.lockText_gestures": "Bunu açmaq üçün daha çox smaylik göndər", "bottle.lockText_vip": "Bu, yalnız VIP oyunçular üçündür", "bottle.lockText_free": "", "bottle.lockOk": "Anladım", "bottle.lockMore": "Öyrən", "bottle.lockVip": "VIP ol",
   "bottle.pass": "Mövsüm keçidi",
 } as const;
 export default az;

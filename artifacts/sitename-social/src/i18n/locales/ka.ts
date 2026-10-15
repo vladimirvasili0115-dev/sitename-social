@@ -106,6 +106,7 @@ const ka: Record<keyof typeof az, string> = {
   "bottle.achT_cocktailsGot": "კოქტეილის მოყვარული", "bottle.achC_cocktailsGot": "მიიღე {n} კოქტეილი", "bottle.achPays": "ყოველი ვარსკვლავისთვის გულები ავტომატურად ემატება ბალანსს.", "bottle.achReward": "🏅 მიღწევა: +{n} ❤️ ბალანსზე!",
   "bottle.bottleChanged": "ბოთლი შეცვალა", "bottle.translate": "თარგმნა", "bottle.reply": "პასუხი", "bottle.giftBack": "უკან გაგზავნა", "bottle.songBusy": "სიმღერა ახლახან დაიწყო — შეცვლა {n} წამში შეიძლება",
   "bottle.gestures": "სმაილები", "bottle.lock_kisses": "გაიხსნება კიდევ {n} კოცნის შემდეგ", "bottle.lock_dj": "მიუძღვენი კიდევ {n} სიმღერა", "bottle.lock_friends": "მოიწვიე კიდევ {n} მეგობარი", "bottle.lock_gestures": "გაგზავნე კიდევ {n} სმაილი", "bottle.lock_free": "",
+  "bottle.lockTitle_kisses": "კოცნა არ ჰყოფნის", "bottle.lockTitle_dj": "სიმღერა არ ჰყოფნის", "bottle.lockTitle_friends": "მეგობარი არ ჰყოფნის", "bottle.lockTitle_gestures": "სმაილი არ ჰყოფნის", "bottle.lockTitle_vip": "მხოლოდ VIP", "bottle.lockTitle_free": "", "bottle.lockText_kisses": "გასახსნელად მეტი კოცნა მოაგროვე", "bottle.lockText_dj": "გასახსნელად მეტი სიმღერა მიუძღვენი", "bottle.lockText_friends": "გასახსნელად მეტი მეგობარი მოიწვიე", "bottle.lockText_gestures": "გასახსნელად მეტი სმაილი გაგზავნე", "bottle.lockText_vip": "ეს მხოლოდ VIP მოთამაშეებისთვისაა", "bottle.lockText_free": "", "bottle.lockOk": "გასაგებია", "bottle.lockMore": "გაიგე", "bottle.lockVip": "გახდი VIP",
   "bottle.pass": "სეზონის საშვი",
 };
 export default ka;
