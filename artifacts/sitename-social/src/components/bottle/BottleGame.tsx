@@ -487,12 +487,16 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   }, [online]);
   // A song someone put on plays for the whole table (a song older than 5 minutes is not started for newcomers).
   const trackAt = useRef(0);
+  // Everybody hears the same moment of the song: a newcomer starts where the song is now, not from the beginning.
+  const songClock = useRef({ pos: 0, at: 0 });
+  const songNow = () => songClock.current.pos + (Date.now() - songClock.current.at) / 1000;
   const track = net?.track ?? null;
   useEffect(() => {
     if (!track || !net || track.at === trackAt.current) return;
     const first = trackAt.current === 0;
     trackAt.current = track.at;
     if (first && net.now - track.at > 5 * 60 * 1000) return;
+    songClock.current = { pos: track.by === net.me ? 0 : Math.max(0, (net.now - track.at) / 1000), at: Date.now() };
     if (track.kind === "youtube") { setAudio(null); setVideo(track.ref); setMusicMode((track.title ?? "").startsWith("♫ ")); setVideoTitle(songInfo(track.title ?? "").title); }
     else if (track.by !== net.me) { setVideo(null); setAudio({ url: track.ref, name: songInfo(track.title ?? "MP3").title }); }
   }, [track, net]);
@@ -585,7 +589,10 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     window.addEventListener("keydown", wake);
     return () => { window.removeEventListener("pointerdown", wake); window.removeEventListener("keydown", wake); };
   }, []);
-  const ytSrc = (id: string) => `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&playsinline=1&rel=0&enablejsapi=1${startMuted ? "&mute=1" : ""}`;
+  const startAt = useMemo(() => Math.floor(songNow()), [video]); // eslint-disable-line react-hooks/exhaustive-deps
+  const ytSrc = (id: string) => `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&playsinline=1&rel=0&iv_load_policy=3&enablejsapi=1${startAt > 2 ? `&start=${startAt}` : ""}${startMuted ? "&mute=1" : ""}`;
+  // The first tap gives the sound: jump to where the song is for everybody else.
+  useEffect(() => { if (touched && video && startMuted) ytCall("seekTo", [songNow(), true]); }, [touched]); // eslint-disable-line react-hooks/exhaustive-deps
   const soundPill = !touched && startMuted ? <button onClick={(event) => { event.stopPropagation(); setTouched(true); }} className="absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-black/70 px-3 py-1.5 text-xs font-bold text-white shadow animate-pulse"><Volume2 size={15} />{t("videos.unmute")}</button> : null;
   const byId = (id: string) => players.find((player) => player.id === id);
   const staged = phase !== "waiting" && phase !== "spinning" && target !== null;
@@ -929,6 +936,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (heartsRef.current < SONG_PRICE.video * count) return setGiftNote(t("bottle.noHearts"));
     if (online) playLive("youtube", track.id, music ? `♫ ${cleanSong(track.title)}` : cleanSong(track.title));
     else for (let n = 0; n < count; n++) paySong("video");
+    songClock.current = { pos: 0, at: Date.now() };
     setAudio(null);
     setVideo(track.id);
     setMusicMode(music);
@@ -965,6 +973,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       });
     } else for (let n = 0; n < count; n++) paySong("mp3");
     setVideo(null);
+    songClock.current = { pos: 0, at: Date.now() };
     setAudio({ url: URL.createObjectURL(songFile), name });
     finishSong(`♪ ${name}`);
   }
@@ -1852,7 +1861,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         {audio || (video && musicMode) ? (
           // PC: a bar above the chat. Phone: a small square window like the video one, which can be moved and resized.
           <div ref={wide ? undefined : miniRef} style={wide ? undefined : mini.x === null ? { right: 4, top: mini.y, width: Math.min(mini.w, 220) } : { left: mini.x, top: mini.y, width: Math.min(mini.w, 220) }} className={cn("overflow-hidden bg-[linear-gradient(120deg,#1E1B3A,#4C1D95_60%,#BE185D)] text-white", wide ? "relative shrink-0 p-2.5" : "absolute z-20 rounded-2xl border border-white/15 p-2 pt-7 shadow-xl", miniBusy && !wide && "select-none")}>
-            {audio ? <audio src={audio.url} autoPlay playsInline ref={(node) => { audioRef.current = node; if (node) node.volume = music / 100; }} onPlay={() => setTune((v) => ({ ...v, playing: true }))} onPause={() => setTune((v) => ({ ...v, playing: false }))} onEnded={() => setTune((v) => ({ ...v, playing: false }))} onLoadedMetadata={(event) => { const dur = event.currentTarget.duration || 0; setTune((v) => ({ ...v, dur })); }} onTimeUpdate={(event) => { const cur = event.currentTarget.currentTime; setTune((v) => ({ ...v, cur })); }} className="hidden" /> : null}
+            {audio ? <audio src={audio.url} autoPlay playsInline ref={(node) => { audioRef.current = node; if (node) node.volume = music / 100; }} onPlay={() => setTune((v) => ({ ...v, playing: true }))} onPause={() => setTune((v) => ({ ...v, playing: false }))} onEnded={() => setTune((v) => ({ ...v, playing: false }))} onLoadedMetadata={(event) => { const node = event.currentTarget; const dur = node.duration || 0; const at = songNow(); if (at > 2 && at < dur) node.currentTime = at; setTune((v) => ({ ...v, dur })); }} onTimeUpdate={(event) => { const cur = event.currentTarget.currentTime; setTune((v) => ({ ...v, cur })); }} className="hidden" /> : null}
             {/* Songs from the MP3 tab: the YouTube player plays behind the card, only the music player is seen. */}
             {!audio && video ? <iframe ref={frameRef} onLoad={() => { window.setTimeout(pushMusic, 800); frameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: "listening", id: 1 }), "*"); }} src={ytSrc(video)} title="YouTube" allow="autoplay; encrypted-media" tabIndex={-1} aria-hidden="true" className="pointer-events-none absolute left-0 top-0 h-[200px] w-[200px] opacity-0" /> : null}
             {wide ? (
