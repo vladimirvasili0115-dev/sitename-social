@@ -80,6 +80,13 @@ const giftEmoji: Record<string, string> = { crown: "👑", diamond: "💎", rose
 const giftSrc = (emoji: string) => `/gifts/${Array.from(emoji).map((char) => char.codePointAt(0)!.toString(16)).filter((hex) => hex !== "fe0f").join("-")}.webp`;
 // File name for an own gift picture in public/custom/gifts (e.g. 1f9f8.png for 🧸, tea.png for the tea glass).
 export const giftFileName = (id: string): string => (id.startsWith("e:") ? Array.from(id.slice(2)).map((char) => char.codePointAt(0)!.toString(16)).filter((hex) => hex !== "fe0f").join("-") : giftEmoji[id] ? giftFileName(`e:${giftEmoji[id]}`) : id.replace(":", "-"));
+// Song titles from YouTube often end with hashtags (#shorts ...): those are dropped. A leading "♫ " marks a song
+// from the MP3 tab, "♪ " an own MP3 file (5 hearts); everything else is a YouTube song (9 hearts).
+const cleanSong = (raw: string) => raw.replace(/#[^\s#]+/g, "").replace(/\s{2,}/g, " ").trim();
+export function songInfo(raw: string) {
+  const own = raw.startsWith("♪ ");
+  return { title: cleanSong(raw.replace(/^[♫♪] /, "")) || "♪", price: own ? 5 : 9 };
+}
 // Little dancing bars for the music player.
 function Equalizer({ className }: { className?: string }) {
   return <span aria-hidden="true" className={cn("flex items-end gap-[3px]", className)}>{[0.9, 0.5, 1.1, 0.7, 0.95].map((speed, n) => <span key={n} className="w-[4px] rounded-full bg-[linear-gradient(180deg,#F9A8D4,#EC4899)]" style={{ height: "100%", transformOrigin: "bottom", animation: `eq-bar ${speed}s ease-in-out ${n * 0.12}s infinite alternate` }} />)}</span>;
@@ -486,8 +493,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     const first = trackAt.current === 0;
     trackAt.current = track.at;
     if (first && net.now - track.at > 5 * 60 * 1000) return;
-    if (track.kind === "youtube") { setAudio(null); setVideo(track.ref); setMusicMode((track.title ?? "").startsWith("♫ ")); setVideoTitle((track.title ?? "").replace(/^♫ /, "")); }
-    else if (track.by !== net.me) { setVideo(null); setAudio({ url: track.ref, name: track.title ?? "MP3" }); }
+    if (track.kind === "youtube") { setAudio(null); setVideo(track.ref); setMusicMode((track.title ?? "").startsWith("♫ ")); setVideoTitle(songInfo(track.title ?? "").title); }
+    else if (track.by !== net.me) { setVideo(null); setAudio({ url: track.ref, name: songInfo(track.title ?? "MP3").title }); }
   }, [track, net]);
   useEffect(() => { if (picked !== null && (!players[picked] || players[picked].empty)) setPicked(null); }, [picked, players]);
   useEffect(() => { setChosen((list) => { const next = list.filter((id) => players.some((player) => player.id === id && !player.empty && !player.me)); return next.length === list.length ? list : next; }); }, [players]);
@@ -920,12 +927,12 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   function orderTrack(track: Track, music = false) {
     const count = Math.max(1, songTo().length);
     if (heartsRef.current < SONG_PRICE.video * count) return setGiftNote(t("bottle.noHearts"));
-    if (online) playLive("youtube", track.id, music ? `♫ ${track.title}` : track.title);
+    if (online) playLive("youtube", track.id, music ? `♫ ${cleanSong(track.title)}` : cleanSong(track.title));
     else for (let n = 0; n < count; n++) paySong("video");
     setAudio(null);
     setVideo(track.id);
     setMusicMode(music);
-    setVideoTitle(track.title);
+    setVideoTitle(cleanSong(track.title));
     const next = [track, ...recent.filter((item) => item.id !== track.id)];
     setRecent(next);
     keep("bottle-recent", next);
@@ -954,12 +961,12 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       void uploadBlob(file, "music", "mp3").then((url) => {
         if (!url) return setGiftNote(t("bottle.songFailLive"));
         setGiftNote(null);
-        playLive("mp3", url, name);
+        playLive("mp3", url, `♪ ${cleanSong(name)}`);
       });
     } else for (let n = 0; n < count; n++) paySong("mp3");
     setVideo(null);
     setAudio({ url: URL.createObjectURL(songFile), name });
-    finishSong(name);
+    finishSong(`♪ ${name}`);
   }
   // Private messages use the site's own Messages. Reading is free; writing is free for girls and needs VIP for boys.
   function sendDm(event: FormEvent<HTMLFormElement>) {
@@ -1939,7 +1946,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
               <div key={line.id} className="flex items-center gap-2 text-sm">
                 <img src={from.avatar} alt={from.name} title={from.name} className="h-8 w-8 shrink-0 rounded-md object-cover" />
                 {line.text ? <p className="min-w-0 break-words text-text"><span className="font-semibold text-muted">{from.me ? t("common.you") : from.name}: </span>{line.text}</p> : null}
-                {line.song ? <p className="flex min-w-0 flex-1 items-center gap-1 text-text"><span className="shrink-0 font-semibold text-muted">{from.me ? t("common.you") : from.name} {t("bottle.songOn")}:</span><Music2 size={16} className="shrink-0 text-[#F59E0B]" /><span className="truncate">{line.song}</span></p> : null}
+                {line.song ? (() => { const song = songInfo(line.song); return <p className="flex min-w-0 flex-1 items-center gap-1 text-text"><span className="shrink-0 font-semibold text-muted">{from.me ? t("common.you") : from.name}:</span><span className="truncate font-semibold">{song.title}</span><Music2 size={16} className="shrink-0 text-[#8AB4F8]" /><span className="flex shrink-0 items-center gap-0.5 font-bold">{song.price}<Heart size={14} fill="#F87171" stroke="none" /></span></p>; })() : null}
                 {to ? <>{line.gift ? <Gift id={line.gift} className="h-7 w-7 shrink-0" /> : line.song ? null : <span className="shrink-0 text-lg">💋</span>}<span className="font-bold text-accent">»</span><img src={to.avatar} alt={to.name} title={to.name} className="h-8 w-8 shrink-0 rounded-md object-cover" /></> : null}
               </div>
             );
