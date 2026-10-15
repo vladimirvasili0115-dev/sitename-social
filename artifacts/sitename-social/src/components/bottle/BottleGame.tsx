@@ -9,7 +9,7 @@ import { GiftArt } from "@/components/gifts/GiftArt";
 import { useProfile } from "@/components/profile/useProfile";
 import { cn } from "@/lib/utils";
 import { customFile, useCustomArt } from "@/lib/customArt";
-import { HeartBurst, PourTube } from "./PourTube";
+import { HeartBurst } from "./PourTube";
 import { customGiftNames, customPlace, customPrice, landedName, isDrink } from "./customGifts";
 const landed = (gift: string) => (gift.startsWith("c:") ? `c:${landedName(gift.slice(2))}` : gift);
 import { AchievementsPanel } from "./AchievementsPanel";
@@ -72,8 +72,8 @@ const lockedGifts: [string, number, number][] = [
   ["e:🥤", 5, 1000], ["e:🃏", 5, 1000], ["e:🫗", 5, 1000], ["e:👒", 5, 1000], ["e:💍", 5, 3000], ["e:🧋", 5, 3000], ["e:🪇", 5, 3000], ["e:🍾", 5, 3000], ["e:⚔️", 5, 3000], ["e:🍶", 5, 3000], ["e:🎓", 5, 3000], ["e:🧁", 5, 3000], ["e:🎩", 5, 7000], ["e:🎖️", 5, 7000], ["e:🍮", 5, 7000], ["e:🗿", 5, 7000], ["e:🏆", 5, 7000], ["e:🍼", 5, 7000], ["e:🍎", 5, 7000], ["e:🎁", 5, 7000], ["e:🎪", 5, 7000], ["e:🧪", 5, 7000], ["e:🪶", 5, 7000], ["e:🏴‍☠️", 5, 7000], ["e:🎤", 5, 15000], ["e:🪆", 5, 15000], ["e:🍯", 5, 15000], ["e:🌶️", 5, 15000], ["e:🪔", 5, 15000], ["e:🦪", 5, 15000], ["e:🫖", 5, 15000], ["e:🎷", 5, 15000], ["e:🎻", 5, 15000], ["e:🎸", 5, 15000], ["e:🥁", 5, 15000], ["e:👠", 5, 15000], ["e:💵", 5, 23000], ["e:🪭", 5, 23000], ["e:🧿", 5, 23000], ["e:🦚", 5, 23000], ["e:🍭", 5, 23000], ["e:🍋", 5, 23000], ["e:🌺", 5, 23000], ["e:🌠", 5, 23000], ["e:🧙", 5, 23000], ["e:🧝", 5, 23000], ["e:🧞", 5, 23000], ["e:🧜", 5, 23000], ["e:🚗", 5, 30000], ["e:🏍️", 5, 30000], ["e:🚁", 5, 30000], ["e:✈️", 5, 30000], ["e:🛸", 5, 30000], ["e:🚜", 5, 30000], ["e:🛷", 5, 30000], ["e:🎠", 5, 30000], ["e:🎡", 5, 30000], ["e:🎯", 5, 30000], ["e:🧩", 5, 30000], ["e:🪁", 5, 30000], ["e:❤️‍🔥", 5, 40000], ["e:💘", 5, 40000], ["e:💌", 5, 40000], ["e:💟", 5, 40000], ["e:💜", 5, 40000], ["e:💛", 5, 40000], ["e:🖤", 5, 40000], ["e:🩵", 5, 40000], ["e:💚", 5, 40000], ["e:🧡", 5, 40000], ["e:💙", 5, 40000], ["e:💔", 5, 40000], ["e:🥇", 4, -1], ["e:🥀", 4, -1], ["e:👢", 4, -1], ["e:🏹", 4, -1], ["e:🐓", 4, -1], ["e:🧲", 4, -1], ["e:🔱", 4, -1], ["e:⭕", 4, -1], ["e:🐎", 4, -1], ["e:🦁", 4, -1], ["e:🐯", 4, -1], ["e:🦄", 4, -1],
 ];
 // Gifts that are worn on the head sit tilted on the top corner of the photo; everything else stands at the bottom.
-// Drinks pay the receiver +1 heart (the server does it) and are poured through a glass tube for this long.
-const TUBE_MS = 2800;
+// Drinks pay the receiver +1 heart (the server does it); the receiver's photo shows a "+1" burst.
+
 const headGifts = new Set(["crown", "e:👑", "e:⛑️", "e:🤠", "e:🧢", "e:🐻", "e:🐮", "e:🐱", "e:🐰", "e:🦌", "e:🎀", "e:🌸", "e:🪖", "e:🕶️", "e:😈", "e:👒", "e:🎩", "e:🎓", "e:🔱"]);
 // Gift pictures are glossy 3D emoji (Fluent Emoji 3D, MIT) kept in public/gifts, named by their code points.
 const giftEmoji: Record<string, string> = { crown: "👑", diamond: "💎", rose: "🌹" };
@@ -230,8 +230,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [chosen, setChosen] = useState<string[]>([]);
   const [songMany, setSongMany] = useState<number[]>([]);
   const [flying, setFlying] = useState<{ key: number; gift: string; from: number; to: number; moved: boolean; ms: number }[]>([]);
-  // Drinks go through a glass tube instead of flying; the receiver then gets a "+1 heart" burst.
-  const [tubes, setTubes] = useState<{ key: number; from: number; to: number; ms: number }[]>([]);
+  // A drink landed: the receiver gets a "+1 heart" burst.
   const [bursts, setBursts] = useState<{ key: number; to: number }[]>([]);
   const heartsRef = useRef(12);
   const flyId = useRef(1);
@@ -1013,11 +1012,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     setPayNote(false);
     setPanel("wheel");
   }
-  function startTube(key: number, from: number, to: number) {
-    setTubes((list) => [...list, { key, from, to, ms: TUBE_MS }]);
-  }
-  function endTube(key: number, to: number) {
-    setTubes((list) => list.filter((item) => item.key !== key));
+  function heartBurst(key: number, to: number) {
     setBursts((list) => [...list, { key, to }]);
     window.setTimeout(() => setBursts((list) => list.filter((item) => item.key !== key)), 1700);
   }
@@ -1030,14 +1025,16 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (online) void bottleGift(player.me ? net?.me ?? "" : player.id, gift, price);
     const key = flyId.current++;
     playGiftSound(gift, "send");
+    // Drinks fly like every other gift (one by one); on landing the receiver gets the "+1 heart" burst.
     const pour = isDrink(gift) && index !== meIndex;
-    if (pour) { ms = TUBE_MS; startTube(key, meIndex, index); playGiftSound(gift, "land"); } else {
+    {
       setFlying((list) => [...list, { key, gift, from: meIndex, to: index, moved: false, ms }]);
       window.setTimeout(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))), 40);
     }
     window.setTimeout(() => {
       setFlying((list) => list.filter((item) => item.key !== key));
-      if (pour) endTube(key, index); else playGiftSound(gift, "land");
+      playGiftSound(gift, "land");
+      if (pour) heartBurst(key, index);
       setStickers((value) => ({ ...value, [player.id]: [...(value[player.id] ?? []), landed(gift)].slice(-6) }));
       addPile(player.id, landed(gift));
       say({ from: "me", to: player.id, gift });
@@ -1055,13 +1052,14 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (!gift || toAt < 0) return;
     const key = flyId.current++;
     const pour = isDrink(gift) && fromAt >= 0 && fromAt !== toAt;
-    if (pour) { ms = TUBE_MS; startTube(key, fromAt, toAt); playGiftSound(gift, "land"); } else {
+    {
       setFlying((list) => [...list, { key, gift, from: fromAt >= 0 ? fromAt : toAt, to: toAt, moved: false, ms }]);
       window.setTimeout(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))), 40);
     }
     window.setTimeout(() => {
       setFlying((list) => list.filter((item) => item.key !== key));
-      if (pour) endTube(key, toAt); else playGiftSound(gift, "land");
+      playGiftSound(gift, "land");
+      if (pour) heartBurst(key, toAt);
       setStickers((value) => ({ ...value, [toId]: [...(value[toId] ?? []), landed(gift)].slice(-6) }));
       addPile(toId, landed(gift));
       say({ from: fromId, to: toId, gift });
@@ -1342,7 +1340,6 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           );
         })}
 
-        {tubes.map((item) => <PourTube key={item.key} from={seats[item.from]} to={seats[item.to]} ms={item.ms} />)}
         {bursts.map((item) => <HeartBurst key={item.key} at={seats[item.to]} />)}
         {flying.map((item) => <div key={item.key} className="pointer-events-none absolute z-40 h-[11cqmin] w-[11cqmin] -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_0_10px_rgba(255,240,150,0.95)] transition-[left,top] ease-in-out" style={{ transitionDuration: `${item.ms}ms`, left: `${seats[item.moved ? item.to : item.from][0]}%`, top: `${seats[item.moved ? item.to : item.from][1]}%` }}><Gift anim id={item.gift} className="h-full w-full" /></div>)}
 
