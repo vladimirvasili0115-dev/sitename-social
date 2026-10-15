@@ -105,6 +105,7 @@ const tr: Record<keyof typeof az, string> = {
   "bottle.mp3Search": "Şarkı veya sanatçı ara", "bottle.mp3Own": "Kendi MP3 dosyanı gönder", "bottle.musicNow": "Şimdi çalıyor",
   "bottle.achT_cocktailsGot": "Kokteyl sever", "bottle.achC_cocktailsGot": "{n} kokteyl al", "bottle.achPays": "Her yıldızda kalpler otomatik olarak bakiyene eklenir.", "bottle.achReward": "🏅 Başarı: +{n} ❤️ bakiyene eklendi!",
   "bottle.bottleChanged": "şişeyi değiştirdi", "bottle.translate": "Çevir", "bottle.reply": "Yanıtla", "bottle.giftBack": "Geri gönder", "bottle.songBusy": "Şarkı yeni başladı — {n} saniye sonra değiştirebilirsin",
+  "bottle.gestures": "Gülücükler", "bottle.lock_kisses": "{n} öpücük sonra açılacak", "bottle.lock_dj": "{n} şarkı daha ithaf et — açılacak", "bottle.lock_friends": "{n} arkadaş daha davet et — açılacak", "bottle.lock_gestures": "{n} gülücük daha gönder — açılacak", "bottle.lock_free": "",
   "bottle.pass": "Sezon geçişi",
 };
 export default tr;

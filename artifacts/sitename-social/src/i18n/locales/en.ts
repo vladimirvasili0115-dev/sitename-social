@@ -105,6 +105,7 @@ const en: Record<keyof typeof az, string> = {
   "bottle.mp3Search": "Search a song or artist", "bottle.mp3Own": "Send your own MP3 file", "bottle.musicNow": "Now playing",
   "bottle.achT_cocktailsGot": "Cocktail lover", "bottle.achC_cocktailsGot": "Receive {n} cocktails", "bottle.achPays": "Each star you earn adds hearts to your balance automatically.", "bottle.achReward": "🏅 Achievement: +{n} ❤️ added to your balance!",
   "bottle.bottleChanged": "changed the bottle", "bottle.translate": "Translate", "bottle.reply": "Reply", "bottle.giftBack": "Send back", "bottle.songBusy": "A song just started — you can change it in {n} seconds",
+  "bottle.gestures": "Smileys", "bottle.lock_kisses": "Unlocks after {n} more kisses", "bottle.lock_dj": "Dedicate {n} more songs to unlock", "bottle.lock_friends": "Invite {n} more friends to unlock", "bottle.lock_gestures": "Send {n} more smileys to unlock", "bottle.lock_free": "",
   "bottle.pass": "Season pass",
 };
 export default en;

@@ -105,6 +105,7 @@ const ka: Record<keyof typeof az, string> = {
   "bottle.mp3Search": "მოძებნე სიმღერა ან შემსრულებელი", "bottle.mp3Own": "გაგზავნე შენი MP3 ფაილი", "bottle.musicNow": "ახლა ჟღერს",
   "bottle.achT_cocktailsGot": "კოქტეილის მოყვარული", "bottle.achC_cocktailsGot": "მიიღე {n} კოქტეილი", "bottle.achPays": "ყოველი ვარსკვლავისთვის გულები ავტომატურად ემატება ბალანსს.", "bottle.achReward": "🏅 მიღწევა: +{n} ❤️ ბალანსზე!",
   "bottle.bottleChanged": "ბოთლი შეცვალა", "bottle.translate": "თარგმნა", "bottle.reply": "პასუხი", "bottle.giftBack": "უკან გაგზავნა", "bottle.songBusy": "სიმღერა ახლახან დაიწყო — შეცვლა {n} წამში შეიძლება",
+  "bottle.gestures": "სმაილები", "bottle.lock_kisses": "გაიხსნება კიდევ {n} კოცნის შემდეგ", "bottle.lock_dj": "მიუძღვენი კიდევ {n} სიმღერა", "bottle.lock_friends": "მოიწვიე კიდევ {n} მეგობარი", "bottle.lock_gestures": "გაგზავნე კიდევ {n} სმაილი", "bottle.lock_free": "",
   "bottle.pass": "სეზონის საშვი",
 };
 export default ka;

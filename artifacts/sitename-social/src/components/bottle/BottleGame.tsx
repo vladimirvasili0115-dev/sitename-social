@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { customFile, useCustomArt } from "@/lib/customArt";
 import { durationSeconds, rankSongs, songScore } from "@/lib/songSearch";
 import { HeartBurst } from "./PourTube";
+import { GESTURES, GIFT_PRICES, GIFT_RULES, missing, type Progress, type RuleKind } from "./giftRules";
 import { customGiftNames, customPlace, customPrice, landedName, isDrink } from "./customGifts";
 const landed = (gift: string) => (gift.startsWith("c:") ? `c:${landedName(gift.slice(2))}` : gift);
 import { AchievementsPanel } from "./AchievementsPanel";
@@ -23,14 +24,14 @@ import { playGiftSound, playSfx, playSound, setVolume } from "./sound";
 import { supabase } from "@/lib/supabase";
 import { ensureMessagesLoaded, openRemoteChat, remoteChats, sendRemoteMessage } from "@/lib/messagesSync";
 import { uploadBlob } from "@/lib/media";
-import { bottleAnswer, bottleAchSync, bottleSkin, bottleBuyChances, bottleJoin, bottleMove, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleGift, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState } from "@/lib/bottleSync";
+import { bottleAnswer, bottleAchSync, bottleGesture, bottleProgress, bottleSkin, bottleBuyChances, bottleJoin, bottleMove, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleGift, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState } from "@/lib/bottleSync";
 
 type Player = { id: string; name: string; age: number; female: boolean; avatar: string; me?: boolean; empty?: boolean; zodiac?: number | null };
 type Phase = "waiting" | "spinning" | "choice" | "kissed" | "declined";
 type Track = { id: string; title: string; duration?: string };
 const stored = (key: string): Track[] => { try { return JSON.parse(window.localStorage.getItem(key) ?? "[]") as Track[]; } catch { return []; } };
 const keep = (key: string, list: Track[]) => { try { window.localStorage.setItem(key, JSON.stringify(list.slice(0, 40))); } catch { /* storage is full or blocked */ } };
-type Line = { id: number; from: string; to?: string; tos?: string[]; count?: number; bottle?: { a: number; b: number }; text?: string; gift?: string; song?: string; admire?: { amount?: number; by?: string; avatar?: string; target?: string; lost?: boolean }; event?: { kind: "kick" | "saved" | "kicked"; a: string; b: string } };
+type Line = { id: number; from: string; to?: string; tos?: string[]; gesture?: string; count?: number; bottle?: { a: number; b: number }; text?: string; gift?: string; song?: string; admire?: { amount?: number; by?: string; avatar?: string; target?: string; lost?: boolean }; event?: { kind: "kick" | "saved" | "kicked"; a: string; b: string } };
 // The same gift sent again and again by the same person makes one chat line "🌹 ×5 » receivers" instead of many lines.
 function mergeLines(list: Line[], fresh: Line[]) {
   const out = [...list];
@@ -301,7 +302,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [volume, setVolumeLevel] = useState(80);
   const [music, setMusic] = useState(60);
   const [accept, setAccept] = useState(true);
-  const [panel, setPanel] = useState<"settings" | "top" | "rules" | "shop" | "menu" | "vip" | "bottles" | "frames" | "achievements" | "boosters" | "wheel" | "chances" | "tables" | "rooms" | "active" | "invite" | "compliments" | "kick" | "pass" | null>(null);
+  const [panel, setPanel] = useState<"gestures" | "settings" | "top" | "rules" | "shop" | "menu" | "vip" | "bottles" | "frames" | "achievements" | "boosters" | "wheel" | "chances" | "tables" | "rooms" | "active" | "invite" | "compliments" | "kick" | "pass" | null>(null);
   // Panels drop down from the top like a hanging sign and go back up when closed.
   const [closing, setClosing] = useState(false);
   const closePanel = () => { if (closing) return; setClosing(true); window.setTimeout(() => { setPanel(null); setClosing(false); }, 260); };
@@ -490,11 +491,12 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         const nameOf = (id: string | null) => (id === data!.me ? t("common.you") : names.current[id ?? ""]?.name ?? "?");
         if (!first) all.filter((item) => item.kind === "compliment" && item.to === data!.me).forEach((item) => setComplimentIn({ name: names.current[item.from ?? ""]?.name ?? "?", avatar: names.current[item.from ?? ""]?.avatar || cartoonAvatar(3, false), kind: Number(item.body) || 1 }));
         if (!first && all.some((item) => item.kind === "kick" && item.to === data!.me)) setKickedToast(true);
+        if (!first) all.filter((item) => item.kind === "gesture" && item.from !== data!.me).forEach((item) => showSeatGesture(who(item.from), item.body ?? ""));
         if (!first) all.filter((item) => item.kind === "admire_lost" && item.to === data!.me).forEach((item) => { try { setLostToast(JSON.parse(item.body ?? "{}") as { by?: string; avatar?: string; target?: string }); } catch { /* bad body */ } });
         const fresh = all.filter((item) => item.kind !== "compliment" && (item.kind !== "admire_lost" || item.to === data!.me) && (item.kind !== "gift" || (first && item.from !== data!.me)));
         if (all.length) lastChat.current = all[all.length - 1].id;
         if (fresh.length) {
-          setLines((list) => mergeLines(list, fresh.map((item) => (item.kind === "kiss" ? { id: item.id, from: who(item.from), to: who(item.to) } : item.kind === "gift" ? { id: item.id, from: who(item.from), to: who(item.to), gift: item.body ?? "" } : item.kind === "admire" || item.kind === "admire_lost" ? { id: item.id, from: who(item.from), to: item.kind === "admire" ? who(item.to) : undefined, admire: { ...(() => { try { return JSON.parse(item.body ?? "{}") as { amount?: number; by?: string; avatar?: string; target?: string }; } catch { return {}; } })(), lost: item.kind === "admire_lost" } } : item.kind === "song" ? { id: item.id, from: who(item.from), to: item.to ? who(item.to) : undefined, song: item.body || "♪" } : item.kind === "kick" || item.kind === "saved" || item.kind === "kicked" ? { id: item.id, from: who(item.from), event: { kind: item.kind, a: nameOf(item.from), b: nameOf(item.to) } } : item.kind === "bottle" ? { id: item.id, from: who(item.from), bottle: { a: Number((item.body ?? "0:0").split(":")[0]) || 0, b: Number((item.body ?? "0:0").split(":")[1]) || 0 } } : { id: item.id, from: who(item.from), text: item.body ?? "" }))).slice(-80));
+          setLines((list) => mergeLines(list, fresh.map((item) => (item.kind === "kiss" ? { id: item.id, from: who(item.from), to: who(item.to) } : item.kind === "gift" ? { id: item.id, from: who(item.from), to: who(item.to), gift: item.body ?? "" } : item.kind === "admire" || item.kind === "admire_lost" ? { id: item.id, from: who(item.from), to: item.kind === "admire" ? who(item.to) : undefined, admire: { ...(() => { try { return JSON.parse(item.body ?? "{}") as { amount?: number; by?: string; avatar?: string; target?: string }; } catch { return {}; } })(), lost: item.kind === "admire_lost" } } : item.kind === "song" ? { id: item.id, from: who(item.from), to: item.to ? who(item.to) : undefined, song: item.body || "♪" } : item.kind === "kick" || item.kind === "saved" || item.kind === "kicked" ? { id: item.id, from: who(item.from), event: { kind: item.kind, a: nameOf(item.from), b: nameOf(item.to) } } : item.kind === "gesture" ? { id: item.id, from: who(item.from), gesture: item.body ?? "" } : item.kind === "bottle" ? { id: item.id, from: who(item.from), bottle: { a: Number((item.body ?? "0:0").split(":")[0]) || 0, b: Number((item.body ?? "0:0").split(":")[1]) || 0 } } : { id: item.id, from: who(item.from), text: item.body ?? "" }))).slice(-80));
         }
         setNet(data);
       } finally {
@@ -840,6 +842,35 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     return () => window.clearInterval(timer);
   }, [online]);
   useEffect(() => { if (achOpen) pullAch.current(); }, [achOpen]);
+  // What the player has reached for unlocking gifts and smileys (kisses, songs, friends, smileys sent, VIP).
+  const [serverProgress, setServerProgress] = useState<Progress | null>(null);
+  const pullProgress = useRef<() => void>(() => {});
+  pullProgress.current = () => { if (online) void bottleProgress().then((value) => { if (value) setServerProgress(value); }); };
+  useEffect(() => { pullProgress.current(); const timer = window.setInterval(() => pullProgress.current(), 60000); return () => window.clearInterval(timer); }, [online]);
+  const progress: Progress = online && serverProgress ? serverProgress : { kisses: kisses.me ?? 0, friends: 0, dj: readStats().songsSent ?? 0, gestures: readStats().gestures ?? 0, vip };
+  const lockNote = (kind: RuleKind, left: number) => (kind === "vip" ? t("bottle.vipOnly") : t(`bottle.lock_${kind}` as "bottle.lock_kisses").replace("{n}", left.toLocaleString("ru-RU")));
+  // A smiley shown for a few seconds over the sender's photo on the table.
+  const [seatGes, setSeatGes] = useState<Record<string, { id: string; key: number }>>({});
+  const gesKey = useRef(0);
+  const showSeatGesture = useCallback((who: string, id: string) => {
+    const key = gesKey.current++;
+    setSeatGes((value) => ({ ...value, [who]: { id, key } }));
+    window.setTimeout(() => setSeatGes((value) => (value[who]?.key === key ? Object.fromEntries(Object.entries(value).filter(([name]) => name !== who)) : value)), 4500);
+  }, []);
+  function sendGesture(id: string, price: number, rule: [RuleKind, number]) {
+    const left = missing(rule, progress);
+    if (left) return setFrameNote(left < 0 ? t("bottle.vipOnly") : lockNote(rule[0], left));
+    if (heartsRef.current < price) return setFrameNote(t("bottle.noHearts"));
+    setFrameNote(null);
+    closePanel();
+    showSeatGesture("me", id);
+    playSfx("light_tap");
+    bumpStat("gestures");
+    if (online) { void bottleGesture(id).then((left) => { if (typeof left === "number" && left >= 0) { heartsRef.current = left; setHearts(left); pullProgress.current(); } }); return; }
+    heartsRef.current -= price;
+    setHearts(heartsRef.current);
+    say({ from: "me", gesture: id });
+  }
   const imTop = topIds.has("me");
   useEffect(() => { if (imTop) bumpStat("top", 1, true); }, [imTop]);
   const statsStamp = panel === "achievements";
@@ -1187,7 +1218,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   function giveGift(index: number, gift: string, price: number, need?: number) {
     if (gift.startsWith("song:")) { openSong(index); if (gift === "song:mp3") { setSongTab("mp3"); if (!tracks.length) void loadTracks(""); } return false; }
     if (need === -1 && !vip) { setGiftNote(t("bottle.vipOnly")); return false; }
-    if (need && need > 0) { setGiftNote(`${t("bottle.needKisses")} (${need})`); return false; }
+    if (need && need > 0) { const rule = GIFT_RULES[gift]; setGiftNote(lockNote(rule ? rule[0] : "kisses", need)); return false; }
     setGiftNote(null);
     if (!sendGift(index, gift, price)) { setGiftNote(t("bottle.noHearts")); return false; }
     return true;
@@ -1381,6 +1412,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
               <button type="button" onClick={(event) => { event.stopPropagation(); if (dedicate) { if (!player.me) setChosen((list) => (list.includes(player.id) ? list.filter((id) => id !== player.id) : [...list, player.id])); return; } setGiftNote(null); setCardNote(null); setFlagMenu(false); setSignOpen(false); setCard(picked === index || Boolean(player.me)); setPicked(index); }} aria-label={`${player.name}, ${player.age}`} className={cn("group relative block aspect-square w-full rounded-[14%] bg-surface-2 shadow-[0_4px_10px_rgba(0,0,0,0.4)]", staged && index === target ? "ring-[0.9cqmin] ring-[#FFE2A8]" : active ? "ring-4 ring-white" : picked === index ? "ring-4 ring-[#8CC63F]" : player.me ? "ring-2 ring-white/80" : "")}>
                 <img src={player.avatar} alt="" className="h-full w-full rounded-[14%] object-cover" />
                 {frameOf(player) ? <FrameArt id={frameOf(player)} className="pointer-events-none absolute -inset-[9%] z-[1] h-[118%] w-[118%]" /> : null}
+                {seatGes[player.me ? "me" : player.id] ? <img key={seatGes[player.me ? "me" : player.id].key} src={`/custom/anim/ges_${seatGes[player.me ? "me" : player.id].id}.webp`} alt="" className="pointer-events-none absolute -inset-[12%] z-[4] h-[124%] w-[124%] max-w-none animate-[bottle-pop_0.25s_ease-out] object-contain drop-shadow-[0_3px_4px_rgba(0,0,0,0.4)]" /> : null}
                 {player.me || dedicate ? null : <span aria-hidden="true" className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-[14%] bg-black/35 opacity-0 transition-opacity group-hover:opacity-100"><GiftIcon className="h-[38%] w-[38%] text-white" strokeWidth={1.6} /></span>}
                 {dedicate && !player.me ? (chosen.includes(player.id)
                   ? <span className="absolute inset-0 z-10 flex items-center justify-center rounded-[14%] bg-[#8CC63F]/85 ring-[0.5cqmin] ring-[#B678E8]"><Check className="h-[45%] w-[45%] text-white drop-shadow" strokeWidth={4} /></span>
@@ -1790,6 +1822,23 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 </div>
               ) : panel === "achievements" ? (
                 <AchievementsPanel values={achValue} />
+              ) : panel === "gestures" ? (
+                <div className="-mx-3 -mb-3 bg-white">
+                  <ul className="grid max-h-[min(60vh,420px)] grid-cols-4 gap-1.5 overflow-y-auto p-3 [scrollbar-width:thin] sm:grid-cols-5">
+                    {GESTURES.map(([id, price, kind, amount]) => {
+                      const left = missing([kind, amount], progress);
+                      return (
+                        <li key={id}>
+                          <button onClick={() => sendGesture(id, price, [kind, amount])} title={left ? (left < 0 ? t("bottle.vipOnly") : lockNote(kind, left)) : undefined} className={cn("flex w-full flex-col items-center rounded-xl border border-[#EEF0F3] p-1 transition-transform hover:-translate-y-0.5 hover:shadow", left !== 0 && "opacity-60")}>
+                            <img src={`/custom/gifts/ges_${id}.webp`} alt="" loading="lazy" className={cn("h-14 w-14 object-contain", left !== 0 && "grayscale")} />
+                            <span className="flex h-4 items-center gap-0.5 text-[11px] font-bold text-[#3F3F46]">{left < 0 ? <b className="rounded bg-[#F59E0B] px-1 text-[9px] text-white">VIP</b> : left ? <>🔒<span className="text-[10px] font-semibold text-[#6B7280]">{left >= 1000 ? `${Math.round(left / 100) / 10}k` : left}💋</span></> : <><Heart size={11} fill="#E8352B" stroke="none" />{price}</>}</span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  {frameNote ? <p role="status" className="border-t border-[#EEF0F3] px-3 py-2 text-center text-xs font-semibold text-[#B45309]">{frameNote}</p> : null}
+                </div>
               ) : panel === "vip" ? (
                 <div className="max-h-[78cqmin] overflow-y-auto text-[#1F2937]">
                   <ul className="space-y-1 text-sm">{[1, 2, 3, 4, 5, 6].map((n) => <li key={n} className="flex gap-2"><span aria-hidden="true">👑</span>{t(`bottle.vip${n}` as "bottle.vip1")}</li>)}</ul>
@@ -1965,7 +2014,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             </div>
             ) : null}
             <div role="menu" className={cn("grid min-h-0 flex-1 content-start gap-0.5 overflow-y-auto bg-white p-2", wide ? "grid-cols-[repeat(auto-fill,minmax(68px,1fr))]" : "grid-cols-[repeat(auto-fill,minmax(56px,1fr))]")}>
-              {[...giftChoices.slice(0, 2), ...customGiftNames(art).map((name) => [`c:${name}`, customPrice(name)] as [string, number]), ...giftChoices.slice(2), ...lockedGifts].map(([gift, price, need], order) => (
+              {[...giftChoices.slice(0, 2), ...customGiftNames(art).filter((name) => !name.startsWith("ges_")).map((name) => [`c:${name}`, GIFT_PRICES[name] ?? customPrice(name), missing(GIFT_RULES[`c:${name}`], progress)] as [string, number, number]), ...giftChoices.slice(2), ...lockedGifts.map(([gift, price, need]) => [gift, price, Math.max(0, need - progress.kisses)] as [string, number, number])].map(([gift, price, need], order) => (
                 <button key={`${gift}-${order}`} role="menuitem" aria-disabled={need === -1 ? !vip : Boolean(need)} onPointerDown={(event) => pressGift(giftTargets, gift, price, need, event.clientX, event.clientY)} onPointerMove={(event) => { const state = pressed.current; if (state && !state.started && Math.hypot(event.clientX - state.x, event.clientY - state.y) > 8) cancelPress(); }} onPointerUp={() => releaseGift(giftTargets, gift, price, need)} onPointerLeave={cancelPress} onPointerCancel={cancelPress} onContextMenu={(event) => event.preventDefault()} onKeyDown={(event) => { if (event.key === "Enter" && !event.repeat) giveMany(giftTargets, gift, price, need); }} aria-label={`${t("gifts.send")} ${price}`} className={cn("group flex touch-pan-y select-none flex-col items-center gap-0.5 rounded-xl p-1 hover:bg-[#FFF4E5]", (need === -1 ? !vip : Boolean(need)) ? "grayscale [&>img]:opacity-75" : hearts < price && "opacity-50")}>
                   <Gift id={gift} className={cn("transition-transform duration-150 group-hover:scale-110", wide ? "h-14 w-14" : "h-11 w-11")} />
                   <span className="flex items-center gap-1 text-xs font-bold tabular-nums text-[#3F3F46]">{need === -1 ? <b className="rounded bg-[#F59E0B] px-1 text-[10px] text-white">VIP</b> : need ? <span aria-label={`${need}`} className="text-[11px] opacity-70">🔒</span> : <><Heart size={13} fill="#E8352B" stroke="none" />{price}</>}</span>
@@ -1995,6 +2044,13 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
               </div>
             );
             if (!from) return null;
+            if (line.gesture) return (
+              <div key={line.id} className="flex items-center gap-2 text-sm">
+                <img src={from.avatar} alt={from.name} className="h-8 w-8 shrink-0 rounded-md object-cover" />
+                <span className="font-semibold text-muted">{from.me ? t("common.you") : from.name}:</span>
+                <img src={`/custom/anim/ges_${line.gesture}.webp`} alt="" className="h-14 w-14 shrink-0 object-contain" />
+              </div>
+            );
             if (line.bottle) return (
               <div key={line.id} className="flex items-center gap-2 text-sm" title={`${from.name} ${t("bottle.bottleChanged")}`}>
                 <img src={from.avatar} alt={from.name} className="h-8 w-8 shrink-0 rounded-md object-cover" />
@@ -2040,7 +2096,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         </div>
         <form onSubmit={handleChat} className={cn("flex items-center gap-2 border-t border-border p-2.5", picked !== null && "hidden")}>
           <input ref={chatRef} value={draft} onChange={(event) => setDraft(event.target.value)} maxLength={200} aria-label={t("messages.placeholder")} placeholder={t("messages.placeholder")} autoComplete="off" className="h-11 min-w-0 flex-1 rounded-full border border-border bg-surface-2 px-4 text-sm text-text outline-none placeholder:text-muted focus:border-accent" />
-          <button type="button" onClick={() => { setPayNote(false); setPanel("vip"); }} aria-label={`${t("bottle.smileys")} (VIP)`} title={`${t("bottle.smileys")} (VIP)`} className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface-2 text-xl">😊<b className="absolute -right-1 -top-1 rounded bg-[#F59E0B] px-1 text-[9px] leading-4 text-white">VIP</b></button>
+          <button type="button" onClick={() => { setPayNote(false); setFrameNote(null); pullProgress.current(); setPanel("gestures"); }} aria-label={t("bottle.gestures")} title={t("bottle.gestures")} className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface-2 text-xl">😊</button>
           <button type="submit" disabled={!draft.trim()} aria-label={t("messages.send")} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#EE8A2B] text-white disabled:opacity-40"><SendHorizontal size={17} /></button>
         </form>
       </div>

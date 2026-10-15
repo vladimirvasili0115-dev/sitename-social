@@ -2,7 +2,7 @@ import { supabase } from "./supabase";
 
 // Live tables of the bottle game. The database owns the game: seats, turns, where the bottle stops, answers and kisses.
 export type BottleSeat = { seat: number; id: string; name: string | null; avatar: string | null; gender: string | null; kisses: number; total?: number; smiles?: number; songs?: number; zodiac?: number | null; age: number | null; status?: string | null; frame?: number; pass?: boolean; kicked?: { by: string; at: number } | null; admirer?: { id: string; name: string | null; avatar: string | null; amount: number } | null };
-export type BottleChat = { id: number; from: string | null; to: string | null; kind: "text" | "kiss" | "wheel" | "song" | "gift" | "admire" | "admire_lost" | "kick" | "saved" | "kicked" | "compliment" | "bottle"; body: string | null };
+export type BottleChat = { id: number; from: string | null; to: string | null; kind: "text" | "kiss" | "wheel" | "song" | "gift" | "admire" | "admire_lost" | "kick" | "saved" | "kicked" | "compliment" | "bottle" | "gesture"; body: string | null };
 export type BottleState = {
   table: number; me: string; now: number; hearts: number; chances?: number; winner?: { name: string | null; amount: number } | null;
   phase: "waiting" | "spinning" | "choice" | "result"; phase_at: number;
@@ -47,6 +47,8 @@ export const bottleRoomCreate = (name: string, password: string, capacity: numbe
 export const bottleRoomDelete = () => call<BottleMove & { error?: string }>("bottle_room_delete");
 export const bottleFrame = (frame: number) => call<{ hearts?: number; frame?: number; frames?: number[]; error?: "hearts" | "vip" | "bad" }>("bottle_frame", { p_frame: frame });
 export const bottleSkin = (skin: number) => call<boolean>("bottle_skin", { p_skin: skin });
+export const bottleProgress = () => call<{ kisses: number; friends: number; dj: number; gestures: number; vip: boolean }>("bottle_progress");
+export const bottleGesture = (id: string) => call<number>("bottle_gesture", { p_id: id });
 export const bottleAchSync = () => call<{ values: Record<string, number>; gained: number; new: string[]; hearts: number | null }>("bottle_ach_sync");
 export const bottleStatBump = (metric: string, by: number, max: boolean) => call<null>("bottle_stat_bump", { p_metric: metric, p_by: by, p_max: max });
 export const bottleStatsMerge = (stats: Record<string, number>) => call<Record<string, number>>("bottle_stats_merge", { p_stats: stats });

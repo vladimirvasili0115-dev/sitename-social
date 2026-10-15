@@ -105,6 +105,7 @@ const ru: Record<keyof typeof az, string> = {
   "bottle.mp3Search": "Найти песню или исполнителя", "bottle.mp3Own": "Отправить свой MP3-файл", "bottle.musicNow": "Сейчас играет",
   "bottle.achT_cocktailsGot": "Любитель коктейлей", "bottle.achC_cocktailsGot": "Получи {n} коктейлей", "bottle.achPays": "За каждую звезду сердца автоматически зачисляются на баланс.", "bottle.achReward": "🏅 Достижение: +{n} ❤️ на баланс!",
   "bottle.bottleChanged": "сменил(а) бутылку", "bottle.translate": "Перевести", "bottle.reply": "Ответить", "bottle.giftBack": "Подарить в ответ", "bottle.songBusy": "Песня только что началась — сменить можно через {n} сек.",
+  "bottle.gestures": "Смайлики", "bottle.lock_kisses": "Откроется ещё через {n} поцелуев", "bottle.lock_dj": "Посвяти ещё {n} песен — откроется", "bottle.lock_friends": "Пригласи ещё {n} друзей — откроется", "bottle.lock_gestures": "Отправь ещё {n} смайликов — откроется", "bottle.lock_free": "",
   "bottle.pass": "Сезонный пропуск",
 };
 export default ru;

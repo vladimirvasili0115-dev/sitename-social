@@ -114,6 +114,7 @@ const az = {
   "bottle.mp3Search": "Mahnı və ya ifaçı axtar", "bottle.mp3Own": "Öz MP3 faylını göndər", "bottle.musicNow": "İndi səslənir",
   "bottle.achT_cocktailsGot": "Kokteyl sevən", "bottle.achC_cocktailsGot": "{n} kokteyl al", "bottle.achPays": "Hər ulduz qazanılanda ürəklər avtomatik balansına yazılır.", "bottle.achReward": "🏅 Nailiyyət: +{n} ❤️ balansına yazıldı!",
   "bottle.bottleChanged": "butulkanı dəyişdi", "bottle.translate": "Tərcümə et", "bottle.reply": "Cavab ver", "bottle.giftBack": "Geri göndər", "bottle.songBusy": "Mahnı yenicə qoşulub — {n} saniyə sonra dəyişə bilərsən",
+  "bottle.gestures": "Smayliklər", "bottle.lock_kisses": "{n} öpüş sonra açılacaq", "bottle.lock_dj": "Daha {n} mahnı həsr et — açılacaq", "bottle.lock_friends": "Daha {n} dost dəvət et — açılacaq", "bottle.lock_gestures": "Daha {n} smaylik göndər — açılacaq", "bottle.lock_free": "",
   "bottle.pass": "Mövsüm keçidi",
 } as const;
 export default az;

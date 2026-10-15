@@ -57,7 +57,7 @@ export const frameStone = (id: number) => { const type = originalFrame(id); retu
 
 export function FrameArt({ id, className, still }: { id: number; className?: string; still?: boolean }) {
   const type = originalFrame(id);
-  if (type) return <img src={`/custom/frames/${still || STILL_ONLY.has(type) ? "" : "anim/"}${type}.webp`} alt="" aria-hidden="true" draggable={false} className={`select-none object-contain ${className ?? ""}`} />;
+  if (type) return <img src={`/custom/frames/${still || STILL_ONLY.has(type) ? "" : "anim/"}${type}.webp`} alt="" aria-hidden="true" draggable={false} className={`max-w-none select-none object-contain ${className ?? ""}`} />;
   const look = frameLooks[id - 1];
   if (!look) return null;
   const key = `fr${id}`;
