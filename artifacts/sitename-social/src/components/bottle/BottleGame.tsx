@@ -52,7 +52,7 @@ const wheelSectors: { hearts?: number; chances?: number; kisses?: number; smiles
   { hearts: 1000, weight: 30 }, { hearts: 1, weight: 900 }, { kisses: 1, weight: 900 }, { hearts: 25, weight: 400 }, { hearts: 3, weight: 1300 }, { chances: 1, weight: 1300 }, { hearts: 100, weight: 100 }, { smiles: 1, weight: 700 },
   { kisses: 3, weight: 500 }, { hearts: 10, weight: 900 }, { weight: 200 }, { chances: 3, weight: 500 }, { hearts: 3, weight: 1070 }, { hearts: 5, weight: 900 }, { kisses: 1, weight: 200 }, { smiles: 3, weight: 100 },
 ];
-const prizeText = (item: (typeof wheelSectors)[number]) => (item.hearts ? `❤ ${item.hearts}` : item.chances ? `🎲 ${item.chances}` : item.kisses ? `💋 ${item.kisses}` : item.smiles ? `😊 ${item.smiles}` : "");
+const prizeText = (item: (typeof wheelSectors)[number]) => (item.hearts ? `❤️ ${item.hearts}` : item.chances ? `🎲 ${item.chances}` : item.kisses ? `💋 ${item.kisses}` : item.smiles ? `😊 ${item.smiles}` : "");
 const chancePacks: [number, number][] = [[300, 900], [50, 150], [15, 45], [5, 20], [1, 5]];
 const vipPlans: [number, number][] = [[7, 300], [30, 900], [90, 2200]];
 // Put the channel link here (for example "https://t.me/kanal_adi"); while empty, the settings row says it is not set yet.
@@ -1095,7 +1095,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     setHearts(heartsRef.current);
     setSuitors((value) => ({ ...value, [player.id]: { by: "me", amount: price } }));
     bumpStat("admire");
-    say({ from: "me", text: `${t("bottle.courtStarted")} ${player.name} ❤ ${price}` });
+    say({ from: "me", text: `${t("bottle.courtStarted")} ${player.name} ❤️ ${price}` });
   }
   // Press and hold a gift: it keeps going until the finger is lifted (or the hearts run out).
   // A tap sends one gift. Holding for a moment keeps sending until release; a scroll gesture cancels without sending.
@@ -1908,7 +1908,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 <img src={from?.avatar || line.admire.avatar || cartoonAvatar(3, false)} alt="" className="h-8 w-8 shrink-0 rounded-md object-cover" />
                 {line.admire.lost
                   ? <p className="min-w-0 flex-1 text-text">💔 <span className="font-semibold text-[#E0457B]">{line.admire.by}</span> {t("bottle.admireLost1")} <b>{line.admire.target}</b> {t("bottle.admireLost2")}</p>
-                  : <p className="min-w-0 flex-1 text-text"><span className="font-semibold text-[#E0457B]">{from?.me ? t("common.you") : from?.name ?? line.admire.by}</span> {t("bottle.admireLine")} <span className="whitespace-nowrap font-bold">❤ {line.admire.amount}</span></p>}
+                  : <p className="min-w-0 flex-1 text-text"><span className="font-semibold text-[#E0457B]">{from?.me ? t("common.you") : from?.name ?? line.admire.by}</span> {t("bottle.admireLine")} <span className="inline-flex items-center gap-0.5 whitespace-nowrap font-bold"><Heart size={13} fill="#E8352B" stroke="none" className="inline" />{line.admire.amount}</span></p>}
                 {to ? <><span className="font-bold text-accent">»</span><img src={to.avatar} alt={to.name} title={to.name} className="h-8 w-8 shrink-0 rounded-md object-cover" /></> : null}
               </div>
             );
