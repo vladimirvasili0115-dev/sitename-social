@@ -149,7 +149,7 @@ function LipsBadge({ count }: { count: number }) {
         <path d="M5 21c8 2 17 3 25 3s17-1 25-3c-7 3-16 5-25 5S12 24 5 21z" fill="#8E0B21" opacity="0.7" />
         <path d="M14 11c4-3 9-3 12 0" stroke="#FFB3BC" strokeWidth="2.500" strokeLinecap="round" fill="none" opacity="0.8" />
       </svg>
-      <span className="relative text-[2.5cqmin] font-black tabular-nums leading-none text-white [text-shadow:0_1px_1px_rgba(0,0,0,0.5)]">{count}</span>
+      <span className="relative text-[2.5cqmin] font-black tabular-nums leading-none text-white [text-shadow:0_1px_1px_rgba(0,0,0,0.5)]">{count >= 10000 ? `${Math.floor(count / 1000)}k` : count >= 1000 ? `${(Math.floor(count / 100) / 10).toFixed(1)}k` : count}</span>
     </span>
   );
 }
@@ -542,6 +542,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     setTarget(targetAt >= 0 && net.phase !== "waiting" ? targetAt : null);
     setAnswers({ spinner: net.spinner_answer, target: net.target_answer });
     setPhase(net.phase === "result" ? (net.spinner_answer && net.target_answer ? "kissed" : "declined") : net.phase);
+    // The red lips count the kisses a player got at this table (1, 2, 3...), like in the original game.
     setKisses(Object.fromEntries(net.seats.map((seat) => [seat.id === net.me ? "me" : seat.id, seat.kisses])));
     if (net.phase === "waiting") setSeconds(left(SPIN_SECONDS));
     if (net.phase === "choice") setSeconds(left(ANSWER_SECONDS));
