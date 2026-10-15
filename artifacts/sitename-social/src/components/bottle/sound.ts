@@ -1,3 +1,4 @@
+import { isDrink } from "./customGifts";
 // Game sounds: recordings from public/sounds (turn, kiss, gift, cocktail) with synthesized sounds as a fallback.
 let context: AudioContext | null = null;
 let level = 1;
@@ -162,8 +163,6 @@ const soundOf: [string, string][] = [
   ["spooky", "💀 🕸️ 🎭 🧙"], ["rattle", "🎲 🃏 🧩 🎯"], ["tick", "⌚ ⏰ 🕰️ ⏱️ ⏲️ ⏳"], ["ring", "☎️ 📱"], ["toot", "💩"], ["whip", "🤺 ⚔️ 🏹 🪁"],
   ["boing", "⛑️ 🤠 🎩 👒 🧢 🎓 🪖 👳 🕶️ 😎 🥸 👢 👠 👡 🥾 🥿 🧣 🧤 👜 🧳 👘 🤵 🕴️"],
 ];
-// Drinks from the own gift pictures that are poured like a cocktail.
-const cocktails = /^(love|martini|mojito|pinacolada|bluelagoon|b52|daiquiri|sexonthebeach|bloodymary|cherry|vanilla|universal|lifestyle|milkcoctail|tequilashot|juice|romcola|tarhun|cocoscocktail|smoothie|healthdrink|cognacglass|wine|whiskey|champagne|vipchampagne)$/;
 export function playGiftSound(gift: string, moment: "send" | "land") {
   if (level === 0 || typeof window === "undefined") return;
   try {
@@ -176,7 +175,7 @@ export function playGiftSound(gift: string, moment: "send" | "land") {
       return noise(0, 0.35, 500, 0.1, 2400);
     }
     const name = gift.replace(/^[ec]:/, "");
-    if (name === "🍸" || name === "🍹" || cocktails.test(name)) return playClip("cocktail", pourSynth);
+    if (isDrink(gift)) return playClip("cocktail", pourSynth);
     const key = soundOf.find(([, members]) => members.split(" ").includes(name))?.[0] ?? (/kiss/.test(name) ? "kiss" : "pop");
     // Kisses smack; every other gift lands with the recorded hit sound (the matching synthesized sound if it is missing).
     playClip(key === "kiss" ? "kiss" : "gift", sounds[key]);

@@ -8,7 +8,7 @@ export type BottleState = {
   phase: "waiting" | "spinning" | "choice" | "result"; phase_at: number;
   turn: string | null; target: string | null; spinner_answer: boolean | null; target_answer: boolean | null; round: number;
   seats: BottleSeat[]; chat: BottleChat[];
-  wheel?: boolean; track?: BottleTrack | null; vip?: boolean; frames?: number[]; active?: { secs: number; claimed: number } | null; compliments?: number; room?: { name: string; capacity: number; owner: string } | null;
+  wheel?: boolean; skin?: number; track?: BottleTrack | null; vip?: boolean; frames?: number[]; active?: { secs: number; claimed: number } | null; compliments?: number; room?: { name: string; capacity: number; owner: string } | null;
 };
 export type BottleTrack = { kind: "youtube" | "mp3"; ref: string; title: string | null; by: string | null; to: string | null; at: number };
 async function call<T>(name: string, args?: Record<string, unknown>): Promise<T | null> {
@@ -46,6 +46,7 @@ export const bottleRoomJoin = (room: number, password: string) => call<BottleRoo
 export const bottleRoomCreate = (name: string, password: string, capacity: number) => call<BottleRoomResult>("bottle_room_create", { p_name: name, p_password: password, p_capacity: capacity });
 export const bottleRoomDelete = () => call<BottleMove & { error?: string }>("bottle_room_delete");
 export const bottleFrame = (frame: number) => call<{ hearts?: number; frame?: number; frames?: number[]; error?: "hearts" | "vip" | "bad" }>("bottle_frame", { p_frame: frame });
+export const bottleSkin = (skin: number) => call<boolean>("bottle_skin", { p_skin: skin });
 export const bottleStatBump = (metric: string, by: number, max: boolean) => call<null>("bottle_stat_bump", { p_metric: metric, p_by: by, p_max: max });
 export const bottleStatsMerge = (stats: Record<string, number>) => call<Record<string, number>>("bottle_stats_merge", { p_stats: stats });
 export const bottleKick = (to: string) => call<"ok" | "vip" | "bad">("bottle_kick", { p_to: to });

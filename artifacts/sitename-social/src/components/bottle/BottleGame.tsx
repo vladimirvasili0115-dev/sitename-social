@@ -9,7 +9,8 @@ import { GiftArt } from "@/components/gifts/GiftArt";
 import { useProfile } from "@/components/profile/useProfile";
 import { cn } from "@/lib/utils";
 import { customFile, useCustomArt } from "@/lib/customArt";
-import { customGiftNames, customPlace, customPrice, landedName } from "./customGifts";
+import { HeartBurst, PourTube } from "./PourTube";
+import { customGiftNames, customPlace, customPrice, landedName, isDrink } from "./customGifts";
 const landed = (gift: string) => (gift.startsWith("c:") ? `c:${landedName(gift.slice(2))}` : gift);
 import { AchievementsPanel } from "./AchievementsPanel";
 import { FRAME_PRICE, FrameArt, frameLooks } from "./FrameArt";
@@ -21,7 +22,7 @@ import { playGiftSound, playSound, setVolume } from "./sound";
 import { supabase } from "@/lib/supabase";
 import { ensureMessagesLoaded, openRemoteChat, remoteChats, sendRemoteMessage } from "@/lib/messagesSync";
 import { uploadBlob } from "@/lib/media";
-import { bottleAnswer, bottleBuyChances, bottleJoin, bottleMove, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleGift, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState } from "@/lib/bottleSync";
+import { bottleAnswer, bottleSkin, bottleBuyChances, bottleJoin, bottleMove, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleGift, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState } from "@/lib/bottleSync";
 
 type Player = { id: string; name: string; age: number; female: boolean; avatar: string; me?: boolean; empty?: boolean; zodiac?: number | null };
 type Phase = "waiting" | "spinning" | "choice" | "kissed" | "declined";
@@ -71,8 +72,8 @@ const lockedGifts: [string, number, number][] = [
   ["e:🥤", 5, 1000], ["e:🃏", 5, 1000], ["e:🫗", 5, 1000], ["e:👒", 5, 1000], ["e:💍", 5, 3000], ["e:🧋", 5, 3000], ["e:🪇", 5, 3000], ["e:🍾", 5, 3000], ["e:⚔️", 5, 3000], ["e:🍶", 5, 3000], ["e:🎓", 5, 3000], ["e:🧁", 5, 3000], ["e:🎩", 5, 7000], ["e:🎖️", 5, 7000], ["e:🍮", 5, 7000], ["e:🗿", 5, 7000], ["e:🏆", 5, 7000], ["e:🍼", 5, 7000], ["e:🍎", 5, 7000], ["e:🎁", 5, 7000], ["e:🎪", 5, 7000], ["e:🧪", 5, 7000], ["e:🪶", 5, 7000], ["e:🏴‍☠️", 5, 7000], ["e:🎤", 5, 15000], ["e:🪆", 5, 15000], ["e:🍯", 5, 15000], ["e:🌶️", 5, 15000], ["e:🪔", 5, 15000], ["e:🦪", 5, 15000], ["e:🫖", 5, 15000], ["e:🎷", 5, 15000], ["e:🎻", 5, 15000], ["e:🎸", 5, 15000], ["e:🥁", 5, 15000], ["e:👠", 5, 15000], ["e:💵", 5, 23000], ["e:🪭", 5, 23000], ["e:🧿", 5, 23000], ["e:🦚", 5, 23000], ["e:🍭", 5, 23000], ["e:🍋", 5, 23000], ["e:🌺", 5, 23000], ["e:🌠", 5, 23000], ["e:🧙", 5, 23000], ["e:🧝", 5, 23000], ["e:🧞", 5, 23000], ["e:🧜", 5, 23000], ["e:🚗", 5, 30000], ["e:🏍️", 5, 30000], ["e:🚁", 5, 30000], ["e:✈️", 5, 30000], ["e:🛸", 5, 30000], ["e:🚜", 5, 30000], ["e:🛷", 5, 30000], ["e:🎠", 5, 30000], ["e:🎡", 5, 30000], ["e:🎯", 5, 30000], ["e:🧩", 5, 30000], ["e:🪁", 5, 30000], ["e:❤️‍🔥", 5, 40000], ["e:💘", 5, 40000], ["e:💌", 5, 40000], ["e:💟", 5, 40000], ["e:💜", 5, 40000], ["e:💛", 5, 40000], ["e:🖤", 5, 40000], ["e:🩵", 5, 40000], ["e:💚", 5, 40000], ["e:🧡", 5, 40000], ["e:💙", 5, 40000], ["e:💔", 5, 40000], ["e:🥇", 4, -1], ["e:🥀", 4, -1], ["e:👢", 4, -1], ["e:🏹", 4, -1], ["e:🐓", 4, -1], ["e:🧲", 4, -1], ["e:🔱", 4, -1], ["e:⭕", 4, -1], ["e:🐎", 4, -1], ["e:🦁", 4, -1], ["e:🐯", 4, -1], ["e:🦄", 4, -1],
 ];
 // Gifts that are worn on the head sit tilted on the top corner of the photo; everything else stands at the bottom.
-// Cocktails are the one gift that pays the receiver: every second cocktail gives them a heart (counted by the server).
-const cocktails = new Set(["e:🍸", "e:🍹"]);
+// Drinks pay the receiver +1 heart (the server does it) and are poured through a glass tube for this long.
+const TUBE_MS = 2800;
 const headGifts = new Set(["crown", "e:👑", "e:⛑️", "e:🤠", "e:🧢", "e:🐻", "e:🐮", "e:🐱", "e:🐰", "e:🦌", "e:🎀", "e:🌸", "e:🪖", "e:🕶️", "e:😈", "e:👒", "e:🎩", "e:🎓", "e:🔱"]);
 // Gift pictures are glossy 3D emoji (Fluent Emoji 3D, MIT) kept in public/gifts, named by their code points.
 const giftEmoji: Record<string, string> = { crown: "👑", diamond: "💎", rose: "🌹" };
@@ -225,6 +226,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [chosen, setChosen] = useState<string[]>([]);
   const [songMany, setSongMany] = useState<number[]>([]);
   const [flying, setFlying] = useState<{ key: number; gift: string; from: number; to: number; moved: boolean; ms: number }[]>([]);
+  // Drinks go through a glass tube instead of flying; the receiver then gets a "+1 heart" burst.
+  const [tubes, setTubes] = useState<{ key: number; from: number; to: number; ms: number }[]>([]);
+  const [bursts, setBursts] = useState<{ key: number; to: number }[]>([]);
   const heartsRef = useRef(12);
   const flyId = useRef(1);
   const hold = useRef<number | null>(null);
@@ -300,6 +304,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [topData, setTopData] = useState<BottleTop | null>(null);
   const [sent, setSent] = useState<Record<string, number>>({});
   const [skin, setSkin] = useState(0);
+  const skinLock = useRef(0);
   const [ownedSkins, setOwnedSkins] = useState<number[]>([0]);
   // Photo frames: the live table keeps them on the server (everyone sees them); the demo keeps them here.
   const [localFrame, setLocalFrame] = useState(0);
@@ -482,6 +487,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (net.phase === "choice") setSeconds(left(ANSWER_SECONDS));
     heartsRef.current = net.hearts;
     setHearts(net.hearts);
+    // The table has one bottle for everybody: whoever changes it, it changes on every device.
+    if (typeof net.skin === "number" && Date.now() > skinLock.current) setSkin(net.skin);
     if (!wheelLock.current) setChances(net.chances ?? 0);
     const key = `${net.round}:${net.target}`;
     if (net.phase === "spinning" && targetAt >= 0 && spunRef.current !== key) {
@@ -522,8 +529,34 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
   }, [lines.length]);
   useEffect(() => setVolume(volume / 100), [volume]);
-  const pushMusic = useCallback(() => frameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: "command", func: "setVolume", args: [music] }), "*"), [music]);
+  // Songs must start by themselves on every device. Browsers only allow sound after the person has touched the page,
+  // so a video starts muted until then and gets its sound on the first tap anywhere in the game (or the 🔊 button).
+  const [touched, setTouched] = useState(false);
+  const touchedRef = useRef(false);
+  touchedRef.current = touched;
+  // Decided once per song, so getting the sound later does not reload (restart) the video.
+  const startMuted = useMemo(() => !touchedRef.current, [video]); // eslint-disable-line react-hooks/exhaustive-deps
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const ytCall = useCallback((func: string, args: unknown[] = []) => frameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: "command", func, args }), "*"), []);
+  const pushMusic = useCallback(() => {
+    ytCall("setVolume", [music]);
+    if (music > 0 && touched) { ytCall("unMute"); ytCall("playVideo"); }
+    if (music === 0) ytCall("mute");
+  }, [music, touched, ytCall]);
   useEffect(pushMusic, [pushMusic, video]);
+  useEffect(() => {
+    if (typeof navigator !== "undefined" && (navigator as Navigator & { userActivation?: { hasBeenActive: boolean } }).userActivation?.hasBeenActive) setTouched(true);
+    const wake = () => {
+      setTouched(true);
+      const node = audioRef.current;
+      if (node && node.paused) void node.play().catch(() => {});
+    };
+    window.addEventListener("pointerdown", wake);
+    window.addEventListener("keydown", wake);
+    return () => { window.removeEventListener("pointerdown", wake); window.removeEventListener("keydown", wake); };
+  }, []);
+  const ytSrc = (id: string) => `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&playsinline=1&rel=0&enablejsapi=1${startMuted ? "&mute=1" : ""}`;
+  const soundPill = !touched && startMuted ? <button onClick={(event) => { event.stopPropagation(); setTouched(true); }} className="absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-black/70 px-3 py-1.5 text-xs font-bold text-white shadow animate-pulse"><Volume2 size={15} />{t("videos.unmute")}</button> : null;
   const byId = (id: string) => players.find((player) => player.id === id);
   const staged = phase !== "waiting" && phase !== "spinning" && target !== null;
   const myRole: "spinner" | "target" | null = staged ? (turn === meIndex ? "spinner" : target === meIndex ? "target" : null) : null;
@@ -703,6 +736,10 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const topIds = new Set(seated.map((player) => ({ id: player.id, count: kisses[player.id] ?? 0 })).filter((item) => item.count > 0).sort((a, b) => b.count - a.count).slice(0, 3).map((item) => item.id));
   const skinFilter = (n: number) => (n % 15 ? `hue-rotate(${(n % 15) * 24}deg) saturate(${n % 3 === 0 ? 1.4 : 1.1})` : undefined);
   const art = useCustomArt();
+  function chooseSkin(n: number) {
+    setSkin(n);
+    if (online) { skinLock.current = Date.now() + 4000; void bottleSkin(n); }
+  }
   const SkinBottle = useCallback(({ className }: { className?: string }) => <SkinArt set={art} n={skin + 1} className={className} />, [art, skin]);
   const skinPrice = (n: number) => (n ? 3 + Math.floor(n / 5) * 2 : 0);
   // Rating: the server counts the whole site; without a server only this table's kisses are shown.
@@ -950,6 +987,14 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     setPayNote(false);
     setPanel("wheel");
   }
+  function startTube(key: number, from: number, to: number) {
+    setTubes((list) => [...list, { key, from, to, ms: TUBE_MS }]);
+  }
+  function endTube(key: number, to: number) {
+    setTubes((list) => list.filter((item) => item.key !== key));
+    setBursts((list) => [...list, { key, to }]);
+    window.setTimeout(() => setBursts((list) => list.filter((item) => item.key !== key)), 1700);
+  }
   // A single gift glides for 3 seconds; gifts sent in a rapid series (press and hold) fly in about a second.
   function sendGift(index: number, gift: string, price: number, ms = 3000) {
     const player = players[index];
@@ -959,11 +1004,14 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (online) void bottleGift(player.me ? net?.me ?? "" : player.id, gift, price);
     const key = flyId.current++;
     playGiftSound(gift, "send");
-    setFlying((list) => [...list, { key, gift, from: meIndex, to: index, moved: false, ms }]);
-    window.setTimeout(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))), 40);
+    const pour = isDrink(gift) && index !== meIndex;
+    if (pour) { ms = TUBE_MS; startTube(key, meIndex, index); playGiftSound(gift, "land"); } else {
+      setFlying((list) => [...list, { key, gift, from: meIndex, to: index, moved: false, ms }]);
+      window.setTimeout(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))), 40);
+    }
     window.setTimeout(() => {
       setFlying((list) => list.filter((item) => item.key !== key));
-      playGiftSound(gift, "land");
+      if (pour) endTube(key, index); else playGiftSound(gift, "land");
       setStickers((value) => ({ ...value, [player.id]: [...(value[player.id] ?? []), landed(gift)].slice(-6) }));
       addPile(player.id, landed(gift));
       say({ from: "me", to: player.id, gift });
@@ -980,11 +1028,14 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     const toAt = players.findIndex((player) => player.id === toId);
     if (!gift || toAt < 0) return;
     const key = flyId.current++;
-    setFlying((list) => [...list, { key, gift, from: fromAt >= 0 ? fromAt : toAt, to: toAt, moved: false, ms }]);
-    window.setTimeout(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))), 40);
+    const pour = isDrink(gift) && fromAt >= 0 && fromAt !== toAt;
+    if (pour) { ms = TUBE_MS; startTube(key, fromAt, toAt); playGiftSound(gift, "land"); } else {
+      setFlying((list) => [...list, { key, gift, from: fromAt >= 0 ? fromAt : toAt, to: toAt, moved: false, ms }]);
+      window.setTimeout(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))), 40);
+    }
     window.setTimeout(() => {
       setFlying((list) => list.filter((item) => item.key !== key));
-      playGiftSound(gift, "land");
+      if (pour) endTube(key, toAt); else playGiftSound(gift, "land");
       setStickers((value) => ({ ...value, [toId]: [...(value[toId] ?? []), landed(gift)].slice(-6) }));
       addPile(toId, landed(gift));
       say({ from: fromId, to: toId, gift });
@@ -1259,12 +1310,14 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   </div>
                 );
               })()}
-              <p className={cn("mt-px truncate text-center text-[2.6cqmin] font-semibold leading-tight [text-shadow:0_1px_3px_rgba(0,0,0,0.8)]", hasPass(player) ? "font-black text-[#FFD54A]" : "text-white")}>{player.me ? t("common.you") : player.name}, {player.age}</p>
+              <p className={cn("mt-px truncate text-center text-[2.6cqmin] font-semibold leading-tight [text-shadow:0_1px_3px_rgba(0,0,0,0.8)]", "text-white")}>{player.me ? t("common.you") : player.name}, {player.age}</p>
               {index === turn && !staged ? <p className={cn("absolute whitespace-nowrap", seats[index][1] > 80 ? "bottom-full mb-[0.4cqmin]" : "top-full", "rounded-full bg-black/45 px-[1.6cqmin] text-[2.3cqmin] font-semibold text-white", seats[index][0] > 75 ? "right-0" : seats[index][0] < 25 ? "left-0" : "left-1/2 -translate-x-1/2")}>{seats[index][1] > 80 ? "↓" : "↑"} {t("bottle.spinsBottle")}</p> : null}
             </div>
           );
         })}
 
+        {tubes.map((item) => <PourTube key={item.key} from={seats[item.from]} to={seats[item.to]} ms={item.ms} />)}
+        {bursts.map((item) => <HeartBurst key={item.key} at={seats[item.to]} />)}
         {flying.map((item) => <div key={item.key} className="pointer-events-none absolute z-40 h-[11cqmin] w-[11cqmin] -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_0_10px_rgba(255,240,150,0.95)] transition-[left,top] ease-in-out" style={{ transitionDuration: `${item.ms}ms`, left: `${seats[item.moved ? item.to : item.from][0]}%`, top: `${seats[item.moved ? item.to : item.from][1]}%` }}><Gift anim id={item.gift} className="h-full w-full" /></div>)}
 
         {staged && target !== null ? (
@@ -1611,7 +1664,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                       const owned = ownedSkins.includes(n);
                       return (
                         <li key={n}>
-                          <button onClick={() => { if (owned) return setSkin(n); if (!pay(skinPrice(n))) return setPayNote(true); setOwnedSkins((list) => [...list, n]); setSkin(n); }} aria-pressed={skin === n} aria-label={`${t("bottle.bottles")} ${n + 1}`} className={cn("flex w-full flex-col items-center rounded-lg border-2 bg-[#FDF3E1] py-1", skin === n ? "border-[#8CC63F]" : "border-transparent")}>
+                          <button onClick={() => { if (owned) return chooseSkin(n); if (!pay(skinPrice(n))) return setPayNote(true); setOwnedSkins((list) => [...list, n]); chooseSkin(n); }} aria-pressed={skin === n} aria-label={`${t("bottle.bottles")} ${n + 1}`} className={cn("flex w-full flex-col items-center rounded-lg border-2 bg-[#FDF3E1] py-1", skin === n ? "border-[#8CC63F]" : "border-transparent")}>
                             <span className="h-12" style={{ filter: skinFilter(n) }}><SkinArt set={art} n={n + 1} className="h-full" /></span>
                             <span className="flex items-center gap-0.5 text-[10px] font-bold tabular-nums text-[#7C2D12]">{owned ? "✓" : <><Heart size={10} fill="#F4511E" stroke="none" />{skinPrice(n)}</>}</span>
                           </button>
@@ -1687,7 +1740,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       <div className={cn("relative flex min-h-0 min-w-0 flex-1 flex-col", wide ? "-ml-px" : "-mt-px")}>
         {video && wide ? (
           <div className={cn("relative w-full shrink-0 bg-black", picked !== null || dedicate ? "h-0 overflow-hidden" : "aspect-video max-h-[42%]")}>
-            <iframe ref={frameRef} onLoad={() => window.setTimeout(pushMusic, 800)} src={`https://www.youtube-nocookie.com/embed/${video}?autoplay=1&rel=0&enablejsapi=1`} title="YouTube" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen className="h-full w-full" />
+            <iframe ref={frameRef} onLoad={() => window.setTimeout(pushMusic, 800)} src={ytSrc(video)} title="YouTube" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen className="h-full w-full" />
+            {soundPill}
             <button onClick={() => setVideo(null)} aria-label={t("photos.close")} title={t("photos.close")} className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80"><X size={15} /></button>
           </div>
         ) : null}
@@ -1695,8 +1749,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           <div ref={miniRef} style={mini.x === null ? { right: 0, top: mini.y, width: mini.w } : { left: mini.x, top: mini.y, width: mini.w }} className={cn("absolute z-20 overflow-hidden border border-border bg-surface shadow-lg", mini.x === null ? "rounded-l-2xl border-r-0" : "rounded-2xl")}>
             <div className="flex items-center">
               <img src={players[meIndex].avatar} alt="" title={t("bottle.miniMove")} onPointerDown={(event) => startMini(event, "move")} className="mx-2 h-10 w-10 shrink-0 cursor-move touch-none select-none rounded-full border-2 border-border object-cover" draggable={false} />
-              <div className={cn("aspect-video min-w-0 flex-1 bg-black", miniBusy && "pointer-events-none")}><iframe ref={frameRef} onLoad={() => window.setTimeout(pushMusic, 800)} src={`https://www.youtube-nocookie.com/embed/${video}?autoplay=1&rel=0&enablejsapi=1`} title="YouTube" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen className="h-full w-full" /></div>
+              <div className={cn("aspect-video min-w-0 flex-1 bg-black", miniBusy && "pointer-events-none")}><iframe ref={frameRef} onLoad={() => window.setTimeout(pushMusic, 800)} src={ytSrc(video)} title="YouTube" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen className="h-full w-full" /></div>
             </div>
+            {soundPill}
             <div className="flex items-center gap-1.5 px-2 py-1">
               <button onClick={() => setMusic(music ? 0 : 60)} aria-label={t(music ? "videos.mute" : "videos.unmute")} title={t(music ? "videos.mute" : "videos.unmute")} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted hover:text-text">{music ? <Volume2 size={17} /> : <VolumeX size={17} />}</button>
               <input type="range" min={0} max={100} value={music} onChange={(event) => setMusic(Number(event.target.value))} aria-label={t("bottle.music")} className="min-w-0 flex-1 accent-[#8CC63F]" />
@@ -1708,7 +1763,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         {audio ? (
           <div className="flex items-center gap-2 border-b border-border p-2">
             <Music2 size={18} className="shrink-0 text-[#FF3B30]" />
-            <span className="min-w-0 flex-1"><span className="block truncate text-xs font-semibold text-text">{audio.name}</span><audio src={audio.url} autoPlay controls ref={(node) => { if (node) node.volume = music / 100; }} className="mt-1 h-8 w-full" /></span>
+            <span className="min-w-0 flex-1"><span className="block truncate text-xs font-semibold text-text">{audio.name}</span><audio src={audio.url} autoPlay playsInline controls ref={(node) => { audioRef.current = node; if (node) node.volume = music / 100; }} className="mt-1 h-8 w-full" /></span>
             <button onClick={() => setAudio(null)} aria-label={t("photos.close")} title={t("photos.close")} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-2 text-text"><X size={15} /></button>
           </div>
         ) : null}

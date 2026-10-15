@@ -44,3 +44,6 @@ export function landedName(name: string) {
   return name;
 }
 export const isListed = (name: string) => !hidden.test(name);
+// Drinks: poured through a glass spiral to the receiver, who gets +1 heart (the server pays it, see bottle_is_drink).
+const drinkNames = /^(love|martini|mojito|pinacolada|bluelagoon|b52|daiquiri|sexonthebeach|bloodymary|cherry|vanilla|universal|lifestyle|milkcoctail|tequilashot|juice|romcola|tarhun|cocoscocktail|smoothie|healthdrink|cognacglass|wine|whiskey|champagne|vipchampagne)$/;
+export const isDrink = (gift: string) => gift === "e:🍸" || gift === "e:🍹" || (gift.startsWith("c:") && drinkNames.test(gift.slice(2)));
