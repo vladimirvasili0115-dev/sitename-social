@@ -1453,7 +1453,13 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 );
               })()}
               <p className={cn("mt-px truncate text-center text-[2.6cqmin] font-semibold leading-tight [text-shadow:0_1px_3px_rgba(0,0,0,0.8)]", "text-white")}>{player.me ? t("common.you") : player.name}, {player.age}</p>
-              {index === turn && !staged ? <p className={cn("absolute whitespace-nowrap", seats[index][1] > 80 ? "bottom-full mb-[0.4cqmin]" : "top-full", "rounded-full bg-black/45 px-[1.6cqmin] text-[2.3cqmin] font-semibold text-white", seats[index][0] > 75 ? "right-0" : seats[index][0] < 25 ? "left-0" : "left-1/2 -translate-x-1/2")}>{seats[index][1] > 80 ? "↓" : "↑"} {t("bottle.spinsBottle")}</p> : null}
+              {index === turn && !staged ? (() => {
+                // Like the original: the label sits beside the photo on the table side, with an arrow pointing at the player,
+                // so it never covers the seat below or its badges.
+                const [x, y] = seats[index];
+                const side = x < 30 ? "left" : x > 70 ? "right" : null;
+                return <p className={cn("pointer-events-none absolute z-[6] whitespace-nowrap rounded-full bg-black/55 px-[1.6cqmin] py-[0.3cqmin] text-[2.3cqmin] font-semibold leading-tight text-white shadow", side === "left" ? "left-full top-[40%] ml-[1cqmin] -translate-y-1/2" : side === "right" ? "right-full top-[40%] mr-[1cqmin] -translate-y-1/2" : y > 60 ? "bottom-full left-1/2 mb-[0.6cqmin] -translate-x-1/2" : "left-1/2 top-full mt-[3.2cqmin] -translate-x-1/2")}>{side === "left" ? "← " : side === "right" ? "" : y > 60 ? "↓ " : "↑ "}{t("bottle.spinsBottle")}{side === "right" ? " →" : ""}</p>;
+              })() : null}
             </div>
           );
         })}
