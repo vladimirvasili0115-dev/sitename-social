@@ -38,6 +38,7 @@ export type BottleTop = { list: BottleTopRow[]; me: { place: number; count: numb
 export const bottleTop = (kind: "kisses" | "songs" | "cocktails" | "smiles" | "dear" | "influence", period: "all" | "week" | "day") => call<BottleTop>("bottle_top", { p_kind: kind, p_period: period });
 export const bottleGift = (to: string, gift: string, price: number) => call<number>("bottle_gift", { p_to: to, p_gift: gift, p_price: price });
 export const bottleAdmire = (to: string) => call<number>("bottle_admire", { p_to: to });
+export const bottleAdmireLeave = (to: string) => call<number>("bottle_admire_leave", { p_to: to });
 export type BottleRoom = { id: number; name: string; capacity: number; locked: boolean; mine: boolean; owner: { name: string | null; avatar: string | null } | null; boys: number; girls: number };
 export type BottleRooms = { vip: boolean; rooms: BottleRoom[] };
 export type BottleRoomResult = { table?: number; error?: "password" | "full" | "girls" | "boys" | "gone" | "vip" | "name" | "size" | "banned" };

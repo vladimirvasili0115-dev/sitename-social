@@ -88,7 +88,7 @@ const ka: Record<keyof typeof az, string> = {
   "bottle.top_kisses": "ყველაზე ნაკოცნი", "bottle.top_songs": "ყველაზე მეტი სიმღერა", "bottle.top_cocktails": "ყველაზე მეტი კოქტეილი", "bottle.top_dear": "ყველაზე ძვირფასები", "bottle.top_influence": "ყველაზე გავლენიანები", "bottle.top_smiles": "ყველაზე მეტი ღიმილი", "bottle.topAll": "ყველა დრო", "bottle.topWeek": "ამ კვირაში", "bottle.topDay": "დღეს", "bottle.topPeriod": "პერიოდი", "bottle.topEmpty": "ჯერ არავინაა", "bottle.topHelp": "როგორ მუშაობს რეიტინგი?", "bottle.topHelpText": "რეიტინგში საიტის ყველა მოთამაშეა. 💋 – ყველაზე ნაკოცნი, 🎵 – სიმღერები, ❤️ – ყველაზე ძვირფასები, 💞 – ყველაზე გავლენიანები, 😊 – ღიმილები. პერიოდი ზემოთ აირჩიე. ყვითელი ხაზი შენი ადგილია.",
   "bottle.giftFor": "საჩუქრის გაგზავნა",
   "bottle.pickReceivers": "აირჩიე მიმღებები", "bottle.pickAll": "ყველას არჩევა", "bottle.pickProfile": "აირჩიე ის, ვისი პროფილიც გახსენი",
-  "bottle.openProfile": "პროფილის გახსნა", "bottle.admirer": "თაყვანისმცემელი", "bottle.noAdmirer": "თაყვანისმცემელი არ ჰყავს", "bottle.beAdmirer": "გახდი თაყვანისმცემელი",
+  "bottle.openProfile": "პროფილის გახსნა", "bottle.admirer": "თაყვანისმცემელი", "bottle.leaveCourt": "დატოვება", "bottle.leaveCourtSure": "დარწმუნებული ხარ? დატოვე", "bottle.leftCourt": "შენ შეწყვიტე", "bottle.noAdmirer": "თაყვანისმცემელი არ ჰყავს", "bottle.beAdmirer": "გახდი თაყვანისმცემელი",
   "bottle.menuRatings": "რეიტინგები", "bottle.menuBottles": "ბოთლი", "bottle.menuStyle": "სტილი",
   "bottle.roomFriendsKnown": "მეგობრები და ნაცნობები", "bottle.roomKnown": "საჩუქრები გაგიცვლიათ",
   "privacy.welcomeNoReply": "მისალმების შეტყობინებაზე პასუხის გაცემა არ შეიძლება",

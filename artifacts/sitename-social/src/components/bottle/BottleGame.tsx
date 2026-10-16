@@ -24,7 +24,7 @@ import { playGiftSound, playSfx, playSound, setVolume } from "./sound";
 import { supabase } from "@/lib/supabase";
 import { ensureMessagesLoaded, openRemoteChat, remoteChats, sendRemoteMessage } from "@/lib/messagesSync";
 import { uploadBlob } from "@/lib/media";
-import { bottleAnswer, bottleAchSync, bottleGesture, bottleProgress, bottleSkin, bottleBuyChances, bottleJoin, bottleMove, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleGift, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState } from "@/lib/bottleSync";
+import { bottleAnswer, bottleAchSync, bottleGesture, bottleProgress, bottleSkin, bottleBuyChances, bottleJoin, bottleMove, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleAdmireLeave, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleGift, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState } from "@/lib/bottleSync";
 
 type Player = { id: string; name: string; age: number; female: boolean; avatar: string; me?: boolean; empty?: boolean; zodiac?: number | null };
 type Phase = "waiting" | "spinning" | "choice" | "kissed" | "declined";
@@ -277,6 +277,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [muted, setMutedIds] = useState<string[]>([]);
   const [flagMenu, setFlagMenu] = useState(false);
   const [signOpen, setSignOpen] = useState(false);
+  const [leaveAsk, setLeaveAsk] = useState(false);
+  const meTap = useRef(0);
   const [songFor, setSongFor] = useState<number | null>(null);
   const [songTab, setSongTab] = useState<"popular" | "fav" | "recent" | "search" | "mp3">("popular");
   const [tracks, setTracks] = useState<Track[]>([]);
@@ -1214,6 +1216,29 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     bumpStat("admire");
     say({ from: "me", text: `${t("bottle.courtStarted")} ${player.name} ❤️ ${price}` });
   }
+  // Stop admiring someone: it costs as many hearts as the admiration is worth.
+  function leaveCourt(index: number) {
+    const player = players[index];
+    const current = admirerOf(player);
+    if (!current?.me) return;
+    if (!leaveAsk) return setLeaveAsk(true);
+    setLeaveAsk(false);
+    if (heartsRef.current < current.amount) return setCardNote(`${t("bottle.noHearts")} (${current.amount})`);
+    if (online) {
+      void bottleAdmireLeave(player.id).then((left) => {
+        if (left === null || left < 0) return setCardNote(left === -2 ? `${t("bottle.noHearts")} (${current.amount})` : t("bottle.admireFail"));
+        heartsRef.current = left;
+        setHearts(left);
+        setCardNote(t("bottle.leftCourt"));
+        pullRef.current();
+      });
+      return;
+    }
+    heartsRef.current -= current.amount;
+    setHearts(heartsRef.current);
+    setSuitors((value) => { const next = { ...value }; delete next[player.id]; return next; });
+    setCardNote(t("bottle.leftCourt"));
+  }
   // Press and hold a gift: it keeps going until the finger is lifted (or the hearts run out).
   // A tap sends one gift. Holding for a moment keeps sending until release; a scroll gesture cancels without sending.
   const pressed = useRef<{ timer: number; started: boolean; x: number; y: number } | null>(null);
@@ -1327,6 +1352,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm text-[#6B7280]">{by ? <>{t("bottle.admirer")}: <b className="text-[#1F2937]">{by.me ? t("common.you") : by.name}</b></> : t("bottle.noAdmirer")}</p>
                       <p className="flex items-center gap-1.5 text-[15px] font-bold tabular-nums text-[#1F2937]"><Heart size={17} fill="#F4511E" stroke="none" />{suitor ? suitor.amount : 1}</p>
+                      {suitor?.me && !player.me ? <button onClick={() => leaveCourt(picked)} className={cn("mt-1 whitespace-nowrap rounded-sm px-2.5 py-1 text-[12px] font-semibold text-white shadow-sm", leaveAsk ? "bg-[#D92B2B] hover:bg-[#C02424]" : "bg-[#9CA3AF] hover:bg-[#8A919C]")}>{t(leaveAsk ? "bottle.leaveCourtSure" : "bottle.leaveCourt")} · {suitor.amount} ❤</button> : null}
                       {suitor?.me || player.me ? null : <button onClick={() => court(picked)} className="mt-1 whitespace-nowrap rounded-sm bg-[#7DC243] px-2.5 py-1 text-[12px] font-semibold text-white shadow-sm hover:bg-[#6DB036]">{t("bottle.beAdmirer")}{suitor ? ` · ${suitor.amount + 1}` : ""}</button>}
                     </div>
                   </div>
@@ -1413,7 +1439,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           const active = index === turn || index === target;
           return (
             <div key={player.id} className={cn("absolute -translate-x-1/2 -translate-y-1/2 transition-[left,top]", wide ? "w-[17cqmin]" : "w-[16cqmin]", " duration-[1100ms] ease-in-out motion-reduce:duration-0", staged && active ? "z-30" : index === turn && "z-10")} style={staged && active ? { left: `calc(${CENTER_X}% ${index === turn ? "-" : "+"} 12.5cqmin)`, top: `${STAGE_Y}%` } : { left: `${seats[index][0]}%`, top: `${seats[index][1]}%` }}>
-              <button type="button" onClick={(event) => { event.stopPropagation(); if (dedicate) { if (!player.me) setChosen((list) => (list.includes(player.id) ? list.filter((id) => id !== player.id) : [...list, player.id])); return; } setGiftNote(null); setCardNote(null); setFlagMenu(false); setSignOpen(false); setCard(picked === index || Boolean(player.me)); setPicked(index); }} aria-label={`${player.name}, ${player.age}`} className={cn("group relative block aspect-square w-full rounded-[14%] bg-surface-2 shadow-[0_4px_10px_rgba(0,0,0,0.4)]", staged && index === target ? "ring-[0.9cqmin] ring-[#FFE2A8]" : active ? "ring-4 ring-white" : picked === index ? "ring-4 ring-[#8CC63F]" : player.me ? "ring-2 ring-white/80" : "")}>
+              <button type="button" onClick={(event) => { event.stopPropagation(); if (dedicate) { if (!player.me) setChosen((list) => (list.includes(player.id) ? list.filter((id) => id !== player.id) : [...list, player.id])); return; } setGiftNote(null); setCardNote(null); setFlagMenu(false); setSignOpen(false); setLeaveAsk(false); if (player.me) { if (Date.now() - meTap.current > 15000) { meTap.current = Date.now(); setPicked(null); setPayNote(false); setFrameNote(null); pullProgress.current(); setPanel("gestures"); return; } meTap.current = 0; setCard(true); setPicked(index); return; } setCard(picked === index); setPicked(index); }} aria-label={`${player.name}, ${player.age}`} className={cn("group relative block aspect-square w-full rounded-[14%] bg-surface-2 shadow-[0_4px_10px_rgba(0,0,0,0.4)]", staged && index === target ? "ring-[0.9cqmin] ring-[#FFE2A8]" : active ? "ring-4 ring-white" : picked === index ? "ring-4 ring-[#8CC63F]" : player.me ? "ring-2 ring-white/80" : "")}>
                 <img src={player.avatar} alt="" className="h-full w-full rounded-[14%] object-cover" />
                 {frameOf(player) ? <FrameArt id={frameOf(player)} className={cn("pointer-events-none absolute z-[1]", frameOf(player) >= FIRST_ORIGINAL ? "-inset-[17%] h-[134%] w-[134%]" : "-inset-[9%] h-[118%] w-[118%]")} /> : null}
                 {seatGes[player.me ? "me" : player.id] ? <img key={seatGes[player.me ? "me" : player.id].key} src={`/custom/anim/ges_${seatGes[player.me ? "me" : player.id].id}.webp`} alt="" className="pointer-events-none absolute -inset-[12%] z-[4] h-[124%] w-[124%] max-w-none animate-[bottle-pop_0.25s_ease-out] object-contain drop-shadow-[0_3px_4px_rgba(0,0,0,0.4)]" /> : null}
