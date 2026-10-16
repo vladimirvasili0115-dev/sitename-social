@@ -1415,7 +1415,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             <div key={player.id} className={cn("absolute -translate-x-1/2 -translate-y-1/2 transition-[left,top]", wide ? "w-[17cqmin]" : "w-[16cqmin]", " duration-[1100ms] ease-in-out motion-reduce:duration-0", staged && active ? "pointer-events-none z-30" : index === turn && "z-10")} style={staged && active ? { left: `calc(${CENTER_X}% ${index === turn ? "-" : "+"} 12.5cqmin)`, top: `${STAGE_Y}%` } : { left: `${seats[index][0]}%`, top: `${seats[index][1]}%` }}>
               <button type="button" onClick={(event) => { event.stopPropagation(); if (dedicate) { if (!player.me) setChosen((list) => (list.includes(player.id) ? list.filter((id) => id !== player.id) : [...list, player.id])); return; } setGiftNote(null); setCardNote(null); setFlagMenu(false); setSignOpen(false); setCard(picked === index || Boolean(player.me)); setPicked(index); }} aria-label={`${player.name}, ${player.age}`} className={cn("group relative block aspect-square w-full rounded-[14%] bg-surface-2 shadow-[0_4px_10px_rgba(0,0,0,0.4)]", staged && index === target ? "ring-[0.9cqmin] ring-[#FFE2A8]" : active ? "ring-4 ring-white" : picked === index ? "ring-4 ring-[#8CC63F]" : player.me ? "ring-2 ring-white/80" : "")}>
                 <img src={player.avatar} alt="" className="h-full w-full rounded-[14%] object-cover" />
-                {frameOf(player) ? <FrameArt id={frameOf(player)} className="pointer-events-none absolute -inset-[9%] z-[1] h-[118%] w-[118%]" /> : null}
+                {frameOf(player) ? <FrameArt id={frameOf(player)} className={cn("pointer-events-none absolute z-[1]", frameOf(player) >= FIRST_ORIGINAL ? "-inset-[17%] h-[134%] w-[134%]" : "-inset-[9%] h-[118%] w-[118%]")} /> : null}
                 {seatGes[player.me ? "me" : player.id] ? <img key={seatGes[player.me ? "me" : player.id].key} src={`/custom/anim/ges_${seatGes[player.me ? "me" : player.id].id}.webp`} alt="" className="pointer-events-none absolute -inset-[12%] z-[4] h-[124%] w-[124%] max-w-none animate-[bottle-pop_0.25s_ease-out] object-contain drop-shadow-[0_3px_4px_rgba(0,0,0,0.4)]" /> : null}
                 {player.me || dedicate ? null : <span aria-hidden="true" className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-[14%] bg-black/35 opacity-0 transition-opacity group-hover:opacity-100"><GiftIcon className="h-[38%] w-[38%] text-white" strokeWidth={1.6} /></span>}
                 {dedicate && !player.me ? (chosen.includes(player.id)
@@ -1897,7 +1897,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                     <div className="flex items-center gap-4 border-b border-[#E5E7EB] px-4 pb-3 pt-1">
                       <span className="relative block h-24 w-24 shrink-0 p-[9%]">
                         <img src={me.avatar} alt="" className="h-full w-full rounded-lg object-cover" />
-                        {pick ? <FrameArt id={pick} className="pointer-events-none absolute inset-0 h-full w-full" /> : null}
+                        {pick ? <FrameArt id={pick} className={cn("pointer-events-none absolute", pick >= FIRST_ORIGINAL ? "-inset-[8%] h-[116%] w-[116%]" : "inset-0 h-full w-full")} /> : null}
                         <span className="absolute inset-x-[9%] bottom-[9%] truncate rounded-b-lg bg-black/45 px-1 text-center text-[10px] font-semibold text-white">{me.name}, {me.age}</span>
                       </span>
                       <div className="min-w-0 flex-1">
