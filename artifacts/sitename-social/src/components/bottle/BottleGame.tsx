@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { customFile, useCustomArt } from "@/lib/customArt";
 import { durationSeconds, rankSongs, songScore } from "@/lib/songSearch";
 import { HeartBurst } from "./PourTube";
+import { Fireworks, fireworksLevel } from "./Fireworks";
 import { GESTURES, GIFT_PRICES, GIFT_RULES, missing, type Progress, type RuleKind } from "./giftRules";
 import { customGiftNames, customPlace, customPrice, landedName, isDrink } from "./customGifts";
 const landed = (gift: string) => (gift.startsWith("c:") ? `c:${landedName(gift.slice(2))}` : gift);
@@ -226,7 +227,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [lines, setLines] = useState<Line[]>([{ id: 1, from: "b3", text: smallTalk[0] }, { id: 2, from: "b6", to: "b1" }]);
   const [draft, setDraft] = useState("");
   // Price of a gift by its id (used by the "send it back" button in the chat).
-  const priceOf = (gift: string) => gift.startsWith("c:") ? customPrice(gift.slice(2)) : [...giftChoices, ...lockedGifts].find(([id]) => id === gift)?.[1] ?? 0;
+  const priceOf = (gift: string) => gift.startsWith("c:") ? GIFT_PRICES[gift.slice(2)] ?? customPrice(gift.slice(2)) : [...giftChoices, ...lockedGifts].find(([id]) => id === gift)?.[1] ?? 0;
   // A small gem next to the name in the chat for players with a frame or the premium pass.
   const decorOf = (id: string): string | null => { const seat = net?.seats.find((item) => item.id === (id === "me" ? net.me : id)); if (!seat) return null; const frame = seat.frame ?? 0; return frameStone(frame) ?? (frame > 0 || seat.pass ? "💎" : null); };
   // Long press / double click on a chat message opens a small menu (reply, translate, report).
@@ -264,6 +265,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [flying, setFlying] = useState<{ key: number; gift: string; from: number; to: number; moved: boolean; ms: number }[]>([]);
   // A drink landed: the receiver gets a "+1 heart" burst.
   const [bursts, setBursts] = useState<{ key: number; to: number }[]>([]);
+  const [shows, setShows] = useState<{ key: number; to: number; level: number }[]>([]);
   const heartsRef = useRef(12);
   const flyId = useRef(1);
   const hold = useRef<number | null>(null);
@@ -1141,6 +1143,17 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     setPayNote(false);
     setPanel("wheel");
   }
+  // Expensive gifts (100 hearts and up) end with fireworks over the receiver; pricier gifts get a bigger show.
+  function fireworks(key: number, to: number, price: number) {
+    const level = fireworksLevel(price);
+    if (!level || to < 0) return;
+    setShows((list) => [...list, { key, to, level }]);
+    playSfx("sparkling1");
+    const booms = [0, 1, 2, 3, 4].slice(0, level + 1);
+    booms.forEach((n) => window.setTimeout(() => playSfx(n % 2 ? "boom2" : "boom1"), 470 + n * 560));
+    if (level >= 3) window.setTimeout(() => playSfx("jackpot_firecracker"), 900);
+    window.setTimeout(() => setShows((list) => list.filter((item) => item.key !== key)), 1300 + [0, 3, 5, 7, 9][level] * 280 + 600);
+  }
   function heartBurst(key: number, to: number) {
     setBursts((list) => [...list, { key, to }]);
     window.setTimeout(() => setBursts((list) => list.filter((item) => item.key !== key)), 1700);
@@ -1164,6 +1177,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       setFlying((list) => list.filter((item) => item.key !== key));
       playGiftSound(gift, "land");
       if (pour) heartBurst(key, index);
+      fireworks(key, index, price);
       setStickers((value) => ({ ...value, [player.id]: [...(value[player.id] ?? []), landed(gift)].slice(-6) }));
       addPile(player.id, landed(gift));
       say({ from: "me", to: player.id, gift });
@@ -1190,6 +1204,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       setFlying((list) => list.filter((item) => item.key !== key));
       playGiftSound(gift, "land");
       if (pour) heartBurst(key, toAt);
+      fireworks(key, toAt, priceOf(gift));
       setStickers((value) => ({ ...value, [toId]: [...(value[toId] ?? []), landed(gift)].slice(-6) }));
       addPile(toId, landed(gift));
       say({ from: fromId, to: toId, gift });
@@ -1502,6 +1517,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         })}
 
         {bursts.map((item) => <HeartBurst key={item.key} at={seats[item.to]} />)}
+        {shows.map((item) => <Fireworks key={`fw-${item.key}`} at={seats[item.to]} level={item.level} seed={item.key} />)}
         {flying.map((item) => <div key={item.key} className="pointer-events-none absolute z-40 h-[11cqmin] w-[11cqmin] -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_0_10px_rgba(255,240,150,0.95)] transition-[left,top] ease-in-out" style={{ transitionDuration: `${item.ms}ms`, left: `${seats[item.moved ? item.to : item.from][0]}%`, top: `${seats[item.moved ? item.to : item.from][1]}%` }}><Gift anim id={item.gift} className="h-full w-full" /></div>)}
 
         {staged && target !== null ? (
