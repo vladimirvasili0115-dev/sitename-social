@@ -24,7 +24,7 @@ import { playGiftSound, playSfx, playSound, setVolume } from "./sound";
 import { supabase } from "@/lib/supabase";
 import { ensureMessagesLoaded, openRemoteChat, remoteChats, sendRemoteMessage } from "@/lib/messagesSync";
 import { uploadBlob } from "@/lib/media";
-import { bottleAnswer, bottleAchSync, bottleGesture, bottleProgress, bottleSkin, bottleBuyChances, bottleJoin, bottleMove, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleAdmireLeave, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleGift, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState } from "@/lib/bottleSync";
+import { bottleAnswer, bottleAchSync, bottleGesture, bottleProgress, bottleSkin, bottleBuyChances, bottleJoin, bottleMove, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleAdmireLeave, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleGift, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState } from "@/lib/bottleSync";
 
 type Player = { id: string; name: string; age: number; female: boolean; avatar: string; me?: boolean; empty?: boolean; zodiac?: number | null };
 type Phase = "waiting" | "spinning" | "choice" | "kissed" | "declined";
@@ -328,7 +328,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [roomTab, setRoomTab] = useState<"list" | "create">("list");
   const [showPass, setShowPass] = useState(false);
   const [rooms, setRooms] = useState<BottleTables | null>(null);
-  const [waitFor, setWaitFor] = useState<{ table: number; position: number } | null>(null);
+  const [waitFor, setWaitFor] = useState<{ table: number; position: number; back?: boolean } | null>(null);
   const [roomNote, setRoomNote] = useState(false);
   const [chances, setChances] = useState(0);
   const [wheelTurn, setWheelTurn] = useState(0);
@@ -468,6 +468,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
 
   // Live table: sit down, then ask the server for the table once a second (this is also the "I am here" signal).
   const lastChat = useRef(0);
+  const backCancel = useRef(0);
+  const backWait = useRef(false);
   // The first answer from the server only fills the chat; later ones also play the events (gifts, compliments, kicks).
   const primed = useRef(false);
   const pullRef = useRef<() => void>(() => {});
@@ -480,7 +482,15 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       busy = true;
       try {
         let data = await bottleSync(lastChat.current);
-        if (!data) { await bottleJoin(); data = await bottleSync(lastChat.current); }
+        if (!data) {
+          // Lost the seat (weak internet, reload): first try the same table again, waiting in its queue when it is full.
+          const back = Date.now() - backCancel.current < 8000 ? null : await bottleRejoin();
+          if (!alive) return;
+          if (back?.full && back.table) { backWait.current = true; setWaitFor((value) => (value && value.table === back.table && value.position === (back.position ?? 1) && value.back ? value : { table: back.table!, position: back.position ?? 1, back: true })); setPanel((value) => value ?? "tables"); return; }
+          if (!back?.table) await bottleJoin();
+          if (backWait.current) { backWait.current = false; setWaitFor(null); setPanel((value) => (value === "tables" ? null : value)); }
+          data = await bottleSync(lastChat.current);
+        }
         if (!alive || !data) return;
         const first = !primed.current;
         primed.current = true;
@@ -689,7 +699,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     setPanel(null);
     pullRef.current();
   }
-  const waitTable = waitFor?.table;
+  const waitTable = waitFor && !waitFor.back ? waitFor.table : undefined;
   useEffect(() => {
     if (!waitTable) return;
     const timer = window.setInterval(() => void moveTo(waitTable), 2500);
@@ -1439,7 +1449,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           const active = index === turn || index === target;
           return (
             <div key={player.id} className={cn("absolute -translate-x-1/2 -translate-y-1/2 transition-[left,top]", wide ? "w-[17cqmin]" : "w-[16cqmin]", " duration-[1100ms] ease-in-out motion-reduce:duration-0", staged && active ? "z-30" : index === turn && "z-10")} style={staged && active ? { left: `calc(${CENTER_X}% ${index === turn ? "-" : "+"} 12.5cqmin)`, top: `${STAGE_Y}%` } : { left: `${seats[index][0]}%`, top: `${seats[index][1]}%` }}>
-              <button type="button" onClick={(event) => { event.stopPropagation(); if (dedicate) { if (!player.me) setChosen((list) => (list.includes(player.id) ? list.filter((id) => id !== player.id) : [...list, player.id])); return; } setGiftNote(null); setCardNote(null); setFlagMenu(false); setSignOpen(false); setLeaveAsk(false); if (player.me) { if (Date.now() - meTap.current > 15000) { meTap.current = Date.now(); setPicked(null); setPayNote(false); setFrameNote(null); pullProgress.current(); setPanel("gestures"); return; } meTap.current = 0; setCard(true); setPicked(index); return; } setCard(picked === index); setPicked(index); }} aria-label={`${player.name}, ${player.age}`} className={cn("group relative block aspect-square w-full rounded-[14%] bg-surface-2 shadow-[0_4px_10px_rgba(0,0,0,0.4)]", staged && index === target ? "ring-[0.9cqmin] ring-[#FFE2A8]" : active ? "ring-4 ring-white" : picked === index ? "ring-4 ring-[#8CC63F]" : player.me ? "ring-2 ring-white/80" : "")}>
+              <button type="button" onClick={(event) => { event.stopPropagation(); if (dedicate) { if (!player.me) setChosen((list) => (list.includes(player.id) ? list.filter((id) => id !== player.id) : [...list, player.id])); return; } setGiftNote(null); setCardNote(null); setFlagMenu(false); setSignOpen(false); setLeaveAsk(false); if (player.me) { if (Date.now() - meTap.current > 15000 || picked !== index) { meTap.current = Date.now(); setFrameNote(null); pullProgress.current(); setCard(false); setPicked(index); return; } meTap.current = 0; setCard(true); setPicked(index); return; } setCard(picked === index); setPicked(index); }} aria-label={`${player.name}, ${player.age}`} className={cn("group relative block aspect-square w-full rounded-[14%] bg-surface-2 shadow-[0_4px_10px_rgba(0,0,0,0.4)]", staged && index === target ? "ring-[0.9cqmin] ring-[#FFE2A8]" : active ? "ring-4 ring-white" : picked === index ? "ring-4 ring-[#8CC63F]" : player.me ? "ring-2 ring-white/80" : "")}>
                 <img src={player.avatar} alt="" className="h-full w-full rounded-[14%] object-cover" />
                 {frameOf(player) ? <FrameArt id={frameOf(player)} className={cn("pointer-events-none absolute z-[1]", frameOf(player) >= FIRST_ORIGINAL ? "-inset-[17%] h-[134%] w-[134%]" : "-inset-[9%] h-[118%] w-[118%]")} /> : null}
                 {seatGes[player.me ? "me" : player.id] ? <img key={seatGes[player.me ? "me" : player.id].key} src={`/custom/anim/ges_${seatGes[player.me ? "me" : player.id].id}.webp`} alt="" className="pointer-events-none absolute -inset-[12%] z-[4] h-[124%] w-[124%] max-w-none animate-[bottle-pop_0.25s_ease-out] object-contain drop-shadow-[0_3px_4px_rgba(0,0,0,0.4)]" /> : null}
@@ -1675,7 +1685,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                     {waitFor ? (
                       <div role="status" className="mb-2 rounded-xl bg-[#FEF3C7] p-3 text-center text-sm font-semibold text-[#92400E]">
                         {t("bottle.roomFull1")} {waitFor.table} {t("bottle.roomFull2")} {waitFor.position === 1 ? t("bottle.roomFirst") : `${t("bottle.roomPlace")} ${waitFor.position}`}
-                        <button onClick={() => { setWaitFor(null); void bottleQueueLeave(); }} className="mt-2 block w-full rounded-lg bg-white py-1.5 text-xs font-bold text-[#92400E]">{t("bottle.roomCancel")}</button>
+                        <button onClick={() => { if (waitFor.back) { backCancel.current = Date.now(); backWait.current = false; } setWaitFor(null); void bottleQueueLeave(); }} className="mt-2 block w-full rounded-lg bg-white py-1.5 text-xs font-bold text-[#92400E]">{t("bottle.roomCancel")}</button>
                       </div>
                     ) : null}
                     {roomNote ? <p role="status" className="mb-2 rounded-lg bg-[#FEE2E2] p-2 text-center text-xs font-semibold text-[#991B1B]">{t("bottle.roomGone")}</p> : null}
@@ -2056,11 +2066,24 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             ) : picked !== null ? (
             <div className="flex items-center gap-2 bg-white px-3 py-1.5">
               <button onClick={() => setCard(true)} aria-label={`${players[picked].name}, ${players[picked].age}`} className="shrink-0"><img src={players[picked].avatar} alt="" className="h-7 w-7 rounded-full object-cover" /></button>
-              <p className="min-w-0 flex-1 text-[12px] leading-[1.15] text-[#B4B9C2]">{t("bottle.giftFor")}<span className="block truncate text-[13px] font-bold text-[#9AA3AE]">{players[picked].name}</span></p>
+              {players[picked].me ? <p className="min-w-0 flex-1 truncate text-[14px] font-bold text-[#9AA3AE]">{t("bottle.gestures")}</p> : <p className="min-w-0 flex-1 text-[12px] leading-[1.15] text-[#B4B9C2]">{t("bottle.giftFor")}<span className="block truncate text-[13px] font-bold text-[#9AA3AE]">{players[picked].name}</span></p>}
               {players[picked].me ? null : <button onClick={() => chooseMode(true)} aria-label={t("bottle.dedicate")} title={t("bottle.dedicate")} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#5CC93B] text-white hover:bg-[#4DB52E]"><Plus size={17} strokeWidth={3} /></button>}
               <button onClick={() => setPicked(null)} aria-label={t("photos.close")} title={t("photos.close")} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#B4B9C2] text-white hover:bg-[#9AA3AE]"><X size={15} strokeWidth={3} /></button>
             </div>
             ) : null}
+            {!dedicate && picked !== null && players[picked].me ? (
+            <div role="menu" className={cn("grid min-h-0 flex-1 content-start gap-0.5 overflow-y-auto bg-white p-2", wide ? "grid-cols-[repeat(auto-fill,minmax(68px,1fr))]" : "grid-cols-[repeat(auto-fill,minmax(56px,1fr))]")}>
+              {GESTURES.map(([id, price, kind, amount]) => {
+                const left = missing([kind, amount], progress);
+                return (
+                  <button key={id} role="menuitem" aria-disabled={left !== 0} onClick={() => sendGesture(id, price, [kind, amount])} title={left ? (left < 0 ? t("bottle.vipOnly") : lockNote(kind, left)) : undefined} className="group flex flex-col items-center gap-0.5 rounded-xl p-1 hover:bg-[#FFF4E5]">
+                    <img src={`/custom/gifts/ges_${id}.webp`} alt="" loading="lazy" className={cn("object-contain transition-transform duration-150 group-hover:scale-110", wide ? "h-14 w-14" : "h-11 w-11", left !== 0 && "opacity-75 grayscale")} />
+                    <span className="flex items-center gap-1 text-xs font-bold tabular-nums text-[#3F3F46]">{left < 0 ? <b className="rounded bg-[#F59E0B] px-1 text-[10px] text-white">VIP</b> : left ? <span aria-label={`${left}`} className="text-[11px] opacity-70">🔒</span> : <><Heart size={13} fill="#E8352B" stroke="none" />{price}</>}</span>
+                  </button>
+                );
+              })}
+            </div>
+            ) : (
             <div role="menu" className={cn("grid min-h-0 flex-1 content-start gap-0.5 overflow-y-auto bg-white p-2", wide ? "grid-cols-[repeat(auto-fill,minmax(68px,1fr))]" : "grid-cols-[repeat(auto-fill,minmax(56px,1fr))]")}>
               {[...giftChoices.slice(0, 2), ...customGiftNames(art).filter((name) => !name.startsWith("ges_")).map((name) => [`c:${name}`, GIFT_PRICES[name] ?? customPrice(name), missing(GIFT_RULES[`c:${name}`], progress)] as [string, number, number]), ...giftChoices.slice(2), ...lockedGifts.map(([gift, price, need]) => [gift, price, Math.max(0, need - progress.kisses)] as [string, number, number])].map(([gift, price, need], order) => (
                 <button key={`${gift}-${order}`} role="menuitem" aria-disabled={need === -1 ? !vip : Boolean(need)} onPointerDown={(event) => pressGift(giftTargets, gift, price, need, event.clientX, event.clientY)} onPointerMove={(event) => { const state = pressed.current; if (state && !state.started && Math.hypot(event.clientX - state.x, event.clientY - state.y) > 8) cancelPress(); }} onPointerUp={() => releaseGift(giftTargets, gift, price, need)} onPointerLeave={cancelPress} onPointerCancel={cancelPress} onContextMenu={(event) => event.preventDefault()} onKeyDown={(event) => { if (event.key === "Enter" && !event.repeat) giveMany(giftTargets, gift, price, need); }} aria-label={`${t("gifts.send")} ${price}`} className={cn("group flex touch-pan-y select-none flex-col items-center gap-0.5 rounded-xl p-1 hover:bg-[#FFF4E5]", (need === -1 ? !vip : Boolean(need)) ? "grayscale [&>img]:opacity-75" : hearts < price && "opacity-50")}>
@@ -2069,6 +2092,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 </button>
               ))}
             </div>
+            )}
+            {frameNote && picked !== null && players[picked].me ? <p role="status" className="border-t border-border px-3 py-2 text-center text-xs font-semibold text-[#B45309]">{frameNote}</p> : null}
             {giftNote ? <p role="status" className="border-t border-border px-3 py-2 text-center text-xs font-semibold text-text">{giftNote}</p> : null}
           </div>
         ) : null}
@@ -2144,7 +2169,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         </div>
         <form onSubmit={handleChat} className={cn("flex items-center gap-2 border-t border-border p-2.5", picked !== null && "hidden")}>
           <input ref={chatRef} value={draft} onChange={(event) => setDraft(event.target.value)} maxLength={200} aria-label={t("messages.placeholder")} placeholder={t("messages.placeholder")} autoComplete="off" className="h-11 min-w-0 flex-1 rounded-full border border-border bg-surface-2 px-4 text-sm text-text outline-none placeholder:text-muted focus:border-accent" />
-          <button type="button" onClick={() => { setPayNote(false); setFrameNote(null); pullProgress.current(); setPanel("gestures"); }} aria-label={t("bottle.gestures")} title={t("bottle.gestures")} className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface-2 text-xl">😊</button>
+          <button type="button" onClick={() => { setFrameNote(null); pullProgress.current(); if (dedicate) chooseMode(false); setCard(false); meTap.current = Date.now(); setPicked(meIndex); }} aria-label={t("bottle.gestures")} title={t("bottle.gestures")} className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface-2 text-xl">😊</button>
           <button type="submit" disabled={!draft.trim()} aria-label={t("messages.send")} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#EE8A2B] text-white disabled:opacity-40"><SendHorizontal size={17} /></button>
         </form>
       </div>
