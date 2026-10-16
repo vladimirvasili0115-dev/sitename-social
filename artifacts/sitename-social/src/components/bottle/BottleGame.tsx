@@ -334,7 +334,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [wheelPrize, setWheelPrize] = useState<number | null>(null);
   const [mySmiles, setMySmiles] = useState(0);
   const wheelLock = useRef(false);
-  const [topKind, setTopKind] = useState<"help" | "kisses" | "songs" | "cocktails" | "smiles">("kisses");
+  const [topKind, setTopKind] = useState<"help" | "kisses" | "songs" | "dear" | "influence" | "smiles">("kisses");
   const [topPeriod, setTopPeriod] = useState<"all" | "week" | "day">("all");
   const [topData, setTopData] = useState<BottleTop | null>(null);
   const [sent, setSent] = useState<Record<string, number>>({});
@@ -1776,7 +1776,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   <Link href="/settings" className={row}><UserRoundCog size={20} className="w-6 text-[#3B82F6]" />{t("bottle.profileSettings")}</Link>
                 </div>
               ) : panel === "top" ? (() => {
-                const kinds = [["kisses", "💋"], ["songs", "🎵"], ["cocktails", "🍸"], ["smiles", "😊"]] as const;
+                const kinds = [["kisses", "💋"], ["songs", "🎵"], ["dear", "❤️"], ["influence", "💞"], ["smiles", "😊"]] as const;
                 const local = seated.map((player) => ({ id: player.id, name: player.me ? t("common.you") : player.name, avatar: player.avatar, count: topKind === "kisses" ? kisses[player.id] ?? 0 : 0 })).filter((row) => row.count > 0).sort((a, b) => b.count - a.count).map((row, index) => ({ ...row, place: index + 1 }));
                 const rows = online ? topData?.list ?? null : local;
                 const meId = online ? net?.me : "me";
@@ -1784,7 +1784,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 const lips = (on: boolean, size = 26) => <svg viewBox="0 0 32 22" width={size} height={size * 0.69} aria-hidden="true"><path d="M16 5.5C13.5 1.5 9 .8 6 2.6 3.5 4 1.6 7.6.6 10.4 4.6 9.6 8.6 9.4 16 10.6c7.4-1.2 11.4-1 15.4-.2-1-2.8-2.9-6.4-5.4-7.8-3-1.8-7.5-1.1-10 2.9Z" fill={on ? "#E8232E" : "#9CC7EA"} /><path d="M.6 10.4c3 6.2 8.6 10.6 15.4 10.6s12.4-4.4 15.4-10.6c-4 .9-8 1.4-15.4 1.4S4.6 11.3.6 10.4Z" fill={on ? "#C8101C" : "#8BBBE3"} /><path d="M7 14.5c2.6 1.6 5.6 2.2 9 2.2" stroke="#FFFFFF" strokeOpacity={on ? 0.55 : 0.35} strokeWidth="1.4" fill="none" strokeLinecap="round" /></svg>;
                 const tabIcon = (kind: string, on: boolean) => kind === "kisses" ? lips(on) : kind === "songs"
                   ? <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M9 18.5V5.2l11-2.2v12.6" stroke={on ? "#7A4DE8" : "#9CC7EA"} strokeWidth="2.4" fill="none" strokeLinejoin="round" /><ellipse cx="6" cy="18.6" rx="3.4" ry="2.7" fill={on ? "#7A4DE8" : "#9CC7EA"} /><ellipse cx="17" cy="15.8" rx="3.4" ry="2.7" fill={on ? "#7A4DE8" : "#9CC7EA"} /></svg>
-                  : kind === "cocktails" ? <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M12 21.5S2.5 15.6 2.5 8.9C2.5 5.6 5 3.2 8 3.2c1.8 0 3.2.9 4 2.2.8-1.3 2.2-2.2 4-2.2 3 0 5.5 2.4 5.5 5.7 0 6.7-9.5 12.6-9.5 12.6Z" fill={on ? "#F0435A" : "#9CC7EA"} /></svg>
+                  : kind === "dear" ? <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><defs><linearGradient id="top-dear" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#FF8A1E" /><stop offset="1" stopColor="#E8400C" /></linearGradient></defs><path d="M12 21.5S2.5 15.6 2.5 8.9C2.5 5.6 5 3.2 8 3.2c1.8 0 3.2.9 4 2.2.8-1.3 2.2-2.2 4-2.2 3 0 5.5 2.4 5.5 5.7 0 6.7-9.5 12.6-9.5 12.6Z" fill={on ? "url(#top-dear)" : "#9CC7EA"} /></svg>
+                  : kind === "influence" ? <svg viewBox="0 0 30 24" width="30" height="24" aria-hidden="true"><defs><linearGradient id="top-infl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#FF8A1E" /><stop offset="1" stopColor="#E8400C" /></linearGradient></defs><path d="M12 21.5S2.5 15.6 2.5 8.9C2.5 5.6 5 3.2 8 3.2c1.8 0 3.2.9 4 2.2.8-1.3 2.2-2.2 4-2.2 3 0 5.5 2.4 5.5 5.7 0 6.7-9.5 12.6-9.5 12.6Z" transform="translate(0 1) scale(0.82)" fill={on ? "url(#top-infl)" : "#8BBBE3"} /><path d="M12 21.5S2.5 15.6 2.5 8.9C2.5 5.6 5 3.2 8 3.2c1.8 0 3.2.9 4 2.2.8-1.3 2.2-2.2 4-2.2 3 0 5.5 2.4 5.5 5.7 0 6.7-9.5 12.6-9.5 12.6Z" transform="translate(10 2.5) scale(0.82)" fill={on ? "url(#top-infl)" : "#9CC7EA"} stroke={on ? "#FFFFFF" : "#B8DAF3"} strokeWidth="1.2" /></svg>
                   : <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill={on ? "#FFC21A" : "#9CC7EA"} /><circle cx="8.6" cy="9.6" r="1.4" fill="#FFFFFF" /><circle cx="15.4" cy="9.6" r="1.4" fill="#FFFFFF" /><path d="M7 13.6c1.2 2.4 3 3.4 5 3.4s3.8-1 5-3.4" stroke="#FFFFFF" strokeWidth="1.8" fill="none" strokeLinecap="round" /></svg>;
                 const icon = tabIcon(topKind, true);
                 const me = players[meIndex];
