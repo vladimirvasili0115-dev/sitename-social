@@ -882,9 +882,10 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     showSeatGesture("me", id);
     playSfx("light_tap");
     bumpStat("gestures");
-    if (online) { void bottleGesture(id).then((left) => { if (typeof left === "number" && left >= 0) { heartsRef.current = left; setHearts(left); pullProgress.current(); } }); return; }
+    if (online) { void bottleGesture(id).then((left) => { if (typeof left === "number" && left >= 0) { heartsRef.current = left; setHearts(left); pullProgress.current(); pullRef.current(); } }); return; }
     heartsRef.current -= price;
     setHearts(heartsRef.current);
+    setMySmiles((value) => value + 1);
     say({ from: "me", gesture: id });
   }
   const imTop = topIds.has("me");
@@ -1452,7 +1453,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
               <button type="button" onClick={(event) => { event.stopPropagation(); if (dedicate) { if (!player.me) setChosen((list) => (list.includes(player.id) ? list.filter((id) => id !== player.id) : [...list, player.id])); return; } setGiftNote(null); setCardNote(null); setFlagMenu(false); setSignOpen(false); setLeaveAsk(false); if (player.me) { if (Date.now() - meTap.current > 15000 || picked !== index) { meTap.current = Date.now(); setFrameNote(null); pullProgress.current(); setCard(false); setPicked(index); return; } meTap.current = 0; setCard(true); setPicked(index); return; } setCard(picked === index); setPicked(index); }} aria-label={`${player.name}, ${player.age}`} className={cn("group relative block aspect-square w-full rounded-[14%] bg-surface-2 shadow-[0_4px_10px_rgba(0,0,0,0.4)]", staged && index === target ? "ring-[0.9cqmin] ring-[#FFE2A8]" : active ? "ring-4 ring-white" : picked === index ? "ring-4 ring-[#8CC63F]" : player.me ? "ring-2 ring-white/80" : "")}>
                 <img src={player.avatar} alt="" className="h-full w-full rounded-[14%] object-cover" />
                 {frameOf(player) ? <FrameArt id={frameOf(player)} className={cn("pointer-events-none absolute z-[1]", frameOf(player) >= FIRST_ORIGINAL ? "-inset-[17%] h-[134%] w-[134%]" : "-inset-[9%] h-[118%] w-[118%]")} /> : null}
-                {seatGes[player.me ? "me" : player.id] ? <img key={seatGes[player.me ? "me" : player.id].key} src={`/custom/anim/ges_${seatGes[player.me ? "me" : player.id].id}.webp`} alt="" className="pointer-events-none absolute -inset-[12%] z-[4] h-[124%] w-[124%] max-w-none animate-[bottle-pop_0.25s_ease-out] object-contain drop-shadow-[0_3px_4px_rgba(0,0,0,0.4)]" /> : null}
+                {seatGes[player.me ? "me" : player.id] ? <img key={seatGes[player.me ? "me" : player.id].key} src={`/custom/anim/ges_${seatGes[player.me ? "me" : player.id].id}.webp`} alt="" className="pointer-events-none absolute inset-[3%] z-[4] h-[94%] w-[94%] max-w-none animate-[bottle-pop_0.25s_ease-out] object-contain drop-shadow-[0_3px_4px_rgba(0,0,0,0.4)]" /> : null}
                 {player.me || dedicate ? null : <span aria-hidden="true" className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-[14%] bg-black/35 opacity-0 transition-opacity group-hover:opacity-100"><GiftIcon className="h-[38%] w-[38%] text-white" strokeWidth={1.6} /></span>}
                 {dedicate && !player.me ? (chosen.includes(player.id)
                   ? <span className="absolute inset-0 z-10 flex items-center justify-center rounded-[14%] bg-[#8CC63F]/85 ring-[0.5cqmin] ring-[#B678E8]"><Check className="h-[45%] w-[45%] text-white drop-shadow" strokeWidth={4} /></span>
