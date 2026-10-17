@@ -636,7 +636,16 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const ytSrc = (id: string) => `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&playsinline=1&rel=0&iv_load_policy=3&enablejsapi=1${startAt > 2 ? `&start=${startAt}` : ""}${startMuted ? "&mute=1" : ""}`;
   // The first tap gives the sound: jump to where the song is for everybody else.
   useEffect(() => { if (touched && video && startMuted) ytCall("seekTo", [songNow(), true]); }, [touched]); // eslint-disable-line react-hooks/exhaustive-deps
-  const soundPill = !touched && startMuted ? <button onClick={(event) => { event.stopPropagation(); setTouched(true); }} className="absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-black/70 px-3 py-1.5 text-xs font-bold text-white shadow animate-pulse"><Volume2 size={15} />{t("videos.unmute")}</button> : null;
+  // A newcomer's video starts silent (browsers allow sound only after a tap): a big, lively "turn the sound on" cover invites the tap.
+  const soundPill = !touched && startMuted ? (
+    <button onClick={(event) => { event.stopPropagation(); setTouched(true); }} aria-label={t("videos.unmute")} className="group absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-[radial-gradient(circle,rgba(0,0,0,0.25),rgba(0,0,0,0.6))] text-white">
+      <span className="relative flex h-14 w-14 items-center justify-center">
+        <span aria-hidden="true" className="absolute inset-0 rounded-full bg-[#FF4D6D] opacity-60 motion-safe:animate-ping" />
+        <span className="relative flex h-14 w-14 items-center justify-center rounded-full bg-[linear-gradient(180deg,#FF6B81,#E8203A)] shadow-[0_6px_18px_rgba(232,32,58,0.55)] ring-4 ring-white/80 transition-transform group-hover:scale-110"><Volume2 size={28} strokeWidth={2.4} /></span>
+      </span>
+      <span className="rounded-full bg-black/70 px-3 py-1 text-[13px] font-black shadow [text-shadow:0_1px_2px_rgba(0,0,0,0.6)] motion-safe:animate-pulse">{t("bottle.tapSound")}</span>
+    </button>
+  ) : null;
   const byId = (id: string) => players.find((player) => player.id === id);
   const staged = phase !== "waiting" && phase !== "spinning" && target !== null;
   const myRole: "spinner" | "target" | null = staged ? (turn === meIndex ? "spinner" : target === meIndex ? "target" : null) : null;
