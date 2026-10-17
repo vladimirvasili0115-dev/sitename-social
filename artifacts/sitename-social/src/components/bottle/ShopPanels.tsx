@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Check, ChevronRight, Copy, Heart, Lock } from "lucide-react";
 import { useTranslation } from "@/i18n/useTranslation";
 import type { TranslationKey } from "@/i18n/LanguageProvider";
@@ -19,57 +19,51 @@ export const shopPacks: { hearts: number; price: number; bonus?: number; tag?: "
 export const activeLevels: [number, number][] = [[30, 5], [60, 10], [120, 20]];
 export const formatActive = (secs: number, t: (key: TranslationKey) => string) => `${Math.floor(secs / 3600)}${t("bottle.hourShort")} ${Math.floor((secs % 3600) / 60)}${t("bottle.minShort")}`;
 
+// The original bank (bottle-html5 BankDialog + bank CSS): a pink window with the heart pattern on top and
+// 90×146 white cards, each with a coloured stripe, a picture and a small button. Our own cards (active play,
+// season pass, channel, VIP, friends, compliments) are drawn the same way as the original's.
 export function ShopPanel({ hearts, activeSecs, payNote, onActive, onTelegram, onVip, onInvite, onCompliments, onPack, onPass }: {
   hearts: number; activeSecs: number; payNote: boolean; onActive: () => void; onTelegram: () => void; onVip: () => void; onInvite: () => void; onCompliments: () => void; onPack: () => void; onPass: () => void;
 }) {
   const { t } = useTranslation();
-  const tile = "relative flex flex-col items-center rounded-2xl bg-white p-2 text-center shadow-[0_2px_6px_rgba(150,30,50,0.15)]";
-  const blue = "mt-auto h-8 w-full rounded-lg bg-[linear-gradient(180deg,#4FA8FF,#2B7DE0)] text-[12px] font-bold text-white shadow hover:brightness-110";
+  const O = "/custom/orig/";
+  const bg = (name: string) => ({ backgroundImage: `url(${O}${name}.svg)` });
+  const heart = (n: number, big = false) => <span className={cn("whitespace-nowrap bg-no-repeat font-bold text-[rgb(255,62,0)]", big ? "pl-[18px] [background-position:left_-1px] [background-size:17px_18px]" : "pl-3 [background-position:left_1px] [background-size:11px_9px]")} style={bg("bank_heart")}>{n.toLocaleString("ru-RU")}</span>;
+  const withHeart = (text: string, n: number) => { const [a, b = ""] = text.split("{n}"); return <>{a}{heart(n)}{b}</>; };
+  const card = (key: string, stripe: string, desc: ReactNode, icon: ReactNode, button: ReactNode, label?: ReactNode) => (
+    <li key={key} className="relative box-border flex h-[146px] w-[90px] flex-col items-center justify-between rounded-[10px] bg-white p-2 shadow-[0_2px_4px_-1px_rgba(0,0,0,0.2)]">
+      {label}
+      <span aria-hidden="true" className="absolute left-0 top-7 h-[65px] w-[90px] bg-[length:90px_65px] bg-no-repeat" style={bg(stripe)} />
+      <div className="relative z-0 mt-1.5 flex flex-1 flex-col items-center text-center text-[16px] leading-tight">{desc}</div>
+      <div className="relative z-0 flex items-center justify-center">{icon}</div>
+      {button}
+    </li>
+  );
+  const btn = (color: string, onClick: () => void, children: ReactNode) => <button type="button" onClick={onClick} className={cn("mt-[11px] flex h-[26px] w-[74px] shrink-0 items-center justify-center overflow-hidden text-ellipsis whitespace-nowrap rounded-[5px] px-0.5 leading-[26px] text-white active:brightness-90", typeof children === "string" && children.length > 9 ? "text-[12px]" : "text-[14px]")} style={{ backgroundColor: color }}>{children}</button>;
+  const blue = "rgb(47,137,233)", green = "rgb(151,202,49)", cyan = "rgb(7,189,240)";
+  const icon = (name: string, w: number, h: number) => <span aria-hidden="true" className="block bg-contain bg-center bg-no-repeat" style={{ ...bg(name), width: w, height: h }} />;
+  const small = "text-[10px] leading-[1.1] text-[#424242]";
   return (
-    <div className="max-h-[min(86cqmin,70vh)] space-y-2.5 overflow-y-auto px-0.5 pb-1 pt-1 [scrollbar-width:thin]">
-      <p className="flex items-center justify-center gap-1.5 rounded-xl bg-white/90 py-1.5 text-sm font-bold text-[#7F1D1D]">{t("bottle.balance")}: <H size={15} /><span className="tabular-nums">{hearts}</span></p>
-      <div className="flex items-center gap-3 rounded-2xl bg-white p-2.5 shadow-[0_2px_6px_rgba(150,30,50,0.15)]">
-        <Pic e="⏰" className="h-12 w-12 shrink-0" />
-        <div className="min-w-0 flex-1"><p className="text-sm font-black leading-tight text-[#1F2937]">{t("bottle.activeTitle")}</p><p className="text-xs font-semibold text-[#7C3AED]">{t("bottle.activeToday")}: {formatActive(activeSecs, t)}</p></div>
-        <button onClick={onActive} className="flex h-9 shrink-0 items-center rounded-xl bg-[linear-gradient(180deg,#A16BFF,#7C3AED)] px-3 text-xs font-bold text-white shadow hover:brightness-110">{t("bottle.more2")}<ChevronRight size={14} /></button>
+    <div className="relative flex max-h-full min-h-0 flex-col overflow-hidden rounded-[17px]">
+      <span aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 -z-0 h-[238px] rounded-t-[17px] bg-repeat-x [background-position-y:-8px] [background-size:auto_238px]" style={bg("bank_bg")} />
+      <div className="relative flex shrink-0 flex-col items-center">
+        <p className="mb-1 mt-[15px] text-[14px] font-bold text-white">{t("bottle.bankTitle")}</p>
+        <p className="mb-2.5 flex items-center gap-1 rounded-full bg-white/25 px-2.5 py-0.5 text-[12px] font-bold text-white">{t("bottle.balance")}: <span className="pl-[14px] bg-no-repeat [background-position:left_center] [background-size:12px_12px]" style={bg("bank_heart")}>{hearts.toLocaleString("ru-RU")}</span></p>
       </div>
-      <button onClick={onPass} className="flex w-full items-center gap-3 rounded-2xl bg-[linear-gradient(180deg,#FFC94A,#F59E0B)] p-2.5 text-left text-[#3A2400] shadow-[0_2px_6px_rgba(160,90,0,0.3)] hover:brightness-105">
-        <Pic e="🎟️" className="h-11 w-11 shrink-0" />
-        <span className="min-w-0 flex-1"><span className="block text-sm font-black leading-tight">{t("bottle.passPremium")}</span><span className="block text-[11px] font-semibold">{t("bottle.passShort")}</span></span>
-        <ChevronRight size={20} />
-      </button>
-      <div className="flex items-center gap-3 rounded-2xl bg-[linear-gradient(180deg,#36A6FF,#1C7FE6)] p-2.5 text-white shadow-[0_2px_6px_rgba(20,80,160,0.3)]">
-        <Pic e="🔔" className="h-11 w-11 shrink-0" />
-        <p className="min-w-0 flex-1 text-sm font-black leading-tight">{t("bottle.channelJoin")}</p>
-        <button onClick={onTelegram} className="h-9 shrink-0 rounded-xl bg-white px-3 text-xs font-bold text-[#1C7FE6] shadow hover:brightness-95">{t("bottle.channelGo")}</button>
-      </div>
-      <ul className="grid grid-cols-3 gap-2">
-        <li className={tile}>
-          <span className="text-[13px] font-black leading-none text-[#F5A300]">VIP<span className="block text-[9px] tracking-widest">STATUS</span></span>
-          <Pic e="👑" className="my-1.5 h-12 w-12" />
-          <button onClick={onVip} className={blue}>{t("bottle.details")}</button>
-        </li>
-        <li className={tile}>
-          <span className="text-[10px] font-semibold leading-tight text-[#374151]">{t("bottle.forFriend")} <b className="whitespace-nowrap text-[#E11D48]"><H size={11} />20</b></span>
-          <span className="relative my-1.5 block h-12 w-14"><Pic e="👦" className="absolute left-0 top-1 h-10 w-10" /><Pic e="👧" className="absolute right-0 top-0 h-10 w-10" /></span>
-          <button onClick={onInvite} className={blue}>{t("bottle.details")}</button>
-        </li>
-        <li className={tile}>
-          <span className="text-[10px] font-semibold leading-tight text-[#374151]">{t("bottle.forCompliments")} <b className="whitespace-nowrap text-[#E11D48]"><H size={11} />10</b></span>
-          <Pic e="💌" className="my-1.5 h-12 w-12" />
-          <button onClick={onCompliments} className={blue}>{t("bottle.details")}</button>
-        </li>
-        {shopPacks.map((pack) => (
-          <li key={pack.hearts} className={cn(tile, "pt-3")}>
-            {pack.tag ? <span className={cn("absolute -top-1.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md px-1.5 py-px text-[9px] font-bold text-white shadow", pack.tag === "best" ? "bg-[#E11D8F]" : "bg-[#7C3AED]")}>{t(pack.tag === "best" ? "bottle.packBest" : "bottle.packHit")}</span> : null}
-            <span className="flex items-center gap-0.5 text-[15px] font-black tabular-nums leading-tight text-[#E8352B]"><H size={14} />{pack.hearts.toLocaleString("ru-RU")}</span>
-            <span className="h-3 text-[9px] font-black leading-3 text-[#F59E0B]">{pack.bonus ? `${pack.bonus}% BONUS` : ""}</span>
-            <Pic e={pack.art} className="my-1 h-12 w-12" />
-            <button onClick={onPack} className="mt-auto h-8 w-full rounded-lg bg-[linear-gradient(180deg,#9BD65A,#6DB33F)] text-[12px] font-bold tabular-nums text-white shadow hover:brightness-110">{pack.price.toLocaleString("ru-RU")} {t("bottle.currency")}</button>
-          </li>
-        ))}
+      <ul className="relative grid min-h-0 grid-cols-3 gap-[5px] overflow-y-auto px-2.5 pb-2.5 pt-[3px] [scrollbar-width:none] [@media(min-width:700px)]:grid-cols-4">
+        {card("pass", "bank_gold_bg", <span className="text-center text-[10px] font-bold uppercase text-[rgb(255,144,0)]">{t("bottle.bankPremium")}</span>, icon("bank_premium_pass", 62, 39), btn(blue, onPass, t("bottle.details")))}
+        {card("vip", "bank_gold_bg", <><span className="font-bold text-[rgb(255,144,0)]">VIP</span><span className="-mt-[3px] text-[11px] text-[rgb(255,144,0)]">{t("bottle.bankStatus")}</span></>, icon("bank_vip", 55, 37), btn(blue, onVip, t("bottle.details")))}
+        {card("friends", "bank_violet_bg", <span className={small}>{withHeart(t("bottle.bankInvite"), 20)}</span>, icon("bank_friends", 68, 40), btn(blue, onInvite, t("bottle.details")))}
+        {card("compliments", "bank_cyan_bg", <span className={small}>{withHeart(t("bottle.bankCompliment"), 10)}</span>, icon("bank_compliment", 70, 47), btn(blue, onCompliments, t("bottle.details")))}
+        {shopPacks.map((pack, i) => card(`p${pack.hearts}`, "bank_gold_bg",
+          <><span className="pl-[18px] font-bold text-[rgb(255,62,0)] bg-no-repeat [background-position:left_-1px] [background-size:17px_18px]" style={bg("bank_heart")}>{pack.hearts.toLocaleString("ru-RU")}</span>{pack.bonus ? <span className="-mt-[3px] text-[11px] text-[rgb(255,143,0)]">{pack.bonus}% {t("bottle.bankBonus")}</span> : null}</>,
+          <span className="relative block bg-contain bg-no-repeat" style={{ ...bg(`bank_opt_${shopPacks.length - i}`), ...[{ w: 50, h: 24 }, { w: 72, h: 33 }, { w: 55, h: 41 }, { w: 68, h: 42 }, { w: 63, h: 50 }, { w: 88, h: 52 }, { w: 86, h: 53 }].map(({ w, h }) => ({ width: w, height: h }))[Math.min(6, shopPacks.length - i - 1)] }} />,
+          btn(green, onPack, <span className="tabular-nums">{pack.price.toLocaleString("ru-RU")} {t("bottle.currency")}</span>),
+          pack.tag ? <span className="absolute -left-1 -right-1 -top-1 z-[1] mx-auto flex h-[18px] w-fit min-w-16 max-w-[98px] justify-center rounded-[3px] px-1.5 text-[8.5px] font-bold text-white shadow-[0_1px_2px_rgba(0,0,0,0.25)]" style={{ backgroundColor: pack.tag === "best" ? "#E6007E" : "#A24DC2" }}><span className="mt-[2px] whitespace-nowrap">{t(pack.tag === "best" ? "bottle.bankProfit" : "bottle.bankHit")}</span></span> : undefined))}
+        {card("active", "bank_blue_bg", <span className={small}>{t("bottle.activeTitle")}<b className="mt-0.5 block text-[rgb(47,137,233)]">{formatActive(activeSecs, t)}</b></span>, <Pic e="⏰" className="h-10 w-10" />, btn(cyan, onActive, t("bottle.details")))}
+        {card("channel", "bank_blue_bg", <span className={small}>{t("bottle.channelJoin")}</span>, <Pic e="🔔" className="h-10 w-10" />, btn(cyan, onTelegram, t("bottle.channelGo")))}
       </ul>
-      {payNote ? <p role="status" className="rounded-xl bg-white/90 p-2 text-center text-xs font-semibold text-[#7F1D1D]">{t("bottle.paySoon")}</p> : null}
+      {payNote ? <p role="status" className="relative mx-2.5 mb-2.5 rounded-[5px] border border-[rgb(239,102,102)] bg-[rgb(255,245,207)] px-2 py-1.5 text-center text-[12px] font-bold text-[#424242]">{t("bottle.paySoon")}</p> : null}
     </div>
   );
 }
