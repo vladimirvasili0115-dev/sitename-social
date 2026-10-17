@@ -215,3 +215,9 @@ button { cursor: pointer; }
   70% { transform: translate(-4px, -6px) rotate(-4deg) scale(0.95); }
   85% { transform: translate(0, 0) rotate(0deg); }
 }
+/* Cocktails, ice cream and other body gifts fly straight to the photo's bottom-right corner and shrink to the badge size. */
+@keyframes gift-fly-corner {
+  0% { transform: scale(0.8); }
+  10%, 85% { transform: scale(1.2); }
+  100% { transform: scale(0.7); }
+}
