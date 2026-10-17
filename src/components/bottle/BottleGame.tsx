@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type FormEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import Link from "next/link";
-import { AtSign, LifeBuoy, Pause, Play, Clock, Flame, Search, Star, Ban, Flag, Mail, Gift as GiftIcon, Heart, Home, Maximize, ArrowUpRight, BadgeCheck, Crown, DoorOpen, Eye, EyeOff, KeyRound, Lock, Mars, Trash2, Venus, BookOpen, MessageSquare, Check, Menu, UserRound, Minimize, Music, Plus, UserCheck, Music2, RefreshCw, SendHorizontal, Settings, Trophy, UserPlus, UserRoundCog, Users, Volume2, VolumeX, X } from "lucide-react";
+import { AtSign, ChevronDown, LifeBuoy, Pause, Play, Clock, Flame, Search, Star, Ban, Flag, Mail, Gift as GiftIcon, Heart, Home, Maximize, ArrowUpRight, BadgeCheck, Crown, DoorOpen, Eye, EyeOff, KeyRound, Lock, Mars, Trash2, Venus, BookOpen, MessageSquare, Check, Menu, UserRound, Minimize, Music, Plus, UserCheck, Music2, RefreshCw, SendHorizontal, Settings, Trophy, UserPlus, UserRoundCog, Users, Volume2, VolumeX, X } from "lucide-react";
 import type { GiftId } from "@/types";
 import { cartoonAvatar } from "./avatarArt";
 import { useTranslation } from "@/i18n/useTranslation";
@@ -1657,7 +1657,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     );
   };
   // A place is only shown when it is in the first 5000, like the original.
-  const rankChip = (rank: number | null | undefined) => rank && rank < 5000 ? <span title={t("bottle.rankOf").replace("{n}", String(rank))} className="ml-1 rounded-full bg-[#F3F4F6] px-1.5 text-[11px] font-bold text-[#6B7280]">#{rank}</span> : null;
+  const rankLine = (rank: number | null | undefined) => rank && rank < 5000 ? <span className="block text-[11px] font-semibold text-[#9CA3AF]">{t("bottle.rankOf").replace("{n}", rank.toLocaleString("ru-RU"))}</span> : null;
+  const [statsOpen, setStatsOpen] = useState(false);
   useEffect(() => { if (card && picked !== null && players[picked]) void loadProfile(players[picked]); }, [card, picked]); // eslint-disable-line react-hooks/exhaustive-deps
   // The profile card: on a computer it sits in the middle of the whole game, on a phone over the table.
   const cardView = card && picked !== null ? (() => {
@@ -1670,13 +1671,14 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             { key: "statKisses", color: "#E0282E", icon: <Gift id="e:💋" className="h-[22px] w-[22px]" />, value: online ? seat?.total ?? 0 : kisses[player.id] ?? 0 },
             { key: "statSongs", color: "#A23BC9", icon: <Music2 size={19} className="text-[#A23BC9]" strokeWidth={2.6} />, value: online ? seat?.songs ?? 0 : ((picked + 3) * 7919) % 900 },
             { key: "statSmiles", color: "#F08A00", icon: <Gift id="e:😊" className="h-[21px] w-[21px]" />, value: online ? seat?.smiles ?? 0 : player.me ? mySmiles : ((picked + 5) * 104729) % 600 },
-          ] as const;
+          ];
           const profileHref = player.me ? "/profile" : online ? `/user?id=${player.id}` : null;
           const sign = player.zodiac !== null && player.zodiac !== undefined ? zodiacSigns[player.zodiac] : null;
           // The card's buttons: on a computer a row of round icons, on a phone a full-width bar with a word under each one.
           // "Write in the chat" puts the player's name into the table chat; the envelope opens a private message.
           const actions = [
             ...(player.me ? [] : [{ key: "kick", short: t("bottle.cardKick"), label: t("bottle.kick"), color: "bg-[radial-gradient(circle_at_35%_30%,#FF7A7A,#D92B2B)]", icon: <Ban size={22} strokeWidth={2.4} />, go: () => askKick(player) }]),
+            ...(player.me ? [{ key: "ach", short: t("bottle.achievements"), label: t("bottle.achievements"), color: "bg-[radial-gradient(circle_at_35%_30%,#C4A1FF,#7C4DDB)]", icon: <Trophy size={22} strokeWidth={2.2} />, go: () => { setCard(false); setPanel("achievements"); } }] : []),
             { key: "gift", short: t("bottle.cardGift"), label: t("gifts.send"), color: "bg-[radial-gradient(circle_at_35%_30%,#FFA05C,#F0661E)]", icon: <GiftIcon size={23} strokeWidth={2.2} />, go: () => setCard(false) },
             ...(player.me ? [] : [
               { key: "friend", short: t("bottle.cardFriend"), label: t("bottle.addFriend"), color: "bg-[radial-gradient(circle_at_35%_30%,#FFD15C,#F5A300)]", icon: <BadgeCheck size={24} strokeWidth={2.2} />, go: () => sendFriend(player) },
@@ -1686,7 +1688,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           ];
           const info = prof && prof.id === player.id ? prof.data : null;
           const harem = online ? info?.harem ?? 0 : Object.entries(suitors).filter(([target, item]) => item.by === (player.me ? "me" : player.id) && target !== player.id).reduce((sum, [, item]) => sum + item.amount, 0);
-          const ranks: Record<string, number | null | undefined> = { statKisses: info?.kisses_rank, statSongs: info?.songs_rank, statSmiles: info?.smiles_rank };
+          const ranks: Record<string, number | null | undefined> = { statKisses: info?.kisses_rank, statSongs: info?.songs_rank, statSmiles: info?.smiles_rank, price: info?.price_rank, harem: info?.harem_rank };
           const cup = online ? info?.league ?? null : player.me && (kisses.me ?? 0) >= 100 ? 0 : null;
           const signBadge = sign ? <button onClick={() => setSignOpen(!signOpen)} aria-expanded={signOpen} aria-label={t("bottle.zodiac")} title={t(`bottle.sign${player.zodiac}` as "bottle.sign0")} className="flex h-5 w-5 rotate-45 items-center justify-center rounded-[4px] bg-[#6D3BD8] text-white shadow ring-1 ring-white/70"><span className="-rotate-45 text-[11px] leading-none">{sign}</span></button> : null;
           return (
@@ -1719,17 +1721,29 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   {seat?.status ? <p className="mb-2.5 border-b border-[#E5E7EB] pb-2 text-[13px] italic leading-snug text-[#374151]">{seat.status}”</p> : null}
                   <div className="flex items-start gap-2">
                     <div className="min-w-0 flex-1 space-y-2">
-                      {stats.map((item) => <p key={item.key} className="flex items-center gap-2.5 text-[15px] font-bold tabular-nums" style={{ color: item.color }}><span aria-hidden="true" className="flex w-[22px] justify-center">{item.icon}</span>{item.value.toLocaleString("ru-RU")}{rankChip(ranks[item.key])}<span className="sr-only">{t(`bottle.${item.key}`)}</span></p>)}
+                      {[stats[0], stats[1], ...(statsOpen ? [
+                        { key: "price", color: "#F4511E", icon: <Heart size={19} fill="#F4511E" stroke="none" />, value: suitor ? suitor.amount : 0 },
+                        { key: "harem", color: "#A23BC9", icon: <Heart size={19} fill="#A23BC9" stroke="none" />, value: harem },
+                      ] : []), stats[2]].map((item) => (
+                        <div key={item.key} className="flex items-center gap-2.5" title={t(`bottle.${item.key}` as "bottle.price")}>
+                          <span aria-hidden="true" className="flex w-[22px] shrink-0 justify-center">{item.icon}</span>
+                          <span className="min-w-0 leading-tight">
+                            <b className="block text-[15px] tabular-nums" style={{ color: item.color }}>{item.value.toLocaleString("ru-RU")}</b>
+                            {rankLine(ranks[item.key])}
+                          </span>
+                          <span className="sr-only">{t(`bottle.${item.key}` as "bottle.price")}</span>
+                        </div>
+                      ))}
                     </div>
                     {cup !== null ? <span title={t(`bottle.league${cup}` as "bottle.league0")}><LeagueBadge league={cup} className="h-14 w-14 shrink-0 drop-shadow" /></span> : topIds.has(player.id) ? <Gift id="e:🏆" className="h-16 w-16 shrink-0" /> : null}
                   </div>
-                  <div className="relative my-2.5 border-t border-[#E5E7EB]"><span aria-hidden="true" className="absolute left-1/2 top-0 h-3 w-6 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#E5E7EB] bg-white text-center text-[8px] leading-[10px] text-[#9CA3AF]">︿</span></div>
+                  <div className="relative my-2.5 border-t border-[#E5E7EB]"><button onClick={() => setStatsOpen(!statsOpen)} aria-expanded={statsOpen} aria-label={t("bottle.price")} className="absolute left-1/2 top-0 flex h-4 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-[#E5E7EB] bg-white text-[#9CA3AF] hover:text-[#4B5563]"><ChevronDown size={13} strokeWidth={3} className={cn("transition-transform", statsOpen && "rotate-180")} /></button></div>
                   <div className={cn("flex items-center", wide ? "gap-3" : "gap-2")}>
                     {by && !by.self ? <img src={by.avatar || cartoonAvatar(3, false)} alt="" className={cn("shrink-0 rounded-md object-cover shadow", wide ? "h-16 w-16" : "h-11 w-11")} /> : <span aria-hidden="true" className={cn("flex shrink-0 items-end justify-center overflow-hidden rounded-md border border-[#D9DEE5] bg-[#EEF1F5]", wide ? "h-16 w-16" : "h-11 w-11")}><UserRound size={wide ? 52 : 36} className="-mb-2 text-[#C3CAD4]" fill="#DDE2E9" strokeWidth={1.2} /></span>}
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm text-[#6B7280]">{by && !by.self ? <>{t("bottle.admirer")}: <b className="text-[#1F2937]">{by.me ? t("common.you") : by.name}</b></> : t("bottle.noAdmirer")}</p>
-                      <p className="flex items-center gap-1.5 text-[15px] font-bold tabular-nums text-[#1F2937]"><span className="text-xs font-semibold text-[#6B7280]">{t("bottle.price")}:</span><Heart size={17} fill="#F4511E" stroke="none" />{suitor ? suitor.amount : 1}{rankChip(info?.price_rank)}</p>
-                      {harem > 0 ? <p className="flex items-center gap-1.5 text-[13px] font-bold tabular-nums text-[#1F2937]"><span className="text-xs font-semibold text-[#6B7280]">{t("bottle.harem")}:</span><Heart size={14} fill="#A23BC9" stroke="none" />{harem}{rankChip(info?.harem_rank)}</p> : null}
+                      <p className="flex items-center gap-1.5 text-[15px] font-bold tabular-nums text-[#1F2937]"><span className="text-xs font-semibold text-[#6B7280]">{t("bottle.price")}:</span><Heart size={17} fill="#F4511E" stroke="none" />{suitor ? suitor.amount : 1}</p>
+                      {rankLine(info?.price_rank)}
                       {player.me && suitor && !suitor.self ? <button onClick={() => court(picked)} className="mt-1 whitespace-nowrap rounded-sm bg-[#F59E0B] px-2.5 py-1 text-[12px] font-semibold text-white shadow-sm hover:bg-[#E08E00]">{t("bottle.freeSelf")} · {suitor.amount + 1} ❤</button> : null}
                       {suitor?.me || player.me ? null : <button onClick={() => court(picked)} className="mt-1 whitespace-nowrap rounded-sm bg-[#7DC243] px-2.5 py-1 text-[12px] font-semibold text-white shadow-sm hover:bg-[#6DB036]">{t("bottle.beAdmirer")}{suitor ? ` · ${suitor.amount + 1}` : ""}</button>}
                     </div>
