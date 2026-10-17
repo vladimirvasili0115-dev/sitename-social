@@ -1751,7 +1751,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 <button onClick={() => setCard(false)} aria-label={t("photos.close")} title={t("photos.close")} className="absolute -right-3 -top-3 z-20 flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#8DC63F] bg-white text-[#8DC63F] shadow hover:bg-[#F0FBEA]"><X size={19} strokeWidth={3} /></button>
                 {label ? <span aria-hidden="true" className="absolute -left-[19px] top-[15px] z-10 h-[43px] w-[64px] bg-contain bg-no-repeat" style={{ backgroundImage: `url(${P}${label})` }} /> : null}
                 <div className={cn("isolate flex h-full overflow-hidden rounded-[17px] bg-white", land ? "flex-row" : "max-h-[inherit] flex-col")}>
-                <div className={cn("relative shrink-0 overflow-hidden bg-[#F7F5F6]", land ? "aspect-square h-full" : "aspect-square w-full")}>
+                <div className={cn("relative shrink-0 overflow-hidden bg-[#F7F5F6]", land ? "aspect-square h-full" : "aspect-square max-h-[38dvh] w-full")}>
                   <img src={player.avatar} alt="" className="h-full w-full object-cover object-top" />
                   <div aria-hidden="true" className="pointer-events-none absolute bottom-0 h-[30%] w-full bg-[linear-gradient(transparent,rgba(0,0,0,0.7))]" />
                   <div className="absolute bottom-1 left-1/2 flex w-[70%] -translate-x-1/2 flex-col items-center text-center text-[14px] text-white">
@@ -1770,8 +1770,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                     </div>
                   ) : null}
                 </div>
-                <div className={cn("flex min-h-0 flex-col overflow-auto bg-white px-[15px] pb-[15px] text-[#1F2937]", land ? "w-[300px] min-w-[265px] max-w-[370px]" : "w-full")}>
-                  <div className="flex min-h-0 flex-col overflow-y-auto overflow-x-hidden">
+                <div className={cn("flex min-h-0 flex-col overflow-y-auto overflow-x-hidden overscroll-contain bg-white px-[15px] pb-[15px] text-[#1F2937] [-webkit-overflow-scrolling:touch] [touch-action:pan-y]", land ? "w-[300px] min-w-[265px] max-w-[370px]" : "w-full")}>
+                  <div className="flex shrink-0 flex-col">
                     {seat?.status ? <><p className="my-[10px] line-clamp-2 shrink-0 text-[14px] italic leading-4">{seat.status}</p><div className="h-px w-full shrink-0 bg-[#F2F2F2]" /></> : <div className="h-[10px] shrink-0" />}
                     <div className={cn("flex shrink-0 justify-between", big && "max-h-[145px]")}>
                       <div className="flex flex-col items-start">
@@ -1787,7 +1787,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                     </div>
                     <div className="flex shrink-0 items-center">
                       <div className="h-px w-full bg-[#F2F2F2]" />
-                      <button onClick={() => setStatsOpen(!statsOpen)} aria-expanded={statsOpen} aria-label={t("bottle.price")} className={cn("mx-[7px] h-[15px] w-[35px] shrink-0 bg-contain bg-no-repeat transition-transform duration-[250ms] ease-linear", statsOpen && "rotate-180")} style={{ backgroundImage: `url(${P}expand.svg)` }} />
+                      <button onClick={() => setStatsOpen(!statsOpen)} aria-expanded={statsOpen} aria-label={t("bottle.price")} className={cn("relative mx-[7px] h-[15px] w-[35px] shrink-0 bg-contain bg-no-repeat transition-transform duration-[250ms] ease-linear after:absolute after:-inset-x-4 after:-inset-y-3 after:content-['']", statsOpen && "rotate-180")} style={{ backgroundImage: `url(${P}expand.svg)` }} />
                       <div className="h-px w-full bg-[#F2F2F2]" />
                     </div>
                     <div className="flex shrink-0 py-[10px]">
