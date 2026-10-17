@@ -258,7 +258,7 @@ function GamePanel({ id }: { id: string }) {
   const [data, setData] = useState<GameState | null>(null);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
-  const [drafts, setDrafts] = useState<Record<string, string>>({ hearts: "100", dj: "10", chances: "5", kiss_fire: "5", refuse_slap: "5" });
+  const [drafts, setDrafts] = useState<Record<string, string>>({ hearts: "100", kisses: "100", dj: "10", chances: "5", kiss_fire: "5", refuse_slap: "5" });
   useEffect(() => { void gameState(id).then((value) => { if (value && typeof value === "object") setData(value); }); }, [id]);
   async function apply(work: () => Promise<unknown>) {
     setBusy(true);
@@ -277,7 +277,7 @@ function GamePanel({ id }: { id: string }) {
       {until ? <button type="button" disabled={busy} onClick={() => void apply(() => gameGrant(id, kind, 0))} className="h-8 rounded-full border border-danger px-2.5 text-[11px] font-semibold text-danger hover:bg-surface-2 disabled:opacity-50">{t("admin.gameRemove")}</button> : null}
     </div>
   );
-  const amountRow = (key: "hearts" | "dj" | "chances" | "kiss_fire" | "refuse_slap", label: string, have: number | undefined, color: string) => (
+  const amountRow = (key: "hearts" | "kisses" | "dj" | "chances" | "kiss_fire" | "refuse_slap", label: string, have: number | undefined, color: string) => (
     <form key={key} onSubmit={(event) => { event.preventDefault(); const value = Math.trunc(Number(drafts[key])); if (!value) return; void apply(() => (key === "hearts" ? grantHearts(id, value) : gameGrant(id, key, value))); }} className="flex flex-wrap items-center gap-1.5">
       <span className="w-20 shrink-0 text-xs font-semibold" style={{ color }}>{label}</span>
       <span className="min-w-[110px] text-[11px] text-muted">{t("admin.gameHave").replace("{n}", String(have ?? 0))}</span>
@@ -289,6 +289,7 @@ function GamePanel({ id }: { id: string }) {
     <div className="mt-3 space-y-2 rounded-xl border border-border bg-surface-2/40 p-3">
       <p className="text-xs font-semibold">{t("admin.gameTitle")}</p>
       {amountRow("hearts", t("admin.hearts"), data?.hearts, "#F4511E")}
+      {amountRow("kisses", t("admin.bonus_kisses"), data?.kisses, "#DB3100")}
       {days("vip", [1, 7, 30, 365], data?.vip_until ?? null, "#D97706")}
       {days("top", [1, 7, 30], data?.top_until ?? null, "#CA8A04")}
       {amountRow("dj", t("admin.gameDj"), data?.dj, "#B45D8C")}

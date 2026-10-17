@@ -32,7 +32,7 @@ export async function fetchIsOwner(): Promise<boolean> {
   return (await call<boolean>("is_owner")) === true;
 }
 // One player's game state and grants (owner and moderators): hearts, VIP and TOP days, DJ score, chances, boosters.
-export type GameState = { hearts: number; dj: number; chances: number; vip_until: string | null; top_until: string | null; kiss_fire: number; refuse_slap: number };
+export type GameState = { hearts: number; kisses?: number; dj: number; chances: number; vip_until: string | null; top_until: string | null; kiss_fire: number; refuse_slap: number };
 export type GameFlags = { vip: boolean; top: boolean; hearts?: number; kisses?: number; songs?: number };
 export const gameFlags = (ids: string[]) => call<Record<string, GameFlags>>("admin_game_flags", { ids });
 export const gameState = (id: string) => call<GameState>("admin_game_state", { target: id });
