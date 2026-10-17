@@ -15,6 +15,7 @@ import { HeartBurst } from "./PourTube";
 import { Fireworks, fireworksLevel } from "./Fireworks";
 import { GESTURES, GIFT_PRICES, GIFT_RULES, missing, type Progress, type RuleKind } from "./giftRules";
 import { OrigButton, OrigPopup } from "./OrigPopup";
+import { siteMusic } from "@/components/music/siteMusic";
 import { customGiftNames, customPlace, customPrice, landedName, isDrink } from "./customGifts";
 const landed = (gift: string) => (gift.startsWith("c:") ? `c:${landedName(gift.slice(2))}` : gift);
 import { AchievementsPanel } from "./AchievementsPanel";
@@ -489,6 +490,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     window.setTimeout(() => setHeartFlights((current) => current.filter((item) => item.key < base || item.key >= base + count)), 2200);
   }, [hearts]);
   const [video, setVideo] = useState<string | null>(null);
+  // The site's own music player pauses while the game is open, so two songs do not play at once.
+  useEffect(() => siteMusic.pause(), []);
   // Songs from the MP3 tab play in "music mode": a small square player with the title, no big video.
   const [musicMode, setMusicMode] = useState(false);
   const [tune, setTune] = useState({ playing: false, cur: 0, dur: 0 });

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore, type ChangeEvent, type FormEvent } from "react";
 import { Clock, Flame, LoaderCircle, Pause, Play, Search, SkipBack, SkipForward, Star, Trash2, Upload } from "lucide-react";
 import type { Track } from "@/types";
 import { tracks as sampleTracks } from "@/data/music";
@@ -12,12 +12,11 @@ import { isRemoteId } from "@/lib/remoteProfiles";
 import { supabase } from "@/lib/supabase";
 import type { TranslationKey } from "@/i18n/LanguageProvider";
 import { cn } from "@/lib/utils";
+import { coverOf, discBg, nowKey, siteMusic, useSiteMusic, type Now, type Song } from "@/components/music/siteMusic";
 
 // The site's music in the same look as the game's music player: a dark purple card with a spinning disc,
 // YouTube search and charts, favourites and recent songs (shared with the game), and your own uploaded MP3s.
-type Song = { id: string; title: string; duration?: string };
 type Tab = "popular" | "search" | "fav" | "recent" | "mine";
-type Now = { kind: "yt"; song: Song } | { kind: "file"; track: Track };
 const online = Boolean(supabase);
 const load = (key: string): Song[] => { try { return JSON.parse(window.localStorage.getItem(key) ?? "[]") as Song[]; } catch { return []; } };
 const save = (key: string, list: Song[]) => { try { window.localStorage.setItem(key, JSON.stringify(list.slice(0, 40))); } catch { /* storage is full or blocked */ } };
@@ -44,10 +43,10 @@ export default function MusicPage() {
   const [recent, setRecent] = useState<Song[]>([]);
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState<TranslationKey | null>(null);
-  const [now, setNow] = useState<Now | null>(null);
-  const [tune, setTune] = useState({ playing: false, cur: 0, dur: 0 });
-  const frameRef = useRef<HTMLIFrameElement>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
+  // The player itself lives in the page frame, so the song goes on while you move to other pages.
+  const music = useSiteMusic();
+  const now = music.now;
+  const tune = { playing: music.playing, cur: music.cur, dur: music.dur };
   useEffect(() => { setFavs(load("bottle-fav")); setRecent(load("bottle-recent")); void fetchSongs(""); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Same YouTube lookup as the game: the chart of Azerbaijan, or a search ranked by how well titles fit.
@@ -86,49 +85,19 @@ export default function MusicPage() {
   }
 
   const ytList = tab === "fav" ? favs : tab === "recent" ? recent : songs;
+  const ytQueue = (): Now[] => ytList.map((song) => ({ kind: "yt", song }));
   const playYt = (song: Song) => {
-    setNow({ kind: "yt", song });
-    setTune({ playing: true, cur: 0, dur: 0 });
-    const next = [song, ...recent.filter((item) => item.id !== song.id)];
-    setRecent(next); save("bottle-recent", next);
+    siteMusic.play({ kind: "yt", song }, ytQueue());
+    setRecent([song, ...recent.filter((item) => item.id !== song.id)]);
   };
-  const playFile = (track: Track) => { setNow({ kind: "file", track }); setTune({ playing: true, cur: 0, dur: track.duration || 0 }); };
+  const playFile = (track: Track) => siteMusic.play({ kind: "file", track }, mine.map((item): Now => ({ kind: "file", track: item })));
   const toggleFav = (song: Song) => { const next = favs.some((item) => item.id === song.id) ? favs.filter((item) => item.id !== song.id) : [song, ...favs]; setFavs(next); save("bottle-fav", next); };
-  // Next and previous go through the list the song was started from.
-  const step = (dir: 1 | -1) => {
-    if (!now) return;
-    if (now.kind === "file") { const index = mine.findIndex((item) => item.id === now.track.id); if (mine.length) playFile(mine[(index + dir + mine.length) % mine.length]); return; }
-    const list = ytList.some((item) => item.id === now.song.id) ? ytList : [...favs, ...recent, ...songs];
-    const index = list.findIndex((item) => item.id === now.song.id);
-    if (list.length) playYt(list[(index + dir + list.length) % list.length]);
-  };
-  const stepRef = useRef(step);
-  stepRef.current = step;
-
-  const ytCall = (func: string, args: unknown[] = []) => frameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: "command", func, args }), "*");
-  const ytId = now?.kind === "yt" ? now.song.id : null;
-  useEffect(() => {
-    if (!ytId) return;
-    const hear = (event: MessageEvent) => {
-      if (typeof event.origin !== "string" || !event.origin.includes("youtube")) return;
-      try {
-        const data = JSON.parse(String(event.data)) as { event?: string; info?: { currentTime?: number; duration?: number; playerState?: number } };
-        const info = data.info;
-        if (data.event !== "infoDelivery" || !info) return;
-        if (info.playerState === 0) return stepRef.current(1);
-        setTune((v) => ({ playing: info.playerState === undefined ? v.playing : info.playerState === 1, cur: info.currentTime ?? v.cur, dur: info.duration || v.dur }));
-      } catch { /* not a player message */ }
-    };
-    window.addEventListener("message", hear);
-    return () => window.removeEventListener("message", hear);
-  }, [ytId]);
+  const step = (dir: 1 | -1) => siteMusic.step(dir);
   const toggle = () => {
     if (!now) { const first = tab === "mine" ? null : ytList[0]; if (first) playYt(first); else if (mine[0]) playFile(mine[0]); return; }
-    if (now.kind === "file") { const node = audioRef.current; if (node) { if (node.paused) void node.play().catch(() => {}); else node.pause(); } return; }
-    ytCall(tune.playing ? "pauseVideo" : "playVideo");
-    setTune((v) => ({ ...v, playing: !v.playing }));
+    siteMusic.toggle();
   };
-  const seek = (at: number) => { if (now?.kind === "file") { if (audioRef.current) audioRef.current.currentTime = at; } else ytCall("seekTo", [at, true]); setTune((v) => ({ ...v, cur: at })); };
+  const seek = (at: number) => siteMusic.seek(at);
 
   async function handleUpload(event: ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files ?? []);
@@ -148,7 +117,7 @@ export default function MusicPage() {
 
   const title = now ? (now.kind === "yt" ? now.song.title : now.track.title) : t("music.pick");
   const [artist, name] = now?.kind === "file" ? [now.track.artist, now.track.title] : split(title);
-  const cover = now?.kind === "yt" ? `radial-gradient(circle,#1E1B3A 14%,transparent 15%),url(https://i.ytimg.com/vi/${now.song.id}/mqdefault.jpg)` : undefined;
+  const cover = coverOf(now);
   const tabs = [["popular", Flame, t("bottle.songPopular")], ["fav", Star, t("common.favorites")], ["recent", Clock, t("bottle.songRecent")], ["search", Search, t("bottle.songSearch")]] as const;
   const row = "group flex w-full items-center gap-2.5 rounded-xl p-1.5 text-left text-white hover:bg-white/10";
 
@@ -157,7 +126,7 @@ export default function MusicPage() {
       {/* The long player card with the spinning disc, like the game's music bar. */}
       <div className="sticky top-[80px] z-30 mb-3 overflow-hidden rounded-2xl bg-[linear-gradient(120deg,#1E1B3A,#4C1D95_60%,#BE185D)] p-3 text-white shadow-xl sm:p-4">
         <div className="flex items-center gap-3 sm:gap-4">
-          <span className={cn("flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-4 border-white/20 bg-[radial-gradient(circle,#BE185D_20%,#111_21%,#2a2a2a_45%,#111_46%,#333_70%,#111_71%)] bg-cover bg-center shadow-lg sm:h-20 sm:w-20", tune.playing && now && "animate-[spin_3s_linear_infinite]")} style={cover ? { backgroundImage: cover } : undefined}><span className="h-2.5 w-2.5 rounded-full bg-white/80" /></span>
+          <span className={cn("flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-4 border-white/20 bg-cover bg-center shadow-lg sm:h-20 sm:w-20", discBg, tune.playing && now && "animate-[spin_3s_linear_infinite]")} style={cover ? { backgroundImage: cover } : undefined}><span className="h-2.5 w-2.5 rounded-full bg-white/80" /></span>
           <div className="min-w-0 flex-1">
             <p className="text-[10px] font-bold uppercase tracking-wider text-white/60">♫ {t("bottle.musicNow")}</p>
             <p className="truncate text-[15px] font-black sm:text-base">{now ? name : title}</p>
@@ -173,8 +142,6 @@ export default function MusicPage() {
             </div>
           </div>
         </div>
-        {now?.kind === "yt" ? <iframe key={now.song.id} ref={frameRef} onLoad={() => { frameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: "listening", id: 1 }), "*"); ytCall("unMute"); ytCall("playVideo"); }} src={`https://www.youtube-nocookie.com/embed/${now.song.id}?autoplay=1&playsinline=1&rel=0&iv_load_policy=3&enablejsapi=1`} title="YouTube" allow="autoplay; encrypted-media" tabIndex={-1} aria-hidden="true" className="pointer-events-none absolute left-0 top-0 h-[200px] w-[200px] opacity-0" /> : null}
-        {now?.kind === "file" ? <audio key={now.track.id} ref={audioRef} src={now.track.src} autoPlay onPlay={() => setTune((v) => ({ ...v, playing: true }))} onPause={() => setTune((v) => ({ ...v, playing: false }))} onEnded={() => step(1)} onLoadedMetadata={(event) => { const dur = event.currentTarget.duration || 0; setTune((v) => ({ ...v, dur })); }} onTimeUpdate={(event) => { const cur = event.currentTarget.currentTime; setTune((v) => ({ ...v, cur })); }} className="hidden" /> : null}
       </div>
 
       <form onSubmit={submit} className="mb-2 flex gap-1.5">
@@ -203,11 +170,11 @@ export default function MusicPage() {
             {!mine.length ? <p className="py-8 text-center text-xs text-white/60">{t("music.emptyMine")}</p> : null}
             <ul>
               {mine.map((track) => {
-                const active = now?.kind === "file" && now.track.id === track.id;
+                const active = nowKey(now) === `file:${track.id}`;
                 return (
                   <li key={track.id} className="flex items-center">
                     <button type="button" onClick={() => (active ? toggle() : playFile(track))} className={cn(row, active && "bg-white/10")}>
-                      <span className={cn("flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-white/20 bg-[radial-gradient(circle,#BE185D_20%,#111_21%,#2a2a2a_45%,#111_46%,#333_70%,#111_71%)]", active && tune.playing && "animate-[spin_3s_linear_infinite]")}><span className="h-2 w-2 rounded-full bg-white/80" /></span>
+                      <span className={cn("flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-white/20", discBg, active && tune.playing && "animate-[spin_3s_linear_infinite]")}><span className="h-2 w-2 rounded-full bg-white/80" /></span>
                       <span className="min-w-0 flex-1"><span className="block truncate text-[13px] font-semibold">{track.title}</span><span className="block truncate text-[11px] text-white/60">{track.artist}</span></span>
                       {track.duration ? <span className="shrink-0 text-[11px] tabular-nums text-white/50">{clock(track.duration)}</span> : null}
                       <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/15 text-sm group-hover:bg-[#EC4899]">{active && tune.playing ? <Pause size={13} fill="currentColor" /> : "▶"}</span>
@@ -227,7 +194,7 @@ export default function MusicPage() {
             <ul>
               {ytList.map((song) => {
                 const [who, what] = split(song.title);
-                const active = now?.kind === "yt" && now.song.id === song.id;
+                const active = nowKey(now) === `yt:${song.id}`;
                 const fav = favs.some((item) => item.id === song.id);
                 return (
                   <li key={song.id} className="flex items-center">

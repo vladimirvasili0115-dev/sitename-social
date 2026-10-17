@@ -13,6 +13,7 @@ import { SiteNotice } from "./SiteNotice";
 import { BannedScreen } from "./BannedScreen";
 import { banStore } from "@/lib/banSync";
 import { ReportHost } from "@/components/report/ReportHost";
+import { SiteMusicHost } from "@/components/music/siteMusic";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -56,5 +57,6 @@ export function AppShell({ children }: { children: ReactNode }) {
     <MobileNav />
     <FlashNotice />
     <ReportHost />
+    <SiteMusicHost />
   </div>;
 }
