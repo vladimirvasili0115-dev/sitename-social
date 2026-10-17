@@ -1,0 +1,36 @@
+<svg width="43" height="37" viewBox="0 0 43 37" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <linearGradient x1="-.903%" y1="-7.231%" x2="70.534%" y2="77.909%" id="a">
+            <stop stop-color="#FFF" stop-opacity="0" offset="0%"/>
+            <stop stop-color="#FFF" stop-opacity=".497" offset="100%"/>
+        </linearGradient>
+        <linearGradient x1="56.822%" y1="-25.036%" x2="38.928%" y2="65.863%" id="b">
+            <stop stop-color="#FFF" stop-opacity="0" offset="0%"/>
+            <stop stop-color="#FFF" stop-opacity=".497" offset="100%"/>
+        </linearGradient>
+        <linearGradient x1="75.273%" y1="53.78%" x2="36.087%" y2="56.81%" id="c">
+            <stop stop-color="#FFF" stop-opacity=".116" offset="0%"/>
+            <stop stop-color="#FFF" stop-opacity=".497" offset="100%"/>
+        </linearGradient>
+        <linearGradient x1="67.337%" y1="70.295%" x2="17.342%" y2="29.09%" id="d">
+            <stop stop-color="#FFF" stop-opacity="0" offset="0%"/>
+            <stop stop-color="#FFF" stop-opacity=".497" offset="100%"/>
+        </linearGradient>
+        <linearGradient x1="-20.382%" y1="52.39%" x2="50%" y2="39.226%" id="e">
+            <stop stop-color="#FFF" stop-opacity="0" offset="0%"/>
+            <stop stop-color="#FFF" stop-opacity=".497" offset="100%"/>
+        </linearGradient>
+        <linearGradient x1="50%" y1="100%" x2="58.102%" y2="43.977%" id="f">
+            <stop stop-color="#FFF" stop-opacity="0" offset="0%"/>
+            <stop stop-color="#FFF" stop-opacity=".497" offset="100%"/>
+        </linearGradient>
+    </defs>
+    <g fill="none" fill-rule="evenodd">
+        <path d="M6.37 0H6a6 6 0 0 0-6 6v2.655L17.05 18.5 6.37 0z" fill="url(#a)"/>
+        <path fill="url(#b)" d="M27.732 0h-10.68v18.5z"/>
+        <path d="M38.85 5.915 17.05 18.5H42.22a25.06 25.06 0 0 0-3.37-12.585" fill="url(#c)"/>
+        <path d="M38.85 31.085 17.05 18.5 27.732 37h6.363a25.278 25.278 0 0 0 4.754-5.915" fill="url(#d)"/>
+        <path fill="url(#e)" d="M0 18.5v9.844L17.05 18.5z"/>
+        <path fill="url(#f)" d="M6.37 37h10.68V18.5z"/>
+    </g>
+</svg>

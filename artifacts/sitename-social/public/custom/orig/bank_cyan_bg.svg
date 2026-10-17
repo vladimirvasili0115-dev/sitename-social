@@ -1,0 +1,31 @@
+<svg width="90" height="66" viewBox="0 0 90 66" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <radialGradient cx="99.134%" cy="100.2%" fx="99.134%" fy="100.2%" r="147.301%" gradientTransform="scale(-1 -.7491) rotate(89.799 1.174 -1.163)" id="9l2yh6vdha">
+            <stop stop-color="#4CB7BD" offset="0%"/>
+            <stop stop-color="#4CB7BD" stop-opacity="0" offset="100%"/>
+        </radialGradient>
+        <radialGradient cx="47.432%" cy="99.924%" fx="47.432%" fy="99.924%" r="322.195%" gradientTransform="matrix(1 0 0 .3023 0 .697)" id="meawz5l28b">
+            <stop stop-color="#4CB7BD" offset="0%"/>
+            <stop stop-color="#4CB7BD" stop-opacity="0" offset="100%"/>
+        </radialGradient>
+        <radialGradient cx="-1.174%" cy="100.087%" fx="-1.174%" fy="100.087%" r="147.332%" gradientTransform="matrix(1 0 0 .7491 0 .251)" id="br33jky8oc">
+            <stop stop-color="#4CB7BD" offset="0%"/>
+            <stop stop-color="#4CB7BD" stop-opacity="0" offset="100%"/>
+        </radialGradient>
+        <radialGradient cx="99.102%" cy="100.295%" fx="99.102%" fy="100.295%" r="260.793%" gradientTransform="matrix(.4879 0 0 1 .507 0)" id="10crasanud">
+            <stop stop-color="#4CB7BD" offset="0%"/>
+            <stop stop-color="#4CB7BD" stop-opacity="0" offset="100%"/>
+        </radialGradient>
+        <radialGradient cx="-.901%" cy="100.304%" fx="-.901%" fy="100.304%" r="286.894%" gradientTransform="matrix(.4877 0 0 1 -.005 0)" id="n8ciwh8zue">
+            <stop stop-color="#4CB7BD" offset="0%"/>
+            <stop stop-color="#4CB7BD" stop-opacity="0" offset="100%"/>
+        </radialGradient>
+    </defs>
+    <g fill-rule="nonzero" fill="none" opacity=".6">
+        <path d="m1.9 20.9 43.3 44.5-28-57.8c-5.8 3.5-10.9 8-15.3 13.3z" fill="url(#9l2yh6vdha)"/>
+        <path d="M45.3 0c-3.4 0-6.7.3-9.9.9l9.9 64.6L55.2.9C52 .4 48.7 0 45.3 0z" fill="url(#meawz5l28b)"/>
+        <path d="m73.3 7.6-28 57.8 43.3-44.5c-4.3-5.3-9.5-9.8-15.3-13.3z" fill="url(#br33jky8oc)"/>
+        <path fill="url(#10crasanud)" d="M0 43.3v17.9l45.3 4.2z"/>
+        <path fill="url(#n8ciwh8zue)" d="M90 43.6 45.3 65.4 90 61.3z"/>
+    </g>
+</svg>

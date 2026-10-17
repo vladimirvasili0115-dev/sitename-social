@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 25.2.1, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 viewBox="0 0 24 24" style="enable-background:new 0 0 24 24;" xml:space="preserve">
+<style type="text/css">
+	.st0{fill-rule:evenodd;clip-rule:evenodd;fill:url(#Oval_2_);}
+	.st1{fill-rule:evenodd;clip-rule:evenodd;fill:#4EB0FF;}
+</style>
+<g id="Page-1">
+	<g id="LeagueLadderStop" transform="translate(-289.000000, -459.000000)">
+		<g id="Group-9-Copy-6" transform="translate(289.000000, 459.000000)">
+			
+				<radialGradient id="Oval_2_" cx="-608.8636" cy="431.5853" r="0.8533" gradientTransform="matrix(1.347112e-15 22 33.7901 -2.069046e-15 -14571.3047 13396)" gradientUnits="userSpaceOnUse">
+				<stop  offset="0" style="stop-color:#F1F8FF"/>
+				<stop  offset="1" style="stop-color:#C5E3FC"/>
+			</radialGradient>
+			<circle id="Oval" class="st0" cx="12" cy="12" r="11"/>
+			<circle id="Oval_1_" class="st1" cx="12" cy="6" r="2"/>
+			<rect id="Rectangle-Copy" x="10.5" y="10" class="st1" width="3" height="10"/>
+		</g>
+	</g>
+</g>
+</svg>

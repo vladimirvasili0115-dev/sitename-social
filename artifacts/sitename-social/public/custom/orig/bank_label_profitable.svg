@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" viewBox="0 0 64 20">
+  <defs>
+    <style>
+      .cls-1, .cls-2 {
+        fill-rule: evenodd;
+      }
+
+      .cls-3 {
+        filter: url(#filter-2);
+      }
+
+      .cls-2 {
+        fill: #e6007e;
+      }
+    </style>
+    <filter id="filter-2" x="-5.8%" y="-15.6%" width="111.7%" height="143.7%">
+      <feOffset dx="0" dy="1" in="SourceAlpha" result="shadowOffsetOuter1"/>
+      <feGaussianBlur in="shadowOffsetOuter1" result="shadowBlurOuter1" stdDeviation="1"/>
+      <feColorMatrix in="shadowBlurOuter1" values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.2 0"/>
+    </filter>
+  </defs>
+  <!-- Generator: Adobe Illustrator 28.7.1, SVG Export Plug-In . SVG Version: 1.2.0 Build 142)  -->
+  <g>
+    <g id="_Слой_1" data-name="Слой_1">
+      <g id="Page-1">
+        <g id="Rectangle-Copy-16">
+          <g class="cls-3">
+            <path id="path-1" class="cls-1" d="M4,1h56c1.1,0,2,.9,2,2v9.2c0,1-.8,1.9-1.8,2l-28,2.8c-.1,0-.3,0-.4,0L3.8,14.2c-1-.1-1.8-1-1.8-2V3c0-1.1.9-2,2-2Z"/>
+          </g>
+          <path id="path-1-2" data-name="path-1" class="cls-2" d="M4,1h56c1.1,0,2,.9,2,2v9.2c0,1-.8,1.9-1.8,2l-28,2.8c-.1,0-.3,0-.4,0L3.8,14.2c-1-.1-1.8-1-1.8-2V3c0-1.1.9-2,2-2Z"/>
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>

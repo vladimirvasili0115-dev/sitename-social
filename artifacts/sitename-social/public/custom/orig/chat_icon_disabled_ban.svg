@@ -1,0 +1,19 @@
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #9e9e9e;
+      }
+
+      .cls-2 {
+        fill: #fff;
+      }
+    </style>
+  </defs>
+  <g>
+    <g id="ChatDisabledIcon_0_Layer0_0_MEMBER_0_FILL" data-name="ChatDisabledIcon 0 Layer0 0 MEMBER 0 FILL">
+      <path class="cls-1" d="M34.22,0,0,35.36V85.93L34.22,120H86.89L120,85.93V35.36L86.89,0Z"/>
+    </g>
+    <polygon class="cls-2" points="97.5 34.56 86.53 23.58 60.63 49.51 34.73 23.58 23.77 34.56 49.67 60.48 23.77 86.41 34.73 97.39 60.63 71.46 86.53 97.39 97.5 86.41 71.6 60.48 97.5 34.56"/>
+  </g>
+</svg>

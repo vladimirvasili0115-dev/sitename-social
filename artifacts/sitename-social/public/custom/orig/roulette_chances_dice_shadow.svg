@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="_Слой_1" data-name="Слой 1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="24" height="24" viewBox="0 0 24 24">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: url(#_Безымянный_градиент_3);
+      }
+
+      .cls-2 {
+        fill: #00604e;
+      }
+
+      .cls-3 {
+        fill: url(#_Безымянный_градиент_2);
+        fill-rule: evenodd;
+      }
+    </style>
+    <linearGradient id="_Безымянный_градиент_3" data-name="Безымянный градиент 3" x1="-893.833333" y1="523.711111" x2="-893.833333" y2="522.717749" gradientTransform="translate(16101 9428) scale(18 -18)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#00ca9b"/>
+      <stop offset=".98585" stop-color="#00b28c"/>
+    </linearGradient>
+    <linearGradient id="_Безымянный_градиент_2" data-name="Безымянный градиент 2" x1="-893.199987" y1="523.173666" x2="-893.199987" y2="522.359588" gradientTransform="translate(15898.661793 9310.163253) scale(17.786112 -17.786528)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#00a892"/>
+      <stop offset="1" stop-color="#008f7a"/>
+    </linearGradient>
+  </defs>
+  <g id="Fa8yZs.tif">
+    <image id="_Слой_1-2" data-name="Слой 1" width="28" height="28" transform="scale(.857143)" xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAYAAAByDd+UAAAACXBIWXMAAAzrAAAM6wHl1kTSAAABzUlEQVRIie2WPU7DQBBG3+c44Sc0UNAgUVJxGSQuQss9kLgOR6CgoaChAAo6BCQ4WQrPhPHGjohiOkb6lPWuPW9nd7MzosUkyZv5UNv7QGp7Tinl/U0HBvK+wtpRqyx1KYIXTgKsyDQI/UuTDNElYB40C+0GFNVWSColbUnaBY6AK+B51ewzvQA3wImksaRt81mEbYIMNpZ0DNytAcr1CZxK2ovQPLqRpF1J+8D1BjDXraQDC2AkaSBJpQXp+1UCI+CMze3UfMV9bZzECDzsAViYrzJy4skb2OCwB5jb0Pw6sHHUY5R9mcNagfG/1zdwcXEsyGZ9A/NbSkU2+OfWZzT/wCXgUu76K2AEeYp57cH3nObdCpA8Qu/0O++hB+A9PzlxAY1AT5qVpEtgugFsKumCLAl3AoEnSec2y3X2NgH39u0j8EUzyjodUl9BQ+rbfQcYm3aAbRsraa9tfLkqA0yAd9MbdTKeOLwMH3l00xD5zF4sA5DwG+uZyjQxfZivyvwkgDKllCTFJfW9mxvs01bAi6mupZyFCU6DKkIhFSOc22D+vJRiOoCxWquCmnvoX7SUiRHUSDEdwF+ViV2FcJdW2XqFcAu4bXzjUv8bFKXh22WfXJcAAAAASUVORK5CYII="/>
+  </g>
+  <g id="Group">
+    <rect id="Rectangle" class="cls-1" x="3" y="1.2" width="18" height="18" rx="4.5" ry="4.5"/>
+    <path id="Combined-Shape" class="cls-3" d="M21,5.7v9c0,2.485281-2.014719,4.5-4.5,4.5H7.5c-2.005794,0-3.705082-1.312309-4.286112-3.125174,1.538954.844989,3.306456,1.325174,5.186112,1.325174,5.964675,0,10.800001-4.835325,10.800001-10.800001,0-1.879656-.480186-3.647158-1.324577-5.186528,1.812267.581446,3.124577,2.280734,3.124577,4.286528Z"/>
+    <circle id="Oval" class="cls-2" cx="7.5" cy="5.7" r="1.8"/>
+    <circle id="Oval-2" data-name="Oval" class="cls-2" cx="7.5" cy="14.7" r="1.8"/>
+    <circle id="Oval-3" data-name="Oval" class="cls-2" cx="16.5" cy="5.7" r="1.8"/>
+    <circle id="Oval-4" data-name="Oval" class="cls-2" cx="16.5" cy="14.7" r="1.8"/>
+    <circle id="Oval-5" data-name="Oval" class="cls-2" cx="12" cy="10.2" r="1.8"/>
+  </g>
+</svg>

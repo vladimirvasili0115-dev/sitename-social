@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28">
+    <g fill="none" fill-rule="evenodd" opacity=".7">
+        <g fill="#000">
+            <g transform="translate(-166 -360) translate(166 360)">
+                <circle cx="14" cy="3" r="3"/>
+                <circle cx="14" cy="25" r="3" fill-opacity=".4"/>
+                <circle cx="25" cy="14" r="3" fill-opacity=".1" transform="rotate(90 25 14)"/>
+                <circle cx="3" cy="14" r="3" fill-opacity=".7" transform="rotate(90 3 14)"/>
+                <circle cx="21.778" cy="6.222" r="3" fill-opacity=".05" transform="rotate(45 21.778 6.222)"/>
+                <circle cx="6.222" cy="21.778" r="3" fill-opacity=".55" transform="rotate(45 6.222 21.778)"/>
+                <circle cx="21.778" cy="21.778" r="3" fill-opacity=".25" transform="rotate(135 21.778 21.778)"/>
+                <circle cx="6.222" cy="6.222" r="3" fill-opacity=".85" transform="rotate(135 6.222 6.222)"/>
+            </g>
+        </g>
+    </g>
+</svg>

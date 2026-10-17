@@ -1,0 +1,25 @@
+<svg width="17" height="17" viewBox="0 0 17 17" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <defs>
+        <path id="a" d="M0 0h17v17H0z"/>
+        <path d="M.5 7.499a7 7 0 1 0 14 0 7 7 0 0 0-14 0" id="c"/>
+        <radialGradient cx="51.568%" cy="16.318%" fx="51.568%" fy="16.318%" r="74.073%" gradientTransform="matrix(.9999 .0136 -.0136 .99984 .002 -.007)" id="d">
+            <stop stop-color="#A3DB36" offset="0%"/>
+            <stop stop-color="#97CA31" offset="100%"/>
+        </radialGradient>
+    </defs>
+    <g fill="none" fill-rule="evenodd">
+        <g>
+            <mask id="b" fill="#fff">
+                <use xlink:href="#a"/>
+            </mask>
+            <path d="M17 8.5A8.5 8.5 0 1 1-.001 8.499a8.5 8.5 0 0 1 17.001 0" fill="#FFF" mask="url(#b)"/>
+        </g>
+        <g transform="translate(1 1)">
+            <mask id="e" fill="#fff">
+                <use xlink:href="#c"/>
+            </mask>
+            <path d="M.5 7.499a7 7 0 1 0 14 0 7 7 0 0 0-14 0" fill="url(#d)" mask="url(#e)"/>
+        </g>
+        <path stroke="#FFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" d="m12.22 6.182-4.493 4.762-3.09-3.36"/>
+    </g>
+</svg>

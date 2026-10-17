@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="64px" height="64px" viewBox="0 0 64 64" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>B07F6876-08F7-456F-BD36-DE456409E277</title>
+    <defs>
+        <radialGradient cx="0%" cy="48.7124299%" fx="0%" fy="48.7124299%" r="244.734309%" gradientTransform="translate(0.000000,0.487124),scale(0.388889,1.000000),rotate(0.301440),translate(-0.000000,-0.487124)" id="radialGradient-1">
+            <stop stop-color="#F9C640" stop-opacity="0" offset="0%"></stop>
+            <stop stop-color="#F9C640" stop-opacity="0" offset="41.0019668%"></stop>
+            <stop stop-color="#F9C640" stop-opacity="0.6" offset="83.2644162%"></stop>
+            <stop stop-color="#F9C640" stop-opacity="0" offset="100%"></stop>
+        </radialGradient>
+    </defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" opacity="0.6">
+        <g id="BottlePassDialogDecor" transform="translate(-22.000000, -731.000000)" fill="url(#radialGradient-1)">
+            <g id="Group-4-Copy" transform="translate(22.000000, 731.000000)">
+                <polygon id="Fill-3" points="32 31.9995555 64 38.2222222 64 25.7777778"></polygon>
+                <polygon id="Fill-3-Copy" transform="translate(16.000000, 32.000000) rotate(-180.000000) translate(-16.000000, -32.000000) " points="0 31.9995555 32 38.2222222 32 25.7777778"></polygon>
+                <polygon id="Fill-3" transform="translate(32.000000, 48.000000) rotate(-270.000000) translate(-32.000000, -48.000000) " points="16 47.9995555 48 54.2222222 48 41.7777778"></polygon>
+                <polygon id="Fill-3-Copy" transform="translate(32.000000, 16.000000) rotate(-450.000000) translate(-32.000000, -16.000000) " points="16 15.9995555 48 22.2222222 48 9.77777778"></polygon>
+                <polygon id="Fill-3" transform="translate(43.313708, 20.686292) rotate(-45.000000) translate(-43.313708, -20.686292) " points="27.3137085 20.685847 59.3137085 26.9085137 59.3137085 14.4640693"></polygon>
+                <polygon id="Fill-3-Copy" transform="translate(20.686292, 43.313708) rotate(-225.000000) translate(-20.686292, -43.313708) " points="4.6862915 43.313264 36.6862915 49.5359307 36.6862915 37.0914863"></polygon>
+                <polygon id="Fill-3" transform="translate(43.313708, 43.313708) rotate(-315.000000) translate(-43.313708, -43.313708) " points="27.3137085 43.313264 59.3137085 49.5359307 59.3137085 37.0914863"></polygon>
+                <polygon id="Fill-3-Copy" transform="translate(20.686292, 20.686292) rotate(-495.000000) translate(-20.686292, -20.686292) " points="4.6862915 20.685847 36.6862915 26.9085137 36.6862915 14.4640693"></polygon>
+            </g>
+        </g>
+    </g>
+</svg>

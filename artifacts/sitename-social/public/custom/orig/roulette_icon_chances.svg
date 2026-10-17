@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="42px" height="42px" viewBox="0 0 42 42" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>icn_wheel_chance</title>
+    <defs>
+        <path d="M0,0 L42,0 L42,42 L0,42 L0,0 Z" id="path-1"></path>
+        <linearGradient x1="50%" y1="0%" x2="50%" y2="99.3362107%" id="linearGradient-2">
+            <stop stop-color="#00CA9B" offset="0%"></stop>
+            <stop stop-color="#00B28C" offset="98.5850087%"></stop>
+        </linearGradient>
+        <linearGradient x1="50%" y1="18.5922347%" x2="50%" y2="100%" id="linearGradient-3">
+            <stop stop-color="#00A892" offset="0%"></stop>
+            <stop stop-color="#008F7A" offset="100%"></stop>
+        </linearGradient>
+    </defs>
+    <g id="icn_wheel_chance" stroke="none" fill="none" xlink:href="#path-1" fill-rule="evenodd" stroke-width="1">
+        <g id="Group" transform="translate(8.4, 8.4)">
+            <rect id="Rectangle" fill="#FFFFFF" x="-2.4" y="-2.4" width="30" height="30" rx="7"></rect>
+            <rect id="Rectangle" fill="url(#linearGradient-2)" x="-0.4" y="-0.4" width="26" height="26" rx="5.67000008"></rect>
+            <path d="M25.6,5.27 L25.6,19.93 C25.6,23.0614545 23.0614545,25.6 19.93,25.6 L5.27,25.6 C2.33582129,25.6 -0.0777995771,23.3712269 -0.370261778,20.5142817 C1.9118458,21.8780603 4.58018533,22.6616291 7.43153579,22.6616291 C15.8428945,22.6616291 22.661648,15.8428248 22.661648,7.4314035 C22.661648,4.57998194 21.8780576,1.91157908 20.5144676,-0.370212919 C23.3713774,-0.0776366137 25.6,2.33592035 25.6,5.27 Z" id="Path" fill="url(#linearGradient-3)"></path>
+            <circle id="Oval" fill="#00604E" cx="6.3" cy="6.3" r="2.52"></circle>
+            <circle id="Oval" fill="#00604E" cx="6.3" cy="18.9" r="2.52"></circle>
+            <circle id="Oval" fill="#00604E" cx="18.9" cy="6.3" r="2.52"></circle>
+            <circle id="Oval" fill="#00604E" cx="18.9" cy="18.9" r="2.52"></circle>
+            <circle id="Oval" fill="#00604E" cx="12.6" cy="12.6" r="2.52"></circle>
+        </g>
+    </g>
+</svg>

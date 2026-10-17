@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="10px" height="20px" viewBox="0 0 10 20" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Bg / PopOverArrow</title>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="PlayerDesktopVideoWidePopOver" transform="translate(-929, -72)">
+            <g id="Bg-/-PopOverArrow" transform="translate(929, 73)">
+                <path d="M0,1 L7.78336108,6.90140411 C8.85849809,7.71658125 9.244707,9.08489305 8.84720784,10.2858056 C8.73958893,10.6109407 8.57452411,10.9238053 8.35013245,11.2101004 C8.14945496,11.4661392 7.90894542,11.6894188 7.63748212,11.8716969 L0,17 L0,1 Z" id="Path-2" fill-opacity="0.75" fill="#000000" fill-rule="evenodd"></path>
+                <path d="M0,1.20331124 L0,-0.059 L8.3844722,6.17422125 C10.1986224,7.52297646 10.5355701,10.0347022 9.13706599,11.7843177 C8.87059412,12.1176906 8.55123079,12.4084097 8.19076517,12.6457432 L0,18.038 L0,16.8277957 L7.606138,11.8198525 C7.87648722,11.6418524 8.11600971,11.4238131 8.31586362,11.1737834 C9.3647417,9.86157176 9.11203091,7.97777744 7.75141827,6.96621104 L0,1.20331124 Z" id="Path" fill="#FFFFFF" fill-rule="nonzero"></path>
+            </g>
+        </g>
+    </g>
+</svg>

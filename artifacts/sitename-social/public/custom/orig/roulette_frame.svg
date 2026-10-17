@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1966 1966">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #d67016;
+        isolation: isolate;
+        opacity: .4;
+      }
+
+      .cls-2 {
+        fill: url(#_Безымянный_градиент_9);
+      }
+
+      .cls-3 {
+        stroke: url(#_Безымянный_градиент_4);
+        stroke-width: 7.8px;
+      }
+
+      .cls-3, .cls-4, .cls-5 {
+        fill: none;
+      }
+
+      .cls-4 {
+        stroke: url(#_Безымянный_градиент_3);
+        stroke-width: 84.26px;
+      }
+
+      .cls-5 {
+        stroke: url(#_Безымянный_градиент_2);
+        stroke-width: 126.39px;
+      }
+    </style>
+    <radialGradient id="_Безымянный_градиент_9" data-name="Безымянный градиент 9" cx="70.2" cy="1522.47" fx="70.2" fy="1522.47" r=".5" gradientTransform="translate(2626038.75 122569) rotate(-90) scale(1732 -1724.21)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#000" stop-opacity="0"/>
+      <stop offset=".95" stop-color="#000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000" stop-opacity=".2"/>
+    </radialGradient>
+    <linearGradient id="_Безымянный_градиент_2" data-name="Безымянный градиент 2" x1="92.43" y1="-.97" x2="92.43" y2="0" gradientTransform="translate(-169058 1872.74) scale(1839.61)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#dfb043"/>
+      <stop offset="1" stop-color="#f1c45a"/>
+    </linearGradient>
+    <linearGradient id="_Безымянный_градиент_3" data-name="Безымянный градиент 3" x1="92.43" y1="-.96" x2="92.43" y2=".02" gradientTransform="translate(-172955 1849.49) scale(1881.74)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fbe35b"/>
+      <stop offset="1" stop-color="#d67a0b"/>
+    </linearGradient>
+    <linearGradient id="_Безымянный_градиент_4" data-name="Безымянный градиент 4" x1="92.43" y1="-1" x2="92.43" y2="-.44" gradientTransform="translate(-165597.43 1882.47) scale(1802.2)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffe36b"/>
+      <stop offset="1" stop-color="#ffcc6a"/>
+    </linearGradient>
+  </defs>
+  <g id="Shadow">
+    <circle id="path-7" class="cls-2" cx="983" cy="983" r="866"/>
+  </g>
+  <g id="roulette_frame" data-name="roulette frame">
+    <g>
+      <g id="Oval-Inside">
+        <circle id="Oval" class="cls-5" cx="983" cy="983" r="919.81"/>
+      </g>
+      <circle id="Oval-Outside" class="cls-4" cx="983" cy="983" r="940.87"/>
+      <circle id="Oval-Rim" class="cls-3" cx="983" cy="983" r="901.1"/>
+    </g>
+    <path class="cls-1" d="M16.25,1162.19l116.35-72.95.14-1.11c-4.22-34.66-6.35-69.73-6.35-105.13s2.17-71.21,6.48-106.23l-116.26-74.45-.14.28C5.52,861.67,0,921.92,0,983s5.45,120.51,16.26,179.19Z"/>
+  </g>
+</svg>

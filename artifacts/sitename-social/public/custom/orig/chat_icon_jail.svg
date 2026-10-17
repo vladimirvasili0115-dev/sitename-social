@@ -1,0 +1,23 @@
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #575e6c;
+      }
+    </style>
+  </defs>
+  <g>
+    <g id="ChatJailIcon_0_Layer0_0_MEMBER_0_FILL" data-name="ChatJailIcon 0 Layer0 0 MEMBER 0 FILL">
+      <path class="cls-1" d="M80,0V120h20V0Z" transform="translate(0 0)"/>
+    </g>
+    <g id="ChatJailIcon_0_Layer0_0_MEMBER_1_MEMBER_0_FILL" data-name="ChatJailIcon 0 Layer0 0 MEMBER 1 MEMBER 0 FILL">
+      <path class="cls-1" d="M20,0V120H40V0Z" transform="translate(0 0)"/>
+    </g>
+    <g id="ChatJailIcon_0_Layer0_0_MEMBER_2_FILL" data-name="ChatJailIcon 0 Layer0 0 MEMBER 2 FILL">
+      <path class="cls-1" d="M120,75H0V95H120Z" transform="translate(0 0)"/>
+    </g>
+    <g id="ChatJailIcon_0_Layer0_0_MEMBER_3_MEMBER_0_FILL" data-name="ChatJailIcon 0 Layer0 0 MEMBER 3 MEMBER 0 FILL">
+      <path class="cls-1" d="M120,25H0V45H120Z" transform="translate(0 0)"/>
+    </g>
+  </g>
+</svg>

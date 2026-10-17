@@ -1,0 +1,41 @@
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="39" height="24" viewBox="0 0 39 24">
+  <defs>
+    <style>
+      .cls-1 {
+        isolation: isolate;
+      }
+      .cls-2, .cls-3 {
+        fill-rule: evenodd;
+      }
+      .cls-2 {
+        fill: url(#linear-gradient);
+      }
+      .cls-3 {
+        fill: #fff;
+      }
+    </style>
+    <linearGradient id="linear-gradient" x1="-10733.55" y1="711.92" x2="-10732.87" y2="711.92" gradientTransform="translate(332744 -11735.5) scale(31 16.5)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ea5543"/>
+      <stop offset="1" stop-color="#ce3d28"/>
+    </linearGradient>
+  </defs>
+  <g id="_8DAB58D674B3C0A3.psd" data-name="8DAB58D674B3C0A3.psd" class="cls-1">
+    <image id="_8DAB58D674B3C0A3" data-name="8DAB58D674B3C0A3" width="39" height="24" xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACcAAAAYCAYAAAB5j+RNAAAACXBIWXMAAAsSAAALEgHS3X78AAABXElEQVRIS82X0WrDMAxFj9qOwR5GB2Ow///LZrH2YKuRHSUtm9P0ggjYln1yY1tEVJVn1eHWgD311HCntU4ReQPOa2P+KQUS8FNiKM8RSItwIvIOfAFSorcMbCRDXZr22DkR+QC+S/9Wn967dixtI3k9AWQGJyJnMtgrGc4Se0uZYBJ5HQMDYuc+S/sJeGkTOiqR5004t/yACE7KYItjm9RBdrkaoG+3Po32k7jnVochmlub2Gyz36sWqCpXe8NJEFfdA7dF8Y2cmkFGByKyemZ5ByWWASG655gS7II84E5QMP6vsntuJAZddG4kgyXX1hvQG3Ctp7j5IzirdTBdkkqT2EE2p6+tlYsRnIGNbgKL3nuvdW9gWjd0bqAuLfZ2vZ2Den9X+09VQ+cuTIfAw/V2Dep97L/MqnM+YZbUWX5OVfdTcwvO254bH/hHtHRawTn1SCCvCG4XlyL9ArNlsBlINmYCAAAAAElFTkSuQmCC"/>
+  </g>
+  <g id="Page-1">
+    <g id="NewAchievementBadge">
+      <g id="Group-2">
+        <g id="Clip-4-Copy">
+          <path id="path-2-2" class="cls-2" d="M7,3C5,3,4,5,4,6.5v13C4,18.1,5.4,16,7.2,16H35L33,9.5,35,3Z"/>
+        </g>
+        <g id="Group-4">
+          <g>
+            <polygon id="Fill-1" class="cls-3" points="12.3 6 12.3 10.6 9.4 6 8 6 8 13 9.3 13 9.3 8.4 12.2 13 13.6 13 13.6 6 12.3 6"/>
+            <polygon id="Fill-2" class="cls-3" points="15 6 15 13 20.4 13 20.4 11.7 16.4 11.7 16.4 9.9 20 9.9 20 8.7 16.4 8.7 16.4 7.1 20.3 7.1 20.3 6 15 6"/>
+            <polygon id="Fill-3" class="cls-3" points="29 6 27.9 10.8 26.6 6 24.9 6 23.6 10.7 22.5 6 21 6 22.7 13 24.2 13 25.7 7.7 27.1 13 28.6 13 30.5 6 29 6"/>
+          </g>
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>

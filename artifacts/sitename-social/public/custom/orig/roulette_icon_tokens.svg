@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="42px" height="42px" viewBox="0 0 42 42" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>icn_wheel_gesture</title>
+    <defs>
+        <path d="M0,0 L42,0 L42,42 L0,42 L0,0 Z" id="path-1"></path>
+        <linearGradient x1="50%" y1="5.71427676%" x2="50%" y2="99.2223948%" id="linearGradient-2">
+            <stop stop-color="#FFD22A" offset="0%"></stop>
+            <stop stop-color="#FF9A23" offset="100%"></stop>
+        </linearGradient>
+        <radialGradient cx="44.2290401%" cy="78.3185489%" fx="44.2290401%" fy="78.3185489%" r="123.686034%" gradientTransform="translate(0.4423, 0.7832), scale(0.5967, 1), translate(-0.4423, -0.7832)" id="radialGradient-3">
+            <stop stop-color="#F2821E" offset="0%"></stop>
+            <stop stop-color="#E9671B" offset="86.06725%"></stop>
+        </radialGradient>
+        <radialGradient cx="55.7544571%" cy="78.3185489%" fx="55.7544571%" fy="78.3185489%" r="123.686034%" gradientTransform="translate(0.5575, 0.7832), scale(0.5967, 1), rotate(180), translate(-0.5575, -0.7832)" id="radialGradient-4">
+            <stop stop-color="#F2821E" offset="0%"></stop>
+            <stop stop-color="#E9671B" offset="86.06725%"></stop>
+        </radialGradient>
+        <radialGradient cx="51.1881086%" cy="136.437328%" fx="51.1881086%" fy="136.437328%" r="163.028925%" gradientTransform="translate(0.5119, 1.3644), scale(0.511, 1), translate(-0.5119, -1.3644)" id="radialGradient-5">
+            <stop stop-color="#F2821E" offset="0%"></stop>
+            <stop stop-color="#E9671B" offset="86.06725%"></stop>
+        </radialGradient>
+    </defs>
+    <g id="icn_wheel_gesture" stroke="none" fill="none" xlink:href="#path-1">
+        <circle id="Oval" fill="#FFFFFF" fill-rule="nonzero" cx="21" cy="21" r="16"></circle>
+        <g id="Group" stroke-width="1" fill-rule="evenodd" transform="translate(7, 7)">
+            <circle id="Oval" fill="url(#linearGradient-2)" fill-rule="nonzero" cx="14" cy="14" r="14"></circle>
+            <path d="M9.16779227,6.4707673 C10.1091758,6.4707673 10.9074438,6.8512516 11.4083966,7.45305666 C11.7498946,7.86330653 12.0800461,7.78407304 12.1444068,7.25964771 C12.1448556,7.25599013 12.1452991,7.25233038 12.1457374,7.24866984 C12.3683067,5.38960898 11.1227328,4.10046927 9.39587269,4.10046927 C7.66897995,4.10046927 6.11473136,5.38960898 5.89216211,7.24866984 C5.88691289,7.29251894 5.88247318,7.33616862 5.8788296,7.37960378 C5.8318011,7.94027014 6.13342541,8.01712487 6.57993839,7.56200157 C7.23186859,6.89749952 8.1707273,6.4707673 9.16779227,6.4707673 Z" id="Path" fill="url(#radialGradient-3)" fill-rule="nonzero"></path>
+            <path d="M18.8322077,6.4707673 C17.8908242,6.4707673 17.0925562,6.8512516 16.5916042,7.45305666 C16.2501054,7.86330653 15.9199539,7.78407304 15.855594,7.25964771 C15.8551444,7.25599013 15.8547009,7.25233038 15.8542634,7.24866984 C15.6316933,5.38960898 16.8772672,4.10046927 18.6041281,4.10046927 C20.33102,4.10046927 21.885269,5.38960898 22.1078376,7.24866984 C22.1130877,7.29251894 22.1175278,7.33616846 22.1211712,7.37960378 C22.1681994,7.94027014 21.8665755,8.01712487 21.4200616,7.56200157 C20.7681314,6.89749952 19.8292729,6.4707673 18.8322077,6.4707673 Z" id="Path" fill="url(#radialGradient-4)" fill-rule="nonzero"></path>
+            <path d="M14,16.4925409 C11.1790738,16.4925409 8.5770791,15.8697273 6.48723706,14.819752 C5.72709974,14.4378443 4.78798623,14.9207867 4.77624521,15.7040062 C4.77569299,15.7408442 4.77541563,15.7777417 4.77541563,15.8147015 C4.77541563,20.3981779 8.9054039,24.1138415 14.0000005,24.1138415 C19.094597,24.1138415 23.2245853,20.3981779 23.2245853,15.8147015 C23.2245853,15.7777389 23.2243079,15.7408385 23.2237545,15.7039973 C23.2120127,14.9207765 22.2728989,14.4378355 21.5127626,14.8197445 C19.4229246,15.8697242 16.8209108,16.4925409 14,16.4925409 Z" id="Path" fill="url(#radialGradient-5)" fill-rule="nonzero"></path>
+        </g>
+    </g>
+</svg>

@@ -1,0 +1,31 @@
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #ccbca0;
+      }
+
+      .cls-2 {
+        fill: #fbf1db;
+      }
+
+      .cls-3 {
+        fill: #aa8856;
+      }
+    </style>
+  </defs>
+  <g>
+    <g id="ChatDiceIcon_0_Layer0_0_MEMBER_0_FILL" data-name="ChatDiceIcon 0 Layer0 0 MEMBER 0 FILL">
+      <path class="cls-1" d="M111.43,8.57A28.08,28.08,0,0,0,90.86,0H29.57A29.27,29.27,0,0,0,0,29.57V90.86a28.08,28.08,0,0,0,8.57,20.57,29.51,29.51,0,0,0,21,8.57H90.86A29.26,29.26,0,0,0,120,90.86V29.57A28.59,28.59,0,0,0,111.43,8.57Z"/>
+    </g>
+    <g id="ChatDiceIcon_0_Layer0_0_MEMBER_1_FILL" data-name="ChatDiceIcon 0 Layer0 0 MEMBER 1 FILL">
+      <path class="cls-2" d="M104.06,103.64A18.35,18.35,0,0,0,109.2,90.8V29.6a17.42,17.42,0,0,0-5.14-12.84A18.08,18.08,0,0,0,90.8,11.2H29.6a16.76,16.76,0,0,0-12.84,5.56A16.76,16.76,0,0,0,11.2,29.6V90.8a17.63,17.63,0,0,0,5.56,12.84A16.76,16.76,0,0,0,29.6,109.2H90.8A18.08,18.08,0,0,0,104.06,103.64Z"/>
+    </g>
+    <g>
+      <g id="ChatDiceIcon_0_Layer0_0_MEMBER_2_MEMBER_0_FILL" data-name="ChatDiceIcon 0 Layer0 0 MEMBER 2 MEMBER 0 FILL">
+        <path class="cls-3" d="M48.86,42.86Q49.72,33,59.57,33a10.84,10.84,0,0,1,7.29,2.57,8.26,8.26,0,0,1,2.57,6q0,6.85-8.57,12-10.29,6-9.86,17.57v3H65.14v-3q0-6.42,9-12,11.58-6.42,11.57-18a17.88,17.88,0,0,0-6.85-14.57q-6.85-6-18.43-6-12,0-18.86,6T34.71,42.86Z"/>
+      </g>
+      <circle class="cls-3" cx="58" cy="88" r="9"/>
+    </g>
+  </g>
+</svg>

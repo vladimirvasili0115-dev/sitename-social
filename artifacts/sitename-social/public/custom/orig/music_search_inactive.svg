@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="23" height="23" viewBox="0 0 23 23">
+    <defs>
+        <linearGradient id="a" x1="17.96%" x2="154.62%" y1="15.148%" y2="149.288%">
+            <stop offset="0%" stop-color="#888"/>
+            <stop offset="100%" stop-color="#E3E3E3"/>
+        </linearGradient>
+        <linearGradient id="b" x1="109.198%" x2="28.471%" y1="105.977%" y2="36.582%">
+            <stop offset="0%" stop-color="#FFF"/>
+            <stop offset="100%" stop-color="#E8E8E8"/>
+        </linearGradient>
+        <linearGradient id="c" x1="81.549%" x2="15.762%" y1="61.885%" y2="0%">
+            <stop offset="0%" stop-color="#FFF"/>
+            <stop offset="100%" stop-color="#E8E8E8"/>
+        </linearGradient>
+        <linearGradient id="d" x1="50.001%" x2="50.001%" y1="109.95%" y2="-1.229%">
+            <stop offset="0%" stop-color="#B4B4B4"/>
+            <stop offset="100%" stop-color="#E3E3E3"/>
+        </linearGradient>
+    </defs>
+    <g fill="none" fill-rule="evenodd">
+        <path stroke="url(#a)" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M13.387 13.387l7.088 7.088" transform="translate(1 1)"/>
+        <path fill="url(#b)" d="M14.012 2.794c3.085 3.096 3.085 8.116 0 11.213a7.885 7.885 0 0 1-11.175 0 7.948 7.948 0 0 1 0-11.213 7.883 7.883 0 0 1 11.175 0" transform="translate(1 1)"/>
+        <path fill="url(#c)" d="M2.837 14.006a7.948 7.948 0 0 1 0-11.213 7.885 7.885 0 0 1 11.175 0L2.837 14.006z" transform="translate(1 1)"/>
+        <path stroke="url(#d)" stroke-linejoin="round" stroke-width="2.5" d="M14.195 2.646a8.121 8.121 0 0 1 0 11.508c-3.186 3.178-8.354 3.178-11.542 0a8.121 8.121 0 0 1 0-11.508c3.188-3.178 8.356-3.178 11.542 0z" transform="translate(1 1)"/>
+    </g>
+</svg>

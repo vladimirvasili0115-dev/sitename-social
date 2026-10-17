@@ -1,0 +1,624 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Back" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" viewBox="0 0 74 74">
+  <!-- Generator: Adobe Illustrator 29.7.1, SVG Export Plug-In . SVG Version: 2.1.1 Build 8)  -->
+  <defs>
+    <style>
+      .st0 {
+        fill: url(#_Безымянный_градиент);
+      }
+
+      .st1 {
+        fill: url(#_Безымянный_градиент_3);
+      }
+
+      .st2 {
+        fill: url(#_Безымянный_градиент_2);
+      }
+
+      .st3 {
+        fill: url(#_Безымянный_градиент_5);
+      }
+
+      .st4 {
+        fill: url(#_Безымянный_градиент_4);
+      }
+
+      .st5 {
+        fill: url(#_Безымянный_градиент_9);
+      }
+
+      .st6 {
+        fill: url(#_Безымянный_градиент_8);
+      }
+
+      .st7 {
+        fill: url(#_Безымянный_градиент_6);
+      }
+
+      .st8 {
+        fill: url(#_Безымянный_градиент_7);
+      }
+
+      .st9 {
+        fill: #1c4533;
+      }
+
+      .st10 {
+        fill: url(#_Безымянный_градиент_391);
+      }
+
+      .st11, .st12 {
+        fill: #20503b;
+      }
+
+      .st11, .st13 {
+        opacity: .3;
+      }
+
+      .st11, .st13, .st14, .st15, .st16, .st17 {
+        isolation: isolate;
+      }
+
+      .st13 {
+        fill: url(#_Безымянный_градиент_54);
+      }
+
+      .st14 {
+        fill: url(#_Безымянный_градиент_53);
+        opacity: .5;
+      }
+
+      .st15 {
+        fill: url(#_Безымянный_градиент_48);
+      }
+
+      .st15, .st16 {
+        opacity: .7;
+      }
+
+      .st16 {
+        fill: url(#_Безымянный_градиент_22);
+      }
+
+      .st18 {
+        fill: #29664b;
+      }
+
+      .st19 {
+        fill: url(#_Безымянный_градиент_44);
+      }
+
+      .st20 {
+        fill: url(#_Безымянный_градиент_45);
+      }
+
+      .st21 {
+        fill: url(#_Безымянный_градиент_43);
+      }
+
+      .st22 {
+        fill: url(#_Безымянный_градиент_47);
+      }
+
+      .st23 {
+        fill: url(#_Безымянный_градиент_40);
+      }
+
+      .st24 {
+        fill: url(#_Безымянный_градиент_41);
+      }
+
+      .st25 {
+        fill: url(#_Безымянный_градиент_42);
+      }
+
+      .st26 {
+        fill: url(#_Безымянный_градиент_46);
+      }
+
+      .st27 {
+        fill: url(#_Безымянный_градиент_33);
+      }
+
+      .st28 {
+        fill: url(#_Безымянный_градиент_36);
+      }
+
+      .st29 {
+        fill: url(#_Безымянный_градиент_35);
+      }
+
+      .st30 {
+        fill: url(#_Безымянный_градиент_34);
+      }
+
+      .st31 {
+        fill: url(#_Безымянный_градиент_49);
+      }
+
+      .st32 {
+        fill: url(#_Безымянный_градиент_37);
+      }
+
+      .st33 {
+        fill: url(#_Безымянный_градиент_39);
+      }
+
+      .st34 {
+        fill: url(#_Безымянный_градиент_32);
+      }
+
+      .st35 {
+        fill: url(#_Безымянный_градиент_27);
+      }
+
+      .st36 {
+        fill: url(#_Безымянный_градиент_26);
+      }
+
+      .st37 {
+        fill: url(#_Безымянный_градиент_25);
+      }
+
+      .st38 {
+        fill: url(#_Безымянный_градиент_24);
+      }
+
+      .st39 {
+        fill: url(#_Безымянный_градиент_29);
+      }
+
+      .st40 {
+        fill: url(#_Безымянный_градиент_28);
+      }
+
+      .st41 {
+        fill: url(#_Безымянный_градиент_20);
+      }
+
+      .st42 {
+        fill: url(#_Безымянный_градиент_23);
+      }
+
+      .st43 {
+        fill: url(#_Безымянный_градиент_21);
+      }
+
+      .st44 {
+        fill: url(#_Безымянный_градиент_11);
+      }
+
+      .st45 {
+        fill: url(#_Безымянный_градиент_10);
+      }
+
+      .st46 {
+        fill: url(#_Безымянный_градиент_19);
+      }
+
+      .st47 {
+        fill: url(#_Безымянный_градиент_14);
+      }
+
+      .st48 {
+        fill: url(#_Безымянный_градиент_13);
+      }
+
+      .st49 {
+        fill: url(#_Безымянный_градиент_12);
+      }
+
+      .st50 {
+        fill: url(#_Безымянный_градиент_16);
+      }
+
+      .st51 {
+        fill: url(#_Безымянный_градиент_15);
+      }
+
+      .st52 {
+        fill: url(#_Безымянный_градиент_18);
+      }
+
+      .st53 {
+        fill: url(#_Безымянный_градиент_17);
+      }
+
+      .st54 {
+        fill: url(#_Безымянный_градиент_56);
+      }
+
+      .st55 {
+        fill: url(#_Безымянный_градиент_55);
+      }
+
+      .st56 {
+        fill: url(#_Безымянный_градиент_51);
+      }
+
+      .st57 {
+        fill: url(#_Безымянный_градиент_52);
+      }
+
+      .st58 {
+        fill: url(#_Безымянный_градиент_50);
+      }
+
+      .st59 {
+        fill: url(#_Безымянный_градиент_57);
+      }
+
+      .st17 {
+        fill: #fff;
+      }
+    </style>
+    <linearGradient id="_Безымянный_градиент_53" data-name="Безымянный градиент 53" x1=".287" y1="14873.355" x2="2.355" y2="14873.355" gradientTransform="translate(0 14874.711) scale(1 -1)" gradientUnits="userSpaceOnUse">
+      <stop offset=".259" stop-color="#8affd0"/>
+      <stop offset=".421" stop-color="#8affd0"/>
+    </linearGradient>
+    <symbol id="_Новый_символ" viewBox="0 0 2.355 2.711">
+      <g>
+        <ellipse class="st14" cx="1.321" cy="1.356" rx="1.034" ry="1.355"/>
+        <ellipse class="st18" cx="1.034" cy="1.356" rx="1.034" ry="1.355"/>
+        <path class="st12" d="M.287,1.356C.287.672.675.112,1.177.019c-.047-.009-.094-.019-.143-.019C.463,0,0,.607,0,1.355s.463,1.356,1.034,1.356c.049,0,.096-.01.143-.019-.502-.093-.89-.653-.89-1.338v.002H.287Z"/>
+      </g>
+    </symbol>
+    <symbol id="_Новый_символ_6" viewBox="0 0 4.76 4.76">
+      <path class="st17" d="M4.59,2.21c-1.1,0-2.04-.93-2.04-2.04,0-.08-.08-.17-.17-.17s-.17.08-.17.17C2.21,1.27,1.28,2.21.17,2.21c-.08,0-.17.08-.17.17s.08.17.17.17c1.1,0,2.04.93,2.04,2.04,0,.08.08.17.17.17s.17-.08.17-.17c0-1.1.93-2.04,2.04-2.04.08,0,.17-.08.17-.17s-.08-.17-.17-.17Z"/>
+    </symbol>
+    <symbol id="_ф" viewBox="0 0 2.306 2.71">
+      <g>
+        <ellipse class="st11" cx="1.272" cy="1.355" rx="1.034" ry="1.355"/>
+        <ellipse class="st12" cx="1.034" cy="1.355" rx="1.034" ry="1.355"/>
+      </g>
+    </symbol>
+    <radialGradient id="_Безымянный_градиент" data-name="Безымянный градиент" cx="-6307.864" cy="-539.32" fx="-6307.864" fy="-539.32" r="1.092" gradientTransform="translate(233301.578 19995.871) scale(36.981)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fb8e00" stop-opacity=".7"/>
+      <stop offset=".291" stop-color="#fca738" stop-opacity=".534"/>
+      <stop offset=".834" stop-color="#fde4c4" stop-opacity=".153"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="_Безымянный_градиент_2" data-name="Безымянный градиент 2" cx="-6659.136" cy="-737.052" fx="-6659.136" fy="-737.052" r="1.092" gradientTransform="translate(-246217.969 -27206.066) rotate(-180) scale(36.981)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fb8e00" stop-opacity=".7"/>
+      <stop offset=".291" stop-color="#fca738" stop-opacity=".534"/>
+      <stop offset=".834" stop-color="#fde4c4" stop-opacity=".153"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="_Безымянный_градиент_3" data-name="Безымянный градиент 3" cx="-6694.289" cy="-264.179" fx="-6694.289" fy="-264.179" r="2.197" gradientTransform="translate(4605.548 -115895.297) rotate(-90) scale(17.32)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fb8e00" stop-opacity=".7"/>
+      <stop offset=".291" stop-color="#fca738" stop-opacity=".534"/>
+      <stop offset=".834" stop-color="#fde4c4" stop-opacity=".153"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="_Безымянный_градиент_4" data-name="Безымянный градиент 4" cx="-6694.954" cy="-264.07" fx="-6694.954" fy="-264.07" r="2.197" gradientTransform="translate(4616.073 -115904.922) rotate(-90) scale(17.32)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fb8e00" stop-opacity=".7"/>
+      <stop offset=".291" stop-color="#fca738" stop-opacity=".534"/>
+      <stop offset=".834" stop-color="#fde4c4" stop-opacity=".153"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="_Безымянный_градиент_5" data-name="Безымянный градиент 5" cx="-6116.99" cy="-431.577" fx="-6116.99" fy="-431.577" r="2.283" gradientTransform="translate(108253.867 7680.853) scale(17.691)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fb8e00" stop-opacity=".7"/>
+      <stop offset=".421" stop-color="#fca738" stop-opacity=".534"/>
+      <stop offset=".834" stop-color="#fde4c4" stop-opacity=".153"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="_Безымянный_градиент_6" data-name="Безымянный градиент 6" x1="34.177" y1="20.557" x2="36.613" y2="25.075" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8affd0"/>
+      <stop offset="1" stop-color="#5bbb97"/>
+    </linearGradient>
+    <linearGradient id="_Безымянный_градиент_7" data-name="Безымянный градиент 7" x1="33.41" y1="25.952" x2="32.398" y2="19.74" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#28634e"/>
+      <stop offset=".305" stop-color="#388c6e"/>
+      <stop offset="1" stop-color="#69e3b2"/>
+    </linearGradient>
+    <linearGradient id="_Безымянный_градиент_8" data-name="Безымянный градиент 8" x1="39.722" y1="18.04" x2="41.063" y2="23.158" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#61d2a5"/>
+      <stop offset="1" stop-color="#49a081"/>
+    </linearGradient>
+    <linearGradient id="_Безымянный_градиент_9" data-name="Безымянный градиент 9" x1="28.483" y1="28.133" x2="30.742" y2="31.557" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8affd0"/>
+      <stop offset="1" stop-color="#5bbb97"/>
+    </linearGradient>
+    <linearGradient id="_Безымянный_градиент_10" data-name="Безымянный градиент 10" x1="28.461" y1="-1473.182" x2="23.623" y2="-1468.679" gradientTransform="translate(0 -1438) scale(1 -1)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#388c6e"/>
+      <stop offset="1" stop-color="#69e3b2"/>
+    </linearGradient>
+    <linearGradient id="_Безымянный_градиент_11" data-name="Безымянный градиент 11" x1="33.353" y1="-1464.82" x2="35.143" y2="-1468.455" gradientTransform="translate(0 -1438) scale(1 -1)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#49a081"/>
+      <stop offset="1" stop-color="#388c6e"/>
+    </linearGradient>
+    <linearGradient id="_Безымянный_градиент_12" data-name="Безымянный градиент 12" x1="-970.537" y1="-2165.687" x2="-956.046" y2="-2165.687" gradientTransform="translate(-150.321 -2337.416) rotate(-28.286) scale(1 -1)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#61d2a5"/>
+      <stop offset=".593" stop-color="#69e3b2"/>
+      <stop offset="1" stop-color="#61d2a5"/>
+    </linearGradient>
+    <linearGradient id="_Безымянный_градиент_13" data-name="Безымянный градиент 13" x1="-963.248" y1="-2169.132" x2="-963.302" y2="-2164.776" gradientTransform="translate(-150.321 -2337.416) rotate(-28.286) scale(1 -1)" gradientUnits="userSpaceOnUse">
+      <stop offset=".029" stop-color="#b8ffe2"/>
+      <stop offset="1" stop-color="#8affd0" stop-opacity=".4"/>
+    </linearGradient>
+    <linearGradient id="_Безымянный_градиент_14" data-name="Безымянный градиент 14" x1="44.475" y1="30.17" x2="44.052" y2="34.229" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8affd0"/>
+      <stop offset="1" stop-color="#5bbb97"/>
+    </linearGradient>
+    <linearGradient id="_Безымянный_градиент_15" data-name="Безымянный градиент 15" x1="41.047" y1="-1470.167" x2="42.501" y2="-1466.28" gradientTransform="translate(0 -1438) scale(1 -1)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#388c6e"/>
+      <stop offset="1" stop-color="#69e3b2"/>
+    </linearGradient>
+    <linearGradient id="_Безымянный_градиент_16" data-name="Безымянный градиент 16" x1="50.105" y1="28.817" x2="48.622" y2="34.322" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#49a081"/>
+      <stop offset="1" stop-color="#388c6e"/>
+    </linearGradient>
+    <linearGradient id="_Безымянный_градиент_17" data-name="Безымянный градиент 17" x1="49.532" y1="-1465.942" x2="42.597" y2="-1461.244" gradientTransform="translate(0 -1438) scale(1 -1)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#61d2a5"/>
+      <stop offset=".593" stop-color="#69e3b2"/>
+    </linearGradient>
+    <linearGradient id="_Безымянный_градиент_18" data-name="Безымянный градиент 18" x1="45.057" y1="-1466.407" x2="45.005" y2="-1462.21" gradientTransform="translate(0 -1438) scale(1 -1)" gradientUnits="userSpaceOnUse">
+      <stop offset=".029" stop-color="#b8ffe2"/>
+      <stop offset="1" stop-color="#8affd0" stop-opacity=".4"/>
+    </linearGradient>
+    <linearGradient id="_Безымянный_градиент_19" data-name="Безымянный градиент 19" x1="33.957" y1="32.812" x2="36.898" y2="38.082" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8affd0"/>
+      <stop offset="1" stop-color="#5bbb97"/>
+    </linearGradient>
+    <linearGradient id="_Безымянный_градиент_20" data-name="Безымянный градиент 20" x1="31.739" y1="-1475.99" x2="31.18" y2="-1472.494" gradientTransform="translate(0 -1438) scale(1 -1)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#388c6e"/>
+      <stop offset="1" stop-color="#61d2a5"/>
+    </linearGradient>
+    <linearGradient id="_Безымянный_градиент_21" data-name="Безымянный градиент 21" x1="36.961" y1="-1478.906" x2="38.135" y2="-1470.978" gradientTransform="translate(0 -1438) scale(1 -1)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#388c6e"/>
+      <stop offset="1" stop-color="#6be6b4"/>
+    </linearGradient>
+    <radialGradient id="_Безымянный_градиент_22" data-name="Безымянный градиент 22" cx="19396.268" cy="82606.164" fx="19396.268" fy="82606.164" r="76.41" gradientTransform="translate(-3255.852 -2252.506) rotate(.086) scale(.368 .028) skewX(-7.202)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#211e1f" stop-opacity=".5"/>
+      <stop offset="1" stop-color="#211e1f" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="_Безымянный_градиент_23" data-name="Безымянный градиент 23" cx="37" cy="-1481.715" fx="37" fy="-1481.715" r="29.098" gradientTransform="translate(0 -1438) scale(1 -1)" gradientUnits="userSpaceOnUse">
+      <stop offset=".132" stop-color="#d64c38"/>
+      <stop offset=".836" stop-color="#b5231d"/>
+      <stop offset=".869" stop-color="#c02e24"/>
+      <stop offset=".95" stop-color="#d74735"/>
+      <stop offset="1" stop-color="#e0503b"/>
+    </radialGradient>
+    <radialGradient id="_Безымянный_градиент_24" data-name="Безымянный градиент 24" cx="30.104" cy="-1491.023" fx="30.104" fy="-1491.023" r="30.687" gradientTransform="translate(0 -1438) scale(1 -1)" gradientUnits="userSpaceOnUse">
+      <stop offset=".132" stop-color="#d64c38"/>
+      <stop offset=".836" stop-color="#b5231d"/>
+      <stop offset=".869" stop-color="#c02e24"/>
+      <stop offset=".95" stop-color="#d74735"/>
+      <stop offset="1" stop-color="#e0503b"/>
+    </radialGradient>
+    <radialGradient id="_Безымянный_градиент_25" data-name="Безымянный градиент 25" cx="187.369" cy="-1919.529" fx="187.369" fy="-1919.529" r="28.586" gradientTransform="translate(-27.817 -994.007) rotate(6.739) scale(1 -.539)" gradientUnits="userSpaceOnUse">
+      <stop offset=".272" stop-color="#b5231d" stop-opacity="0"/>
+      <stop offset=".394" stop-color="#b01e18" stop-opacity=".097"/>
+      <stop offset=".629" stop-color="#a6120c" stop-opacity=".35"/>
+      <stop offset=".832" stop-color="#9c0600" stop-opacity=".6"/>
+      <stop offset="1" stop-color="#9c0600" stop-opacity=".1"/>
+    </radialGradient>
+    <radialGradient id="_Безымянный_градиент_26" data-name="Безымянный градиент 26" cx="424.319" cy="-1823.183" fx="424.319" fy="-1823.183" r="13.733" gradientTransform="translate(-337.255 -1462.692) scale(.883 -.824)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#d64c38"/>
+      <stop offset="1" stop-color="#b5231d"/>
+    </radialGradient>
+    <radialGradient id="_Безымянный_градиент_27" data-name="Безымянный градиент 27" cx="34.089" cy="-1479.865" fx="34.089" fy="-1479.865" r="16.222" gradientTransform="translate(0 -1438) scale(1 -1)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#b5231d" stop-opacity=".5"/>
+      <stop offset="1" stop-color="#9c0600"/>
+    </radialGradient>
+    <linearGradient id="_Безымянный_градиент_28" data-name="Безымянный градиент 28" x1="21.986" y1="-1505.271" x2="26.013" y2="-1484.55" gradientTransform="translate(0 -1438) scale(1 -1)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#b5231d" stop-opacity="0"/>
+      <stop offset=".192" stop-color="#b11e18" stop-opacity=".097"/>
+      <stop offset=".562" stop-color="#a8140e" stop-opacity=".351"/>
+      <stop offset=".999" stop-color="#9c0600" stop-opacity=".7"/>
+    </linearGradient>
+    <linearGradient id="_Безымянный_градиент_29" data-name="Безымянный градиент 29" x1="32.485" y1="-1507.311" x2="36.512" y2="-1486.589" gradientTransform="translate(0 -1438) scale(1 -1)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#b5231d" stop-opacity="0"/>
+      <stop offset=".192" stop-color="#b11e18" stop-opacity=".097"/>
+      <stop offset=".562" stop-color="#a8140e" stop-opacity=".351"/>
+      <stop offset=".999" stop-color="#9c0600" stop-opacity=".7"/>
+    </linearGradient>
+    <radialGradient id="_Безымянный_градиент_39" data-name="Безымянный градиент 39" cx="18.503" cy="-1492.495" fx="18.503" fy="-1492.495" r="3.909" gradientTransform="translate(0 -1438) scale(1 -1)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f6da52"/>
+      <stop offset=".999" stop-color="#f2aa00"/>
+    </radialGradient>
+    <linearGradient id="_Безымянный_градиент_32" data-name="Безымянный градиент 32" x1="18.508" y1="-1495.682" x2="21.821" y2="-1491.621" gradientTransform="translate(0 -1438) scale(1 -1)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f6da52" stop-opacity="0"/>
+      <stop offset=".999" stop-color="#f27d00"/>
+    </linearGradient>
+    <radialGradient id="_Безымянный_градиент_33" data-name="Безымянный градиент 33" cx="-2578.236" cy="-6674.371" fx="-2578.236" fy="-6674.371" r="9.664" gradientTransform="translate(-1410.444 -4450.236) rotate(-50.711) scale(1 -.593)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff261"/>
+      <stop offset=".999" stop-color="#f2aa00"/>
+    </radialGradient>
+    <radialGradient id="_Безымянный_градиент_34" data-name="Безымянный градиент 34" cx="-2577.888" cy="-6674.212" fx="-2577.888" fy="-6674.212" r="9.029" gradientTransform="translate(-1410.245 -4450.066) rotate(-50.711) scale(1 -.593)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f6da52"/>
+      <stop offset=".999" stop-color="#f2aa00"/>
+    </radialGradient>
+    <radialGradient id="_Безымянный_градиент_35" data-name="Безымянный градиент 35" cx="-2578.236" cy="-6674.371" fx="-2578.236" fy="-6674.371" r="9.664" gradientTransform="translate(-1410.444 -4450.236) rotate(-50.711) scale(1 -.593)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f6da52" stop-opacity="0"/>
+      <stop offset=".999" stop-color="#f27d00"/>
+    </radialGradient>
+    <radialGradient id="_Безымянный_градиент_36" data-name="Безымянный градиент 36" cx="23.011" cy="-1481.104" fx="23.011" fy="-1481.104" r="4.691" gradientTransform="translate(0 -1438) scale(1 -1)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff261"/>
+      <stop offset=".999" stop-color="#f2aa00"/>
+    </radialGradient>
+    <radialGradient id="_Безымянный_градиент_37" data-name="Безымянный градиент 37" cx="23.339" cy="-1481.328" fx="23.339" fy="-1481.328" r="4.571" gradientTransform="translate(0 -1438) scale(1 -1)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f6da52"/>
+      <stop offset=".999" stop-color="#f29500"/>
+    </radialGradient>
+    <radialGradient id="_Безымянный_градиент_391" data-name="Безымянный градиент 39" cx="32.813" cy="-1497.112" fx="32.813" fy="-1497.112" r="5.183" xlink:href="#_Безымянный_градиент_39"/>
+    <linearGradient id="_Безымянный_градиент_40" data-name="Безымянный градиент 40" x1="34.314" y1="-1498.17" x2="35.271" y2="-1494.85" gradientTransform="translate(0 -1438) scale(1 -1)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f6da52" stop-opacity="0"/>
+      <stop offset=".999" stop-color="#f27d00"/>
+    </linearGradient>
+    <radialGradient id="_Безымянный_градиент_41" data-name="Безымянный градиент 41" cx="-6526.989" cy="-5244.57" fx="-6526.989" fy="-5244.57" r="7.9" gradientTransform="translate(-5071.174 -5123.708) rotate(-108.435) scale(1 -.611)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff261"/>
+      <stop offset=".999" stop-color="#f2aa00"/>
+    </radialGradient>
+    <radialGradient id="_Безымянный_градиент_42" data-name="Безымянный градиент 42" cx="-6527.008" cy="-5244.357" fx="-6527.008" fy="-5244.357" r="7.223" gradientTransform="translate(-5071.075 -5123.98) rotate(-108.435) scale(1 -.611)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f6da52"/>
+      <stop offset=".999" stop-color="#f2aa00"/>
+    </radialGradient>
+    <radialGradient id="_Безымянный_градиент_43" data-name="Безымянный градиент 43" cx="-6526.989" cy="-5244.57" fx="-6526.989" fy="-5244.57" r="7.9" gradientTransform="translate(-5071.174 -5123.708) rotate(-108.435) scale(1 -.611)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f6da52" stop-opacity="0"/>
+      <stop offset=".999" stop-color="#f27d00"/>
+    </radialGradient>
+    <radialGradient id="_Безымянный_градиент_44" data-name="Безымянный градиент 44" cx="27.491" cy="-1482.285" fx="27.491" fy="-1482.285" r="6.577" gradientTransform="translate(0 -1438) scale(1 -1)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f6da52"/>
+      <stop offset=".999" stop-color="#f2aa00"/>
+    </radialGradient>
+    <radialGradient id="_Безымянный_градиент_45" data-name="Безымянный градиент 45" cx="-23.832" cy="-1426.045" fx="-23.832" fy="-1426.045" r="5.857" gradientTransform="translate(52.052 -1432.992) scale(1.018 -1.036)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f6da52"/>
+      <stop offset=".999" stop-color="#f27d00"/>
+    </radialGradient>
+    <radialGradient id="_Безымянный_градиент_46" data-name="Безымянный градиент 46" cx="32.871" cy="-1481.145" fx="32.871" fy="-1481.145" r="17.629" gradientTransform="translate(0 -1438) scale(1 -1)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff261"/>
+      <stop offset=".999" stop-color="#f2aa00"/>
+    </radialGradient>
+    <radialGradient id="_Безымянный_градиент_47" data-name="Безымянный градиент 47" cx="33.141" cy="-1481.363" fx="33.141" fy="-1481.363" r="16.976" gradientTransform="translate(0 -1438) scale(1 -1)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f6da52"/>
+      <stop offset=".644" stop-color="#f2aa00"/>
+      <stop offset=".85" stop-color="#f29d00"/>
+    </radialGradient>
+    <radialGradient id="_Безымянный_градиент_48" data-name="Безымянный градиент 48" cx="25093.393" cy="193772.422" fx="25093.393" fy="193772.422" r="70.499" gradientTransform="translate(-4584.586 -1649.199) rotate(-.319) scale(.203 .009) skewX(-.676)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#211e1f" stop-opacity=".5"/>
+      <stop offset="1" stop-color="#211e1f" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="_Безымянный_градиент_49" data-name="Безымянный градиент 49" x1="54.165" y1="-1493.219" x2="54.165" y2="-1506.886" gradientTransform="translate(0 -1438) scale(1 -1)" gradientUnits="userSpaceOnUse">
+      <stop offset=".006" stop-color="#8affd0"/>
+      <stop offset=".199" stop-color="#57b391"/>
+      <stop offset=".799" stop-color="#51b390"/>
+      <stop offset=".86" stop-color="#4faf8d"/>
+      <stop offset=".905" stop-color="#4aa687"/>
+      <stop offset=".946" stop-color="#41967c"/>
+      <stop offset=".984" stop-color="#357f6c"/>
+      <stop offset="1" stop-color="#2f7364"/>
+    </linearGradient>
+    <linearGradient id="_Безымянный_градиент_50" data-name="Безымянный градиент 50" x1="58.762" y1="-1499.636" x2="53.665" y2="-1494.977" gradientTransform="translate(0 -1438.001) scale(1 -1)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#49a081"/>
+      <stop offset="1" stop-color="#358568"/>
+    </linearGradient>
+    <linearGradient id="_Безымянный_градиент_51" data-name="Безымянный градиент 51" x1="56.565" y1="-1507.613" x2="46.771" y2="-1497.779" gradientTransform="translate(0 -1438) scale(1 -1)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#61d2a5"/>
+      <stop offset=".593" stop-color="#69e3b2"/>
+      <stop offset="1" stop-color="#61d2a5"/>
+    </linearGradient>
+    <linearGradient id="_Безымянный_градиент_52" data-name="Безымянный градиент 52" x1="45.319" y1="-1495.915" x2="52.636" y2="-1504.053" gradientTransform="translate(0 -1438) scale(1 -1)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#69e3b2"/>
+      <stop offset="1" stop-color="#61d2a5"/>
+    </linearGradient>
+    <radialGradient id="_Безымянный_градиент_54" data-name="Безымянный градиент 54" cx="45.457" cy="-1493.288" fx="45.457" fy="-1493.288" r="10.743" gradientTransform="translate(0 -1438) scale(1 -1)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#4f1716"/>
+      <stop offset=".999" stop-color="#4f1716" stop-opacity=".5"/>
+    </radialGradient>
+    <radialGradient id="_Безымянный_градиент_55" data-name="Безымянный градиент 55" cx="31.251" cy="-1474.384" fx="31.251" fy="-1474.384" r="13.327" gradientTransform="translate(0 -1438) scale(1 -1)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#b5231d" stop-opacity=".5"/>
+      <stop offset="1" stop-color="#9c0600"/>
+    </radialGradient>
+    <radialGradient id="_Безымянный_градиент_56" data-name="Безымянный градиент 56" cx="30.608" cy="-1474.468" fx="30.608" fy="-1474.468" r="10.277" gradientTransform="translate(0 -1438) scale(1 -1)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff261"/>
+      <stop offset=".999" stop-color="#f2aa00"/>
+    </radialGradient>
+    <radialGradient id="_Безымянный_градиент_57" data-name="Безымянный градиент 57" cx="30.915" cy="-1474.273" fx="30.915" fy="-1474.273" r="19.645" gradientTransform="translate(0 -1438) scale(1 -1)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f6da52"/>
+      <stop offset=".85" stop-color="#f29100"/>
+    </radialGradient>
+  </defs>
+  <g>
+    <path id="Path" class="st0" d="M12,10.98C7.6,13.58,3.5,16.78,0,20.48v3.4l37,36.3L12,10.98Z"/>
+    <path id="Path1" class="st2" d="M62,10.98l-25,49.3,37-36.3v-3.4c-3.5-3.9-7.6-7.1-12-9.6Z"/>
+    <polygon id="Path2" class="st1" points="0 42.88 0 56.98 37 60.28 0 42.88"/>
+    <polygon id="Path3" class="st4" points="74 56.98 74 42.88 37 60.28 74 56.98"/>
+    <path id="Path4" class="st3" d="M37-.02c-3,0-6,.3-8.8.8l8.8,59.5L45.8.78C42.9.18,40-.02,37-.02Z"/>
+  </g>
+  <g>
+    <path class="st7" d="M32.195,18.194c.619-.612,2.315-1.976,3.94-1.809s9.055,7.102,9.459,8.186.474,1.891-.421,2.6c-.37.293-10.418,5.974-11.071,6.143s-.99.12-1.587-.209-1.346-1.039-1.818-1.828c-.473-.789-1.18-10.435,1.499-13.084h0Z"/>
+    <path class="st8" d="M30.307,30.642c-.717-1.321-2.339-4.317-2.699-4.994s-.588-2.522.564-3.638c1.152-1.116,3.22-3.063,4.023-3.816s2.377-.797,3.264.679,2.618,4.36,3.29,5.497.998,3.218-.677,4.51-3.793,2.931-4.29,3.297-2.03,1.128-3.476-1.534h0s0-.001,0-.001Z"/>
+    <path class="st6" d="M35.945,18.737c-1.072-1.878-.533-2.439.277-2.346s2.541.259,3.149.305,1.823.815,2.747,2.25,2.628,4.025,3.135,4.899.835,2.09-.038,2.223-2.253.43-2.739.507-1.937-.291-3.087-2.151c-1.15-1.859-3.275-5.391-3.444-5.687Z"/>
+    <ellipse class="st12" cx="33.47" cy="20.374" rx=".902" ry="1.105" transform="translate(-1.697 3.093) rotate(-5.16)"/>
+    <ellipse class="st12" cx="36.61" cy="26.15" rx="1.01" ry="1.249" transform="translate(-2.203 3.399) rotate(-5.16)"/>
+    <ellipse class="st12" cx="40.647" cy="21.369" rx=".45" ry="1.111" transform="translate(-4.613 29.139) rotate(-37.473)"/>
+    <ellipse class="st12" cx="37.596" cy="18.783" rx=".465" ry="1.175" transform="translate(-3.669 26.749) rotate(-37.473)"/>
+  </g>
+  <g>
+    <path class="st5" d="M32.123,39.171c.672.01,1.704-.306,2.6-.787s1.137-.95,1.258-1.207.361-11.865.149-12.44-.406-1.349-1.386-1.955-1.596-.611-2.189-.548-10.793,5.356-11.366,6.156-.582,2.962-.038,3.975c.544,1.013,9.749,6.78,10.224,6.791s.748.016.748.016h0Z"/>
+    <path class="st45" d="M31.926,32.33c.189.414,1.842,4.286,2.078,4.819s.134,1.072-.219,1.489-1.312.531-1.661.533-4.23-.118-4.784-.136c-2.291-.076-3.283-1.408-3.583-1.927-.3-.519-1.712-3.067-2.556-4.654-.844-1.587.645-2.172,1.232-2.23s4.693-.316,5.524-.365c.969-.058,3.06.477,3.969,2.472h0Z"/>
+    <path class="st44" d="M34.373,36.764c-.58-1.368-1.477-3.472-2.062-4.848s-.524-3.521.127-4.686c.651-1.165,1.624-2.977,1.899-3.444s1.041-1.168,1.68.632,1.34,3.793,1.607,4.557.657,2.409.172,3.71c-.485,1.302-1.532,3.896-1.772,4.406s-.983,1.244-1.65-.328h0s0,.001,0,.001Z"/>
+    <path class="st49" d="M22.398,29.717c2.006-.137,4.661-.302,5.758-.409s3.066-.949,3.713-2.101c.648-1.152,1.928-3.408,2.1-3.758s.378-1.393-1.314-1.225c-1.67.166-4.761.578-5.729.738s-2.478.952-3.102,1.824-2.318,3.144-2.637,3.604-.265,1.429,1.209,1.328h.002Z"/>
+    <path class="st48" d="M33.991,22.941c-.179.364-1.508,2.705-2.18,3.901s-2.716,2.071-3.855,2.181-3.895.282-5.977.424c-.32.022-.575-.005-.776-.065.193.225.563.378,1.195.335,2.006-.137,4.661-.302,5.758-.409,1.097-.106,3.066-.949,3.713-2.101.648-1.152,1.928-3.408,2.1-3.758.074-.15.153-.427.088-.681-.02.067-.044.126-.067.173,0,0,0,0,.001,0Z"/>
+    <ellipse class="st12" cx="23.77" cy="27.876" rx="1.18" ry=".557" transform="translate(-9.259 12.028) rotate(-23.914)"/>
+    <ellipse class="st12" cx="27.626" cy="25.693" rx="1.18" ry=".557" transform="translate(-8.043 13.404) rotate(-23.914)"/>
+    <ellipse class="st12" cx="29.195" cy="27.354" rx="1.18" ry=".557" transform="translate(-8.582 14.183) rotate(-23.914)"/>
+    <ellipse class="st12" cx="31.349" cy="23.794" rx="1.18" ry=".557" transform="translate(-6.954 14.75) rotate(-23.914)"/>
+    <ellipse class="st12" cx="26.218" cy="24.387" rx="1.135" ry=".502" transform="translate(-7.635 12.721) rotate(-23.914)"/>
+    <ellipse class="st9" cx="35.281" cy="26.239" rx=".572" ry="1.328" transform="translate(-.917 1.28) rotate(-2.052)"/>
+    <ellipse class="st12" cx="23.225" cy="32.347" rx=".773" ry="1.205" transform="translate(-16.583 33.359) rotate(-55.778)"/>
+  </g>
+  <g>
+    <path class="st47" d="M42.847,38.166c.565.315,1.586.519,2.565.519s1.398-.287,1.618-.45,5.723-9.9,5.806-10.486.271-1.33-.283-2.291-1.075-1.247-1.607-1.464-11.602-.384-12.453.033c-.851.417-1.846,2.247-1.846,3.355s5.176,10.202,5.573,10.429.627.355.627.355Z"/>
+    <path class="st51" d="M45.802,32.272c-.029.438-.393,4.477-.437,5.036-.044.56-.376.971-.866,1.163s-1.355-.149-1.653-.306-3.534-2.031-3.996-2.3c-1.909-1.11-2.142-2.693-2.16-3.27s-.052-3.384-.044-5.115,1.539-1.548,2.064-1.329,4.125,1.875,4.853,2.212c.848.393,2.378,1.801,2.238,3.909h0Z"/>
+    <path class="st50" d="M45.855,37.152c.132-1.425.332-3.62.463-5.054s1.163-3.226,2.247-3.917,2.737-1.784,3.183-2.055,1.417-.516,1.137,1.303-.595,3.83-.717,4.599-.542,2.343-1.548,3.226c-1.006.883-3.078,2.606-3.515,2.929s-1.402.606-1.25-1.032h0Z"/>
+    <path class="st53" d="M38.912,25.706c1.765.8,4.092,1.871,5.071,2.282s3.034.595,4.11-.087,3.192-2.011,3.498-2.23.957-1.01-.555-1.639c-1.493-.622-4.303-1.683-5.197-1.989s-2.537-.324-3.464.131-3.401,1.609-3.882,1.854-.877,1.091.42,1.679h0s0-.001,0-.001Z"/>
+    <path class="st52" d="M51.841,25.249c-.318.227-2.514,1.606-3.63,2.314s-3.249.517-4.266.091c-1.017-.427-3.433-1.539-5.264-2.369-.281-.128-.486-.267-.629-.41.061.279.305.578.861.83,1.765.8,4.092,1.871,5.071,2.282s3.034.595,4.11-.087c1.075-.682,3.192-2.011,3.498-2.23.131-.094.325-.292.386-.538-.047.048-.095.087-.136.116h0s0,.001,0,.001Z"/>
+    <ellipse class="st12" cx="40.914" cy="24.769" rx=".536" ry="1.137" transform="translate(13.098 63.676) rotate(-85.628)"/>
+    <ellipse class="st12" cx="45.756" cy="26.804" rx=".536" ry="1.137" transform="translate(15.542 70.384) rotate(-85.628)"/>
+    <ellipse class="st12" cx="49.209" cy="24.768" rx=".536" ry="1.137" transform="translate(20.762 71.946) rotate(-85.628)"/>
+    <ellipse class="st12" cx="44.587" cy="22.928" rx=".484" ry="1.094" transform="translate(18.327 65.637) rotate(-85.628)"/>
+    <ellipse class="st9" cx="48.076" cy="30.969" rx="1.298" ry=".559" transform="translate(-.954 60.404) rotate(-63.767)"/>
+    <ellipse class="st9" cx="50.804" cy="32.988" rx="1.298" ry=".559" transform="translate(-1.243 63.978) rotate(-63.767)"/>
+    <ellipse class="st9" cx="51.334" cy="28.466" rx="1.279" ry=".551" transform="translate(3.109 61.93) rotate(-63.767)"/>
+    <ellipse class="st12" cx="43.426" cy="30.969" rx=".804" ry="1.217" transform="translate(-9.392 23.544) rotate(-27.492)"/>
+  </g>
+  <g>
+    <path class="st46" d="M31.237,45.052c.437.51,1.356,1.077,2.309,1.43s1.465.225,1.737.146,9.142-7.571,9.433-8.111.743-1.196.551-2.332-.597-1.602-1.036-2.005-11.153-4.559-12.132-4.46-2.608,1.521-3.007,2.599,1.357,11.797,1.662,12.161.483.572.483.572Z"/>
+    <path class="st41" d="M36.24,40.382c-.186.415-1.998,4.215-2.243,4.744s-.716.809-1.262.82-1.265-.634-1.498-.894-2.707-3.252-3.06-3.68c-1.457-1.769-1.113-3.394-.922-3.962s1.17-3.312,1.803-4.994,2.056-.951,2.488-.549,3.339,3.313,3.925,3.904c.684.689,1.665,2.611.769,4.612h0Z"/>
+    <path class="st43" d="M31.903,31.505c1.429,1.415,3.308,3.298,4.113,4.051s2.739,1.673,4.031,1.398,3.832-.806,4.209-.908,1.295-.638.051-1.796c-1.229-1.144-3.581-3.191-4.34-3.811s-2.353-1.23-3.419-1.122c-1.066.108-3.891.339-4.447.404s-1.248.745-.197,1.785h0Z"/>
+    <ellipse class="st12" cx="30.647" cy="34.331" rx=".773" ry="1.22" transform="translate(-4.037 4.084) rotate(-7.154)"/>
+    <ellipse class="st12" cx="34.19" cy="31.315" rx=".557" ry="1.18" transform="translate(-8.55 49.284) rotate(-65.29)"/>
+    <ellipse class="st12" cx="38.465" cy="32.9" rx=".557" ry="1.18" transform="translate(-7.502 54.09) rotate(-65.29)"/>
+    <ellipse class="st12" cx="42.263" cy="34.307" rx=".557" ry="1.18" transform="translate(-6.57 58.359) rotate(-65.29)"/>
+  </g>
+  <ellipse class="st16" cx="37.335" cy="65.364" rx="30.01" ry="2.379"/>
+  <path class="st42" d="M49.115,43.299c7.131,3.962,6.705,10.913,5.946,14.152-.354,1.508.482,2.775,1.462,4.322.845,1.335,1.422,4.316-1.668,4.316s-4.747-1.286-6.218-1.027-3.985,1.328-11.637,1.298c-7.653.03-10.166-1.039-11.637-1.298s-3.127,1.027-6.218,1.027-2.514-2.981-1.668-4.316c.979-1.547,1.816-2.814,1.462-4.322-.76-3.238-.274-10.189,6.856-14.152h23.321,0Z"/>
+  <path class="st38" d="M49.115,43.299c7.131,3.962,6.705,10.913,5.946,14.152-.354,1.508.482,2.775,1.462,4.322.845,1.335,1.422,4.316-1.668,4.316s-4.747-1.286-6.218-1.027-3.985,1.328-11.637,1.298c-7.653.03-10.166-1.039-11.637-1.298s-3.127,1.027-6.218,1.027-2.514-2.981-1.668-4.316c.979-1.547,1.816-2.814,1.462-4.322-.76-3.238-.274-10.189,6.856-14.152h23.321,0Z"/>
+  <path class="st37" d="M56.229,61.958l-.073-.116c-.971-1.534-1.811-2.859-1.432-4.471.537-2.289,1.133-7.336-2.554-11.288-.2-.215-.418-.425-.646-.632-.153-.14-.316-.277-.481-.414-.076-.062-.155-.123-.234-.184-.536-.422-1.114-.831-1.783-1.208h-7.973c.399.314.124.834-.327,1.41h0c-1.208.054-2.458.082-3.726.082-4.817,0-9.373-.394-12.331-1.146-1.031.688-1.89,1.446-2.615,2.242.052.03.094.068.151.094,3.032,1.39,8.646,1.902,14.794,1.902,1.498,0,2.962-.032,4.367-.098h.026c5.54-.105,4.726,5.926,3.894,7.881-2.201,5.171-9.252,6.077-12.621,6.034-4.167-.053-9.721-1.503-12.55-4.905-.33.678-.172,1.599-.016,2.306.068.236.126.472.165.711.196.831.372,1.711.115,2.527-.281.893-1.034,1.449-1.932,1.613-.392.071-.838.121-1.26.074.029.206.078.404.174.577.29.526.889.793,1.783.793,1.601,0,2.83-.363,3.817-.655.737-.218,1.374-.406,1.99-.406.16,0,.316.013.47.04.285.05.607.13.996.225,1.616.4,4.321,1.068,10.268,1.068h.625c5.947,0,8.653-.669,10.269-1.068.389-.096.711-.175.996-.225.154-.027.31-.04.47-.04.616,0,1.253.188,1.99.406.987.292,2.216.655,3.817.655.894,0,1.493-.267,1.783-.793.477-.867.048-2.271-.408-2.992h.002Z"/>
+  <path class="st36" d="M52.706,35.546c-.251.424-5.959-.053-8.807.954-2.849,1.007-10.951,1.007-13.799,0-2.849-1.007-8.557-.53-8.807-.954,0,0,.237-2.979,0,0-.345,4.332,3.576,8.04,3.576,8.04,2.316.826,7.099,1.383,12.131,1.383s10.073-.557,12.389-1.383c0,0,1.348-1.131,4.177-8.04h-.86Z"/>
+  <path class="st35" d="M36.999,44.969c4.713,0,8.824-.511,10.994-1.268,0,0,.853-.46,2.245-2.851,1.718-2.357-3.587,2.839-5.51,1.527-.73-.498.345-3.798-.308-3.586-.567.184-1.29,1.149-1.751,1.858-.883,1.359-2.537,2.797-5.67,2.797s-6.134-1.774-7.017-3.134c-.46-.708-1.184-1.674-1.751-1.858-.653-.212.422,3.088-.308,3.586-1.923,1.312-5.88-3.547-4.162-1.19,1.393,2.39,2.245,2.851,2.245,2.851,2.17.757,6.28,1.268,10.994,1.268h0Z"/>
+  <path class="st40" d="M31.564,45.802c-.318-.367-.777-.567-1.246-.507-.186.024-.37.084-.542.185-.003,0-.014.008-.018.011-.164.096-1.534.915-3.253,2.339q-.226.187,0,0c-1.393,1.154-3.005,2.702-4.389,4.59-.061-.004-.119-.018-.181-.018-1.651,0-2.989,1.338-2.989,2.989s1.338,2.989,2.989,2.989,2.989-1.338,2.989-2.989c0-.516-.143-.993-.372-1.416,2.265-3.023,5.262-5.097,6.298-5.764.024.039.065.11.097.164.238-.85.44-1.707.617-2.571,0,0,0-.002,0-.002Z"/>
+  <path class="st39" d="M37.324,55.391c-.927-5.252-3.658-9.471-3.781-9.659-.128-.195-.301-.336-.489-.447-.196.968-.419,1.929-.69,2.88-.086.303-.333.418-.577.406.211.394.45.859.707,1.409.714,1.531,1.511,3.594,1.921,5.851-.724.557-1.198,1.422-1.198,2.406,0,1.682,1.364,3.046,3.046,3.046s3.046-1.364,3.046-3.046c0-1.308-.828-2.413-1.985-2.845h0Z"/>
+  <circle class="st33" cx="20.78" cy="54.236" r="2.989"/>
+  <path class="st34" d="M22.28,52.063c-.679.022-1.182-.319-1.831-.071-1.009.385-.656,1.898-.22,2.558.262.397.413,1.048.142,1.464-.191.293-.498.456-.825.545.37.197.786.32,1.235.32,1.459,0,2.643-1.183,2.643-2.643,0-.902-.453-1.696-1.143-2.173,0,0,0,0-.001,0Z"/>
+  <path class="st27" d="M21.647,54.236c-.276,0-.553-.078-.8-.243-.663-.442-.841-1.338-.398-2.001,3.148-4.714,7.969-7.548,8.173-7.666.687-.402,1.569-.166,1.971.522.4.687.167,1.57-.521,1.972-.044.026-4.457,2.632-7.225,6.775-.277.416-.735.641-1.2.641Z"/>
+  <path class="st30" d="M21.647,53.89c-.216,0-.427-.064-.609-.185-.243-.162-.408-.41-.465-.698-.057-.287,0-.579.163-.823,3.108-4.654,7.859-7.443,8.059-7.559.168-.097.357-.149.548-.149.39,0,.754.209.951.547.303.521.125,1.193-.397,1.498-.186.11-4.555,2.715-7.338,6.882-.204.305-.544.487-.913.487h0Z"/>
+  <path class="st29" d="M30.593,44.848c-.402-.688-1.284-.924-1.971-.522-.108.063-1.511.891-3.271,2.35.083.075,1.439.306.294,2.159-1.846,2.987-4.44,4.752-5.413,3.873-.029.494.173.991.615,1.286.247.165.524.243.8.243.465,0,.923-.225,1.2-.641,2.768-4.143,7.181-6.749,7.225-6.775.687-.401.921-1.284.521-1.972h0Z"/>
+  <path class="st28" d="M36.999,44.191c5.323,0,10.331-.51,12.887-1.487l.542-.561c.356,0,.888.252,1.14.677.387.652.295,1.996-.765,2.482-2.829,1.297-8.067,1.774-13.804,1.774s-10.975-.478-13.804-1.774c-1.061-.486-1.152-1.83-.765-2.482.252-.425.784-.677,1.14-.677l.542.561c2.556.977,7.564,1.487,12.887,1.487Z"/>
+  <path class="st32" d="M36.999,46.73c-6.449,0-11.172-.603-13.659-1.743-.429-.197-.616-.551-.699-.813-.124-.398-.088-.882.087-1.177.16-.27.48-.44.71-.491l.478.495.072.028c2.474.946,7.338,1.51,13.011,1.51s10.537-.564,13.011-1.51l.072-.028.478-.495c.23.051.55.221.71.491.175.295.211.779.087,1.177-.082.263-.269.616-.699.814-2.487,1.14-7.211,1.743-13.659,1.743h0Z"/>
+  <circle class="st10" cx="34.684" cy="57.593" r="2.989"/>
+  <path class="st23" d="M34.685,54.95c-.23,0-.449.039-.662.094-.047.078-.106.147-.191.187-.338.159-.562.492-.714.882-.078.201-.147.45-.168.646-.021.186-.061.703.468,1.202.389.366,2.424,1.273,1.903,2.185,0,.002-.003.003-.004.005,1.151-.285,2.01-1.32,2.01-2.558,0-1.457-1.186-2.643-2.642-2.643Z"/>
+  <path class="st24" d="M34.448,57.462c-.717,0-1.339-.534-1.429-1.264-.615-4.945-3.391-9.252-3.419-9.295-.434-.667-.247-1.561.419-1.996.666-.434,1.559-.251,1.996.417.128.197,3.168,4.892,3.867,10.518.098.791-.463,1.511-1.253,1.609-.061.008-.121.011-.18.011h0Z"/>
+  <path class="st25" d="M34.449,57.116c-.551,0-1.018-.413-1.085-.961-.631-5.074-3.445-9.4-3.473-9.443-.329-.505-.186-1.186.319-1.516.179-.117.387-.179.6-.179.371,0,.715.185.917.496.127.194,3.127,4.852,3.813,10.371.074.6-.353,1.148-.952,1.223-.047.006-.092.009-.137.009h-.002Z"/>
+  <path class="st21" d="M32.015,45.324c-.437-.668-1.33-.851-1.996-.417-.666.435-.853,1.329-.419,1.996.014.02.655,1.021,1.388,2.594.434-.618,1.06-.897,1.859-.211s1.635,3.886,1.683,4.864c.089,1.816-1.062,2.06-1.583,1.574.024.158.052.315.072.474.09.73.712,1.264,1.429,1.264.06,0,.119-.003.18-.011.79-.098,1.351-.819,1.253-1.609-.699-5.626-3.738-10.321-3.867-10.518,0,0,0,0,.001,0Z"/>
+  <path class="st19" d="M33.445,45.643c-.19,1.623-1.683,2.835-3.607,2.61s-2.85-1.519-2.87-3.153c-.02-1.602,1.633-2.949,3.557-2.724s3.109,1.644,2.92,3.266h0Z"/>
+  <path class="st20" d="M30.542,42.628c-.131-.015-.259-.023-.388-.023-.831,0-1.621.323-2.168.887-.441.453-.679,1.02-.672,1.596.022,1.657.973,2.719,2.611,2.914.143.017.284.025.423.025,1.495,0,2.696-1.015,2.858-2.414.174-1.525-.945-2.781-2.664-2.985ZM30.349,44.747c-.343.974-1.33,1.379-1.83,1.229-.885-.266-.774-1.464-.703-1.67.118-.342.703-1.446,1.839-1.359.971.075.964,1.033.694,1.8Z"/>
+  <path class="st26" d="M51.568,42.819c-.252-.425-.784-.677-1.14-.677l-.542.561c-2.556.977-7.564,1.487-12.887,1.487-1.692,0-3.325-.066-4.884-.168-1.011-.057-1.515.49-1.577,1.293-.069.889.667,1.525,1.414,1.601,1.607.1,3.291.158,5.047.158,5.736,0,10.975-.478,13.804-1.774,1.061-.486,1.152-1.83.766-2.482h0Z"/>
+  <path class="st22" d="M36.999,46.73c-1.649,0-3.339-.054-5.025-.158-.559-.057-1.143-.544-1.09-1.228.051-.65.417-.979,1.091-.979l.122.003c1.722.113,3.326.168,4.902.168,5.673,0,10.537-.564,13.011-1.51l.072-.028.478-.495c.23.051.55.221.71.491.175.295.21.78.086,1.179-.082.262-.269.615-.698.812-2.487,1.14-7.211,1.743-13.659,1.743,0,0,0,.002,0,.002Z"/>
+  <ellipse class="st15" cx="55.061" cy="68.901" rx="16.396" ry=".812"/>
+  <g>
+    <rect class="st31" x="43.895" y="55.254" width="20.54" height="13.667" rx="2.624" ry="2.624"/>
+    <rect class="st58" x="54.545" y="55.763" width="9.425" height="12.65" rx="2.329" ry="2.329"/>
+    <rect class="st56" x="44.359" y="55.764" width="9.425" height="12.65" rx="2.329" ry="2.329"/>
+    <rect class="st57" x="44.359" y="55.764" width="9.425" height="12.65" rx="2.329" ry="2.329"/>
+    <use width="2.306" height="2.71" transform="translate(55.71 64.538)" xlink:href="#_ф"/>
+    <use width="2.306" height="2.71" transform="translate(60.734 56.929)" xlink:href="#_ф"/>
+    <use width="2.306" height="2.71" transform="translate(58.224 60.28)" xlink:href="#_ф"/>
+    <use width="2.355" height="2.711" transform="translate(45.524 64.537)" xlink:href="#_Новый_символ"/>
+    <use width="2.355" height="2.711" transform="translate(50.552 64.537)" xlink:href="#_Новый_символ"/>
+    <use width="2.355" height="2.711" transform="translate(45.524 56.928)" xlink:href="#_Новый_символ"/>
+    <use width="2.355" height="2.711" transform="translate(50.552 56.928)" xlink:href="#_Новый_символ"/>
+  </g>
+  <path class="st13" d="M46.52,55.254h8.887c.032-.378.046-.779.048-1.188h-8.936c-2.102,0-3.813,1.71-3.813,3.812v8.255c.427-.041.819-.085,1.188-.133v-8.122c0-1.449,1.175-2.624,2.624-2.624,0,0,.002,0,.002,0Z"/>
+  <g>
+    <path class="st55" d="M52.269,37.236c-1.45-.404-3.102-.499-5.534-.323-.973.071-2.111.395-3.317.738-1.863.53-3.975,1.129-6.418,1.129s-4.555-.6-6.419-1.129c-1.206-.343-2.344-.666-3.316-.738-2.431-.177-4.087-.082-5.535.323-.119.033-.238.031-.357.033.057.354.14.698.239,1.035.159-.014.32-.022.475-.065.877-.244,1.853-.358,3.074-.358.595,0,1.252.026,2.004.081.836.061,1.91.367,3.051.691,1.946.553,4.153,1.18,6.783,1.18s4.836-.627,6.784-1.18c1.139-.324,2.213-.629,3.049-.69.753-.055,1.409-.081,2.006-.081,1.219,0,2.196.114,3.074.359.151.042.309.051.465.064.148-.326.301-.671.459-1.037-.187.021-.377.023-.568-.03v-.002h0Z"/>
+    <path class="st54" d="M37,38.781c-2.443,0-4.555-.6-6.419-1.129-1.206-.343-2.344-.666-3.316-.738-2.431-.177-4.087-.082-5.535.323-.767.213-1.585-.163-1.826-.842-.243-.679.183-1.402.951-1.616,1.833-.511,3.823-.639,6.65-.432,1.303.096,2.596.463,3.966.852,1.741.495,3.542,1.006,5.529,1.006s3.787-.512,5.528-1.006c1.37-.389,2.662-.756,3.967-.852,2.826-.206,4.818-.078,6.649.432.767.214,1.193.938.951,1.616-.24.679-1.058,1.056-1.826.842-1.45-.404-3.102-.499-5.534-.323-.973.071-2.111.395-3.317.738-1.863.53-3.975,1.129-6.418,1.129Z"/>
+    <path class="st59" d="M37,38.466c-2.389,0-4.472-.592-6.31-1.115-1.227-.349-2.384-.677-3.396-.751-.796-.058-1.494-.086-2.132-.086-1.382,0-2.507.134-3.539.422-.108.03-.219.045-.331.045-.483,0-.904-.273-1.048-.68-.088-.248-.063-.512.073-.742s.364-.401.644-.479c1.255-.349,2.587-.512,4.193-.512.704,0,1.464.03,2.321.093,1.262.092,2.535.454,3.883.837,1.77.503,3.597,1.022,5.641,1.022s3.869-.519,5.636-1.021c1.352-.384,2.625-.746,3.888-.838.858-.063,1.617-.093,2.32-.093,1.607,0,2.94.163,4.193.512.28.078.508.248.644.479s.161.494.073.742c-.144.408-.565.681-1.048.681-.111,0-.223-.015-.331-.045-1.032-.288-2.156-.422-3.538-.422-.638,0-1.336.028-2.132.086-1.013.074-2.17.403-3.395.751-1.84.523-3.922,1.115-6.311,1.115h.002Z"/>
+  </g>
+  <use width="4.76" height="4.76" transform="translate(41.516 52.874)" xlink:href="#_Новый_символ_6"/>
+  <use width="4.76" height="4.76" transform="translate(9.256 50.904)" xlink:href="#_Новый_символ_6"/>
+  <use width="4.76" height="4.76" transform="translate(55.397 28.848)" xlink:href="#_Новый_символ_6"/>
+  <use width="4.76" height="4.76" transform="translate(35.912 26.924)" xlink:href="#_Новый_символ_6"/>
+</svg>

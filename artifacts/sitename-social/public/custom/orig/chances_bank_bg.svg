@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="_Слой_1" data-name="Слой_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" viewBox="0 0 298 190">
+  <!-- Generator: Adobe Illustrator 29.7.1, SVG Export Plug-In . SVG Version: 2.1.1 Build 8)  -->
+  <defs>
+    <style>
+      .st0 {
+        mask: url(#mask);
+      }
+
+      .st1 {
+        fill: url(#_Безымянный_градиент);
+      }
+
+      .st2, .st3 {
+        fill-rule: evenodd;
+      }
+
+      .st2, .st4 {
+        fill: #fff;
+      }
+
+      .st3, .st5 {
+        fill: #fefefe;
+      }
+
+      .st6 {
+        opacity: .2;
+      }
+    </style>
+    <symbol id="Circle" viewBox="0 0 6.9 6.8">
+      <path id="Stroke-75-Copy-18" class="st5" d="M3.2,0c1.9-.1,3.6,1.3,3.7,3.2s-1.3,3.5-3.2,3.7S.1,5.5,0,3.7,1.3.1,3.2,0ZM3.3,1.8c-.9,0-1.6.9-1.6,1.8s.9,1.6,1.8,1.5,1.6-.9,1.6-1.8-.9-1.6-1.8-1.5Z"/>
+    </symbol>
+    <symbol id="Point" viewBox="0 0 3.8 3.8">
+      <path id="Fill-88-Copy-15" class="st3" d="M0,2C0,1,.7,0,1.8,0s2,.7,2,1.8-.7,2-1.8,2S0,3.1,0,2"/>
+    </symbol>
+    <symbol id="_x31_" viewBox="0 0 25 22.8">
+      <g id="Group">
+        <path id="Fill-834" class="st2" d="M6.9,10.5c-.3-.5-.7-.5-1,0-.3.5-.3,1.3,0,1.7.3.5.7.5,1,0,.3-.5.3-1.3,0-1.7"/>
+        <path id="Fill-836" class="st2" d="M20.6,13.3c-.6,0-1.2.4-1.5.9-.3.5,0,.9.5.9.6,0,1.2-.4,1.5-.9.3-.5,0-.9-.5-.9"/>
+        <path id="Fill-838" class="st2" d="M11.5,18.5c-.6,0-1.2.4-1.5.9-.3.5,0,.9.5.9.6,0,1.2-.4,1.5-.9.3-.5,0-.9-.5-.9"/>
+        <path id="Fill-840" class="st2" d="M10.1,3.5c-.3-.5,0-.9.5-.9.6,0,1.2.4,1.5.9.3.5,0,.9-.5.9-.6,0-1.2-.4-1.5-.9"/>
+        <path id="Fill-842" class="st2" d="M19.1,8.8c-.3-.5,0-.9.5-.9.6,0,1.2.4,1.5.9.3.5,0,.9-.5.9-.6,0-1.2-.4-1.5-.9"/>
+        <path id="Fill-844" class="st2" d="M14.6,6.1c-.3-.5,0-.9.5-.9s1.2.4,1.5.9c.3.5,0,.9-.5.9-.6,0-1.2-.4-1.5-.9"/>
+        <path id="Fill-846" class="st2" d="M9.1,1.4h7.6c1,0,2,.6,2.5,1.5l3.8,6.6c.4.7-.1,1.5-.9,1.5h-7.6c-1,0-2-.6-2.5-1.5l-3.7-6.6c-.4-.7.1-1.5.9-1.5h0ZM8.2,20l3.8-6.5c.5-.9,1.5-1.4,2.5-1.4h7.5c.7,0,1.2.8.8,1.5-1.3,2.3-3.8,6.6-3.8,6.6-.3.4-.6.8-1.1,1-.4.2-.9.4-1.4.4,0,0-4.9,0-7.6,0-.7,0-1.2-.8-.8-1.5h0ZM7.1,19.4c-.4.6-1.3.6-1.7,0l-3.7-6.6c-.5-.9-.5-2,0-2.9l3.9-6.5c.4-.6,1.3-.6,1.7,0l3.7,6.6c.5.9.5,2,0,2.9l-3.9,6.5ZM24.5,9.4l-4.1-7.2c-.4-.6-.9-1.2-1.5-1.6-.6-.4-1.4-.6-2.1-.6h-8.3c-.1,0-.2,0-.3,0-.6,0-1.2.2-1.8.5-.6.4-1.2.9-1.6,1.5L.6,9.2C.2,9.9,0,10.6,0,11.3c0,.7.2,1.5.6,2.1l4.1,7.2c.4.6.9,1.2,1.5,1.6.6.4,1.4.6,2.1.6h8.3c.7,0,1.5-.1,2.1-.5.6-.4,1.2-.9,1.6-1.5l4.2-7.2c.4-.6.6-1.4.6-2.1h0c0-.7-.2-1.5-.6-2.1h0Z"/>
+      </g>
+    </symbol>
+    <symbol id="_x36_" viewBox="0 0 24.7 24.1">
+      <g id="Group1" data-name="Group">
+        <path id="Fill-695" class="st2" d="M11.3,9.5c.2-.5-.1-.9-.7-.8-.5.1-1.1.6-1.3,1.1-.2.5.1.9.7.8.5-.1,1.1-.6,1.3-1.1"/>
+        <path id="Fill-697" class="st2" d="M13.3,3.8c.2-.5-.1-.9-.7-.8-.5.1-1.1.6-1.3,1.1-.2.5.1.9.7.8.5-.1,1.1-.6,1.3-1.1"/>
+        <path id="Fill-699" class="st2" d="M5.4,10.6c.2-.5-.1-.9-.7-.8-.5.1-1.1.6-1.3,1.1-.2.5.1.9.7.8.5-.1,1.1-.6,1.3-1.1"/>
+        <path id="Fill-701" class="st2" d="M7.4,4.9c.2-.5-.1-.9-.7-.8-.5.1-1.1.6-1.3,1.1-.2.5.1.9.7.8.5-.1,1.1-.6,1.3-1.1"/>
+        <path id="Fill-703" class="st2" d="M16.3,19.4c-.4-.4-1.1-.7-1.6-.6s-.7.5-.3,1c.4.4,1.1.7,1.6.6.5-.1.7-.5.3-1"/>
+        <path id="Fill-705" class="st2" d="M12.3,14.8c-.4-.4-1.1-.7-1.6-.6-.5.1-.7.5-.3,1,.4.4,1.1.7,1.6.6.5-.1.7-.5.3-1"/>
+        <path id="Fill-707" class="st2" d="M10.3,20.5c-.4-.4-1.1-.7-1.6-.6-.5.1-.7.5-.3,1,.4.4,1.1.7,1.6.6.5-.1.7-.5.3-1"/>
+        <path id="Fill-709" class="st2" d="M6.4,16c-.4-.4-1.1-.7-1.6-.6-.5.1-.7.5-.3,1,.4.4,1.1.7,1.6.6.5-.1.7-.5.3-1"/>
+        <path id="Fill-711" class="st2" d="M11.3,17.7c-.4-.4-1.1-.7-1.6-.6-.5.1-.7.5-.3,1,.4.4,1.1.7,1.6.6.5-.1.7-.5.3-1"/>
+        <path id="Fill-713" class="st2" d="M14.8,10.7c.2-.5.6-.6,1-.2.4.4.5,1.2.3,1.7-.2.5-.6.6-1,.2-.4-.4-.5-1.2-.3-1.7"/>
+        <path id="Fill-715" class="st2" d="M15.8,7.9c.2-.5.6-.6,1-.2.4.4.5,1.2.3,1.7-.2.5-.6.6-1,.2-.4-.4-.5-1.2-.3-1.7"/>
+        <path id="Fill-717" class="st2" d="M16.8,5c.2-.5.6-.6,1-.2.4.4.5,1.2.3,1.7-.2.5-.6.6-1,.2-.4-.4-.5-1.2-.3-1.7"/>
+        <path id="Fill-719" class="st2" d="M18.7,15.3c.2-.5.6-.6,1-.2.4.4.5,1.2.3,1.7-.2.5-.6.6-1,.2-.4-.4-.5-1.2-.3-1.7"/>
+        <path id="Fill-721" class="st2" d="M19.7,12.4c.2-.5.6-.6,1-.2.4.4.5,1.2.3,1.7-.2.5-.6.6-1,.2-.4-.4-.5-1.2-.3-1.7"/>
+        <path id="Fill-723" class="st2" d="M20.7,9.5c.2-.5.6-.6,1-.2.4.4.5,1.2.3,1.7-.2.5-.6.6-1,.2-.4-.4-.5-1.2-.3-1.7"/>
+        <path id="Fill-725" class="st2" d="M16.1,3.2c.2-.7,1.2-.9,1.7-.3l5,5.7c.7.8.9,1.9.5,2.8l-2.5,7.2c-.2.7-1.2.9-1.7.3l-4.9-5.7c-.7-.8-.9-1.9-.6-2.9l2.5-7.1ZM3.1,14.4l7.4-1.4c1-.2,2.1.2,2.8,1l4.9,5.7c.5.6.2,1.4-.5,1.6-2.6.5-7.4,1.5-7.4,1.5-.5,0-1,0-1.5-.1-.5-.2-.9-.5-1.2-.8,0,0-3.2-3.7-4.9-5.8-.5-.6-.2-1.4.6-1.6h0ZM15,2.8l-2.5,7.1c-.3,1-1.2,1.7-2.2,1.9l-7.4,1.4c-.7.1-1.3-.6-1.1-1.3l2.5-7.1c.3-1,1.2-1.7,2.2-1.9l7.5-1.4c.7-.1,1.3.6,1.1,1.3h0ZM24.6,9.7c-.1-.7-.5-1.4-.9-2l-5.4-6.3c-.5-.6-1.1-1-1.8-1.2-.5-.2-1.1-.3-1.7-.2s-.3,0-.5,0L6.1,1.6c-.7.1-1.4.5-2,.9-.6.5-1,1.1-1.2,1.8L.2,12.2c-.2.7-.3,1.4-.2,2.2.1.7.5,1.4.9,2l5.4,6.3c.5.6,1.1,1,1.8,1.2.7.2,1.4.3,2.2.2l8.2-1.6c.7-.1,1.4-.5,2-.9.6-.5,1-1.1,1.2-1.8l2.7-7.8c.2-.7.3-1.4.2-2.2h0Z"/>
+      </g>
+    </symbol>
+    <linearGradient id="_Безымянный_градиент" data-name="Безымянный градиент" x1="-806.8" y1="633.7" x2="-806.8" y2="632.7" gradientTransform="translate(240570 120396) scale(298 -190)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#00a280"/>
+      <stop offset="1" stop-color="#00b18c" stop-opacity="0"/>
+    </linearGradient>
+    <mask id="mask" x="0" y="-5.8" width="298" height="195.8" maskUnits="userSpaceOnUse">
+      <g id="mask-3">
+        <rect id="path-21" data-name="path-2" class="st4" width="298" height="190"/>
+      </g>
+    </mask>
+  </defs>
+  <g id="Page-1">
+    <g id="Group-94-Copy-3">
+      <g id="Mask">
+        <rect id="path-2" class="st1" width="298" height="190"/>
+      </g>
+      <g class="st0">
+        <g id="Group-Copy" class="st6">
+          <g>
+            <use width="24.7" height="24.1" transform="translate(180.4 15.7)" xlink:href="#_x36_"/>
+            <use width="25" height="22.8" transform="translate(215.6 79.4)" xlink:href="#_x31_"/>
+            <use width="6.9" height="6.8" transform="translate(71.6 67.6)" xlink:href="#Circle"/>
+            <use width="3.8" height="3.8" transform="translate(250.6 58.8)" xlink:href="#Point"/>
+            <use width="24.7" height="24.1" transform="translate(260.5 57.9) rotate(.5)" xlink:href="#_x36_"/>
+            <use width="24.7" height="24.1" transform="translate(142.2 19.8) rotate(-8.2) scale(1 -1)" xlink:href="#_x36_"/>
+            <use width="24.7" height="24.1" transform="translate(222.3 62.6) rotate(-8.2) scale(1 -1)" xlink:href="#_x36_"/>
+            <use width="24.7" height="24.1" transform="translate(49.1 35.6)" xlink:href="#_x36_"/>
+            <use width="24.7" height="24.1" transform="translate(129.1 77.8) rotate(.5)" xlink:href="#_x36_"/>
+            <use width="24.7" height="24.1" transform="translate(10.9 39.7) rotate(-8.2) scale(1 -1)" xlink:href="#_x36_"/>
+            <use width="24.7" height="24.1" transform="translate(90.9 82.5) rotate(-8.2) scale(1 -1)" xlink:href="#_x36_"/>
+            <use width="25" height="22.8" transform="translate(135.6 37)" xlink:href="#_x31_"/>
+            <use width="25" height="22.8" transform="translate(55.8 -5.8)" xlink:href="#_x31_"/>
+            <use width="25" height="22.8" transform="translate(43.7 79.2)" xlink:href="#_x31_"/>
+            <use width="25" height="22.8" transform="translate(227.9 -5.5)" xlink:href="#_x31_"/>
+            <use width="25" height="22.8" transform="translate(269.8 40.7) rotate(-9.2) scale(1 -1)" xlink:href="#_x31_"/>
+            <use width="25" height="22.8" transform="translate(177.4 83) rotate(-9.2) scale(1 -1)" xlink:href="#_x31_"/>
+            <use width="25" height="22.8" transform="translate(97.7 40.1) rotate(-9.2) scale(1 -1)" xlink:href="#_x31_"/>
+            <use width="25" height="22.8" transform="translate(6 82.1) rotate(-9.2) scale(1 -1)" xlink:href="#_x31_"/>
+            <use width="6.9" height="6.8" transform="translate(23.4 92.3)" xlink:href="#Circle"/>
+            <use width="6.9" height="6.8" transform="translate(48.5 21)" xlink:href="#Circle"/>
+            <use width="6.9" height="6.8" transform="translate(163.1 20.8)" xlink:href="#Circle"/>
+            <use width="6.9" height="6.8" transform="translate(161.8 78.4)" xlink:href="#Circle"/>
+            <use width="6.9" height="6.8" transform="translate(207.5 54.8)" xlink:href="#Circle"/>
+            <use width="6.9" height="6.8" transform="translate(249.5 28.8)" xlink:href="#Circle"/>
+            <use width="6.9" height="6.8" transform="translate(260.3 92.7)" xlink:href="#Circle"/>
+            <use width="3.8" height="3.8" transform="translate(267.2 4.7)" xlink:href="#Point"/>
+            <use width="3.8" height="3.8" transform="translate(221.7 25.2)" xlink:href="#Point"/>
+            <use width="3.8" height="3.8" transform="translate(195.3 4.3)" xlink:href="#Point"/>
+            <use width="3.8" height="3.8" transform="translate(173.7 47.1)" xlink:href="#Point"/>
+            <use width="3.8" height="3.8" transform="translate(136.4 25.6)" xlink:href="#Point"/>
+            <use width="3.8" height="3.8" transform="translate(192.7 97.8)" xlink:href="#Point"/>
+            <use width="3.8" height="3.8" transform="translate(119.4 51.6)" xlink:href="#Point"/>
+            <use width="3.8" height="3.8" transform="translate(84.9 36.7)" xlink:href="#Point"/>
+            <use width="3.8" height="3.8" transform="translate(98.1 4.7)" xlink:href="#Point"/>
+            <use width="3.8" height="3.8" transform="translate(29.6 3.2)" xlink:href="#Point"/>
+            <use width="3.8" height="3.8" transform="translate(37.1 58.1)" xlink:href="#Point"/>
+            <use width="3.8" height="3.8" transform="translate(95.7 96.7)" xlink:href="#Point"/>
+          </g>
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>

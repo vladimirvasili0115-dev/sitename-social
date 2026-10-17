@@ -1,0 +1,42 @@
+<svg width="28" height="32" viewBox="0 0 28 32" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <defs>
+        <path d="M0 0h28v32H0V0z" id="hrdtj8ldna"/>
+        <path d="M10.665 0v4.57c-3.313 0-5.999 2.63-5.999 5.876 0 3.245 2.686 5.876 5.999 5.876 2.4 0 4.47-1.38 5.428-3.373a6.05 6.05 0 0 0 4.472 1.388c-1.575 3.842-5.414 6.555-9.9 6.555C4.775 20.892 0 16.215 0 10.446 0 4.676 4.775 0 10.665 0z" id="ewdkxupi2b"/>
+        <path d="M23.979.551A.724.724 0 0 1 24 .725l-.004 4.552v8.148l-.005-.017.005.188c0 2.096-1.68 3.807-3.793 3.912l-.206.005c-2.209 0-4-1.754-4-3.917s1.791-3.917 4-3.917c.726 0 1.408.19 1.995.52V6.513L14.84 8.301a.241.241 0 0 0-.183.234v6.79c.005.077.007.153.007.23 0 2.163-1.79 3.917-3.999 3.917s-4-1.754-4-3.917c0-2.164 1.791-3.918 4-3.918.729 0 1.412.191 2 .525V3.717c0-.547.367-1.025.895-1.166L21.99.298l.166-.044.413-.11a.73.73 0 0 1 .115-.02l.419-.103a.724.724 0 0 1 .876.53z" id="ak0ow1rzef"/>
+        <linearGradient x1="92.979%" y1="3.975%" x2="0%" y2="91.388%" id="xckjafa25d">
+            <stop stop-color="#5CFFD9" stop-opacity="0" offset="0%"/>
+            <stop stop-color="#F6FCFF" stop-opacity="0" offset="30.538%"/>
+            <stop stop-color="#2CC0FF" offset="100%"/>
+        </linearGradient>
+        <linearGradient x1="39.503%" y1="75.999%" x2="82.319%" y2="18.643%" id="mmem9lq65e">
+            <stop stop-color="#E166B4" offset="0%"/>
+            <stop stop-color="#D241D3" offset="100%"/>
+        </linearGradient>
+        <filter x="-2.9%" y="-2.6%" width="105.8%" height="105.1%" filterUnits="objectBoundingBox" id="fkus4dnwlg">
+            <feOffset dy="-1" in="SourceAlpha" result="shadowOffsetInner1"/>
+            <feComposite in="shadowOffsetInner1" in2="SourceAlpha" operator="arithmetic" k2="-1" k3="1" result="shadowInnerInner1"/>
+            <feColorMatrix values="0 0 0 0 0.57702106 0 0 0 0 0.165783604 0 0 0 0 0.348575777 0 0 0 0.4 0" in="shadowInnerInner1"/>
+        </filter>
+    </defs>
+    <g fill="none" xlink:href="#hrdtj8ldna" fill-rule="evenodd">
+        <g transform="translate(3 5.609)">
+            <mask id="f8lhzw07qc" fill="#fff">
+                <use xlink:href="#ewdkxupi2b"/>
+            </mask>
+            <use fill="#4B556F" xlink:href="#ewdkxupi2b"/>
+            <g mask="url(#f8lhzw07qc)">
+                <g transform="scale(-1 1) rotate(45 2.45 -21.724)">
+                    <path fill="#607191" opacity=".554" d="m14.652 9.885-7.57 11.14h15.14z"/>
+                    <path fill="#607191" opacity=".626" d="M14.652 9.885 22.222 0H7.081z"/>
+                    <ellipse fill="#455168" cx="7.999" cy="15.31" rx="7.999" ry="7.835"/>
+                    <path fill="#455168" d="m6.839 2.188 3-1.766 3.604 5.876-3 1.766z"/>
+                </g>
+            </g>
+            <ellipse fill="url(#xckjafa25d)" cx="10.665" cy="10.446" rx="5.999" ry="5.876"/>
+        </g>
+        <g transform="translate(3 .5)">
+            <use fill="url(#mmem9lq65e)" xlink:href="#ak0ow1rzef"/>
+            <use fill="#000" filter="url(#fkus4dnwlg)" xlink:href="#ak0ow1rzef"/>
+        </g>
+    </g>
+</svg>

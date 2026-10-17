@@ -1,0 +1,42 @@
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" width="166" height="128" viewBox="0 0 166 128">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #f17871;
+      }
+
+      .cls-2 {
+        fill: #efcad7;
+      }
+
+      .cls-3 {
+        fill: #cf84ad;
+      }
+
+      .cls-4 {
+        fill: #fbe9ef;
+      }
+
+      .cls-5 {
+        fill: #f99c40;
+      }
+    </style>
+  </defs>
+  <g id="ChatBirthdayIcon_0_Layer0_0_MEMBER_0_MEMBER_0_FILL" data-name="ChatBirthdayIcon 0 Layer0 0 MEMBER 0 MEMBER 0 FILL">
+    <path class="cls-1" d="M53,27.5H33v29H53Z" transform="translate(0 0)"/>
+  </g>
+  <g id="ChatBirthdayIcon_0_Layer0_0_MEMBER_0_MEMBER_1_FILL" data-name="ChatBirthdayIcon 0 Layer0 0 MEMBER 0 MEMBER 1 FILL">
+    <path class="cls-1" d="M93,27.5H73v29H93Z" transform="translate(0 0)"/>
+  </g>
+  <g id="ChatBirthdayIcon_0_Layer0_0_MEMBER_0_MEMBER_2_FILL" data-name="ChatBirthdayIcon 0 Layer0 0 MEMBER 0 MEMBER 2 FILL">
+    <path class="cls-1" d="M133,27.5H113v29h20Z" transform="translate(0 0)"/>
+  </g>
+  <g id="ChatBirthdayIcon_0_Layer0_0_MEMBER_1_FILL" data-name="ChatBirthdayIcon 0 Layer0 0 MEMBER 1 FILL">
+    <path class="cls-2" d="M28.5,48a15,15,0,0,0-11,4.5A16.69,16.69,0,0,0,13,64v48a16.69,16.69,0,0,0,4.5,11.5,15,15,0,0,0,11,4.5H138a14.39,14.39,0,0,0,10.5-4.5A16.69,16.69,0,0,0,153,112V64a16.69,16.69,0,0,0-4.5-11.5A14.39,14.39,0,0,0,138,48Z" transform="translate(0 0)"/>
+  </g>
+  <path class="cls-3" d="M148.5,123.5A16.69,16.69,0,0,0,153,112V84.53L141,93,119,81,102,93,84,80,65,93,45,81,27,92,13,85.06V112a16.69,16.69,0,0,0,4.5,11.5,15,15,0,0,0,11,4.5H138A14.39,14.39,0,0,0,148.5,123.5Z" transform="translate(0 0)"/>
+  <path class="cls-4" d="M140,100c-8.46,0-12.58-6.06-15.3-10.07C122.56,86.77,121.83,86,121,86s-1.56.77-3.71,3.93c-2.72,4-6.83,10.07-15.29,10.07S89.42,93.94,86.7,89.93C84.55,86.77,83.82,86,83,86s-1.56.77-3.71,3.93C76.56,93.94,72.45,100,64,100S51.42,93.94,48.7,89.93C46.56,86.77,45.83,86,45,86s-1.56.77-3.7,3.93C38.57,93.94,34.46,100,26,100S13.43,93.94,10.71,89.93C8.56,86.77,7.84,86,7,86A7,7,0,0,1,7,72c8.46,0,12.57,6.06,15.29,10.07C24.43,85.23,25.16,86,26,86s1.56-.77,3.7-3.93C32.42,78.06,36.54,72,45,72s12.57,6.06,15.3,10.07C62.43,85.23,63.16,86,64,86s1.57-.77,3.71-3.93C70.42,78.06,74.53,72,83,72s12.57,6.06,15.29,10.07C100.42,85.23,101.15,86,102,86s1.56-.77,3.71-3.93C108.42,78.06,112.53,72,121,72s12.57,6.06,15.3,10.07C138.43,85.23,139.16,86,140,86s1.56-.77,3.71-3.93C146.43,78.06,150.54,72,159,72a7,7,0,0,1,0,14c-.84,0-1.57.77-3.71,3.93C152.57,93.94,148.46,100,140,100Z" transform="translate(0 0)"/>
+  <path class="cls-5" d="M52,13a9,9,0,0,1-18,0c0-5,4-13,9-13S52,8,52,13Z" transform="translate(0 0)"/>
+  <path class="cls-5" d="M92,13a9,9,0,0,1-18,0c0-5,4-13,9-13S92,8,92,13Z" transform="translate(0 0)"/>
+  <path class="cls-5" d="M132,13a9,9,0,0,1-18,0c0-5,4-13,9-13S132,8,132,13Z" transform="translate(0 0)"/>
+</svg>

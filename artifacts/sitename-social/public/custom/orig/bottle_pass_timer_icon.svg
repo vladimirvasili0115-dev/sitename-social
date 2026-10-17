@@ -1,0 +1,38 @@
+<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <defs>
+        <path d="M.75 11.251c0 6.075 4.924 10.999 11 10.999 6.075 0 11-4.924 11-10.999s-4.925-11-11-11c-6.076 0-11 4.925-11 11" id="a"/>
+        <path id="d" d="M0 .5h23.5V24H0z"/>
+        <path d="M.25 9.251a8.5 8.5 0 0 0 8.5 8.499 8.5 8.5 0 0 0 0-17 8.5 8.5 0 0 0-8.5 8.501" id="f"/>
+        <linearGradient x1="50%" y1="-3.168%" x2="50%" y2="161.925%" id="b">
+            <stop stop-color="#5DBCFF" offset="0%"/>
+            <stop stop-color="#3FA8F4" offset="100%"/>
+        </linearGradient>
+        <linearGradient x1="50%" y1="-3.949%" x2="50%" y2="141.227%" id="g">
+            <stop stop-color="#FFF" offset="0%"/>
+            <stop stop-color="#A7CFD1" offset="100%"/>
+        </linearGradient>
+    </defs>
+    <g fill="none" fill-rule="evenodd">
+        <g transform="translate(0 .5)">
+            <mask id="c" fill="#fff">
+                <use xlink:href="#a"/>
+            </mask>
+            <path d="M.75 11.251c0 6.075 4.924 10.999 11 10.999 6.075 0 11-4.924 11-10.999s-4.925-11-11-11c-6.076 0-11 4.925-11 11" fill="url(#b)" mask="url(#c)"/>
+        </g>
+        <g transform="translate(0 -.5)">
+            <mask id="e" fill="#fff">
+                <use xlink:href="#d"/>
+            </mask>
+            <path d="M11.75.5C5.271.5 0 5.771 0 12.25 0 18.73 5.271 24 11.75 24S23.5 18.73 23.5 12.25C23.5 5.771 18.229.5 11.75.5m0 .75c6.075 0 11 4.925 11 11s-4.925 11-11 11-11-4.925-11-11 4.925-11 11-11" fill-opacity=".2" fill="#000" mask="url(#e)"/>
+        </g>
+        <g transform="translate(3 2.5)">
+            <mask id="h" fill="#fff">
+                <use xlink:href="#f"/>
+            </mask>
+            <path d="M.25 9.251a8.5 8.5 0 0 0 8.5 8.499 8.5 8.5 0 0 0 0-17 8.5 8.5 0 0 0-8.5 8.501" fill="url(#g)" mask="url(#h)"/>
+        </g>
+        <path d="M11.75 3.25a8.5 8.5 0 1 0 .001 17.001 8.5 8.5 0 0 0-.001-17m0 .5c4.411 0 8 3.588 8 8 0 4.41-3.589 8-8 8s-8-3.59-8-8c0-4.412 3.589-8 8-8" fill-opacity=".2" fill="#000"/>
+        <path d="M9.75 11.75a2 2 0 1 1 4.001.002 2 2 0 0 1-4.001-.002" fill="#225486"/>
+        <path stroke="#225486" stroke-width="1.571" stroke-linecap="round" stroke-linejoin="round" d="M11.75 11.453v-5.43M11.75 11.75l-4.584 4.584"/>
+    </g>
+</svg>

@@ -1,0 +1,32 @@
+<svg width="32" height="27" viewBox="0 0 32 27" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <linearGradient x1="15.439%" y1="16.508%" x2="91.078%" y2="91.854%" id="a">
+            <stop stop-color="#FFCC30" offset="0%"/>
+            <stop stop-color="#FFAC00" offset="49.661%"/>
+            <stop stop-color="#FFCC30" offset="100%"/>
+        </linearGradient>
+        <linearGradient x1="95.281%" y1="23.142%" x2="19.398%" y2="90.291%" id="b">
+            <stop stop-color="#FFF" offset="0%"/>
+            <stop stop-color="#FFF" stop-opacity=".4" offset="100%"/>
+        </linearGradient>
+        <linearGradient x1="106.673%" y1="-33.681%" x2="21.652%" y2="88.002%" id="c">
+            <stop stop-color="#FFF" offset="0%"/>
+            <stop stop-color="#FFF" stop-opacity=".4" offset="100%"/>
+        </linearGradient>
+        <linearGradient x1="81.006%" y1="16.689%" x2="-3.299%" y2="94.383%" id="d">
+            <stop stop-color="#FFF" offset="0%"/>
+            <stop stop-color="#FFF" stop-opacity=".4" offset="100%"/>
+        </linearGradient>
+    </defs>
+    <g fill="none" fill-rule="evenodd">
+        <path d="M8 8a5.945 5.945 0 0 0-4-4 5.944 5.944 0 0 0 4-4 5.943 5.943 0 0 0 4 4 5.944 5.944 0 0 0-4 4" fill="#B6DFFF"/>
+        <path d="M29 17a4.458 4.458 0 0 0-3-3 4.458 4.458 0 0 0 3-3 4.458 4.458 0 0 0 3 3 4.458 4.458 0 0 0-3 3" fill="#FEB3E1"/>
+        <path d="M3 24a4.459 4.459 0 0 0-3-3 4.458 4.458 0 0 0 3-3 4.458 4.458 0 0 0 3 3 4.459 4.459 0 0 0-3 3" fill="#ACFFC7"/>
+        <path d="M12.338 18.332h6.601L15.746 8.241l-3.408 10.091zm14.922 5.201c.204.62 1.287.929 2.74.929V27H17.435v-2.538h2.364c.593 0 .89-.186.89-.557 0-.083-.03-.206-.092-.372l-.86-2.476h-8.29l-.767 2.229c-.061.165-.092.299-.092.402 0 .516.46.774 1.382.774h1.75V27H5.03L5 24.462c.88 0 1.52-.078 1.919-.232.399-.155.65-.376.752-.666L14.55 4h6.202l6.51 19.533z" fill="url(#a)"/>
+        <g opacity=".55">
+            <path d="m17.49 5.133-4.879 4.984 1.328 4.194H8.507L0 23.002h8.701v-2.545H6.945c-.925 0-1.387-.259-1.387-.776 0-.103.03-.238.093-.404l.77-2.235h8.32l.198.573 4.967-5.236-2.417-7.246z" fill="url(#b)" transform="translate(5 4)"/>
+            <path fill="url(#c)" d="m4.248 14.844 4.348-4.39 1.945-5.686-4.224 4.265z" transform="translate(5 4)"/>
+            <path fill="url(#d)" d="m11.725 7.294 4.843-4.89L15.757 0h-.493l-4.44 4.482z" transform="translate(5 4)"/>
+        </g>
+    </g>
+</svg>
