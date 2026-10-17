@@ -422,6 +422,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [passNote, setPassNote] = useState<string | null>(null);
   const [kickFor, setKickFor] = useState<{ id: string; name: string; avatar: string } | null>(null);
   const [kickNote, setKickNote] = useState<string | null>(null);
+  const [kickHelp, setKickHelp] = useState(false);
   const [complimentIn, setComplimentIn] = useState<{ name: string; avatar: string; kind: number } | null>(null);
   const [kickedToast, setKickedToast] = useState(false);
   const [refInfo, setRefInfo] = useState<{ invited: number; done: number }>({ invited: 0, done: 0 });
@@ -1283,12 +1284,12 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const menuItems = [
     { key: "messages", label: t("nav.messages"), go: () => { window.location.href = "/messages"; }, icon: <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[linear-gradient(180deg,#5AA8FF,#2F7FF0)]"><MessageSquare size={15} className="text-white" fill="#FFFFFF" /></span> },
     { key: "pass", label: t("bottle.passPremium"), go: openPass, icon: <img src={emojiSrc("🎟️")} alt="" className="h-6 w-6" /> },
-    { key: "ach", label: t("bottle.achievements"), dot: !(kisses.me ?? 0), go: () => setPanel("achievements"), icon: <BadgeCheck size={24} className="text-white" fill="#F5B400" strokeWidth={2} /> },
-    { key: "rating", label: t("bottle.menuRatings"), go: () => { setTopKind("kisses"); setPanel("top"); }, icon: <svg viewBox="0 0 24 24" className="h-6 w-6"><rect x="2" y="12" width="6" height="8" rx="1" fill="#5BA4F5" /><rect x="9" y="6" width="6" height="14" rx="1" fill="#2F7FF0" /><rect x="16" y="9" width="6" height="11" rx="1" fill="#5BA4F5" /><rect x="1" y="20" width="22" height="2" rx="1" fill="#1E5FC2" /></svg> },
+    { key: "ach", label: t("bottle.achievements"), dot: !(kisses.me ?? 0), go: () => setPanel("achievements"), icon: <span className="block h-6 w-6 bg-center bg-no-repeat" style={{ backgroundImage: "url(/custom/orig/misc_menu_achievements.svg)", backgroundSize: "21px 21px" }} /> },
+    { key: "rating", label: t("bottle.menuRatings"), go: () => { setTopKind("kisses"); setPanel("top"); }, icon: <span className="block h-6 w-6 bg-center bg-no-repeat" style={{ backgroundImage: "url(/custom/orig/misc_menu_tops.svg)", backgroundSize: "24px 15px" }} /> },
     { key: "league", label: t("bottle.league"), go: () => setPanel("league"), icon: <svg viewBox="0 0 24 24" className="h-6 w-6"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3Z" fill="#F2B705" stroke="#B7791F" strokeWidth="1.4" /><path d="m12 7 1.5 3.1 3.4.4-2.5 2.3.7 3.3L12 14.5 8.9 16.1l.7-3.3-2.5-2.3 3.4-.4L12 7Z" fill="#FFFFFF" /></svg> },
-    { key: "bottles", label: t("bottle.menuBottles"), go: () => { setPayNote(false); setPanel("bottles"); }, icon: <span className="relative h-6 w-6"><BottleSvg className="absolute left-0 top-0 h-6 -rotate-[35deg]" /><BottleSvg className="absolute left-2.5 top-0.5 h-5 -rotate-[35deg] saturate-150" /></span> },
-    { key: "frames", label: t("bottle.menuStyle"), go: () => { setFramePick(null); setFrameNote(null); setPanel("frames"); }, icon: <svg viewBox="0 0 24 24" className="h-6 w-6"><rect x="2.5" y="2.5" width="19" height="19" rx="2" fill="#FFD25E" stroke="#E79A00" strokeWidth="2" /><rect x="6.5" y="6.5" width="11" height="11" rx="1" fill="#6FB6FF" stroke="#E79A00" strokeWidth="1.5" /></svg> },
-    { key: "boosters", label: t("bottle.boosters"), go: () => { setPayNote(false); setPanel("boosters"); }, icon: <svg viewBox="0 0 24 24" className="h-6 w-6"><g fill="#3D7BE0">{[0, 45, 90, 135, 180, 225, 270, 315].map((angle) => <ellipse key={angle} cx="12" cy="5" rx="3" ry="4.2" transform={`rotate(${angle} 12 12)`} />)}</g><circle cx="12" cy="12" r="4" fill="#FFC83D" stroke="#FFFFFF" strokeWidth="1.2" /></svg> },
+    { key: "bottles", label: t("bottle.menuBottles"), go: () => { setPayNote(false); setPanel("bottles"); }, icon: <span className="block h-6 w-6 bg-center bg-no-repeat" style={{ backgroundImage: "url(/custom/orig/misc_menu_bottle.svg)", backgroundSize: "23px 23px" }} /> },
+    { key: "frames", label: t("bottle.menuStyle"), go: () => { setFramePick(null); setFrameNote(null); setPanel("frames"); }, icon: <span className="block h-6 w-6 bg-center bg-no-repeat" style={{ backgroundImage: "url(/custom/orig/misc_menu_decor.svg)", backgroundSize: "20px 20px" }} /> },
+    { key: "boosters", label: t("bottle.boosters"), go: () => { setPayNote(false); setPanel("boosters"); }, icon: <span className="block h-6 w-6 bg-center bg-no-repeat" style={{ backgroundImage: "url(/custom/orig/misc_menu_boosters.svg)", backgroundSize: "24px 24px" }} /> },
     { key: "rules", label: t("bottle.rules"), go: () => setPanel("rules"), icon: <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[linear-gradient(180deg,#7CD35B,#3FA62B)]"><BookOpen size={15} className="text-white" strokeWidth={2.4} /></span> },
   ];
   function handleChat(event: FormEvent<HTMLFormElement>) {
@@ -1966,8 +1967,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             {menuOpen ? (
               <>
                 <span aria-hidden="true" className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
-                <div role="menu" className={cn("absolute z-50 w-[200px] overflow-hidden rounded-lg bg-white py-1 shadow-[0_6px_20px_rgba(0,0,0,0.3)]", wide ? "left-full top-1/2 ml-3 -translate-y-1/2" : "right-[-60px] top-full mt-2")}>
-                  {menuItems.map((item) => <button key={item.key} role="menuitem" onClick={() => { setMenuOpen(false); item.go(); }} className="flex h-10 w-full items-center gap-3 px-3 text-left text-[15px] text-[#1F2937] hover:bg-[#F2F6FB]"><span aria-hidden="true" className="flex h-6 w-6 shrink-0 items-center justify-center">{item.icon}</span><span className="min-w-0 flex-1 truncate">{item.label}</span>{item.dot ? <span className="h-2 w-2 shrink-0 rounded-full bg-[#F04438]" /> : null}</button>)}
+                <div role="menu" className={cn("absolute z-50 min-w-[200px] overflow-hidden rounded-lg bg-white shadow-[0_0_20px_rgba(0,0,0,0.4)] animate-[bottle-pop_0.2s_ease-out]", wide ? "left-full top-1/2 ml-3 -translate-y-1/2" : "right-[-60px] top-full mt-2")}>
+                  {menuItems.map((item) => <button key={item.key} role="menuitem" onClick={() => { setMenuOpen(false); item.go(); }} className="relative flex h-10 w-full items-center whitespace-nowrap pr-10 text-left text-[15px] text-black transition-colors duration-[400ms] hover:bg-black/[0.04] active:bg-black/[0.07]"><span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center">{item.icon}</span>{item.label}{item.dot ? <span className="absolute right-4 top-1/2 h-2 w-2 -translate-y-1/2 rounded-full bg-[#FF4E00]" /> : null}</button>)}
                 </div>
               </>
             ) : null}
@@ -2178,9 +2179,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
 
         {panel ? (
           <div className={cn("absolute inset-0 z-50 flex items-center justify-center overflow-hidden bg-black/35 p-3", closing ? "animate-[panel-fade_0.28s_ease-in_reverse_forwards]" : "animate-[panel-fade_0.25s_ease-out]")} onClick={(event) => { event.stopPropagation(); closePanel(); }}>
-            <div role="dialog" aria-modal="true" aria-label={t(`bottle.${panel}`)} onClick={(event) => event.stopPropagation()} className={cn("relative max-h-full origin-top rounded-2xl shadow-2xl motion-reduce:animate-none", panel !== "top" && panel !== "shop" && panel !== "league" && "p-3", panel === "shop" ? "w-auto" : "w-full", closing ? "animate-[panel-up_0.28s_ease-in_forwards]" : "animate-[panel-drop_0.7s_cubic-bezier(0.22,1,0.36,1)]", panel === "shop" ? "flex max-h-[94%] max-w-[93%] flex-col rounded-[17px] bg-[#FFF0F0]" : panel === "wheel" || panel === "chances" ? "max-w-[380px] bg-[linear-gradient(180deg,#12998C,#7FD8C8)]" : panel === "top" ? "flex h-[93%] max-w-[420px] flex-col rounded-[17px] bg-white p-0" : panel === "league" ? "flex max-h-[90%] max-w-[420px] flex-col rounded-[17px] bg-white" : panel === "achievements" ? "max-w-[400px] bg-white" : panel === "frames" ? "max-w-[440px] bg-[#F7F7F8]" : panel === "pass" ? "max-w-[420px] overflow-y-auto overflow-x-hidden bg-[linear-gradient(180deg,#36A6FF,#1C7FE6)] [scrollbar-width:none]" : panel === "rooms" ? "max-w-[400px] border border-[#F5C451]/30 bg-[linear-gradient(165deg,#2B1D4E,#4E2D7C)]" : "max-w-[340px] bg-white")}>
-              <button onClick={() => closePanel()} aria-label={t("photos.close")} title={t("photos.close")} className={cn("absolute -right-2 -top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 bg-white shadow", panel === "shop" ? "z-20 h-8 w-8 border-0 bg-[url(/custom/orig/popup_btn_close.svg)] bg-[length:16px_16px] bg-center bg-no-repeat text-transparent shadow-[0_4px_8px_rgba(0,0,0,0.2)] [&>svg]:hidden" : panel === "wheel" || panel === "chances" ? "border-[#0E8478] text-[#0E8478]" : panel === "top" || (panel === "league" && leagueHead === "up") ? "border-0 text-transparent [&>svg]:hidden bg-[url(/custom/orig/popup_btn_close_league_up.svg)] bg-[length:16px_16px] bg-center bg-no-repeat" : panel === "league" && leagueHead === "down" ? "border-0 text-transparent [&>svg]:hidden bg-[url(/custom/orig/popup_btn_close_league_down.svg)] bg-[length:16px_16px] bg-center bg-no-repeat" : panel === "league" ? "border-0 text-transparent [&>svg]:hidden bg-[url(/custom/orig/popup_btn_close.svg)] bg-[length:16px_16px] bg-center bg-no-repeat" : panel === "rooms" ? "border-[#F5C451] text-[#C08A12]" : "border-[#8CC63F] text-[#8CC63F]")}><X size={18} strokeWidth={3} /></button>
-              <p className={cn("mb-1 text-center text-sm font-bold", panel === "wheel" || panel === "chances" || panel === "rooms" || panel === "pass" ? "mb-2 text-white" : "text-[#9CA3AF]", (panel === "top" || panel === "achievements" || panel === "league" || panel === "shop") && "sr-only")}>{t(`bottle.${panel}`)}</p>
+            <div role="dialog" aria-modal="true" aria-label={t(`bottle.${panel}`)} onClick={(event) => event.stopPropagation()} className={cn("relative max-h-full origin-top rounded-2xl shadow-2xl motion-reduce:animate-none", panel !== "top" && panel !== "shop" && panel !== "league" && panel !== "kick" && "p-3", panel === "shop" ? "w-auto" : "w-full", closing ? "animate-[panel-up_0.28s_ease-in_forwards]" : "animate-[panel-drop_0.7s_cubic-bezier(0.22,1,0.36,1)]", panel === "shop" ? "flex max-h-[94%] max-w-[93%] flex-col rounded-[17px] bg-[#FFF0F0]" : panel === "wheel" || panel === "chances" ? "max-w-[380px] bg-[linear-gradient(180deg,#12998C,#7FD8C8)]" : panel === "top" ? "flex h-[93%] max-w-[420px] flex-col rounded-[17px] bg-white p-0" : panel === "league" ? "flex max-h-[90%] max-w-[420px] flex-col rounded-[17px] bg-white" : panel === "kick" ? "max-w-[360px] rounded-[17px] bg-white" : panel === "achievements" ? "max-w-[400px] bg-white" : panel === "frames" ? "max-w-[440px] bg-[#F7F7F8]" : panel === "pass" ? "max-w-[420px] overflow-y-auto overflow-x-hidden bg-[linear-gradient(180deg,#36A6FF,#1C7FE6)] [scrollbar-width:none]" : panel === "rooms" ? "max-w-[400px] border border-[#F5C451]/30 bg-[linear-gradient(165deg,#2B1D4E,#4E2D7C)]" : "max-w-[340px] bg-white")}>
+              <button onClick={() => closePanel()} aria-label={t("photos.close")} title={t("photos.close")} className={cn("absolute -right-2 -top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 bg-white shadow", panel === "shop" ? "z-20 h-8 w-8 border-0 bg-[url(/custom/orig/popup_btn_close.svg)] bg-[length:16px_16px] bg-center bg-no-repeat text-transparent shadow-[0_4px_8px_rgba(0,0,0,0.2)] [&>svg]:hidden" : panel === "wheel" || panel === "chances" ? "border-[#0E8478] text-[#0E8478]" : panel === "top" || (panel === "league" && leagueHead === "up") ? "border-0 text-transparent [&>svg]:hidden bg-[url(/custom/orig/popup_btn_close_league_up.svg)] bg-[length:16px_16px] bg-center bg-no-repeat" : panel === "league" && leagueHead === "down" ? "border-0 text-transparent [&>svg]:hidden bg-[url(/custom/orig/popup_btn_close_league_down.svg)] bg-[length:16px_16px] bg-center bg-no-repeat" : panel === "league" || panel === "kick" ? "border-0 text-transparent [&>svg]:hidden bg-[url(/custom/orig/popup_btn_close.svg)] bg-[length:16px_16px] bg-center bg-no-repeat" : panel === "rooms" ? "border-[#F5C451] text-[#C08A12]" : "border-[#8CC63F] text-[#8CC63F]")}><X size={18} strokeWidth={3} /></button>
+              <p className={cn("mb-1 text-center text-sm font-bold", panel === "wheel" || panel === "chances" || panel === "rooms" || panel === "pass" ? "mb-2 text-white" : "text-[#9CA3AF]", (panel === "top" || panel === "achievements" || panel === "league" || panel === "shop" || panel === "kick") && "sr-only")}>{t(`bottle.${panel}`)}</p>
               {panel === "rooms" ? (() => {
                 const passBox = (value: string, change: (next: string) => void, label: string, focus?: boolean) => (
                   <span className="relative block min-w-0 flex-1">
@@ -2341,20 +2342,33 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
               ) : panel === "compliments" ? (
                 <ComplimentsPanel people={seated.filter((player) => !player.me).map((player) => ({ id: player.id, name: player.name, avatar: player.avatar }))} left={10 - (net?.compliments ?? localCompliments)} onSend={sendCompliment} />
               ) : panel === "kick" && kickFor ? (
-                <div className="text-[#1F2937]">
-                  <div className="flex items-center gap-3">
-                    <span className="relative shrink-0"><img src={kickFor.avatar} alt="" className="h-16 w-16 rounded-xl object-cover shadow" /><img src={emojiSrc("🦶")} alt="" className="absolute -bottom-2 -right-2 h-8 w-8 -rotate-12" /></span>
-                    <p className="text-sm leading-snug">{t("bottle.kickAsk1")} <b>{kickFor.name}</b> {t("bottle.kickAsk2")}</p>
+                // The original kick window (bottle-html5 KickoutDialog + kickout CSS).
+                <div className="flex flex-col text-[#424242]">
+                  <div className="relative flex h-11 shrink-0 items-center justify-center px-10">
+                    <button onClick={() => setKickHelp(true)} aria-label={t("bottle.kickHelpTitle")} title={t("bottle.kickHelpTitle")} className="absolute left-0 top-0 h-[33px] w-[38px]"><span aria-hidden="true" className="absolute left-3.5 top-[9px] h-[15px] w-[11px] bg-contain bg-no-repeat" style={{ backgroundImage: "url(/custom/orig/league_manual_icon.svg)" }} /></button>
+                    <p className="truncate text-[14px] font-bold text-[#CFCFCF]">{t("bottle.kickHeader")}</p>
                   </div>
-                  <p className="mt-3 rounded-lg bg-[#FEF3C7] px-2.5 py-2 text-xs font-semibold leading-snug text-[#92400E]">{t("bottle.kickWarn")}</p>
-                  {!liveVip ? <p className="mt-2 text-center text-xs text-[#6B7280]">{t("bottle.kickNeedVip")}</p> : null}
-                  {kickNote ? <p role="status" className="mt-2 text-center text-xs font-semibold text-[#B91C1C]">{kickNote}</p> : null}
-                  <div className="mt-3 flex gap-2">
-                    <button onClick={() => setPanel(null)} className="h-10 flex-1 rounded-xl border-2 border-[#8CC63F] text-sm font-bold text-[#5B8C24] hover:bg-[#F4FBEA]">{t("common.cancel")}</button>
-                    {liveVip
-                      ? <button onClick={() => void doKick()} className="h-10 flex-1 rounded-xl bg-[linear-gradient(180deg,#FF7A7A,#D92B2B)] text-sm font-bold text-white shadow hover:brightness-110">{t("bottle.kickDo")}</button>
-                      : <button onClick={() => setPanel("vip")} className="h-10 flex-1 rounded-xl bg-[linear-gradient(180deg,#4FA8FF,#2B7DE0)] text-sm font-bold text-white shadow hover:brightness-110">{t("bottle.kickVipBtn")}</button>}
+                  <div className="px-[15px] text-[14px] leading-[18px]">
+                    <div className="flex w-full items-center">
+                      <span className="relative h-[62px] w-[62px] shrink-0 rounded-lg bg-cover bg-top" style={{ backgroundImage: `url(${kickFor.avatar || NO_PHOTO})` }}><span aria-hidden="true" className="absolute -bottom-[11px] -right-2.5 h-9 w-[42px] bg-contain bg-no-repeat" style={{ backgroundImage: "url(/custom/orig/kickout_icon_kick.svg)" }} /></span>
+                      <p className="ml-3">{(() => { const [a, b = ""] = t("bottle.kickAskFull").split("{name}"); return <>{a}<b className="text-[#2F6FD6]">{kickFor.name}</b>{b}</>; })()}</p>
+                    </div>
+                    <p className="mb-[9px] mt-[17px] whitespace-pre-wrap rounded-[10px] bg-[#FFFAE2] px-[7px] pb-2.5 pt-[9px] text-center leading-[1.23]">{liveVip ? t("bottle.kickWarn") : t("bottle.kickNeedVip")}</p>
+                    {kickNote ? <p role="status" className="text-center text-[12px] font-semibold text-[#E03D1F]">{kickNote}</p> : null}
                   </div>
+                  <div className="flex shrink-0 items-center justify-center gap-5 p-[15px]">
+                    <OrigButton kind="cancel" onClick={() => setPanel(null)}>{t("bottle.kickCancel")}</OrigButton>
+                    {liveVip ? <OrigButton onClick={() => void doKick()}>{t("bottle.kickDo")}</OrigButton> : <OrigButton kind="info" onClick={() => setPanel("vip")}>{t("bottle.details")}</OrigButton>}
+                  </div>
+                  {kickHelp ? (
+                    <OrigPopup z="z-[70]" title={t("bottle.kickHelpTitle")} onClose={() => setKickHelp(false)} buttons={<OrigButton onClick={() => setKickHelp(false)}>{t("bottle.lockOk")}</OrigButton>}>
+                      <div className="space-y-3 text-[14px] leading-[18px] text-[#424242]">
+                        {[["kickout_help_icon_kick", "bottle.kickHelp1"], ["kickout_help_icon_timer", "bottle.kickHelp2"], ["kickout_help_icon_vip", "bottle.kickHelp3"]].map(([icon, key]) => (
+                          <div key={key} className="flex items-start gap-3"><span aria-hidden="true" className="h-9 w-9 shrink-0 bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url(/custom/orig/${icon}.svg)` }} /><p>{t(key as "bottle.kickHelp1")}</p></div>
+                        ))}
+                      </div>
+                    </OrigPopup>
+                  ) : null}
                 </div>
               ) : panel === "settings" ? (
                 <div className="max-h-[70cqmin] overflow-y-auto">
@@ -2972,27 +2986,31 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       ) : null}
       {daily ? (
         <div className="absolute inset-0 z-[61] flex items-center justify-center bg-black/40 p-4" onClick={takeDaily}>
-          <div role="dialog" aria-label={t("bottle.dailyTitle")} onClick={(event) => event.stopPropagation()} className="relative w-full max-w-[400px] animate-[bottle-pop_0.25s_ease-out] rounded-2xl bg-[linear-gradient(180deg,#FFF6E0,#FFFFFF)] px-4 pb-5 pt-4 text-center text-[#1F2937] shadow-2xl">
-            <button onClick={takeDaily} aria-label={t("photos.close")} title={t("photos.close")} className="absolute -right-2 -top-2 flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#8CC63F] bg-white text-[#8CC63F] shadow"><X size={18} strokeWidth={3} /></button>
-            <p className="text-lg font-black text-[#B45309]">🎁 {t("bottle.dailyTitle")}</p>
-            <p className="mt-1 text-sm text-[#6B7280]">{t("bottle.dailyText")}</p>
-            {daily.premium ? <p className="mt-2 inline-block rounded-full bg-[linear-gradient(90deg,#36A6FF,#1C7FE6)] px-3 py-0.5 text-xs font-bold text-white">🎟️ {t("bottle.dailyPremium")}</p> : null}
-            <ol className="mt-3 grid grid-cols-5 gap-1.5">
+          {/* The original daily bonus (bottle-html5 DailyBonusDialog + daily-bonus CSS). */}
+          <div role="dialog" aria-label={t("bottle.dailyTitle")} onClick={(event) => event.stopPropagation()} className="relative isolate flex w-[290px] max-w-full animate-[bottle-pop_0.25s_ease-out] flex-col items-center overflow-hidden rounded-[17px] bg-white text-[#424242] shadow-[0_4px_8px_rgba(0,0,0,0.2)] [@media(orientation:landscape)]:w-[430px]">
+            <span aria-hidden="true" className="absolute inset-x-0 top-0 -z-10 h-[165px] rounded-t-[17px] bg-[length:auto_165px] bg-repeat-x" style={{ backgroundImage: "url(/custom/orig/daily_bonus_bg.svg)" }} />
+            <p className="flex h-11 items-center text-[14px] font-bold text-white">{t("bottle.dailyTitle")}</p>
+            <p className="mb-[15px] w-[220px] whitespace-pre-line text-center text-[14px] [@media(orientation:landscape)]:w-[310px]">{t("bottle.dailyDesc")}</p>
+            <div className="flex h-[190px] flex-col items-center justify-between [@media(orientation:landscape)]:grid [@media(orientation:landscape)]:h-auto [@media(orientation:landscape)]:grid-cols-2 [@media(orientation:landscape)]:gap-x-2.5 [@media(orientation:landscape)]:gap-y-1.5">
               {DAILY_PRIZES.map((prize, index) => {
                 const day = index + 1;
-                const state = day < daily.day ? "past" : day === daily.day ? "now" : "next";
+                const on = day <= daily.day;
                 return (
-                  <li key={day} className={cn("flex flex-col items-center rounded-lg border px-0.5 py-1.5 text-[10px] font-bold", state === "now" ? "scale-110 border-[#F59E0B] bg-[#FDE68A] text-[#92400E] shadow" : state === "past" ? "border-[#BBF7D0] bg-[#F0FDF4] text-[#15803D]" : "border-[#E5E7EB] bg-white text-[#9CA3AF]")}>
-                    <span>{day}</span>
-                    <span className="text-base leading-6">{state === "past" ? "✓" : day === 5 ? "🎁" : "❤️"}</span>
-                    <span className="tabular-nums">+{daily.premium ? prize * 2 : prize}</span>
-                  </li>
+                  <div key={day} className={cn("flex h-[30px] w-[233px] items-center justify-between rounded-[15px] [@media(orientation:landscape)]:w-[145px]", on ? "bg-[#B7EE66]" : "bg-black/[0.06]")}>
+                    <div className="ml-[5px] flex items-center">
+                      <span className="h-[22px] w-[22px] rounded-full bg-white bg-[length:13px_10px] bg-center bg-no-repeat" style={on && day !== daily.day ? { backgroundImage: "url(/custom/orig/achievement_icon_check.svg)" } : undefined} />
+                      <span className="pl-[5px] text-[14px]">{day === daily.day ? t("bottle.dailyToday") : t(`bottle.dailyDay${day}` as "bottle.dailyDay1")}</span>
+                    </div>
+                    <span className="mx-[15px] ml-1 flex h-[19px] w-[26px] shrink-0 justify-center bg-[length:26px_19px] bg-no-repeat" style={{ backgroundImage: "url(/custom/orig/daily_bonus_heart.svg)" }}><span className="self-center text-[13px] font-bold text-white">{daily.premium ? prize * 2 : prize}</span></span>
+                  </div>
                 );
               })}
-            </ol>
-            <p className="mt-3 flex items-center justify-center gap-1.5 text-2xl font-black text-[#E8203A]">+{daily.hearts}<Heart size={24} fill="#E8352B" stroke="none" /></p>
-            <p className="text-xs text-[#6B7280]">{t("bottle.dailyDay").replace("{n}", String(daily.day))}</p>
-            <button onClick={takeDaily} className="mt-3 h-10 min-w-[140px] rounded-lg bg-[#8CC63F] px-4 text-sm font-bold text-white hover:brightness-105">{t("bottle.dailyTake")}</button>
+            </div>
+            <button type="button" onClick={() => { if (!daily.premium) { takeDaily(); openPass(); } }} className={cn("mt-2.5 flex h-[45px] w-[233px] items-center justify-between rounded-[10px] bg-[#FDB100] text-white", !daily.premium && "cursor-pointer")}>
+              <span className="ml-3 text-left text-[12px] font-bold">{t(daily.premium ? "bottle.dailyPremiumOn" : "bottle.dailyPremiumOff")}</span>
+              {daily.premium ? <span className="mx-[15px] ml-1 flex h-[19px] w-[26px] shrink-0 justify-center bg-[length:26px_19px] bg-no-repeat" style={{ backgroundImage: "url(/custom/orig/daily_bonus_heart.svg)" }}><span className="self-center text-[13px] font-bold text-white">{daily.hearts}</span></span> : <span aria-hidden="true" className="ml-1 h-[45px] w-[55px] shrink-0 bg-[length:58px_65px] bg-center bg-no-repeat" style={{ backgroundImage: "url(/custom/orig/daily_bonus_premium_icon.svg)" }} />}
+            </button>
+            <div className="flex w-full justify-center px-[15px] py-5"><OrigButton onClick={takeDaily}>{t("bottle.dailyBtn")} +{daily.hearts} ❤</OrigButton></div>
           </div>
         </div>
       ) : null}
