@@ -446,7 +446,10 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [mySmiles, setMySmiles] = useState(0);
   const wheelLock = useRef(false);
   const [topKind, setTopKind] = useState<"help" | "kisses" | "songs" | "dear" | "influence" | "smiles">("kisses");
-  const [topPeriod, setTopPeriod] = useState<"all" | "week" | "day">("all");
+  const [topPeriod, setTopPeriod] = useState<"all" | "month" | "week" | "day">("all");
+  const [topHelp, setTopHelp] = useState(false);
+  const [topMenu, setTopMenu] = useState(false);
+  const topSwipe = useRef(0);
   const [topData, setTopData] = useState<BottleTop | null>(null);
   const [sent, setSent] = useState<Record<string, number>>({});
   const [skin, setSkin] = useState(0);
@@ -1622,6 +1625,15 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     setCardOut(out);
     void loadProfile(out);
   }
+  // Open anyone's card (from the ratings and other lists): a player at the table or someone elsewhere.
+  function showUserCard(user: { id: string; name: string; avatar: string }) {
+    const index = players.findIndex((item) => !item.empty && (item.id === user.id || (item.me && (user.id === "me" || user.id === net?.me))));
+    setCardBack([]); setFlagMenu(false); setSignOpen(false); setCardNote(null);
+    if (index >= 0) { setCardOut(null); setPicked(index); setCard(true); void loadProfile(players[index]); return; }
+    const out: Player = { id: user.id, name: user.name, age: 0, female: false, avatar: user.avatar || NO_PHOTO, zodiac: null };
+    setCardOut(out); setCard(true);
+    void loadProfile(out);
+  }
   function cardGoBack() {
     const last = cardBack[cardBack.length - 1];
     if (!last) return;
@@ -1773,7 +1785,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           );
           const label = topIds.has(player.id) ? "label_top_vip.svg" : seat?.pass || (player.me && vip) ? "label_vip.svg" : null;
           return (
-            <div className={cn("inset-0 flex items-center justify-center p-3", wide ? "absolute z-[45] bg-black/10" : "fixed z-[90] bg-black/50")} onClick={(event) => { event.stopPropagation(); setCard(false); }}>
+            <div className={cn("inset-0 flex items-center justify-center p-3", wide ? cn("absolute bg-black/10", panel ? "z-[60]" : "z-[45]") : "fixed z-[90] bg-black/50")} onClick={(event) => { event.stopPropagation(); setCard(false); }}>
               <div role="dialog" aria-modal="true" aria-label={`${player.name}, ${player.age}`} onClick={(event) => event.stopPropagation()} className={cn("relative shadow-[0_18px_50px_rgba(0,0,0,0.45)]", land ? "h-[400px] max-h-[80vh] max-w-[91%]" : "w-[400px] max-w-[80vw]")} style={{ borderRadius: 17, maxHeight: land ? undefined : "calc(94% - env(safe-area-inset-top))" }}>
                 <button onClick={() => setCard(false)} aria-label={t("photos.close")} title={t("photos.close")} className="absolute -right-3 -top-3 z-20 flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#8DC63F] bg-white text-[#8DC63F] shadow hover:bg-[#F0FBEA]"><X size={19} strokeWidth={3} /></button>
                 {cardBack.length ? <button onClick={cardGoBack} aria-label={t("bottle.back")} title={t("bottle.back")} className="absolute -left-3 -top-3 z-20 flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#8DC63F] bg-white text-[#8DC63F] shadow hover:bg-[#F0FBEA]"><ChevronLeft size={22} strokeWidth={3} /></button> : null}
@@ -2156,8 +2168,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
 
         {panel ? (
           <div className={cn("absolute inset-0 z-50 flex items-center justify-center overflow-hidden bg-black/35 p-3", closing ? "animate-[panel-fade_0.28s_ease-in_reverse_forwards]" : "animate-[panel-fade_0.25s_ease-out]")} onClick={(event) => { event.stopPropagation(); closePanel(); }}>
-            <div role="dialog" aria-modal="true" aria-label={t(`bottle.${panel}`)} onClick={(event) => event.stopPropagation()} className={cn("relative max-h-full w-full origin-top rounded-2xl p-3 shadow-2xl motion-reduce:animate-none", closing ? "animate-[panel-up_0.28s_ease-in_forwards]" : "animate-[panel-drop_0.7s_cubic-bezier(0.22,1,0.36,1)]", panel === "shop" ? "max-w-[440px] bg-[linear-gradient(180deg,#F26D7D,#F9B4B9)]" : panel === "wheel" || panel === "chances" ? "max-w-[380px] bg-[linear-gradient(180deg,#12998C,#7FD8C8)]" : panel === "top" || panel === "league" ? "max-w-[420px] bg-white" : panel === "achievements" ? "max-w-[400px] bg-white" : panel === "frames" ? "max-w-[440px] bg-[#F7F7F8]" : panel === "pass" ? "max-w-[420px] overflow-y-auto overflow-x-hidden bg-[linear-gradient(180deg,#36A6FF,#1C7FE6)] [scrollbar-width:none]" : panel === "rooms" ? "max-w-[400px] border border-[#F5C451]/30 bg-[linear-gradient(165deg,#2B1D4E,#4E2D7C)]" : "max-w-[340px] bg-white")}>
-              <button onClick={() => closePanel()} aria-label={t("photos.close")} title={t("photos.close")} className={cn("absolute -right-2 -top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 bg-white shadow", panel === "shop" ? "border-[#EF4444] text-[#EF4444]" : panel === "wheel" || panel === "chances" ? "border-[#0E8478] text-[#0E8478]" : panel === "top" ? "border-[#3B9AD9] text-[#3B9AD9]" : panel === "rooms" ? "border-[#F5C451] text-[#C08A12]" : "border-[#8CC63F] text-[#8CC63F]")}><X size={18} strokeWidth={3} /></button>
+            <div role="dialog" aria-modal="true" aria-label={t(`bottle.${panel}`)} onClick={(event) => event.stopPropagation()} className={cn("relative max-h-full w-full origin-top rounded-2xl shadow-2xl motion-reduce:animate-none", panel !== "top" && "p-3", closing ? "animate-[panel-up_0.28s_ease-in_forwards]" : "animate-[panel-drop_0.7s_cubic-bezier(0.22,1,0.36,1)]", panel === "shop" ? "max-w-[440px] bg-[linear-gradient(180deg,#F26D7D,#F9B4B9)]" : panel === "wheel" || panel === "chances" ? "max-w-[380px] bg-[linear-gradient(180deg,#12998C,#7FD8C8)]" : panel === "top" ? "flex h-[93%] max-w-[420px] flex-col rounded-[17px] bg-white p-0" : panel === "league" ? "max-w-[420px] bg-white" : panel === "achievements" ? "max-w-[400px] bg-white" : panel === "frames" ? "max-w-[440px] bg-[#F7F7F8]" : panel === "pass" ? "max-w-[420px] overflow-y-auto overflow-x-hidden bg-[linear-gradient(180deg,#36A6FF,#1C7FE6)] [scrollbar-width:none]" : panel === "rooms" ? "max-w-[400px] border border-[#F5C451]/30 bg-[linear-gradient(165deg,#2B1D4E,#4E2D7C)]" : "max-w-[340px] bg-white")}>
+              <button onClick={() => closePanel()} aria-label={t("photos.close")} title={t("photos.close")} className={cn("absolute -right-2 -top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 bg-white shadow", panel === "shop" ? "border-[#EF4444] text-[#EF4444]" : panel === "wheel" || panel === "chances" ? "border-[#0E8478] text-[#0E8478]" : panel === "top" ? "border-0 text-transparent [&>svg]:hidden bg-[url(/custom/orig/popup_btn_close_league_up.svg)] bg-[length:16px_16px] bg-center bg-no-repeat" : panel === "rooms" ? "border-[#F5C451] text-[#C08A12]" : "border-[#8CC63F] text-[#8CC63F]")}><X size={18} strokeWidth={3} /></button>
               <p className={cn("mb-1 text-center text-sm font-bold", panel === "shop" || panel === "wheel" || panel === "chances" || panel === "rooms" || panel === "pass" ? "mb-2 text-white" : "text-[#9CA3AF]", (panel === "top" || panel === "achievements" || panel === "league") && "sr-only")}>{t(`bottle.${panel}`)}</p>
               {panel === "rooms" ? (() => {
                 const passBox = (value: string, change: (next: string) => void, label: string, focus?: boolean) => (
@@ -2350,60 +2362,73 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   <Link href="/settings" className={row}><UserRoundCog size={20} className="w-6 text-[#3B82F6]" />{t("bottle.profileSettings")}</Link>
                 </div>
               ) : panel === "top" ? (() => {
-                const kinds = [["kisses", "💋"], ["songs", "🎵"], ["dear", "❤️"], ["influence", "💞"], ["smiles", "😊"]] as const;
-                const local = seated.map((player) => ({ id: player.id, name: player.me ? t("common.you") : player.name, avatar: player.avatar, count: topKind === "kisses" ? kisses[player.id] ?? 0 : 0 })).filter((row) => row.count > 0).sort((a, b) => b.count - a.count).map((row, index) => ({ ...row, place: index + 1 }));
+                // The original ratings dialog (bottle-html5 TopsDialog + top-dlg CSS): a blue header with five round tabs,
+                // the title and a period picker, then 48px rows on a light background with "Top-10 / Top-25" borders.
+                const O = "/custom/orig/";
+                const kinds = [["kisses", "total_kisses", "ic_top_total_kisses", "32px 24px", "28px 20px", "rgb(219,49,0)"], ["songs", "dj_score", "ic_top_dj_score", "33px 24px", "22px 22px", "rgb(180,93,140)"], ["dear", "price", "ic_top_price", "29px 24px", "26px 20px", "rgb(220,54,0)"], ["influence", "harem_price", "ic_top_harem_price", "34px 24px", "29px 20px", "rgb(220,54,0)"], ["smiles", "gestures", "token", "23px 23px", "20px 20px", "rgb(252,131,0)"]] as const;
+                const kind = topKind === "help" ? "kisses" : topKind;
+                const ki = Math.max(0, kinds.findIndex(([key]) => key === kind));
+                const [, code, iconName, iconSize] = kinds[ki];
+                const color = kinds[ki][5];
+                const periods = kind === "dear" || kind === "influence" ? (["all"] as const) : (["all", "month", "week", "day"] as const);
+                const periodLabel = (period: string) => t(period === "all" ? "bottle.topAll" : period === "month" ? "bottle.topMonth" : period === "week" ? "bottle.topWeek" : "bottle.topDay");
+                const local = seated.map((player) => ({ id: player.id, name: player.me ? t("common.you") : player.name, avatar: player.avatar, count: kind === "kisses" ? kisses[player.id] ?? 0 : 0 })).filter((row) => row.count > 0).sort((a, b) => b.count - a.count).map((row, index) => ({ ...row, place: index + 1 }));
                 const rows = online ? topData?.list ?? null : local;
                 const meId = online ? net?.me : "me";
                 const mine = online ? topData?.me ?? null : (() => { const row = local.find((item) => item.id === "me"); return row ? { place: row.place, count: row.count } : null; })();
-                const lips = (on: boolean, size = 26) => <svg viewBox="0 0 32 22" width={size} height={size * 0.69} aria-hidden="true"><path d="M16 5.5C13.5 1.5 9 .8 6 2.6 3.5 4 1.6 7.6.6 10.4 4.6 9.6 8.6 9.4 16 10.6c7.4-1.2 11.4-1 15.4-.2-1-2.8-2.9-6.4-5.4-7.8-3-1.8-7.5-1.1-10 2.9Z" fill={on ? "#E8232E" : "#9CC7EA"} /><path d="M.6 10.4c3 6.2 8.6 10.6 15.4 10.6s12.4-4.4 15.4-10.6c-4 .9-8 1.4-15.4 1.4S4.6 11.3.6 10.4Z" fill={on ? "#C8101C" : "#8BBBE3"} /><path d="M7 14.5c2.6 1.6 5.6 2.2 9 2.2" stroke="#FFFFFF" strokeOpacity={on ? 0.55 : 0.35} strokeWidth="1.4" fill="none" strokeLinecap="round" /></svg>;
-                const tabIcon = (kind: string, on: boolean) => kind === "kisses" ? lips(on) : kind === "songs"
-                  ? <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M9 18.5V5.2l11-2.2v12.6" stroke={on ? "#7A4DE8" : "#9CC7EA"} strokeWidth="2.4" fill="none" strokeLinejoin="round" /><ellipse cx="6" cy="18.6" rx="3.4" ry="2.7" fill={on ? "#7A4DE8" : "#9CC7EA"} /><ellipse cx="17" cy="15.8" rx="3.4" ry="2.7" fill={on ? "#7A4DE8" : "#9CC7EA"} /></svg>
-                  : kind === "dear" ? <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><defs><linearGradient id="top-dear" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#FF8A1E" /><stop offset="1" stopColor="#E8400C" /></linearGradient></defs><path d="M12 21.5S2.5 15.6 2.5 8.9C2.5 5.6 5 3.2 8 3.2c1.8 0 3.2.9 4 2.2.8-1.3 2.2-2.2 4-2.2 3 0 5.5 2.4 5.5 5.7 0 6.7-9.5 12.6-9.5 12.6Z" fill={on ? "url(#top-dear)" : "#9CC7EA"} /></svg>
-                  : kind === "influence" ? <svg viewBox="0 0 30 24" width="30" height="24" aria-hidden="true"><defs><linearGradient id="top-infl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#FF8A1E" /><stop offset="1" stopColor="#E8400C" /></linearGradient></defs><path d="M12 21.5S2.5 15.6 2.5 8.9C2.5 5.6 5 3.2 8 3.2c1.8 0 3.2.9 4 2.2.8-1.3 2.2-2.2 4-2.2 3 0 5.5 2.4 5.5 5.7 0 6.7-9.5 12.6-9.5 12.6Z" transform="translate(0 1) scale(0.82)" fill={on ? "url(#top-infl)" : "#8BBBE3"} /><path d="M12 21.5S2.5 15.6 2.5 8.9C2.5 5.6 5 3.2 8 3.2c1.8 0 3.2.9 4 2.2.8-1.3 2.2-2.2 4-2.2 3 0 5.5 2.4 5.5 5.7 0 6.7-9.5 12.6-9.5 12.6Z" transform="translate(10 2.5) scale(0.82)" fill={on ? "url(#top-infl)" : "#9CC7EA"} stroke={on ? "#FFFFFF" : "#B8DAF3"} strokeWidth="1.2" /></svg>
-                  : <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill={on ? "#FFC21A" : "#9CC7EA"} /><circle cx="8.6" cy="9.6" r="1.4" fill="#FFFFFF" /><circle cx="15.4" cy="9.6" r="1.4" fill="#FFFFFF" /><path d="M7 13.6c1.2 2.4 3 3.4 5 3.4s3.8-1 5-3.4" stroke="#FFFFFF" strokeWidth="1.8" fill="none" strokeLinecap="round" /></svg>;
-                const icon = tabIcon(topKind, true);
                 const me = players[meIndex];
-                const avatar = (src: string | null | undefined, name: string | null | undefined) => src ? <img src={src} alt="" className="h-10 w-10 shrink-0 rounded-md object-cover" /> : <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[#C9D3DC] text-sm font-bold text-white">{(name ?? "?").slice(0, 1).toUpperCase()}</span>;
+                const list = rows === null ? null : rows.some((row) => row.id === meId) ? rows : [...rows, { id: meId ?? "me", name: me?.name ?? "", avatar: me?.avatar ?? null, count: mine?.count ?? 0, place: mine?.place ?? 0 }];
+                const go = (step: number) => { const next = kinds[(ki + step + kinds.length) % kinds.length][0]; if (next === "dear" || next === "influence") setTopPeriod("all"); setTopKind(next); setTopMenu(false); };
+                const border = (start: number, end: number) => (
+                  <li key={`b${start}`} aria-hidden="true" className="flex shrink-0 basis-[50px] flex-col justify-center text-[11px] text-black/30">
+                    <span className="flex w-full justify-center border-b border-black/10 pb-1.5">{t("bottle.topBorder").replace("{n}", String(start))}</span>
+                    <span className="flex w-full justify-center pt-[5px]">{t("bottle.topBorder").replace("{n}", String(end))}</span>
+                  </li>
+                );
                 return (
-                  <div className="-m-3 overflow-hidden rounded-2xl bg-white">
-                    <div className="bg-[linear-gradient(180deg,#8FCBF3,#B8E0F8)] px-3 pb-2 pt-2">
-                      <div role="tablist" className="relative mb-2 flex items-center justify-center gap-[clamp(10px,4vw,26px)] pr-6">
-                        <button role="tab" aria-selected={topKind === "help"} onClick={() => setTopKind("help")} title={t("bottle.topHelp")} className={cn("absolute left-0 flex h-7 w-7 items-center justify-center rounded-full text-lg font-black", topKind === "help" ? "bg-white text-[#2B7FB8] shadow" : "text-white")}>?</button>
-                        {kinds.map(([kind]) => <button key={kind} role="tab" aria-selected={topKind === kind} onClick={() => setTopKind(kind)} title={t(`bottle.top_${kind}`)} className={cn("flex h-9 w-10 items-center justify-center rounded-lg transition-transform", topKind === kind ? "scale-110" : "hover:scale-105")}>{tabIcon(kind, topKind === kind)}</button>)}
+                  <div className="flex h-full min-h-0 flex-col text-black" onTouchStart={(event) => { topSwipe.current = event.touches[0].clientX; }} onTouchEnd={(event) => { const dx = event.changedTouches[0].clientX - topSwipe.current; if (Math.abs(dx) > 60) go(dx < 0 ? 1 : -1); }}>
+                    <div className="relative flex shrink-0 flex-col items-center justify-center rounded-tl-[17px] rounded-tr-[17px] border-b border-black/[0.06] bg-[#83C7FF] px-[15px] pt-1.5">
+                      <button onClick={() => setTopHelp(true)} aria-label={t("bottle.topHelp")} title={t("bottle.topHelp")} className="absolute left-0 top-0 h-[33px] w-[33px]"><span aria-hidden="true" className="absolute left-[11px] top-[9px] h-[15px] w-[11px] bg-contain bg-no-repeat" style={{ backgroundImage: `url(${O}league_manual_icon_up_down.svg)` }} /></button>
+                      <div role="tablist" className="flex h-12 shrink-0 items-center justify-center">
+                        {kinds.map(([key, , icon, on, off]) => <button key={key} role="tab" aria-selected={kind === key} aria-label={t(`bottle.topT_${key}`)} title={t(`bottle.topT_${key}`)} onClick={() => go(kinds.findIndex(([k]) => k === key) - ki)} className="h-12 w-12 shrink-0 cursor-pointer rounded-full bg-center bg-no-repeat transition-colors duration-500 active:bg-[#6DBAF9]" style={{ backgroundImage: `url(${O}${kind === key ? icon : icon === "token" ? "token_blue" : `${icon}_disabled`}.svg)`, backgroundSize: kind === key ? on : off }} />)}
                       </div>
-                      {topKind === "help" ? null : (
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="truncate text-sm font-bold text-white [text-shadow:0_1px_1px_rgba(0,0,0,0.15)]">{t(`bottle.top_${topKind}`)}</p>
-                          <select value={topPeriod} onChange={(event) => setTopPeriod(event.target.value as "all")} aria-label={t("bottle.topPeriod")} className="h-7 shrink-0 rounded-full border border-white bg-white/25 px-2 text-xs font-semibold text-white [&>option]:text-[#1F2937]">
-                            <option value="all">{t("bottle.topAll")}</option>
-                            <option value="week">{t("bottle.topWeek")}</option>
-                            <option value="day">{t("bottle.topDay")}</option>
-                          </select>
-                        </div>
-                      )}
-                    </div>
-                    {topKind === "help" ? <p className="p-3 text-sm leading-relaxed text-[#1F2937]">{t("bottle.topHelpText")}</p> : (
-                      <>
-                        <ol className="max-h-[min(52cqmin,380px)] overflow-y-auto bg-[linear-gradient(180deg,#E6F4FD,#FFFFFF_45%)] px-2 py-1">
-                          {rows === null ? <li className="py-8 text-center text-xs text-[#6B7280]">{t("bottle.songLoading")}</li> : rows.length === 0 ? <li className="py-8 text-center text-xs text-[#6B7280]">{t("bottle.topEmpty")}</li> : rows.map((row) => (
-                            <li key={row.id} className={cn("flex min-h-12 items-center gap-2 rounded-md px-1 py-1 text-[13px] text-[#111827]", row.id === meId && "bg-[#FFF3B0]")}>
-                              {avatar(row.avatar, row.name)}
-                              <span className="min-w-0 flex-1 truncate font-bold"><span className="tabular-nums">{row.place}.</span> {row.id === meId ? t("common.you") : row.name}</span>
-                              <span className="shrink-0">{icon}</span>
-                              <span className="min-w-[72px] shrink-0 text-right text-[15px] font-bold tabular-nums text-[#E2231A]">{row.count.toLocaleString("ru-RU")}</span>
-                            </li>
-                          ))}
-                        </ol>
-                        <div className="border-t border-[#E5E7EB] bg-white p-2">
-                          <div className="flex min-h-12 items-center gap-2 rounded-lg border border-[#F3D97A] bg-[#FFF3B0] px-1.5 py-1 text-[13px] text-[#111827]">
-                            {avatar(me.avatar, me.name)}
-                            <span className="min-w-0 flex-1 truncate font-bold"><span className="tabular-nums">{mine ? `${mine.place}.` : "—"}</span> {me.name}</span>
-                            <span className="shrink-0">{icon}</span>
-                            <span className="min-w-[72px] shrink-0 text-right text-[15px] font-bold tabular-nums text-[#E2231A]">{(mine?.count ?? 0).toLocaleString("ru-RU")}</span>
+                      <div className="mb-1.5 flex h-6 w-full items-center justify-between">
+                        <p className="truncate text-[14px] leading-[14px] text-white">{t(`bottle.topT_${kind}`)}</p>
+                        {periods.length > 1 ? (
+                          <div className="relative inline-block">
+                            <button onClick={(event) => { event.stopPropagation(); setTopMenu(!topMenu); }} aria-expanded={topMenu} aria-label={t("bottle.topPeriod")} className="relative flex w-[100px] items-center rounded-xl bg-[#6DBAF9] px-2 pb-1.5 pt-[5px] text-[11px] italic text-white after:absolute after:right-2 after:top-1/2 after:h-2 after:w-2 after:border-b after:border-r after:border-white after:transition-transform after:duration-300 after:content-[''] after:[transform:translateY(-75%)_rotate(45deg)] aria-expanded:after:[transform:translateY(-25%)_rotate(-135deg)]">{periodLabel(topPeriod)}</button>
+                            <div role="menu" className={cn("absolute left-0 right-0 top-full z-[2] mt-[3px] min-w-full rounded-xl bg-white shadow-[0_3px_7px_rgba(0,0,0,0.2)] transition-all duration-300", topMenu ? "visible translate-y-0 opacity-100" : "pointer-events-none invisible -translate-y-[15px] opacity-0")}>
+                              {periods.map((period) => <button key={period} role="menuitem" onClick={() => { setTopPeriod(period); setTopMenu(false); }} className="relative flex h-8 w-full items-center whitespace-nowrap border-b border-[rgba(0,90,168,0.05)] bg-[#E0F1FF] pl-2 pr-6 text-[11px] italic text-[#7CACD5] transition-colors first:rounded-t-xl last:rounded-b-xl last:border-b-0 hover:bg-[#B2DAFD] hover:text-white">{periodLabel(period)}{topPeriod === period ? <span aria-hidden="true" className="absolute right-[5px] top-1/2 h-3.5 w-3.5 -translate-y-1/2 bg-contain bg-no-repeat" style={{ backgroundImage: `url(${O}ic_top_selected.svg)` }} /> : null}</button>)}
+                            </div>
                           </div>
-                        </div>
-                      </>
-                    )}
+                        ) : null}
+                      </div>
+                    </div>
+                    <ol className="relative flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden rounded-b-[17px] bg-repeat-x pb-[15px] [background-attachment:local] [background-position:0_-12px] [background-size:auto_273px] [scrollbar-width:none]" style={{ backgroundImage: `url(${O}ic_top_bg.svg)` }} onClick={() => setTopMenu(false)}>
+                      {list === null ? <li className="flex flex-1 items-center justify-center py-10"><span aria-label={t("bottle.songLoading")} className="h-7 w-7 animate-spin bg-contain bg-no-repeat" style={{ backgroundImage: `url(${O}icon_loading.svg)` }} /></li>
+                        : list.length === 0 ? <li className="py-8 text-center text-xs text-black/40">{t("bottle.topEmpty")}</li>
+                        : list.flatMap((row, index) => {
+                          const viewer = row.id === meId;
+                          const open = () => { if (!viewer || !online) showUserCard({ id: row.id, name: row.name ?? "", avatar: row.avatar ?? "" }); else showUserCard({ id: "me", name: me?.name ?? "", avatar: me?.avatar ?? "" }); };
+                          const item = (
+                            <li key={row.id} className={cn("flex shrink-0 basis-12 items-center px-[15px] first:mt-1.5", viewer && "sticky -bottom-[3px] -top-px z-[1] bg-white shadow-[0_-1px_0_rgba(0,0,0,0.06)] first:mt-0")}>
+                              <button onClick={open} aria-label={row.name ?? ""} className="h-[42px] w-[42px] shrink-0 rounded-[4px] bg-cover bg-top bg-no-repeat" style={{ backgroundImage: `url(${row.avatar || NO_PHOTO})` }} />
+                              <div className={cn("flex h-9 min-w-0 flex-1 items-center rounded-r-[7px]", viewer && "bg-[#FFF5AE]")}>
+                                <b className="ml-2 shrink-0 text-[14px] tabular-nums">{row.place ? `${row.place}. ` : ""}</b>
+                                <button onClick={open} className="ml-0.5 w-px min-w-0 flex-1 truncate text-left text-[14px] leading-4">{viewer ? me?.name ?? row.name : row.name}</button>
+                                <span aria-hidden="true" className="shrink-0 bg-contain bg-no-repeat" style={{ backgroundImage: `url(${O}${iconName}.svg)`, width: iconSize.split(" ")[0], height: iconSize.split(" ")[1] }} />
+                                <b className="ml-[7px] min-w-[73px] shrink-0 text-left text-[14px] tabular-nums" style={{ color }}>{row.count.toLocaleString("ru-RU")}</b>
+                              </div>
+                            </li>
+                          );
+                          return index === 10 ? [border(10, 25), item] : index === 25 ? [border(25, 50), item] : [item];
+                        })}
+                    </ol>
+                    {topHelp ? (
+                      <OrigPopup z="z-[70]" title={t(`bottle.topH_${code}`)} onClose={() => setTopHelp(false)} buttons={<OrigButton onClick={() => setTopHelp(false)}>{t("bottle.lockOk")}</OrigButton>}>
+                        <p className="whitespace-pre-line text-center text-[14px] leading-[18px] text-[#424242]">{t(`bottle.topX_${code}`)}{"\n\n"}{t("bottle.topXCommon")}</p>
+                      </OrigPopup>
+                    ) : null}
                   </div>
                 );
                             })() : panel === "menu" ? (
