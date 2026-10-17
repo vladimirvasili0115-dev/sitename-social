@@ -1007,7 +1007,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [serverProgress, setServerProgress] = useState<Progress | null>(null);
   const pullProgress = useRef<() => void>(() => {});
   pullProgress.current = () => { if (online) void bottleProgress().then((value) => { if (value) setServerProgress(value); }); };
-  useEffect(() => { pullProgress.current(); const timer = window.setInterval(() => pullProgress.current(), 60000); return () => window.clearInterval(timer); }, [online]);
+  useEffect(() => { pullProgress.current(); const timer = window.setInterval(() => pullProgress.current(), 15000); return () => window.clearInterval(timer); }, [online]);
   const progress: Progress = iAmAdmin ? { kisses: 1e9, friends: 1e9, dj: 1e9, gestures: 1e9, vip: true } : online && serverProgress ? serverProgress : { kisses: kisses.me ?? 0, friends: 0, dj: readStats().songsSent ?? 0, gestures: readStats().gestures ?? 0, vip };
   const progressReady = !online || Boolean(serverProgress);
   const openKey = progressReady ? [...Object.entries(GIFT_RULES).filter(([, rule]) => rule[0] !== "vip" && rule[1] > 0 && missing(rule, progress) === 0).map(([gift]) => gift),
@@ -1677,6 +1677,23 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   }, []);
   useEffect(() => { if (card && picked !== null && players[picked]) void loadProfile(players[picked]); }, [card, picked]); // eslint-disable-line react-hooks/exhaustive-deps
   // The profile card: on a computer it sits in the middle of the whole game, on a phone over the table.
+  // Windows that show counters follow along live while they are open: rating, league, season pass, the profile card,
+  // and the gift list (locks open as soon as the progress is reached).
+  const liveRef = useRef<() => void>(() => {});
+  liveRef.current = () => {
+    if (!online) return;
+    if (panel === "pass") void bottlePass().then((data) => setPassData(data));
+    if (panel === "league") void bottleLeagueInfo().then((data) => { if (data) setLeague({ ...data, at: Date.now() }); });
+    if (panel === "top" && topKind !== "help") void bottleTop(topKind, topPeriod).then((data) => { if (data) setTopData(data); });
+    if (card && picked !== null && players[picked]) void loadProfile(players[picked]);
+    if (!card && picked !== null) pullProgress.current();
+  };
+  const liveOn = online && (panel === "pass" || panel === "league" || (panel === "top" && topKind !== "help") || picked !== null);
+  useEffect(() => {
+    if (!liveOn) return;
+    const timer = window.setInterval(() => liveRef.current(), 3000);
+    return () => window.clearInterval(timer);
+  }, [liveOn]);
   const cardView = card && picked !== null ? (() => {
           const player = players[picked];
           const suitor = admirerOf(player);
