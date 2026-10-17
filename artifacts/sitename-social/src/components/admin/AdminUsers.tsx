@@ -52,11 +52,13 @@ export function AdminUsers({ owner }: { owner: boolean }) {
   }), [loadFlags]);
   // Bonus hearts, kisses and songs for one player, typed right under the row; a negative number takes away.
   const [bonus, setBonus] = useState<Record<string, { hearts: string; kisses: string; songs: string; smiles: string }>>({});
-  const [bonusNote, setBonusNote] = useState<{ id: string; ok: boolean } | null>(null);
+  const [bonusNote, setBonusNote] = useState<{ id: string; ok: boolean; max?: boolean } | null>(null);
   async function giveBonus(id: string) {
     const draft = bonus[id] ?? { hearts: "", kisses: "", songs: "", smiles: "" };
     const hearts = Math.trunc(Number(draft.hearts) || 0), kisses = Math.trunc(Number(draft.kisses) || 0), songs = Math.trunc(Number(draft.songs) || 0), smiles = Math.trunc(Number(draft.smiles) || 0);
     if (!hearts && !kisses && !songs && !smiles) return;
+    // The server takes at most 100 000 000 at a time; say so instead of a bare "failed".
+    if ([hearts, kisses, songs, smiles].some((value) => Math.abs(value) > 100000000)) return setBonusNote({ id, ok: false, max: true });
     setBusy(id);
     const results = await Promise.all([hearts ? grantHearts(id, hearts) : 1, kisses ? gameGrant(id, "kisses", kisses) : 1, songs ? gameGrant(id, "dj", songs) : 1, smiles ? gameGrant(id, "smiles", smiles) : 1]);
     setBusy(null);
@@ -189,11 +191,11 @@ export function AdminUsers({ owner }: { owner: boolean }) {
                       <label key={key} className="flex items-center gap-1" title={t(`admin.bonus_${key}` as TranslationKey)}>
                         <span aria-hidden="true">{icon}</span>
                         <span className="min-w-[2.5rem] text-[11px] font-semibold tabular-nums" style={{ color }}>{(have ?? 0).toLocaleString("ru-RU")}</span>
-                        <input type="number" step={1} placeholder="+0" value={bonus[user.id]?.[key] ?? ""} onChange={(event) => setBonus((cur) => ({ ...cur, [user.id]: { ...(cur[user.id] ?? { hearts: "", kisses: "", songs: "", smiles: "" }), [key]: event.target.value } }))} aria-label={t(`admin.bonus_${key}` as TranslationKey)} className="h-8 w-20 rounded-lg border border-border bg-surface px-2 text-xs tabular-nums text-text outline-none focus:border-accent" />
+                        <input type="number" step={1} min={-100000000} max={100000000} placeholder="+0" value={bonus[user.id]?.[key] ?? ""} onChange={(event) => setBonus((cur) => ({ ...cur, [user.id]: { ...(cur[user.id] ?? { hearts: "", kisses: "", songs: "", smiles: "" }), [key]: event.target.value } }))} aria-label={t(`admin.bonus_${key}` as TranslationKey)} className="h-8 w-20 rounded-lg border border-border bg-surface px-2 text-xs tabular-nums text-text outline-none focus:border-accent" />
                       </label>
                     ))}
                     <button type="submit" disabled={locked} className="h-8 rounded-lg bg-accent px-3 text-[11px] font-semibold text-bg disabled:opacity-50">{t("admin.bonusGive")}</button>
-                    {bonusNote?.id === user.id ? <span role="status" className={cn("text-[11px] font-semibold", bonusNote.ok ? "text-accent" : "text-danger")}>{t(bonusNote.ok ? "admin.gameSaved" : "admin.vipFail")}</span> : null}
+                    {bonusNote?.id === user.id ? <span role="status" className={cn("text-[11px] font-semibold", bonusNote.ok ? "text-accent" : "text-danger")}>{t(bonusNote.ok ? "admin.gameSaved" : bonusNote.max ? "admin.bonusMax" : "admin.vipFail")}</span> : null}
                   </form>
                   {gameFor === user.id ? <GamePanel id={user.id} /> : null}
                   {coinsFor === user.id ? (
@@ -278,7 +280,7 @@ function GamePanel({ id }: { id: string }) {
     </div>
   );
   const amountRow = (key: "hearts" | "kisses" | "smiles" | "dj" | "chances" | "kiss_fire" | "refuse_slap", label: string, have: number | undefined, color: string) => (
-    <form key={key} onSubmit={(event) => { event.preventDefault(); const value = Math.trunc(Number(drafts[key])); if (!value) return; void apply(() => (key === "hearts" ? grantHearts(id, value) : gameGrant(id, key, value))); }} className="flex flex-wrap items-center gap-1.5">
+    <form key={key} onSubmit={(event) => { event.preventDefault(); const value = Math.trunc(Number(drafts[key])); if (!value) return; if (Math.abs(value) > 100000000) { setNote({ ok: false, text: t("admin.bonusMax") }); return; } void apply(() => (key === "hearts" ? grantHearts(id, value) : gameGrant(id, key, value))); }} className="flex flex-wrap items-center gap-1.5">
       <span className="w-20 shrink-0 text-xs font-semibold" style={{ color }}>{label}</span>
       <span className="min-w-[110px] text-[11px] text-muted">{t("admin.gameHave").replace("{n}", String(have ?? 0))}</span>
       <input type="number" step={1} value={drafts[key]} onChange={(event) => setDrafts((cur) => ({ ...cur, [key]: event.target.value }))} aria-label={label} className="h-8 w-24 rounded-lg border border-border bg-surface-2 px-2 text-xs tabular-nums text-text outline-none focus:border-accent" />
