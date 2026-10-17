@@ -2,10 +2,10 @@
 import { VerifiedMark } from "@/components/ui/VerifiedMark";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { BadgeCheck, Ban, ChevronDown, Coins, Crown, Gamepad2, Heart, ShieldCheck, ShieldOff, Trash2, Undo2 } from "lucide-react";
+import { Award, BadgeCheck, Ban, ChevronDown, Coins, Crown, Gamepad2, Heart, ShieldCheck, ShieldOff, Trash2, Undo2 } from "lucide-react";
 import { useSyncExternalStore } from "react";
 import { refreshVerified, verifiedStore } from "@/lib/verifiedSync";
-import { banUser, deleteUser, fetchAdminUsers, fetchUserDetail, grantCoins, grantHearts, setModerator, setVerified, vipAll, vipCount, gameState, gameGrant, type GameState, type AdminUser, type UserDetail } from "@/lib/adminSync";
+import { banUser, deleteUser, fetchAdminUsers, fetchUserDetail, grantCoins, grantHearts, setModerator, setVerified, vipAll, vipCount, gameState, gameGrant, gameFlags, type GameState, type AdminUser, type UserDetail } from "@/lib/adminSync";
 import type { TranslationKey } from "@/i18n/LanguageProvider";
 import { initialsAvatar } from "@/lib/avatar";
 import { formatDay } from "@/lib/datetime";
@@ -42,10 +42,19 @@ export function AdminUsers({ owner }: { owner: boolean }) {
   const [detail, setDetail] = useState<UserDetail | null>(null);
   const [failed, setFailed] = useState(false);
   const verified = useSyncExternalStore(verifiedStore.subscribe, verifiedStore.get, verifiedStore.getServer);
+  // VIP and TOP of every listed player, so each row shows "VIP et / VIP-i qaytar" and "TOP-a sal / TOP-dan çıxar".
+  const [flags, setFlags] = useState<Record<string, { vip: boolean; top: boolean }>>({});
+  const loadFlags = useCallback((ids: string[]) => { if (ids.length) void gameFlags(ids).then((value) => { if (value && typeof value === "object") setFlags((cur) => ({ ...cur, ...value })); }); }, []);
   const load = useCallback((search: string) => void fetchAdminUsers(search).then((list) => {
     setUsers(list ?? []);
     setFailed(!list);
-  }), []);
+    loadFlags((list ?? []).map((user) => user.id));
+  }), [loadFlags]);
+  // VIP and TOP stay until they are taken back (about ten years).
+  async function toggleGame(id: string, kind: "vip" | "top", on: boolean) {
+    await run(id, async () => (await gameGrant(id, kind, on ? 0 : 3650)) !== null);
+    loadFlags([id]);
+  }
   // Search as the moderator types, with a short pause.
   useEffect(() => {
     const timer = window.setTimeout(() => load(query), 300);
@@ -109,6 +118,8 @@ export function AdminUsers({ owner }: { owner: boolean }) {
                   </div>
                   <div className="mt-3 flex flex-wrap gap-2">
                     {owner ? <button disabled={locked} onClick={() => { setGrantKind("coins"); setCoinsFor(coinsFor === user.id && grantKind === "coins" ? null : user.id); setAmount("100"); }} className={action}><Coins size={14} />{t("admin.coins")}</button> : null}
+                    <button disabled={locked} onClick={() => void toggleGame(user.id, "vip", Boolean(flags[user.id]?.vip))} className={cn(action, flags[user.id]?.vip ? "border-[#D97706] text-[#D97706]" : "")}><Crown size={14} />{t(flags[user.id]?.vip ? "admin.vipOff" : "admin.vipOn")}</button>
+                    <button disabled={locked} onClick={() => void toggleGame(user.id, "top", Boolean(flags[user.id]?.top))} className={cn(action, flags[user.id]?.top ? "border-[#CA8A04] text-[#CA8A04]" : "")}><Award size={14} />{t(flags[user.id]?.top ? "admin.topOff" : "admin.topOn")}</button>
                     <button disabled={locked} onClick={() => setGameFor(gameFor === user.id ? null : user.id)} aria-expanded={gameFor === user.id} className={action}><Gamepad2 size={14} />{t("admin.game")}</button>
                     {user.moderator ? null : user.banned
                       ? <button disabled={locked} onClick={() => void run(user.id, () => banUser(user.id, -1, ""))} className={action}><Undo2 size={14} />{t("settings.blkUnblock")}</button>
