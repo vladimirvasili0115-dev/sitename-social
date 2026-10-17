@@ -373,7 +373,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [vip, setVip] = useState(false);
   // Admins: everything in the game is open for them (to test it), and their seat and card look different.
   const iAmAdmin = useIsAdmin() === true;
-  useEffect(() => { if (iAmAdmin) setVip(true); }, [iAmAdmin]);
+
   const [adminIds, setAdminIds] = useState<string[]>([]);
   useEffect(() => { if (online) void bottleAdminIds().then((ids) => { if (Array.isArray(ids)) setAdminIds(ids); }); }, [online]);
   const [doubleUntil, setDoubleUntil] = useState(0);
@@ -893,6 +893,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     setFrameNote(t("bottle.frameDone"));
   }
   const liveVip = online ? Boolean(net?.vip) : vip;
+  // VIP comes only from the server (a bought VIP) or the admin role; there is no switch to turn it on by hand.
+  const serverVip = Boolean(net?.vip);
+  useEffect(() => { setVip(iAmAdmin || (online && serverVip)); }, [iAmAdmin, online, serverVip]);
   const hasPass = (player: Player) => (online ? Boolean(net?.seats.find((seat) => seat.id === (player.me ? net.me : player.id))?.pass) : false);
   const activeSecs = online ? net?.active?.secs ?? 0 : Math.floor((Date.now() - localActive) / 1000);
   const [localCompliments, setLocalCompliments] = useState(0);
@@ -2304,11 +2307,6 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   </label>
                   <button onClick={onLeave} className={row}><Home size={20} className="w-6 text-[#3B82F6]" />{t("bottle.backLobby")}</button>
                   <label className={row}><Volume2 size={20} className="w-6 shrink-0 text-[#8CC63F]" /><span className="flex-1">{t("bottle.sounds")}</span><input type="range" min={0} max={100} value={volume} onChange={(event) => setVolumeLevel(Number(event.target.value))} className="w-24 accent-[#8CC63F]" /></label>
-                  <label className={cn(row, "cursor-pointer")}>
-                    <span aria-hidden="true" className="w-6 text-center text-lg">👑</span><span className="flex-1">{t("bottle.vipDemo")}</span>
-                    <input type="checkbox" checked={vip} onChange={(event) => setVip(event.target.checked)} className="peer sr-only" />
-                    <span className="relative h-7 w-12 rounded-full bg-[#D1D5DB] transition-colors after:absolute after:left-0.5 after:top-0.5 after:h-6 after:w-6 after:rounded-full after:bg-white after:shadow after:transition-transform peer-checked:bg-[#F59E0B] peer-checked:after:translate-x-5 peer-focus-visible:ring-2 peer-focus-visible:ring-[#2563EB]" />
-                  </label>
                   <label className={row}><Music size={20} className="w-6 shrink-0 text-[#EC4899]" /><span className="flex-1">{t("bottle.music")}</span><input type="range" min={0} max={100} value={music} onChange={(event) => setMusic(Number(event.target.value))} className="w-24 accent-[#8CC63F]" /></label>
                   <button onClick={invite} className={row}><UserPlus size={20} className="w-6 text-[#8CC63F]" />{copied ? t("bottle.copied") : t("bottle.invite")}</button>
                   <Link href="/friends" className={row}><Users size={20} className="w-6 text-[#3B82F6]" />{t("bottle.myFriends")}</Link>
