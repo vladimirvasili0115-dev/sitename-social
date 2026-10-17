@@ -195,3 +195,12 @@ button { cursor: pointer; }
   50% { transform: translate(-50%, -50%) scale(1.4); opacity: 1; }
   100% { transform: translate(-50%, -50%) scale(1.8); opacity: 0; }
 }
+
+/* Table effect: things fall over the whole table, swaying a little. */
+@keyframes vfx-fall {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 0; }
+  8% { opacity: 1; }
+  50% { transform: translate(var(--sway), 55cqmin) rotate(160deg); }
+  90% { opacity: 1; }
+  100% { transform: translate(0, 112cqmin) rotate(320deg); opacity: 0; }
+}

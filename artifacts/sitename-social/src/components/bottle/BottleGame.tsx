@@ -128,6 +128,34 @@ function BoostFx({ kind, fromLeft, x, y }: { kind: "kiss_fire" | "refuse_slap"; 
     </div>
   );
 }
+// Table effects from the original: when all 12 seats are taken and enough players wear gifts of one theme,
+// the whole table gets a shower (petals, confetti, hearts…). Types match gift names by their start, like "partyhat1".
+const TABLE_VFX: { kind: string; sound: string; emoji: string[]; types: Record<string, string[]>; filters: Record<string, number> }[] = [
+  { kind: "balloon1", sound: "vfx_balloon1", emoji: ["🎈"], types: { gifts: ["leninbadge"], hats: ["lenincap"] }, filters: { gifts: 10, hats: 9 } },
+  { kind: "balloon2", sound: "vfx_balloon2", emoji: ["🎈", "😊"], types: { drinks: ["smilecup"], gifts: ["smile"] }, filters: { drinks: 10, gifts: 11 } },
+  { kind: "confetti", sound: "vfx_confetti", emoji: ["🎊", "🎉", "✨"], types: { drinks: ["birthdaycake"], hats: ["partyhat"] }, filters: { drinks: 9, hats: 9 } },
+  { kind: "flower", sound: "vfx_flower", emoji: ["🌸", "🌺", "🌷"], types: { drinks: ["perfume", "springcocktail"], gifts: ["rose"] }, filters: { drinks: 9, gifts: 11 } },
+  { kind: "ghost", sound: "vfx_ghost", emoji: ["👻", "🎃"], types: { drinks: ["brainicecream", "candle", "tarantula"], gifts: ["ghost", "pumpkin"], hats: ["witch"] }, filters: { drinks: 12, gifts: 12, hats: 12 } },
+  { kind: "heart", sound: "vfx_heart", emoji: ["❤️", "💖"], types: { drinks: ["romanticcandle"], gifts: ["valentine"] }, filters: { drinks: 9, gifts: 9 } },
+  { kind: "heart2", sound: "vfx_heart2", emoji: ["💕", "💋"], types: { drinks: ["lipstick", "romanticcandle"], gifts: ["bikinibottom", "bikinitop", "swimmers"] }, filters: { drinks: 8, gifts: 10 } },
+  { kind: "leaf", sound: "vfx_leaf", emoji: ["🍂", "🍁"], types: { drinks: ["mushroomsbasket"], gifts: ["leaf"], hats: ["wreath"] }, filters: { drinks: 9, gifts: 11, hats: 9 } },
+  { kind: "pacifier", sound: "vfx_pacifier", emoji: ["🍼"], types: { gifts: ["bomb"], hats: ["clownhat", "ololosh"] }, filters: { hats: 9, gifts: 11 } },
+  { kind: "photo", sound: "vfx_photo", emoji: ["📸", "🖼️"], types: { drinks: ["camera"], gifts: ["polaroid"] }, filters: { drinks: 7, gifts: 11 } },
+  { kind: "roll", sound: "vfx_roll", emoji: ["🍣", "🍙"], types: { gifts: ["trout"], drinks: ["japaneseroll", "japaneseset", "japanesesushi"] }, filters: { gifts: 11, drinks: 6 } },
+  { kind: "snow", sound: "vfx_snow", emoji: ["❄️", "☃️"], types: { hats: ["winterhat"], drinks: ["christmasball", "snowman"] }, filters: { hats: 6, drinks: 6 } },
+  { kind: "sock", sound: "vfx_sock", emoji: ["🧦", "⭐"], types: { drinks: ["canteen"], gifts: ["goldstar"], hats: ["budenovka", "hatservice", "hatvdv", "helmet", "tankhelmet"] }, filters: { drinks: 6, gifts: 11, hats: 9 } },
+];
+const TABLE_VFX_SECONDS = 10;
+function TableShower({ emoji, seed }: { emoji: string[]; seed: number }) {
+  return (
+    <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-[35] overflow-hidden">
+      {Array.from({ length: 36 }, (_, n) => {
+        const r = (k: number) => { const x = Math.sin((seed + n * 13 + k) * 9301.7) * 43758.5; return x - Math.floor(x); };
+        return <span key={n} className="absolute -top-[8cqmin] text-[5cqmin]" style={{ left: `${r(1) * 100}%`, ["--sway" as string]: `${(r(2) - 0.5) * 16}cqmin`, animation: `vfx-fall ${3.5 + r(3) * 3}s linear ${r(4) * (TABLE_VFX_SECONDS - 4)}s both`, fontSize: `${3.5 + r(5) * 3}cqmin` }}>{emoji[n % emoji.length]}</span>;
+      })}
+    </div>
+  );
+}
 // League colours (header gradient) and badge: Bronze, Silver, Gold, Platinum, Diamond.
 const LEAGUE_COLORS: [string, string][] = [["#D08A52", "#9C5A2B"], ["#B8C2CC", "#7D8A96"], ["#F7C948", "#D49B0A"], ["#7FD3E6", "#3A9AB3"], ["#A78BFA", "#6D28D9"]];
 function LeagueBadge({ league, className }: { league: number; className?: string }) {
@@ -984,6 +1012,33 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     setHearts(heartsRef.current);
   };
   useEffect(() => { if (tour === 6) setTourBonus(10); }, [tour]);
+  // Table effect: checked whenever gifts land (every player's screen decides the same way, like the original).
+  const [tableVfx, setTableVfx] = useState<{ key: number; kind: string; emoji: string[] } | null>(null);
+  const vfxUntil = useRef(0);
+  useEffect(() => {
+    if (seated.length !== 12 || Date.now() < vfxUntil.current) return;
+    const names = (id: string) => (stickers[id] ?? []).map((gift) => (gift.startsWith("c:") ? gift.slice(2) : gift));
+    for (const vfx of TABLE_VFX) {
+      const counts: Record<string, number> = {};
+      for (const player of seated) {
+        const mine = names(player.me ? "me" : player.id).concat(names(player.id));
+        for (const [key, types] of Object.entries(vfx.types)) if (mine.some((name) => types.some((type) => name.startsWith(type)))) counts[key] = (counts[key] ?? 0) + 1;
+      }
+      if (Object.entries(vfx.filters).every(([key, min]) => (counts[key] ?? 0) >= min)) {
+        vfxUntil.current = Date.now() + TABLE_VFX_SECONDS * 1000;
+        const key = Date.now();
+        setTableVfx({ key, kind: vfx.kind, emoji: vfx.emoji });
+        playSfx(vfx.sound);
+        window.setTimeout(() => setTableVfx((value) => (value?.key === key ? null : value)), TABLE_VFX_SECONDS * 1000 + 6000);
+        return;
+      }
+    }
+  }, [stickers, seated.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Two players with the same name get a number, like the original: "Leyla [1]".
+  const nameSuffix = (player: Player) => {
+    const same = seated.filter((other) => other.name === player.name);
+    return same.length > 1 ? same.indexOf(player) : 0;
+  };
   // Boosters from the original: "passion" (a burning kiss) and "slap" (on a refusal). After answering, a 3-second button
   // offers one if the player has it; everybody at the table sees the effect over the pair.
   const [items, setItems] = useState<BottleItems>(() => {
@@ -1704,6 +1759,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           return (
             <div key={player.id} className={cn("absolute -translate-x-1/2 -translate-y-1/2 transition-[left,top]", wide ? "w-[17cqmin]" : "w-[16cqmin]", " duration-[1100ms] ease-in-out motion-reduce:duration-0", staged && active ? "z-30" : index === turn && "z-10")} style={staged && active ? { left: `calc(${CENTER_X}% ${index === turn ? "-" : "+"} 12.5cqmin)`, top: `${STAGE_Y}%` } : { left: `${seats[index][0]}%`, top: `${seats[index][1]}%` }}>
               <button type="button" onClick={(event) => { event.stopPropagation(); if (dedicate) { if (!player.me) setChosen((list) => (list.includes(player.id) ? list.filter((id) => id !== player.id) : [...list, player.id])); return; } setGiftNote(null); setCardNote(null); setFlagMenu(false); setSignOpen(false); setLeaveAsk(false); if (player.me) { if (Date.now() - meTap.current > 15000 || picked !== index) { meTap.current = Date.now(); setFrameNote(null); pullProgress.current(); setCard(false); setPicked(index); return; } meTap.current = 0; setCard(true); setPicked(index); return; } setCard(picked === index); setPicked(index); }} aria-label={`${player.name}, ${player.age}`} className={cn("group relative block aspect-square w-full rounded-[14%] bg-surface-2 shadow-[0_4px_10px_rgba(0,0,0,0.4)]", phase === "spinning" && index === turn && "motion-safe:animate-[seat-wobble_0.4s_ease-out]", tour === 3 && !player.me && !player.empty && "ring-4 ring-[#FFD84D] motion-safe:animate-pulse", staged && index === target ? "ring-[0.9cqmin] ring-[#FFE2A8]" : active ? "ring-4 ring-white" : picked === index ? "ring-4 ring-[#8CC63F]" : player.me ? "ring-2 ring-white/80" : "")}>
+                {player.empty ? null : <span aria-hidden="true" className="pointer-events-none absolute left-1/2 top-1/2 z-[5] hidden h-[7cqmin] w-[7cqmin] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-[4cqmin] shadow [@media(hover:hover)]:group-hover:flex">{player.me ? "😊" : "🎁"}</span>}
                 <img src={player.avatar} alt="" className="h-full w-full rounded-[14%] object-cover" />
                 {frameOf(player) ? <FrameArt id={frameOf(player)} className={cn("pointer-events-none absolute z-[1]", frameOf(player) >= FIRST_ORIGINAL ? "-inset-[17%] h-[134%] w-[134%]" : "-inset-[9%] h-[118%] w-[118%]")} /> : null}
                 {seatGes[player.me ? "me" : player.id] ? <img key={seatGes[player.me ? "me" : player.id].key} src={`/custom/anim/ges_${seatGes[player.me ? "me" : player.id].id}.webp`} alt="" className="pointer-events-none absolute inset-[12%] z-[4] h-[76%] w-[76%] max-w-none animate-[bottle-pop_0.25s_ease-out] object-contain drop-shadow-[0_3px_4px_rgba(0,0,0,0.4)]" /> : null}
@@ -1742,7 +1798,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   </div>
                 );
               })()}
-              <p className={cn("mt-px truncate text-center text-[2.6cqmin] font-semibold leading-tight [text-shadow:0_1px_3px_rgba(0,0,0,0.8)]", "text-white")}>{player.me ? t("common.you") : player.name}, {player.age}</p>
+              <p className={cn("mt-px truncate text-center text-[2.6cqmin] font-semibold leading-tight [text-shadow:0_1px_3px_rgba(0,0,0,0.8)]", "text-white")}>{player.me ? t("common.you") : player.name}{!player.me && nameSuffix(player) ? ` [${nameSuffix(player)}]` : ""}, {player.age}</p>
               {index === turn && !staged ? (() => {
                 // Like the original: the label sits beside the photo on the table side, with an arrow pointing at the player,
                 // so it never covers the seat below or its badges.
@@ -1756,6 +1812,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
 
         {bursts.map((item) => <HeartBurst key={item.key} at={seats[item.to]} amount={item.amount} />)}
         {shows.map((item) => <Fireworks key={`fw-${item.key}`} at={seats[item.to]} level={item.level} seed={item.key} />)}
+        {tableVfx ? <TableShower key={tableVfx.key} emoji={tableVfx.emoji} seed={tableVfx.key % 1000} /> : null}
         {boostFx ? <BoostFx key={boostFx.key} kind={boostFx.kind} fromLeft={boostFx.fromLeft} x={CENTER_X} y={STAGE_Y} /> : null}
         {flying.map((item) => <div key={item.key} className="pointer-events-none absolute z-40 h-[11cqmin] w-[11cqmin] -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_0_10px_rgba(255,240,150,0.95)] transition-[left,top] ease-in-out" style={{ transitionDuration: `${item.ms}ms`, left: `${seats[item.moved ? item.to : item.from][0]}%`, top: `${seats[item.moved ? item.to : item.from][1]}%` }}><span className="block h-full w-full" style={{ animation: `gift-fly-scale ${item.ms}ms ease-in-out both` }}><Gift anim id={item.gift} className="h-full w-full" /></span></div>)}
 
