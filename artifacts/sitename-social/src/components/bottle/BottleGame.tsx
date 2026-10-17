@@ -1473,7 +1473,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 {dedicate && !player.me ? (chosen.includes(player.id)
                   ? <span className="absolute inset-0 z-10 flex items-center justify-center rounded-[14%] bg-[#8CC63F]/85 ring-[0.5cqmin] ring-[#B678E8]"><Check className="h-[45%] w-[45%] text-white drop-shadow" strokeWidth={4} /></span>
                   : <span className="absolute inset-0 z-10 flex items-center justify-center rounded-[14%] bg-black/25"><Plus className="h-[45%] w-[45%] text-white drop-shadow-[0_2px_3px_rgba(0,0,0,0.5)]" strokeWidth={3.5} /></span>) : null}
-                {topIds.has(player.id) ? <span className="absolute left-1/2 -top-[1.4cqmin] z-[1] -translate-x-1/2 rounded bg-[#FACC15] px-[0.8cqmin] text-[2.2cqmin] font-black leading-[1.5] text-[#713F12] shadow">TOP</span> : null}
+                {topIds.has(player.id) ? <span className="absolute left-1/2 -top-[1.4cqmin] z-[3] -translate-x-1/2 rounded bg-[#FACC15] px-[0.8cqmin] text-[2.2cqmin] font-black leading-[1.5] text-[#713F12] shadow">TOP</span> : null}
                 {kisses[player.id] ? <LipsBadge count={kisses[player.id]} /> : null}
                 {(() => {
                   const mine = stickers[player.id] ?? [];
@@ -1485,8 +1485,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   return <>
                     {(piles[player.id] ?? []).map((item) => <span key={item.key} className="pointer-events-none absolute z-[2] animate-[gift-drop_0.35s_ease-out] transition-opacity duration-[2000ms]" style={{ left: `${item.x}%`, top: `${item.y}%`, width: `${item.s}%`, height: `${item.s}%`, transform: `rotate(${item.r}deg)`, opacity: pileNow - item.at > PILE_MS - 3000 ? 0 : 1 }}><Gift anim id={item.gift} className="h-full w-full drop-shadow-[0_2px_2px_rgba(0,0,0,0.35)]" /></span>)}
                     {face ? <Gift id={face} className="absolute left-[8%] top-[10%] z-[2] h-[84%] w-[84%] animate-[gift-drop_0.35s_ease-out]" /> : null}
-                    {ears ? <Gift id={ears} className="absolute -top-[16%] left-[-10%] z-[1] h-[40%] w-[120%] drop-shadow" /> : null}
-                    {head ? <Gift id={head} className="absolute -left-[2.6cqmin] -top-[2.8cqmin] h-[50%] w-[50%] -rotate-[24deg] drop-shadow" /> : null}
+                    {ears ? <Gift anim id={ears} className="pointer-events-none absolute -top-[22%] left-[-8%] z-[2] h-[46%] w-[116%] animate-[gift-drop_0.35s_ease-out] drop-shadow" /> : null}
+                    {head ? <Gift anim id={head} className="pointer-events-none absolute -top-[30%] left-[17%] z-[2] h-[62%] w-[66%] animate-[gift-drop_0.35s_ease-out] drop-shadow" /> : null}
                     {rest.map((gift, position) => <Gift anim key={`${gift}-${position}`} id={gift} className={cn("absolute -bottom-[1.6cqmin] h-[48%] w-[48%] drop-shadow", position ? "-left-[1.6cqmin]" : "-right-[1.6cqmin]")} />)}
                   </>;
                 })()}
