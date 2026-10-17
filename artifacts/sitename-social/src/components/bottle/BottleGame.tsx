@@ -25,7 +25,7 @@ import { playGiftSound, playSfx, playSound, setVolume } from "./sound";
 import { supabase } from "@/lib/supabase";
 import { ensureMessagesLoaded, openRemoteChat, remoteChats, sendRemoteMessage } from "@/lib/messagesSync";
 import { uploadBlob } from "@/lib/media";
-import { bottleAnswer, bottleAchSync, bottleGesture, bottleProgress, bottleSkin, bottleBuyChances, bottleJoin, bottleMove, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleAdmireLeave, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleGift, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState } from "@/lib/bottleSync";
+import { bottleAnswer, bottleAchSync, bottleGesture, bottleProgress, bottleSkin, bottleBuyChances, bottleJoin, bottleMove, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleAdmireLeave, bottleDailyClaim, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleGift, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState } from "@/lib/bottleSync";
 
 type Player = { id: string; name: string; age: number; female: boolean; avatar: string; me?: boolean; empty?: boolean; zodiac?: number | null };
 type Phase = "waiting" | "spinning" | "choice" | "kissed" | "declined";
@@ -109,6 +109,8 @@ export function songInfo(raw: string) {
 function Equalizer({ className }: { className?: string }) {
   return <span aria-hidden="true" className={cn("flex items-end gap-[3px]", className)}>{[0.9, 0.5, 1.1, 0.7, 0.95].map((speed, n) => <span key={n} className="w-[4px] rounded-full bg-[linear-gradient(180deg,#F9A8D4,#EC4899)]" style={{ height: "100%", transformOrigin: "bottom", animation: `eq-bar ${speed}s ease-in-out ${n * 0.12}s infinite alternate` }} />)}</span>;
 }
+// Daily bonus hearts for day 1–7 in a row (the server uses the same numbers, see bottle_daily_claim).
+const DAILY_PRIZES = [2, 3, 4, 5, 6, 8, 10];
 function Gift({ id, className, anim }: { id: string; className?: string; anim?: boolean }) {
   const art = useCustomArt();
   const name = id.startsWith("c:") ? id.slice(2) : giftFileName(id);
@@ -875,11 +877,57 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   pullProgress.current = () => { if (online) void bottleProgress().then((value) => { if (value) setServerProgress(value); }); };
   useEffect(() => { pullProgress.current(); const timer = window.setInterval(() => pullProgress.current(), 60000); return () => window.clearInterval(timer); }, [online]);
   const progress: Progress = online && serverProgress ? serverProgress : { kisses: kisses.me ?? 0, friends: 0, dj: readStats().songsSent ?? 0, gestures: readStats().gestures ?? 0, vip };
+  const progressReady = !online || Boolean(serverProgress);
+  const openKey = progressReady ? [...Object.entries(GIFT_RULES).filter(([, rule]) => rule[0] !== "vip" && rule[1] > 0 && missing(rule, progress) === 0).map(([gift]) => gift),
+    ...GESTURES.filter(([, , kind, amount]) => kind !== "vip" && amount > 0 && missing([kind, amount], progress) === 0).map(([id]) => `g:${id}`)].sort().join(",") : "";
+  useEffect(() => {
+    if (!openKey && !progressReady) return;
+    try {
+      const saved = window.localStorage.getItem("bottle-open");
+      window.localStorage.setItem("bottle-open", openKey);
+      if (saved === null) return;
+      const before = new Set(saved.split(",").filter(Boolean));
+      const fresh = openKey.split(",").filter((id) => id && !before.has(id));
+      if (fresh.length) setUnlocked(fresh.slice(0, 12));
+    } catch { /* storage is blocked */ }
+  }, [openKey, progressReady]);
   const lockNote = (kind: RuleKind, left: number) => (kind === "vip" ? t("bottle.vipOnly") : t(`bottle.lock_${kind}` as "bottle.lock_kisses").replace("{n}", left.toLocaleString("ru-RU")));
   // A smiley shown for a few seconds over the sender's photo on the table.
   const [seatGes, setSeatGes] = useState<Record<string, { id: string; key: number }>>({});
   // "Not enough kisses" window for a locked gift or smiley: what is missing and how to get it.
   const [lock, setLock] = useState<{ gift?: string; gesture?: string; kind: RuleKind; total: number } | null>(null);
+  // Daily bonus: the first visit each day gives hearts; days in a row give more (day 1–7).
+  const [daily, setDaily] = useState<{ day: number; hearts: number } | null>(null);
+  const dailyAsked = useRef(false);
+  useEffect(() => {
+    if (dailyAsked.current) return;
+    if (online) {
+      if (!net) return;
+      dailyAsked.current = true;
+      void bottleDailyClaim().then((result) => {
+        if (!result || !result.day) return;
+        heartsRef.current = result.total;
+        setHearts(result.total);
+        window.setTimeout(() => setDaily({ day: result.day, hearts: result.hearts }), 1500);
+      });
+      return;
+    }
+    dailyAsked.current = true;
+    try {
+      const today = new Date().toDateString();
+      const saved = JSON.parse(window.localStorage.getItem("bottle-daily") ?? "null") as { last: string; day: number } | null;
+      if (saved?.last === today) return;
+      const yesterday = new Date(Date.now() - 86400000).toDateString();
+      const day = saved?.last === yesterday ? Math.min(7, saved.day + 1) : 1;
+      window.localStorage.setItem("bottle-daily", JSON.stringify({ last: today, day }));
+      const prize = DAILY_PRIZES[day - 1];
+      heartsRef.current += prize;
+      setHearts(heartsRef.current);
+      window.setTimeout(() => setDaily({ day, hearts: prize }), 1500);
+    } catch { /* storage is blocked */ }
+  }, [online, net]);
+  // "New gifts unlocked": when the player's progress opens gifts or smileys that were locked, show which ones.
+  const [unlocked, setUnlocked] = useState<string[] | null>(null);
   const openLock = (kind: RuleKind, total: number, item: { gift?: string; gesture?: string }) => setLock({ ...item, kind, total });
   const gesKey = useRef(0);
   const showSeatGesture = useCallback((who: string, id: string) => {
@@ -2204,6 +2252,44 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           <button type="submit" disabled={!draft.trim()} aria-label={t("messages.send")} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#EE8A2B] text-white disabled:opacity-40"><SendHorizontal size={17} /></button>
         </form>
       </div>
+      {daily ? (
+        <div className="absolute inset-0 z-[61] flex items-center justify-center bg-black/40 p-4" onClick={() => setDaily(null)}>
+          <div role="dialog" aria-label={t("bottle.dailyTitle")} onClick={(event) => event.stopPropagation()} className="relative w-full max-w-[400px] animate-[bottle-pop_0.25s_ease-out] rounded-2xl bg-[linear-gradient(180deg,#FFF6E0,#FFFFFF)] px-4 pb-5 pt-4 text-center text-[#1F2937] shadow-2xl">
+            <button onClick={() => setDaily(null)} aria-label={t("photos.close")} title={t("photos.close")} className="absolute -right-2 -top-2 flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#8CC63F] bg-white text-[#8CC63F] shadow"><X size={18} strokeWidth={3} /></button>
+            <p className="text-lg font-black text-[#B45309]">🎁 {t("bottle.dailyTitle")}</p>
+            <p className="mt-1 text-sm text-[#6B7280]">{t("bottle.dailyText")}</p>
+            <ol className="mt-3 grid grid-cols-7 gap-1">
+              {DAILY_PRIZES.map((prize, index) => {
+                const day = index + 1;
+                const state = day < daily.day ? "past" : day === daily.day ? "now" : "next";
+                return (
+                  <li key={day} className={cn("flex flex-col items-center rounded-lg border px-0.5 py-1.5 text-[10px] font-bold", state === "now" ? "scale-110 border-[#F59E0B] bg-[#FDE68A] text-[#92400E] shadow" : state === "past" ? "border-[#BBF7D0] bg-[#F0FDF4] text-[#15803D]" : "border-[#E5E7EB] bg-white text-[#9CA3AF]")}>
+                    <span>{day}</span>
+                    <span className="text-base leading-6">{state === "past" ? "✓" : day === 7 ? "🎁" : "❤️"}</span>
+                    <span className="tabular-nums">+{prize}</span>
+                  </li>
+                );
+              })}
+            </ol>
+            <p className="mt-3 flex items-center justify-center gap-1.5 text-2xl font-black text-[#E8203A]">+{daily.hearts}<Heart size={24} fill="#E8352B" stroke="none" /></p>
+            <p className="text-xs text-[#6B7280]">{t("bottle.dailyDay").replace("{n}", String(daily.day))}</p>
+            <button onClick={() => setDaily(null)} className="mt-3 h-10 min-w-[140px] rounded-lg bg-[#8CC63F] px-4 text-sm font-bold text-white hover:brightness-105">{t("bottle.dailyTake")}</button>
+          </div>
+        </div>
+      ) : null}
+      {unlocked && !daily ? (
+        <div className="absolute inset-0 z-[61] flex items-center justify-center bg-black/40 p-4" onClick={() => setUnlocked(null)}>
+          <div role="dialog" aria-label={t("bottle.unlockedTitle")} onClick={(event) => event.stopPropagation()} className="relative w-full max-w-[380px] animate-[bottle-pop_0.25s_ease-out] rounded-2xl bg-white px-5 pb-5 pt-4 text-center text-[#1F2937] shadow-2xl">
+            <button onClick={() => setUnlocked(null)} aria-label={t("photos.close")} title={t("photos.close")} className="absolute -right-2 -top-2 flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#8CC63F] bg-white text-[#8CC63F] shadow"><X size={18} strokeWidth={3} /></button>
+            <p className="text-lg font-black text-[#2F80ED]">🔓 {t("bottle.unlockedTitle")}</p>
+            <p className="mt-1 text-sm text-[#6B7280]">{t("bottle.unlockedText")}</p>
+            <div className="mt-3 flex flex-wrap justify-center gap-2">
+              {unlocked.map((id) => <span key={id} className="flex h-16 w-16 items-center justify-center rounded-xl bg-[#F3F4F6] p-1">{id.startsWith("g:") ? <img src={`/custom/gifts/ges_${id.slice(2)}.webp`} alt="" className="h-full w-full object-contain" /> : <Gift id={id} className="h-full w-full" />}</span>)}
+            </div>
+            <button onClick={() => setUnlocked(null)} className="mt-4 h-10 min-w-[140px] rounded-lg bg-[#2F80ED] px-4 text-sm font-bold text-white hover:bg-[#2670D6]">{t("bottle.lockOk")}</button>
+          </div>
+        </div>
+      ) : null}
       {lock ? (() => {
         const have = lock.kind === "vip" ? 0 : Math.min(lock.total, progress[lock.kind as "kisses"] ?? 0);
         const icon = lock.kind === "dj" ? "🎵" : lock.kind === "friends" ? "👥" : lock.kind === "gestures" ? "😊" : "💋";
