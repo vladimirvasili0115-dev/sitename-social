@@ -41,6 +41,9 @@ export const bottleTop = (kind: "kisses" | "songs" | "cocktails" | "smiles" | "d
 export const bottleGift = (to: string, gift: string, price: number) => call<number>("bottle_gift", { p_to: to, p_gift: gift, p_price: price });
 export const bottleGiftShare = () => call<{ min: number; pct: number }>("bottle_gift_share");
 export const bottleDailyClaim = () => call<{ day: number; hearts: number; total: number } | null>("bottle_daily_claim");
+export type BottleLeague = { league: number; ends_ms: number; now_ms: number; limit: number; move: number; today: number; prizes: number[]; users: { id: string; name: string | null; avatar: string | null; score: number; place: number }[] };
+export const bottleLeagueInfo = () => call<BottleLeague>("bottle_league_info");
+export const bottleLeagueClaim = () => call<{ place: number | null; reward: number; league: number; next: number; score: number; total: number | null } | null>("bottle_league_claim");
 export const bottleAdmire = (to: string) => call<number>("bottle_admire", { p_to: to });
 export const bottleAdmireLeave = (to: string) => call<number>("bottle_admire_leave", { p_to: to });
 export type BottleRoom = { id: number; name: string; capacity: number; locked: boolean; mine: boolean; owner: { name: string | null; avatar: string | null } | null; boys: number; girls: number };

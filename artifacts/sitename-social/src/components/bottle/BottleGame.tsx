@@ -25,7 +25,7 @@ import { playGiftSound, playSfx, playSound, setVolume } from "./sound";
 import { supabase } from "@/lib/supabase";
 import { ensureMessagesLoaded, openRemoteChat, remoteChats, sendRemoteMessage } from "@/lib/messagesSync";
 import { uploadBlob } from "@/lib/media";
-import { bottleAnswer, bottleAchSync, bottleGesture, bottleProgress, bottleSkin, bottleBuyChances, bottleJoin, bottleMove, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleAdmireLeave, bottleDailyClaim, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleGift, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState } from "@/lib/bottleSync";
+import { bottleAnswer, bottleAchSync, bottleGesture, bottleProgress, bottleSkin, bottleBuyChances, bottleJoin, bottleMove, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleAdmireLeave, bottleDailyClaim, bottleLeagueInfo, bottleLeagueClaim, type BottleLeague, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleGift, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState } from "@/lib/bottleSync";
 
 type Player = { id: string; name: string; age: number; female: boolean; avatar: string; me?: boolean; empty?: boolean; zodiac?: number | null };
 type Phase = "waiting" | "spinning" | "choice" | "kissed" | "declined";
@@ -108,6 +108,19 @@ export function songInfo(raw: string) {
 // Little dancing bars for the music player.
 function Equalizer({ className }: { className?: string }) {
   return <span aria-hidden="true" className={cn("flex items-end gap-[3px]", className)}>{[0.9, 0.5, 1.1, 0.7, 0.95].map((speed, n) => <span key={n} className="w-[4px] rounded-full bg-[linear-gradient(180deg,#F9A8D4,#EC4899)]" style={{ height: "100%", transformOrigin: "bottom", animation: `eq-bar ${speed}s ease-in-out ${n * 0.12}s infinite alternate` }} />)}</span>;
+}
+// League colours (header gradient) and badge: Bronze, Silver, Gold, Platinum, Diamond.
+const LEAGUE_COLORS: [string, string][] = [["#D08A52", "#9C5A2B"], ["#B8C2CC", "#7D8A96"], ["#F7C948", "#D49B0A"], ["#7FD3E6", "#3A9AB3"], ["#A78BFA", "#6D28D9"]];
+function LeagueBadge({ league, className }: { league: number; className?: string }) {
+  const [light, dark] = LEAGUE_COLORS[league] ?? LEAGUE_COLORS[0];
+  return (
+    <svg viewBox="0 0 64 64" className={className} aria-hidden="true">
+      <defs><linearGradient id={`lg-${league}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={light} /><stop offset="1" stopColor={dark} /></linearGradient></defs>
+      <path d="M32 3 8 11v17c0 15 10 27 24 33 14-6 24-18 24-33V11L32 3Z" fill={`url(#lg-${league})`} stroke="#FFFFFF" strokeWidth="3" />
+      <path d="m32 17 4.2 8.6 9.4 1.3-6.8 6.6 1.6 9.4L32 38.5l-8.4 4.4 1.6-9.4-6.8-6.6 9.4-1.3L32 17Z" fill="#FFFFFF" opacity="0.95" />
+      {league === 4 ? <path d="M22 50h20l-3 5H25l-3-5Z" fill="#FFFFFF" opacity="0.8" /> : null}
+    </svg>
+  );
 }
 // Daily bonus hearts for day 1–7 in a row (the server uses the same numbers, see bottle_daily_claim).
 const DAILY_PRIZES = [2, 3, 4, 5, 6, 8, 10];
@@ -310,7 +323,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [volume, setVolumeLevel] = useState(80);
   const [music, setMusic] = useState(60);
   const [accept, setAccept] = useState(true);
-  const [panel, setPanel] = useState<"gestures" | "settings" | "top" | "rules" | "shop" | "menu" | "vip" | "bottles" | "frames" | "achievements" | "boosters" | "wheel" | "chances" | "tables" | "rooms" | "active" | "invite" | "compliments" | "kick" | "pass" | null>(null);
+  const [panel, setPanel] = useState<"gestures" | "settings" | "top" | "rules" | "shop" | "menu" | "vip" | "bottles" | "frames" | "achievements" | "boosters" | "wheel" | "chances" | "tables" | "rooms" | "active" | "invite" | "compliments" | "kick" | "pass" | "league" | null>(null);
   // Panels drop down from the top like a hanging sign and go back up when closed.
   const [closing, setClosing] = useState(false);
   const closePanel = () => { if (closing) return; setClosing(true); window.setTimeout(() => { setPanel(null); setClosing(false); }, 260); };
@@ -926,6 +939,31 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       window.setTimeout(() => setDaily({ day, hearts: prize }), 1500);
     } catch { /* storage is blocked */ }
   }, [online, net]);
+  // Leagues: weekly groups ranked by kisses received; the server closes the week and pays the prizes.
+  const [league, setLeague] = useState<(BottleLeague & { at: number }) | null>(null);
+  const [leagueResult, setLeagueResult] = useState<{ place: number | null; reward: number; league: number; next: number } | null>(null);
+  const [leagueTick, setLeagueTick] = useState(0);
+  const leagueOpen = panel === "league";
+  useEffect(() => {
+    if (!leagueOpen) return;
+    const timer = window.setInterval(() => setLeagueTick((n) => n + 1), 30000);
+    if (online) { void bottleLeagueInfo().then((data) => { if (data) setLeague({ ...data, at: Date.now() }); }); return () => window.clearInterval(timer); }
+    const monday = new Date(); monday.setHours(0, 0, 0, 0); monday.setDate(monday.getDate() + ((8 - monday.getDay()) % 7 || 7));
+    const users = seated.map((player, index) => ({ id: player.me ? "me" : player.id, name: player.me ? t("common.you") : player.name, avatar: player.avatar, score: player.me ? Math.min(100, kisses.me ?? 0) : ((index + 3) * 37) % 140, place: 0 }))
+      .sort((a, b) => b.score - a.score).map((user, index) => ({ ...user, place: index + 1 }));
+    setLeague({ league: 0, ends_ms: monday.getTime(), now_ms: Date.now(), limit: 100, move: 5, today: Math.min(100, kisses.me ?? 0), prizes: [30, 21, 15, 9, 9, 5, 5, 5, 5, 5], users, at: Date.now() });
+    return () => window.clearInterval(timer);
+  }, [leagueOpen, online]); // eslint-disable-line react-hooks/exhaustive-deps
+  const leagueAsked = useRef(false);
+  useEffect(() => {
+    if (!online || !net || leagueAsked.current) return;
+    leagueAsked.current = true;
+    void bottleLeagueClaim().then((result) => {
+      if (!result || !result.place) return;
+      if (typeof result.total === "number") { heartsRef.current = result.total; setHearts(result.total); }
+      window.setTimeout(() => setLeagueResult(result), 2500);
+    });
+  }, [online, net]);
   // "New gifts unlocked": when the player's progress opens gifts or smileys that were locked, show which ones.
   const [unlocked, setUnlocked] = useState<string[] | null>(null);
   const openLock = (kind: RuleKind, total: number, item: { gift?: string; gesture?: string }) => setLock({ ...item, kind, total });
@@ -972,6 +1010,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     { key: "pass", label: t("bottle.passPremium"), go: openPass, icon: <img src={emojiSrc("🎟️")} alt="" className="h-6 w-6" /> },
     { key: "ach", label: t("bottle.achievements"), dot: !(kisses.me ?? 0), go: () => setPanel("achievements"), icon: <BadgeCheck size={24} className="text-white" fill="#F5B400" strokeWidth={2} /> },
     { key: "rating", label: t("bottle.menuRatings"), go: () => { setTopKind("kisses"); setPanel("top"); }, icon: <svg viewBox="0 0 24 24" className="h-6 w-6"><rect x="2" y="12" width="6" height="8" rx="1" fill="#5BA4F5" /><rect x="9" y="6" width="6" height="14" rx="1" fill="#2F7FF0" /><rect x="16" y="9" width="6" height="11" rx="1" fill="#5BA4F5" /><rect x="1" y="20" width="22" height="2" rx="1" fill="#1E5FC2" /></svg> },
+    { key: "league", label: t("bottle.league"), go: () => setPanel("league"), icon: <svg viewBox="0 0 24 24" className="h-6 w-6"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3Z" fill="#F2B705" stroke="#B7791F" strokeWidth="1.4" /><path d="m12 7 1.5 3.1 3.4.4-2.5 2.3.7 3.3L12 14.5 8.9 16.1l.7-3.3-2.5-2.3 3.4-.4L12 7Z" fill="#FFFFFF" /></svg> },
     { key: "bottles", label: t("bottle.menuBottles"), go: () => { setPayNote(false); setPanel("bottles"); }, icon: <span className="relative h-6 w-6"><BottleSvg className="absolute left-0 top-0 h-6 -rotate-[35deg]" /><BottleSvg className="absolute left-2.5 top-0.5 h-5 -rotate-[35deg] saturate-150" /></span> },
     { key: "frames", label: t("bottle.menuStyle"), go: () => { setFramePick(null); setFrameNote(null); setPanel("frames"); }, icon: <svg viewBox="0 0 24 24" className="h-6 w-6"><rect x="2.5" y="2.5" width="19" height="19" rx="2" fill="#FFD25E" stroke="#E79A00" strokeWidth="2" /><rect x="6.5" y="6.5" width="11" height="11" rx="1" fill="#6FB6FF" stroke="#E79A00" strokeWidth="1.5" /></svg> },
     { key: "boosters", label: t("bottle.boosters"), go: () => { setPayNote(false); setPanel("boosters"); }, icon: <svg viewBox="0 0 24 24" className="h-6 w-6"><g fill="#3D7BE0">{[0, 45, 90, 135, 180, 225, 270, 315].map((angle) => <ellipse key={angle} cx="12" cy="5" rx="3" ry="4.2" transform={`rotate(${angle} 12 12)`} />)}</g><circle cx="12" cy="12" r="4" fill="#FFC83D" stroke="#FFFFFF" strokeWidth="1.2" /></svg> },
@@ -1692,9 +1731,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
 
         {panel ? (
           <div className={cn("absolute inset-0 z-50 flex items-center justify-center overflow-hidden bg-black/35 p-3", closing ? "animate-[panel-fade_0.28s_ease-in_reverse_forwards]" : "animate-[panel-fade_0.25s_ease-out]")} onClick={(event) => { event.stopPropagation(); closePanel(); }}>
-            <div role="dialog" aria-modal="true" aria-label={t(`bottle.${panel}`)} onClick={(event) => event.stopPropagation()} className={cn("relative max-h-full w-full origin-top rounded-2xl p-3 shadow-2xl motion-reduce:animate-none", closing ? "animate-[panel-up_0.28s_ease-in_forwards]" : "animate-[panel-drop_0.7s_cubic-bezier(0.22,1,0.36,1)]", panel === "shop" ? "max-w-[440px] bg-[linear-gradient(180deg,#F26D7D,#F9B4B9)]" : panel === "wheel" || panel === "chances" ? "max-w-[380px] bg-[linear-gradient(180deg,#12998C,#7FD8C8)]" : panel === "top" ? "max-w-[420px] bg-white" : panel === "achievements" ? "max-w-[400px] bg-white" : panel === "frames" ? "max-w-[440px] bg-[#F7F7F8]" : panel === "pass" ? "max-w-[420px] overflow-y-auto overflow-x-hidden bg-[linear-gradient(180deg,#36A6FF,#1C7FE6)] [scrollbar-width:none]" : panel === "rooms" ? "max-w-[400px] border border-[#F5C451]/30 bg-[linear-gradient(165deg,#2B1D4E,#4E2D7C)]" : "max-w-[340px] bg-white")}>
+            <div role="dialog" aria-modal="true" aria-label={t(`bottle.${panel}`)} onClick={(event) => event.stopPropagation()} className={cn("relative max-h-full w-full origin-top rounded-2xl p-3 shadow-2xl motion-reduce:animate-none", closing ? "animate-[panel-up_0.28s_ease-in_forwards]" : "animate-[panel-drop_0.7s_cubic-bezier(0.22,1,0.36,1)]", panel === "shop" ? "max-w-[440px] bg-[linear-gradient(180deg,#F26D7D,#F9B4B9)]" : panel === "wheel" || panel === "chances" ? "max-w-[380px] bg-[linear-gradient(180deg,#12998C,#7FD8C8)]" : panel === "top" || panel === "league" ? "max-w-[420px] bg-white" : panel === "achievements" ? "max-w-[400px] bg-white" : panel === "frames" ? "max-w-[440px] bg-[#F7F7F8]" : panel === "pass" ? "max-w-[420px] overflow-y-auto overflow-x-hidden bg-[linear-gradient(180deg,#36A6FF,#1C7FE6)] [scrollbar-width:none]" : panel === "rooms" ? "max-w-[400px] border border-[#F5C451]/30 bg-[linear-gradient(165deg,#2B1D4E,#4E2D7C)]" : "max-w-[340px] bg-white")}>
               <button onClick={() => closePanel()} aria-label={t("photos.close")} title={t("photos.close")} className={cn("absolute -right-2 -top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 bg-white shadow", panel === "shop" ? "border-[#EF4444] text-[#EF4444]" : panel === "wheel" || panel === "chances" ? "border-[#0E8478] text-[#0E8478]" : panel === "top" ? "border-[#3B9AD9] text-[#3B9AD9]" : panel === "rooms" ? "border-[#F5C451] text-[#C08A12]" : "border-[#8CC63F] text-[#8CC63F]")}><X size={18} strokeWidth={3} /></button>
-              <p className={cn("mb-1 text-center text-sm font-bold", panel === "shop" || panel === "wheel" || panel === "chances" || panel === "rooms" || panel === "pass" ? "mb-2 text-white" : "text-[#9CA3AF]", (panel === "top" || panel === "achievements") && "sr-only")}>{t(`bottle.${panel}`)}</p>
+              <p className={cn("mb-1 text-center text-sm font-bold", panel === "shop" || panel === "wheel" || panel === "chances" || panel === "rooms" || panel === "pass" ? "mb-2 text-white" : "text-[#9CA3AF]", (panel === "top" || panel === "achievements" || panel === "league") && "sr-only")}>{t(`bottle.${panel}`)}</p>
               {panel === "rooms" ? (() => {
                 const passBox = (value: string, change: (next: string) => void, label: string, focus?: boolean) => (
                   <span className="relative block min-w-0 flex-1">
@@ -1957,7 +1996,52 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   <button onClick={() => { setPayNote(false); setPanel("boosters"); }} className={row}><span aria-hidden="true" className="w-6 text-center text-lg">⚡</span>{t("bottle.boosters")}</button>
                   <button onClick={() => setPanel("rules")} className={row}><span aria-hidden="true" className="w-6 text-center text-lg">📖</span>{t("bottle.rules")}</button>
                 </div>
-              ) : panel === "achievements" ? (
+              ) : panel === "league" ? (() => {
+                void leagueTick;
+                if (!league) return <p className="py-10 text-center text-sm text-[#6B7280]">{t("bottle.songLoading")}</p>;
+                const color = LEAGUE_COLORS[league.league] ?? LEAGUE_COLORS[0];
+                const left = Math.max(0, league.ends_ms - league.now_ms - (Date.now() - league.at));
+                const days = Math.floor(left / 86400000), hours = Math.floor((left % 86400000) / 3600000), minutes = Math.floor((left % 3600000) / 60000);
+                const size = league.users.length;
+                const zone = (place: number) => (place <= league.move && league.league < 4 ? "up" : place > Math.max(size - league.move, league.move) && league.league > 0 ? "down" : null);
+                const meId = online ? net?.me : "me";
+                return (
+                  <div className="-m-3 overflow-hidden rounded-2xl bg-white text-[#1F2937]">
+                    <div className="px-4 pb-3 pt-3 text-white" style={{ background: `linear-gradient(180deg, ${color[0]}, ${color[1]})` }}>
+                      <div className="flex items-center gap-3 pr-6">
+                        <LeagueBadge league={league.league} className="h-14 w-14 shrink-0 drop-shadow" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[11px] font-bold uppercase tracking-wider opacity-80">{t("bottle.league")}</p>
+                          <p className="truncate text-xl font-black [text-shadow:0_1px_2px_rgba(0,0,0,0.25)]">{t(`bottle.league${league.league}` as "bottle.league0")}</p>
+                          <p className="text-xs font-semibold opacity-90">⏳ {t("bottle.leagueEnds")} {days ? `${days}${t("bottle.leagueD")} ` : ""}{hours}{t("bottle.leagueH")} {minutes}{t("bottle.leagueM")}</p>
+                        </div>
+                      </div>
+                      <div className="mt-3">
+                        <div className="flex justify-between text-[11px] font-bold"><span>💋 {t("bottle.leagueToday")}</span><span className="tabular-nums">{league.today}/{league.limit}</span></div>
+                        <div className="mt-1 h-2 overflow-hidden rounded-full bg-black/20"><div className="h-full rounded-full bg-white" style={{ width: `${Math.min(100, (league.today / Math.max(1, league.limit)) * 100)}%` }} /></div>
+                        {league.today >= league.limit ? <p className="mt-1 text-[11px] font-bold">{t("bottle.leagueLimit")}</p> : null}
+                      </div>
+                    </div>
+                    <p className="border-b border-[#F3F4F6] px-4 py-2 text-[12px] leading-snug text-[#6B7280]">{t("bottle.leagueRules").replaceAll("{n}", String(league.move))}</p>
+                    <ol className="max-h-[min(46cqmin,320px)] overflow-y-auto px-2 py-1">
+                      {size === 0 ? <li className="py-6 text-center text-xs text-[#6B7280]">{t("bottle.leagueEmpty")}</li> : league.users.map((user) => {
+                        const where = zone(user.place);
+                        const prize = league.prizes[user.place - 1] ?? 0;
+                        return (
+                          <li key={user.id} className={cn("flex min-h-11 items-center gap-2 rounded-md px-1.5 py-1 text-[13px]", user.id === meId ? "bg-[#FFF3B0]" : where === "up" ? "bg-[#F0FDF4]" : where === "down" ? "bg-[#FEF2F2]" : "")}>
+                            <span className={cn("w-6 shrink-0 text-center text-xs font-black tabular-nums", where === "up" ? "text-[#16A34A]" : where === "down" ? "text-[#DC2626]" : "text-[#6B7280]")}>{user.place}</span>
+                            {user.avatar ? <img src={user.avatar} alt="" className="h-8 w-8 shrink-0 rounded-md object-cover" /> : <span aria-hidden="true" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[#C9D3DC] text-xs font-bold text-white">{(user.name ?? "?").slice(0, 1).toUpperCase()}</span>}
+                            <span className="min-w-0 flex-1 truncate font-bold">{user.id === meId ? t("common.you") : user.name}</span>
+                            {where === "up" ? <span title={t("bottle.leagueUp")} className="text-xs text-[#16A34A]">▲</span> : where === "down" ? <span title={t("bottle.leagueDown")} className="text-xs text-[#DC2626]">▼</span> : null}
+                            {prize && user.score > 0 ? <span className="flex shrink-0 items-center gap-0.5 rounded-full bg-[#FFF1F2] px-1.5 text-[11px] font-bold text-[#E11D48]">+{prize}<Heart size={10} fill="#E8352B" stroke="none" /></span> : null}
+                            <span className="w-14 shrink-0 text-right font-black tabular-nums text-[#E2231A]">💋{user.score}</span>
+                          </li>
+                        );
+                      })}
+                    </ol>
+                  </div>
+                );
+              })() : panel === "achievements" ? (
                 <AchievementsPanel values={achValue} />
               ) : panel === "gestures" ? (
                 <div className="-mx-3 -mb-3 bg-white">
@@ -2252,6 +2336,21 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           <button type="submit" disabled={!draft.trim()} aria-label={t("messages.send")} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#EE8A2B] text-white disabled:opacity-40"><SendHorizontal size={17} /></button>
         </form>
       </div>
+      {leagueResult && !daily ? (
+        <div className="absolute inset-0 z-[61] flex items-center justify-center bg-black/40 p-4" onClick={() => setLeagueResult(null)}>
+          <div role="dialog" aria-label={t("bottle.leagueResult")} onClick={(event) => event.stopPropagation()} className="relative w-full max-w-[360px] animate-[bottle-pop_0.25s_ease-out] rounded-2xl bg-white px-5 pb-5 pt-4 text-center text-[#1F2937] shadow-2xl">
+            <button onClick={() => setLeagueResult(null)} aria-label={t("photos.close")} title={t("photos.close")} className="absolute -right-2 -top-2 flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#8CC63F] bg-white text-[#8CC63F] shadow"><X size={18} strokeWidth={3} /></button>
+            <p className="text-lg font-black text-[#B7791F]">🏆 {t("bottle.leagueResult")}</p>
+            <LeagueBadge league={leagueResult.next} className="mx-auto mt-2 h-20 w-20 drop-shadow" />
+            <p className="mt-1 text-sm">{t("bottle.leaguePlace").replace("{n}", String(leagueResult.place ?? "—"))}</p>
+            <p className={cn("mt-1 text-base font-black", leagueResult.next > leagueResult.league ? "text-[#16A34A]" : leagueResult.next < leagueResult.league ? "text-[#DC2626]" : "text-[#6B7280]")}>
+              {leagueResult.next > leagueResult.league ? `▲ ${t("bottle.leagueMovedUp")}` : leagueResult.next < leagueResult.league ? `▼ ${t("bottle.leagueMovedDown")}` : t("bottle.leagueStayed")} {t(`bottle.league${leagueResult.next}` as "bottle.league0")}
+            </p>
+            {leagueResult.reward > 0 ? <p className="mt-2 flex items-center justify-center gap-1.5 text-2xl font-black text-[#E8203A]">+{leagueResult.reward}<Heart size={24} fill="#E8352B" stroke="none" /></p> : null}
+            <button onClick={() => { setLeagueResult(null); setPanel("league"); }} className="mt-4 h-10 min-w-[140px] rounded-lg bg-[#F2B705] px-4 text-sm font-bold text-white hover:brightness-105">{t("bottle.leagueOpen")}</button>
+          </div>
+        </div>
+      ) : null}
       {daily ? (
         <div className="absolute inset-0 z-[61] flex items-center justify-center bg-black/40 p-4" onClick={() => setDaily(null)}>
           <div role="dialog" aria-label={t("bottle.dailyTitle")} onClick={(event) => event.stopPropagation()} className="relative w-full max-w-[400px] animate-[bottle-pop_0.25s_ease-out] rounded-2xl bg-[linear-gradient(180deg,#FFF6E0,#FFFFFF)] px-4 pb-5 pt-4 text-center text-[#1F2937] shadow-2xl">
