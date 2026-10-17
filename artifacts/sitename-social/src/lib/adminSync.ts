@@ -33,10 +33,10 @@ export async function fetchIsOwner(): Promise<boolean> {
 }
 // One player's game state and grants (owner and moderators): hearts, VIP and TOP days, DJ score, chances, boosters.
 export type GameState = { hearts: number; kisses?: number; smiles?: number; dj: number; chances: number; vip_until: string | null; top_until: string | null; kiss_fire: number; refuse_slap: number };
-export type GameFlags = { vip: boolean; top: boolean; block?: boolean; price?: number; hearts?: number; kisses?: number; songs?: number; smiles?: number };
+export type GameFlags = { vip: boolean; top: boolean; block?: boolean; price?: number; influence?: number; hearts?: number; kisses?: number; songs?: number; smiles?: number };
 export const gameFlags = (ids: string[]) => call<Record<string, GameFlags>>("admin_game_flags", { ids });
 export const gameState = (id: string) => call<GameState>("admin_game_state", { target: id });
-export const gameGrant = (id: string, kind: "vip" | "top" | "price" | "admire_block" | "dj" | "kisses" | "smiles" | "chances" | "kiss_fire" | "refuse_slap", amount: number) => call<GameState>("admin_game_grant", { target: id, p_kind: kind, amount });
+export const gameGrant = (id: string, kind: "vip" | "top" | "price" | "influence" | "admire_block" | "dj" | "kisses" | "smiles" | "chances" | "kiss_fire" | "refuse_slap", amount: number) => call<GameState>("admin_game_grant", { target: id, p_kind: kind, amount });
 // VIP for every player at once (owner and moderators); days are added on top of any VIP someone already has.
 export const vipAll = (days: number) => call<number>("admin_vip_all", { p_days: days });
 export const vipCount = () => call<{ vip: number; total: number }>("admin_vip_count");

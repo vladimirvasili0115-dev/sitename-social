@@ -2662,13 +2662,37 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
               })}
             </div>
             ) : (
-            <div role="menu" className={cn("grid min-h-0 flex-1 content-start gap-0.5 overflow-y-auto bg-white p-2", wide ? "grid-cols-[repeat(auto-fill,minmax(68px,1fr))]" : "grid-cols-[repeat(auto-fill,minmax(56px,1fr))]")}>
-              {[...giftChoices.slice(0, 2), ...customGiftNames(art).filter((name) => !name.startsWith("ges_")).map((name) => [`c:${name}`, GIFT_PRICES[name] ?? customPrice(name), missing(GIFT_RULES[`c:${name}`], progress)] as [string, number, number]), ...giftChoices.slice(2), ...lockedGifts.map(([gift, price, need]) => [gift, price, Math.max(0, need - progress.kisses)] as [string, number, number])].map(([gift, price, need], order) => (
-                <button key={`${gift}-${order}`} role="menuitem" aria-disabled={need === -1 ? !vip : Boolean(need)} onPointerDown={(event) => pressGift(giftTargets, gift, price, need, event.clientX, event.clientY)} onPointerMove={(event) => { const state = pressed.current; if (state && !state.started && Math.hypot(event.clientX - state.x, event.clientY - state.y) > 8) cancelPress(); }} onPointerUp={() => releaseGift(giftTargets, gift, price, need)} onPointerLeave={cancelPress} onPointerCancel={cancelPress} onContextMenu={(event) => event.preventDefault()} onKeyDown={(event) => { if (event.key === "Enter" && !event.repeat) giveMany(giftTargets, gift, price, need); }} aria-label={`${t("gifts.send")} ${price}`} className={cn("group flex touch-pan-y select-none flex-col items-center gap-0.5 rounded-xl p-1 hover:bg-[#FFF4E5]", (need === -1 ? !vip : Boolean(need)) ? "grayscale [&>img]:opacity-75" : hearts < price && "opacity-50")}>
-                  <Gift id={gift} className={cn("transition-transform duration-150 group-hover:scale-110", wide ? "h-14 w-14" : "h-11 w-11")} />
-                  <span className="flex items-center gap-1 text-xs font-bold tabular-nums text-[#3F3F46]">{need === -1 ? <b className="rounded bg-[#F59E0B] px-1 text-[10px] text-white">VIP</b> : need ? <span aria-label={`${need}`} className="text-[11px] opacity-70">🔒</span> : <><Heart size={13} fill="#E8352B" stroke="none" />{price}</>}</span>
-                </button>
-              ))}
+            <div role="menu" className="min-h-0 flex-1 overflow-y-auto bg-white px-1.5 pb-2 pt-1">
+              {(() => {
+                // Like the original gift list: the gifts you can send first, then the ones still locked
+                // (by kisses, from the nearest to the farthest, and the VIP ones last). Locked gifts are grey with a lock.
+                const all = [...giftChoices.slice(0, 2), ...customGiftNames(art).filter((name) => !name.startsWith("ges_")).map((name) => [`c:${name}`, GIFT_PRICES[name] ?? customPrice(name), missing(GIFT_RULES[`c:${name}`], progress)] as [string, number, number]), ...giftChoices.slice(2), ...lockedGifts.map(([gift, price, need]) => [gift, price, Math.max(0, need - progress.kisses)] as [string, number, number])]
+                  .map(([gift, price, need]) => [gift, price, need ?? 0] as [string, number, number]);
+                const isLocked = (need: number) => (need === -1 ? !vip : need > 0);
+                const open = all.filter(([, , need]) => !isLocked(need));
+                const locked = all.filter(([, , need]) => isLocked(need)).sort((x, y) => (x[2] === -1 ? 1e12 : x[2]) - (y[2] === -1 ? 1e12 : y[2]));
+                const tile = ([gift, price, need]: [string, number, number], order: number) => {
+                  const shut = isLocked(need);
+                  const note = shut ? (need === -1 ? t("bottle.vipOnly") : lockNote("kisses", need)) : undefined;
+                  return (
+                    <button key={`${gift}-${order}`} role="menuitem" aria-disabled={shut} onPointerDown={(event) => pressGift(giftTargets, gift, price, need, event.clientX, event.clientY)} onPointerMove={(event) => { const state = pressed.current; if (state && !state.started && Math.hypot(event.clientX - state.x, event.clientY - state.y) > 8) cancelPress(); }} onPointerUp={() => releaseGift(giftTargets, gift, price, need)} onPointerLeave={cancelPress} onPointerCancel={cancelPress} onContextMenu={(event) => event.preventDefault()} onKeyDown={(event) => { if (event.key === "Enter" && !event.repeat) giveMany(giftTargets, gift, price, need); }} aria-label={note ?? `${t("gifts.send")} ${price}`} title={note} className={cn("group flex touch-pan-y select-none flex-col items-center justify-around rounded-[9px] transition-colors duration-500 hover:bg-[#F2F2F2] active:bg-[#D1D1D1]", wide ? "h-[95px]" : "h-[84px]")}>
+                      <span className={cn("relative flex items-center", wide ? "h-[60px]" : "h-[52px]")}>
+                        <Gift id={gift} className={cn("transition-transform duration-150 group-hover:scale-110", wide ? "h-[60px] w-[60px]" : "h-[50px] w-[50px]", shut && "grayscale")} />
+                      </span>
+                      {shut
+                        ? <span aria-hidden="true" className={cn("bg-contain bg-center bg-no-repeat", need === -1 ? "h-[18px] w-[39px]" : "h-[18px] w-[15px]")} style={{ backgroundImage: `url(/custom/orig/${need === -1 ? "store_lock_vip" : "store_lock"}.svg)` }} />
+                        : <span className="flex items-center"><span aria-hidden="true" className="h-[13px] w-[16px] bg-contain bg-center bg-no-repeat" style={{ backgroundImage: "url(/custom/orig/bank_heart.svg)" }} /><b className="ml-[3px] text-[14px] tabular-nums text-[#1F2937]">{price}</b></span>}
+                    </button>
+                  );
+                };
+                const grid = cn("grid content-start gap-x-1", wide ? "grid-cols-[repeat(auto-fill,minmax(72px,1fr))]" : "grid-cols-[repeat(auto-fill,minmax(60px,1fr))]");
+                const head = (text: string, count: number) => <p className="sticky top-0 z-[1] flex items-center gap-2 bg-white/95 px-1.5 py-1.5 text-[12px] font-bold uppercase tracking-wide text-[#6B7280] backdrop-blur-sm"><span>{text}</span><span className="rounded-full bg-[#F3F4F6] px-1.5 text-[11px] tabular-nums">{count}</span><span className="h-px flex-1 bg-[#EEEEEE]" /></p>;
+                return <>
+                  {head(t("bottle.giftsOpen"), open.length)}
+                  <div className={grid}>{open.map((item, index) => tile(item, index))}</div>
+                  {locked.length ? <>{head(t("bottle.giftsLocked"), locked.length)}<div className={grid}>{locked.map((item, index) => tile(item, 1000 + index))}</div></> : null}
+                </>;
+              })()}
             </div>
             )}
             {frameNote && picked !== null && players[picked].me ? <p role="status" className="border-t border-border px-3 py-2 text-center text-xs font-semibold text-[#B45309]">{frameNote}</p> : null}
