@@ -25,14 +25,14 @@ import { playGiftSound, playSfx, playSound, setVolume } from "./sound";
 import { supabase } from "@/lib/supabase";
 import { ensureMessagesLoaded, openRemoteChat, remoteChats, sendRemoteMessage } from "@/lib/messagesSync";
 import { uploadBlob } from "@/lib/media";
-import { bottleAnswer, bottleAchSync, bottleGesture, bottleProgress, bottleSkin, bottleBuyChances, bottleJoin, bottleMove, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleAdmireLeave, bottleDailyClaim, bottleLeagueInfo, bottleLeagueClaim, type BottleLeague, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleGift, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState } from "@/lib/bottleSync";
+import { bottleAnswer, bottleAchSync, bottleGesture, bottleProgress, bottleSkin, bottleBuyChances, bottleJoin, bottleMove, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleAdmireLeave, bottleDailyClaim, bottleItems, bottleItemBuy, bottleBooster, bottleTutorial, type BottleItems, bottleLeagueInfo, bottleLeagueClaim, type BottleLeague, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleGift, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState } from "@/lib/bottleSync";
 
 type Player = { id: string; name: string; age: number; female: boolean; avatar: string; me?: boolean; empty?: boolean; zodiac?: number | null };
 type Phase = "waiting" | "spinning" | "choice" | "kissed" | "declined";
 type Track = { id: string; title: string; duration?: string };
 const stored = (key: string): Track[] => { try { return JSON.parse(window.localStorage.getItem(key) ?? "[]") as Track[]; } catch { return []; } };
 const keep = (key: string, list: Track[]) => { try { window.localStorage.setItem(key, JSON.stringify(list.slice(0, 40))); } catch { /* storage is full or blocked */ } };
-type Line = { id: number; from: string; to?: string; tos?: string[]; gesture?: string; count?: number; bottle?: { a: number; b: number }; text?: string; gift?: string; song?: string; admire?: { amount?: number; by?: string; avatar?: string; target?: string; lost?: boolean }; event?: { kind: "kick" | "saved" | "kicked"; a: string; b: string } };
+type Line = { id: number; from: string; to?: string; tos?: string[]; gesture?: string; count?: number; bottle?: { a: number; b: number }; text?: string; gift?: string; song?: string; admire?: { amount?: number; by?: string; avatar?: string; target?: string; lost?: boolean }; event?: { kind: "kick" | "saved" | "kicked"; a: string; b: string }; boost?: { kind: "kiss_fire" | "refuse_slap"; a: string; b: string } };
 // The same gift sent again and again by the same person makes one chat line "🌹 ×5 » receivers" instead of many lines.
 function mergeLines(list: Line[], fresh: Line[]) {
   const out = [...list];
@@ -108,6 +108,25 @@ export function songInfo(raw: string) {
 // Little dancing bars for the music player.
 function Equalizer({ className }: { className?: string }) {
   return <span aria-hidden="true" className={cn("flex items-end gap-[3px]", className)}>{[0.9, 0.5, 1.1, 0.7, 0.95].map((speed, n) => <span key={n} className="w-[4px] rounded-full bg-[linear-gradient(180deg,#F9A8D4,#EC4899)]" style={{ height: "100%", transformOrigin: "bottom", animation: `eq-bar ${speed}s ease-in-out ${n * 0.12}s infinite alternate` }} />)}</span>;
+}
+// The booster effect over the pair in the middle: burning lips with rising flames, or a hand that flies in and slaps.
+function BoostFx({ kind, fromLeft, x, y }: { kind: "kiss_fire" | "refuse_slap"; fromLeft: boolean; x: number; y: number }) {
+  if (kind === "kiss_fire") {
+    return (
+      <div aria-hidden="true" className="pointer-events-none absolute z-40 h-0 w-0" style={{ left: `${x}%`, top: `${y}%` }}>
+        {Array.from({ length: 10 }, (_, n) => (
+          <span key={n} className="absolute text-[6cqmin]" style={{ left: `${(n - 4.5) * 2.6}cqmin`, top: "2cqmin", ["--fx" as string]: `${((n * 37) % 9) - 4}cqmin`, animation: `boost-flame 1.4s ease-out ${n * 90}ms both` }}>🔥</span>
+        ))}
+        <img src="/custom/ui/kiss_fire.webp" alt="" className="absolute left-0 top-0 h-[24cqmin] w-[24cqmin] max-w-none object-contain drop-shadow-[0_0_18px_rgba(255,120,40,0.95)]" style={{ animation: "boost-pop 2.4s ease-out both" }} />
+      </div>
+    );
+  }
+  return (
+    <div aria-hidden="true" className="pointer-events-none absolute z-40 h-0 w-0" style={{ left: `${x}%`, top: `${y}%` }}>
+      <span className="absolute left-0 top-0 text-[16cqmin]" style={{ animation: "boost-bang 1.6s ease-out both" }}>💥</span>
+      <img src="/custom/ui/refuse_slap.webp" alt="" className="absolute left-0 top-0 h-[22cqmin] w-[22cqmin] max-w-none object-contain drop-shadow-[0_0_14px_rgba(160,120,255,0.9)]" style={{ ["--sx" as string]: fromLeft ? "-180%" : "80%", ["--sr" as string]: fromLeft ? "-40deg" : "40deg", animation: "boost-slap 2.2s ease-out both" }} />
+    </div>
+  );
 }
 // League colours (header gradient) and badge: Bronze, Silver, Gold, Platinum, Diamond.
 const LEAGUE_COLORS: [string, string][] = [["#D08A52", "#9C5A2B"], ["#B8C2CC", "#7D8A96"], ["#F7C948", "#D49B0A"], ["#7FD3E6", "#3A9AB3"], ["#A78BFA", "#6D28D9"]];
@@ -373,6 +392,28 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [waitNote, setWaitNote] = useState(false);
   const frameRef = useRef<HTMLIFrameElement>(null);
   const [hearts, setHearts] = useState(12);
+  // Won hearts fly from the table into the balance (like the original), and the balance heart pulses.
+  const balanceRef = useRef<HTMLButtonElement>(null);
+  const heartsSeen = useRef<{ value: number; at: number } | null>(null);
+  const [heartFlights, setHeartFlights] = useState<{ key: number; x: number; y: number; dx: number; dy: number; delay: number }[]>([]);
+  const [balancePulse, setBalancePulse] = useState(0);
+  useEffect(() => {
+    const seen = heartsSeen.current;
+    heartsSeen.current = { value: hearts, at: seen?.at ?? Date.now() };
+    if (!seen || hearts <= seen.value || Date.now() - seen.at < 4000) return;
+    const button = balanceRef.current;
+    const table = button?.parentElement?.parentElement;
+    if (!button || !table) return;
+    const to = button.getBoundingClientRect();
+    const box = table.getBoundingClientRect();
+    const x = box.left + box.width / 2, y = box.top + box.height / 2;
+    const count = Math.min(5, Math.max(1, Math.ceil((hearts - seen.value) / 10)));
+    const base = Date.now();
+    const list = Array.from({ length: count }, (_, n) => ({ key: base + n, x: x + (n - (count - 1) / 2) * 18, y, dx: to.left + to.width / 2 - x - (n - (count - 1) / 2) * 18, dy: to.top + to.height / 2 - y, delay: n * 120 }));
+    setHeartFlights((current) => [...current, ...list]);
+    window.setTimeout(() => setBalancePulse(base), 1300);
+    window.setTimeout(() => setHeartFlights((current) => current.filter((item) => item.key < base || item.key >= base + count)), 2200);
+  }, [hearts]);
   const [video, setVideo] = useState<string | null>(null);
   // Songs from the MP3 tab play in "music mode": a small square player with the title, no big video.
   const [musicMode, setMusicMode] = useState(false);
@@ -523,11 +564,12 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         if (!first) all.filter((item) => item.kind === "compliment" && item.to === data!.me).forEach((item) => setComplimentIn({ name: names.current[item.from ?? ""]?.name ?? "?", avatar: names.current[item.from ?? ""]?.avatar || cartoonAvatar(3, false), kind: Number(item.body) || 1 }));
         if (!first && all.some((item) => item.kind === "kick" && item.to === data!.me)) setKickedToast(true);
         if (!first) all.filter((item) => item.kind === "gesture" && item.from !== data!.me).forEach((item) => showSeatGesture(who(item.from), item.body ?? ""));
+        if (!first) all.filter((item) => item.kind === "booster" && item.from !== data!.me).forEach((item) => showBoostRef.current(item.body === "refuse_slap" ? "refuse_slap" : "kiss_fire", who(item.from)));
         if (!first) all.filter((item) => item.kind === "admire_lost" && item.to === data!.me).forEach((item) => { try { setLostToast(JSON.parse(item.body ?? "{}") as { by?: string; avatar?: string; target?: string }); } catch { /* bad body */ } });
         const fresh = all.filter((item) => item.kind !== "compliment" && (item.kind !== "admire_lost" || item.to === data!.me) && (item.kind !== "gift" || (first && item.from !== data!.me)));
         if (all.length) lastChat.current = all[all.length - 1].id;
         if (fresh.length) {
-          setLines((list) => mergeLines(list, fresh.map((item) => (item.kind === "kiss" ? { id: item.id, from: who(item.from), to: who(item.to) } : item.kind === "gift" ? { id: item.id, from: who(item.from), to: who(item.to), gift: item.body ?? "" } : item.kind === "admire" || item.kind === "admire_lost" ? { id: item.id, from: who(item.from), to: item.kind === "admire" ? who(item.to) : undefined, admire: { ...(() => { try { return JSON.parse(item.body ?? "{}") as { amount?: number; by?: string; avatar?: string; target?: string }; } catch { return {}; } })(), lost: item.kind === "admire_lost" } } : item.kind === "song" ? { id: item.id, from: who(item.from), to: item.to ? who(item.to) : undefined, song: item.body || "♪" } : item.kind === "kick" || item.kind === "saved" || item.kind === "kicked" ? { id: item.id, from: who(item.from), event: { kind: item.kind, a: nameOf(item.from), b: nameOf(item.to) } } : item.kind === "gesture" ? { id: item.id, from: who(item.from), gesture: item.body ?? "" } : item.kind === "bottle" ? { id: item.id, from: who(item.from), bottle: { a: Number((item.body ?? "0:0").split(":")[0]) || 0, b: Number((item.body ?? "0:0").split(":")[1]) || 0 } } : { id: item.id, from: who(item.from), text: item.body ?? "" }))).slice(-80));
+          setLines((list) => mergeLines(list, fresh.map((item) => (item.kind === "kiss" ? { id: item.id, from: who(item.from), to: who(item.to) } : item.kind === "gift" ? { id: item.id, from: who(item.from), to: who(item.to), gift: item.body ?? "" } : item.kind === "admire" || item.kind === "admire_lost" ? { id: item.id, from: who(item.from), to: item.kind === "admire" ? who(item.to) : undefined, admire: { ...(() => { try { return JSON.parse(item.body ?? "{}") as { amount?: number; by?: string; avatar?: string; target?: string }; } catch { return {}; } })(), lost: item.kind === "admire_lost" } } : item.kind === "song" ? { id: item.id, from: who(item.from), to: item.to ? who(item.to) : undefined, song: item.body || "♪" } : item.kind === "kick" || item.kind === "saved" || item.kind === "kicked" ? { id: item.id, from: who(item.from), event: { kind: item.kind, a: nameOf(item.from), b: nameOf(item.to) } } : item.kind === "gesture" ? { id: item.id, from: who(item.from), gesture: item.body ?? "" } : item.kind === "booster" ? { id: item.id, from: who(item.from), boost: { kind: item.body === "refuse_slap" ? "refuse_slap" : "kiss_fire", a: nameOf(item.from), b: nameOf(item.to) } } : item.kind === "bottle" ? { id: item.id, from: who(item.from), bottle: { a: Number((item.body ?? "0:0").split(":")[0]) || 0, b: Number((item.body ?? "0:0").split(":")[1]) || 0 } } : { id: item.id, from: who(item.from), text: item.body ?? "" }))).slice(-80));
         }
         setNet(data);
       } finally {
@@ -909,6 +951,95 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [seatGes, setSeatGes] = useState<Record<string, { id: string; key: number }>>({});
   // "Not enough kisses" window for a locked gift or smiley: what is missing and how to get it.
   const [lock, setLock] = useState<{ gift?: string; gesture?: string; kind: RuleKind; total: number } | null>(null);
+  // Tutorial for new players (like the original): spin, kiss or refuse, tap a photo, send a gift, write in the chat.
+  // The steps light up the real game; finishing pays a one-time bonus, skipping just closes it.
+  const [tour, setTour] = useState(0);
+  const tourAsked = useRef(false);
+  const tourDone = () => { try { return window.localStorage.getItem("bottle-tour") === "done"; } catch { return true; } };
+  useEffect(() => {
+    if (tourAsked.current || tourDone()) return;
+    if (online) {
+      if (!net) return;
+      tourAsked.current = true;
+      void bottleTutorial(false).then((state) => { if (state && !state.done) window.setTimeout(() => setTour(1), 1200); else try { window.localStorage.setItem("bottle-tour", "done"); } catch { /* storage is blocked */ } });
+      return;
+    }
+    tourAsked.current = true;
+    window.setTimeout(() => setTour(1), 1200);
+  }, [online, net]);
+  const sentTotal = Object.values(sent).reduce((sum, value) => sum + value, 0);
+  const myTexts = lines.filter((line) => line.from === "me" && line.text).length;
+  const tourMark = useRef({ sent: 0, texts: 0 });
+  useEffect(() => { if (tour === 4) tourMark.current.sent = sentTotal; if (tour === 5) { tourMark.current.texts = myTexts; setPicked(null); setCard(false); window.setTimeout(() => chatRef.current?.focus(), 100); } }, [tour]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (tour === 3 && picked !== null && players[picked] && !players[picked].me) setTour(4); }, [tour, picked, players]);
+  useEffect(() => { if (tour === 4 && sentTotal > tourMark.current.sent) window.setTimeout(() => setTour(5), 1800); }, [tour, sentTotal]);
+  useEffect(() => { if (tour === 5 && myTexts > tourMark.current.texts) window.setTimeout(() => setTour(6), 800); }, [tour, myTexts]);
+  const [tourBonus, setTourBonus] = useState(0);
+  const closeTour = (finished: boolean) => {
+    try { window.localStorage.setItem("bottle-tour", "done"); } catch { /* storage is blocked */ }
+    setTour(0);
+    if (!finished) return;
+    if (online) { void bottleTutorial(true).then((result) => { if (result && typeof result.total === "number") { heartsRef.current = result.total; setHearts(result.total); } }); return; }
+    heartsRef.current += 10;
+    setHearts(heartsRef.current);
+  };
+  useEffect(() => { if (tour === 6) setTourBonus(10); }, [tour]);
+  // Boosters from the original: "passion" (a burning kiss) and "slap" (on a refusal). After answering, a 3-second button
+  // offers one if the player has it; everybody at the table sees the effect over the pair.
+  const [items, setItems] = useState<BottleItems>(() => {
+    try { return { kiss_fire: 0, refuse_slap: 0, ...(JSON.parse(window.localStorage.getItem("bottle-items") ?? "{}") as Partial<BottleItems>) }; } catch { return { kiss_fire: 0, refuse_slap: 0 }; }
+  });
+  useEffect(() => { if (!online) try { window.localStorage.setItem("bottle-items", JSON.stringify(items)); } catch { /* storage is blocked */ } }, [items, online]);
+  const itemsAsked = useRef(false);
+  useEffect(() => {
+    if (!online || !net || (itemsAsked.current && panel !== "boosters")) return;
+    itemsAsked.current = true;
+    void bottleItems().then((data) => { if (data) setItems(data); });
+  }, [online, net, panel]);
+  const [boostOffer, setBoostOffer] = useState<keyof BottleItems | null>(null);
+  const boostTimer = useRef(0);
+  const offerBoost = (kind: keyof BottleItems) => {
+    if (!items[kind]) return;
+    window.clearTimeout(boostTimer.current);
+    setBoostOffer(kind);
+    boostTimer.current = window.setTimeout(() => setBoostOffer(null), 3000);
+  };
+  const [boostFx, setBoostFx] = useState<{ key: number; kind: keyof BottleItems; fromLeft: boolean } | null>(null);
+  const showBoost = (kind: keyof BottleItems, actor: string) => {
+    const key = Date.now();
+    setBoostFx({ key, kind, fromLeft: players[turn]?.id === actor || (actor === "me" && turn === meIndex) });
+    if (kind === "kiss_fire") { playSfx("heartbeat"); window.setTimeout(() => playSfx("kissing2"), 500); }
+    else { playSfx("whip"); window.setTimeout(() => playSfx("punch1"), 450); }
+    window.setTimeout(() => setBoostFx((value) => (value?.key === key ? null : value)), 2600);
+  };
+  const showBoostRef = useRef(showBoost);
+  showBoostRef.current = showBoost;
+  function fireBoost(kind: keyof BottleItems) {
+    window.clearTimeout(boostTimer.current);
+    setBoostOffer(null);
+    if (!items[kind]) return;
+    setItems((value) => ({ ...value, [kind]: Math.max(0, value[kind] - 1) }));
+    showBoost(kind, "me");
+    if (online) { void bottleBooster(kind).then((left) => { if (typeof left === "number" && left >= 0) setItems((value) => ({ ...value, [kind]: left })); }); return; }
+    const other = players[turn]?.me ? players[target ?? -1] : players[turn];
+    say({ from: "me", boost: { kind, a: t("common.you"), b: other?.name ?? "?" } });
+  }
+  function buyItem(kind: keyof BottleItems) {
+    setPayNote(false);
+    if (heartsRef.current < 5) return setPayNote(true);
+    if (online) {
+      void bottleItemBuy(kind).then((left) => {
+        if (left === null || left < 0) return setPayNote(true);
+        heartsRef.current = left;
+        setHearts(left);
+        setItems((value) => ({ ...value, [kind]: value[kind] + 5 }));
+      });
+      return;
+    }
+    heartsRef.current -= 5;
+    setHearts(heartsRef.current);
+    setItems((value) => ({ ...value, [kind]: value[kind] + 5 }));
+  }
   // Daily bonus: the first visit each day gives hearts; days in a row give more (day 1–7).
   const [daily, setDaily] = useState<{ day: number; hearts: number } | null>(null);
   const dailyAsked = useRef(false);
@@ -1507,7 +1638,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       <div className={cn("relative shrink-0 overflow-hidden [container-type:size]", wide ? "h-full w-full bg-[#E0A04E]" : "aspect-[9/10] w-full")} onClick={() => { setPicked(null); if (dedicate) chooseMode(false); }}>
         {wide ? <WoodTable className="pointer-events-none absolute inset-0 h-full w-full" /> : null}
         <div className={cn("absolute flex items-center", menuOpen ? "z-[44]" : "z-10", wide ? "inset-y-0 left-0 w-[13%] flex-col gap-[2.2cqmin] py-[2.2cqmin]" : "inset-x-0 top-0 h-[10%] gap-[1.3cqmin] px-[2cqmin]")} onClick={(event) => event.stopPropagation()}>
-          <button type="button" onClick={() => { setPayNote(false); setPanel("shop"); }} aria-label={`${t("bottle.shop")}: ${hearts}`} className={cn("flex items-center text-white hover:brightness-110", wide ? "flex-col" : "gap-1.5")} title={t("bottle.shop")}>
+          <button ref={balanceRef} key={balancePulse} type="button" onClick={() => { setPayNote(false); setPanel("shop"); }} aria-label={`${t("bottle.shop")}: ${hearts}`} className={cn("flex items-center text-white hover:brightness-110", balancePulse > 0 && "motion-safe:animate-[balance-pulse_0.45s_ease-out]", wide ? "flex-col" : "gap-1.5")} title={t("bottle.shop")}>
             <svg viewBox="0 0 64 58" aria-hidden="true" className={cn("drop-shadow-[0_2px_3px_rgba(90,30,0,0.35)]", wide ? "h-[min(56px,10cqmin)] w-[min(62px,11cqmin)]" : "h-[8cqmin] max-h-10 w-[8.8cqmin] max-w-11")}>
               <defs>
                 <radialGradient id="hud-heart" cx="0.38" cy="0.3" r="0.85"><stop offset="0" stopColor="#FF6B5E" /><stop offset="0.45" stopColor="#F2222F" /><stop offset="1" stopColor="#B80F1F" /></radialGradient>
@@ -1545,8 +1676,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           {!wide && !full ? <button onClick={onLeave} aria-label={t("photos.close")} title={t("photos.close")} className={cn(tool, "bg-[#E5484D]/90 hover:bg-[#E5484D] sm:hidden")}><X size={19} strokeWidth={3} /></button> : null}
         </div>
 
-        <button type="button" disabled={staged} onClick={(event) => { event.stopPropagation(); if (myTurn) { bumpStat("spins"); return online ? void bottleSpin().then(pullRef.current) : spin(); } setWaitNote(true); window.setTimeout(() => setWaitNote(false), 1800); }} aria-label={t("bottle.spin")} className={cn("absolute h-[30cqmin] transition-transform duration-[4500ms] ease-[cubic-bezier(0.15,0.6,0.2,1)] motion-reduce:duration-0", staged ? "pointer-events-none" : myTurn ? "z-20 cursor-pointer" : "cursor-default")} style={{ left: `${CENTER_X}%`, top: `${STAGE_Y}%`, transform: `translate(-50%, -50%) rotate(${rotation}deg)`, filter: skinFilter(skin) }}>
-          <SkinBottle className={cn("h-full drop-shadow-[0_6px_10px_rgba(0,0,0,0.45)] transition-opacity duration-700", staged && "opacity-0")} />
+        <button type="button" disabled={staged} onClick={(event) => { event.stopPropagation(); if (myTurn) { bumpStat("spins"); return online ? void bottleSpin().then(pullRef.current) : spin(); } setWaitNote(true); window.setTimeout(() => setWaitNote(false), 1800); }} aria-label={t("bottle.spin")} className={cn(tour === 1 && "rounded-full ring-[1cqmin] ring-[#FFD84D] motion-safe:animate-pulse", "absolute h-[30cqmin] transition-transform duration-[4500ms] ease-[cubic-bezier(0.15,0.6,0.2,1)] motion-reduce:duration-0", staged ? "pointer-events-none" : myTurn ? "z-20 cursor-pointer" : "cursor-default")} style={{ left: `${CENTER_X}%`, top: `${STAGE_Y}%`, transform: `translate(-50%, -50%) rotate(${rotation}deg)`, filter: skinFilter(skin) }}>
+          <span key={rotation} className="block h-full motion-safe:animate-[bottle-kick_0.35s_ease-out]"><SkinBottle className={cn("h-full drop-shadow-[0_6px_10px_rgba(0,0,0,0.45)] transition-opacity duration-700", staged && "opacity-0")} /></span>
         </button>
         {myTurn && !staged ? (
           <div role="status" className="pointer-events-none absolute z-20 h-[16cqmin] w-[20cqmin] animate-[spin-hint_1.6s_ease-in-out_infinite] motion-reduce:animate-none" style={{ left: `${CENTER_X + 1}%`, top: `${STAGE_Y + 2}%` }}>
@@ -1566,7 +1697,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           const active = index === turn || index === target;
           return (
             <div key={player.id} className={cn("absolute -translate-x-1/2 -translate-y-1/2 transition-[left,top]", wide ? "w-[17cqmin]" : "w-[16cqmin]", " duration-[1100ms] ease-in-out motion-reduce:duration-0", staged && active ? "z-30" : index === turn && "z-10")} style={staged && active ? { left: `calc(${CENTER_X}% ${index === turn ? "-" : "+"} 12.5cqmin)`, top: `${STAGE_Y}%` } : { left: `${seats[index][0]}%`, top: `${seats[index][1]}%` }}>
-              <button type="button" onClick={(event) => { event.stopPropagation(); if (dedicate) { if (!player.me) setChosen((list) => (list.includes(player.id) ? list.filter((id) => id !== player.id) : [...list, player.id])); return; } setGiftNote(null); setCardNote(null); setFlagMenu(false); setSignOpen(false); setLeaveAsk(false); if (player.me) { if (Date.now() - meTap.current > 15000 || picked !== index) { meTap.current = Date.now(); setFrameNote(null); pullProgress.current(); setCard(false); setPicked(index); return; } meTap.current = 0; setCard(true); setPicked(index); return; } setCard(picked === index); setPicked(index); }} aria-label={`${player.name}, ${player.age}`} className={cn("group relative block aspect-square w-full rounded-[14%] bg-surface-2 shadow-[0_4px_10px_rgba(0,0,0,0.4)]", staged && index === target ? "ring-[0.9cqmin] ring-[#FFE2A8]" : active ? "ring-4 ring-white" : picked === index ? "ring-4 ring-[#8CC63F]" : player.me ? "ring-2 ring-white/80" : "")}>
+              <button type="button" onClick={(event) => { event.stopPropagation(); if (dedicate) { if (!player.me) setChosen((list) => (list.includes(player.id) ? list.filter((id) => id !== player.id) : [...list, player.id])); return; } setGiftNote(null); setCardNote(null); setFlagMenu(false); setSignOpen(false); setLeaveAsk(false); if (player.me) { if (Date.now() - meTap.current > 15000 || picked !== index) { meTap.current = Date.now(); setFrameNote(null); pullProgress.current(); setCard(false); setPicked(index); return; } meTap.current = 0; setCard(true); setPicked(index); return; } setCard(picked === index); setPicked(index); }} aria-label={`${player.name}, ${player.age}`} className={cn("group relative block aspect-square w-full rounded-[14%] bg-surface-2 shadow-[0_4px_10px_rgba(0,0,0,0.4)]", phase === "spinning" && index === turn && "motion-safe:animate-[seat-wobble_0.4s_ease-out]", tour === 3 && !player.me && !player.empty && "ring-4 ring-[#FFD84D] motion-safe:animate-pulse", staged && index === target ? "ring-[0.9cqmin] ring-[#FFE2A8]" : active ? "ring-4 ring-white" : picked === index ? "ring-4 ring-[#8CC63F]" : player.me ? "ring-2 ring-white/80" : "")}>
                 <img src={player.avatar} alt="" className="h-full w-full rounded-[14%] object-cover" />
                 {frameOf(player) ? <FrameArt id={frameOf(player)} className={cn("pointer-events-none absolute z-[1]", frameOf(player) >= FIRST_ORIGINAL ? "-inset-[17%] h-[134%] w-[134%]" : "-inset-[9%] h-[118%] w-[118%]")} /> : null}
                 {seatGes[player.me ? "me" : player.id] ? <img key={seatGes[player.me ? "me" : player.id].key} src={`/custom/anim/ges_${seatGes[player.me ? "me" : player.id].id}.webp`} alt="" className="pointer-events-none absolute inset-[12%] z-[4] h-[76%] w-[76%] max-w-none animate-[bottle-pop_0.25s_ease-out] object-contain drop-shadow-[0_3px_4px_rgba(0,0,0,0.4)]" /> : null}
@@ -1619,7 +1750,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
 
         {bursts.map((item) => <HeartBurst key={item.key} at={seats[item.to]} amount={item.amount} />)}
         {shows.map((item) => <Fireworks key={`fw-${item.key}`} at={seats[item.to]} level={item.level} seed={item.key} />)}
-        {flying.map((item) => <div key={item.key} className="pointer-events-none absolute z-40 h-[11cqmin] w-[11cqmin] -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_0_10px_rgba(255,240,150,0.95)] transition-[left,top] ease-in-out" style={{ transitionDuration: `${item.ms}ms`, left: `${seats[item.moved ? item.to : item.from][0]}%`, top: `${seats[item.moved ? item.to : item.from][1]}%` }}><Gift anim id={item.gift} className="h-full w-full" /></div>)}
+        {boostFx ? <BoostFx key={boostFx.key} kind={boostFx.kind} fromLeft={boostFx.fromLeft} x={CENTER_X} y={STAGE_Y} /> : null}
+        {flying.map((item) => <div key={item.key} className="pointer-events-none absolute z-40 h-[11cqmin] w-[11cqmin] -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_0_10px_rgba(255,240,150,0.95)] transition-[left,top] ease-in-out" style={{ transitionDuration: `${item.ms}ms`, left: `${seats[item.moved ? item.to : item.from][0]}%`, top: `${seats[item.moved ? item.to : item.from][1]}%` }}><span className="block h-full w-full" style={{ animation: `gift-fly-scale ${item.ms}ms ease-in-out both` }}><Gift anim id={item.gift} className="h-full w-full" /></span></div>)}
 
         {staged && target !== null ? (
           <>
@@ -1633,10 +1765,18 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
               {arrowLayer(true, answers.spinner, true)}
               {arrowLayer(false, answers.target, false)}
             </div>
+            {boostOffer ? (
+              <div className="absolute z-[31] -translate-x-1/2" style={{ left: `${CENTER_X}%`, top: `calc(${STAGE_Y}% + 24cqmin)` }}>
+                <button onClick={() => fireBoost(boostOffer)} className={cn("flex h-[8.5cqmin] items-center gap-[1cqmin] rounded-full pl-[0.6cqmin] pr-[2.5cqmin] text-[3cqmin] font-black text-white shadow-lg ring-2 ring-white/80 motion-safe:animate-[balance-pulse_0.8s_ease-in-out_infinite]", boostOffer === "kiss_fire" ? "bg-[linear-gradient(180deg,#FF8A3D,#E8203A)]" : "bg-[linear-gradient(180deg,#9B7BFF,#5B3FD1)]")}>
+                  <img src={`/custom/ui/${boostOffer}.webp`} alt="" className="h-[7.4cqmin] w-[7.4cqmin] object-contain" />
+                  {t(boostOffer === "kiss_fire" ? "bottle.boostFire" : "bottle.boostSlap")} <span className="text-[2.4cqmin] opacity-80">×{items[boostOffer]}</span>
+                </button>
+              </div>
+            ) : null}
             {canAnswer && myRole ? (
               <div className="absolute z-30 flex -translate-x-1/2 gap-[2.5cqmin]" style={{ left: `${CENTER_X}%`, top: `calc(${STAGE_Y}% + 14.5cqmin)` }}>
-                <button onClick={() => { bumpStat("refusals"); setAnswers((value) => ({ ...value, [myRole]: false })); if (online) void bottleAnswer(false).then(pullRef.current); }} className="h-[7.5cqmin] w-[20cqmin] rounded-[1.8cqmin] bg-[#E2401F] text-[3cqmin] font-bold text-white shadow-lg hover:brightness-110">{t("bottle.no")}</button>
-                <button onClick={() => { bumpStat("kissesGiven"); setAnswers((value) => ({ ...value, [myRole]: true })); if (online) void bottleAnswer(true).then(pullRef.current); }} className="h-[7.5cqmin] w-[20cqmin] rounded-[1.8cqmin] bg-[#8CC63F] text-[3cqmin] font-bold text-white shadow-lg hover:brightness-110">{t("bottle.yes")}</button>
+                <button onClick={() => { bumpStat("refusals"); setAnswers((value) => ({ ...value, [myRole]: false })); if (online) void bottleAnswer(false).then(pullRef.current); offerBoost("refuse_slap"); }} className="h-[7.5cqmin] w-[20cqmin] rounded-[1.8cqmin] bg-[#E2401F] text-[3cqmin] font-bold text-white shadow-lg hover:brightness-110">{t("bottle.no")}</button>
+                <button onClick={() => { bumpStat("kissesGiven"); setAnswers((value) => ({ ...value, [myRole]: true })); if (online) void bottleAnswer(true).then(pullRef.current); offerBoost("kiss_fire"); }} className="h-[7.5cqmin] w-[20cqmin] rounded-[1.8cqmin] bg-[#8CC63F] text-[3cqmin] font-bold text-white shadow-lg hover:brightness-110">{t("bottle.yes")}</button>
               </div>
             ) : null}
           </>
@@ -2097,6 +2237,13 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                     <p className="min-w-0 flex-1 text-xs"><b className="block text-sm">{t("bottle.boostJump")}</b>{t("bottle.boostJumpText")}</p>
                     <button disabled={jump} onClick={() => { if (!pay(3)) return setPayNote(true); jumpRef.current = true; setJump(true); }} className="h-8 shrink-0 rounded-md bg-[#8CC63F] px-2.5 text-xs font-bold text-white disabled:bg-[#9CA3AF]">{jump ? "✓" : "❤ 3"}</button>
                   </div>
+                  {(["kiss_fire", "refuse_slap"] as const).map((kind) => (
+                    <div key={kind} className="flex items-center gap-2 rounded-xl bg-[#FFF7ED] p-2">
+                      <img src={`/custom/ui/${kind}.webp`} alt="" className="h-10 w-10 shrink-0 object-contain" />
+                      <p className="min-w-0 flex-1 text-xs"><b className="block text-sm">{t(kind === "kiss_fire" ? "bottle.boostFire" : "bottle.boostSlap")} <span className="font-semibold text-[#9CA3AF]">· {t("bottle.boostHave").replace("{n}", String(items[kind]))}</span></b>{t(kind === "kiss_fire" ? "bottle.boostFireText" : "bottle.boostSlapText")}</p>
+                      <button onClick={() => buyItem(kind)} className="h-8 shrink-0 rounded-md bg-[#8CC63F] px-2.5 text-xs font-bold text-white">5× · ❤ 5</button>
+                    </div>
+                  ))}
                   {payNote ? <p role="status" className="rounded-lg bg-[#FEF3C7] p-2 text-center text-xs font-semibold text-[#92400E]">{t("bottle.noHearts")}</p> : null}
                 </div>
               ) : panel === "frames" ? (() => {
@@ -2264,6 +2411,12 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           {lines.filter((line) => !line.text || !muted.includes(line.from)).map((line) => {
             const from = byId(line.from);
             const to = line.to ? byId(line.to) : null;
+            if (line.boost) return (
+              <p key={line.id} className={cn("flex items-center rounded-lg px-2.5 py-1.5 text-[13px] font-semibold", line.boost.kind === "kiss_fire" ? "bg-[#FF8A3D]/10 text-[#FDBA74]" : "bg-[#9B7BFF]/10 text-[#C4B5FD]")}>
+                <img src={`/custom/ui/${line.boost.kind}.webp`} alt="" className="mr-1.5 h-7 w-7 shrink-0 object-contain" />
+                <span><b>{line.boost.a}</b> {t(line.boost.kind === "kiss_fire" ? "bottle.boostFireLine" : "bottle.boostSlapLine")} <b>{line.boost.b}</b></span>
+              </p>
+            );
             if (line.event) return (
               <p key={line.id} className={cn("rounded-lg px-2.5 py-1.5 text-[13px] font-semibold", line.event.kind === "saved" ? "bg-[#DCFCE7]/10 text-[#86EFAC]" : "bg-[#FEE2E2]/10 text-[#FCA5A5]")}>
                 <img src={emojiSrc(line.event.kind === "saved" ? "🛟" : "🦶")} alt="" className="mr-1.5 inline h-5 w-5 align-[-5px]" />
@@ -2331,11 +2484,38 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           })}
         </div>
         <form onSubmit={handleChat} className={cn("flex items-center gap-2 border-t border-border p-2.5", picked !== null && "hidden")}>
-          <input ref={chatRef} value={draft} onChange={(event) => setDraft(event.target.value)} maxLength={200} aria-label={t("messages.placeholder")} placeholder={t("messages.placeholder")} autoComplete="off" className="h-11 min-w-0 flex-1 rounded-full border border-border bg-surface-2 px-4 text-sm text-text outline-none placeholder:text-muted focus:border-accent" />
+          <input ref={chatRef} value={draft} onChange={(event) => setDraft(event.target.value)} maxLength={200} aria-label={t("messages.placeholder")} placeholder={t("messages.placeholder")} autoComplete="off" className={cn(tour === 5 && "ring-4 ring-[#FFD84D]", "h-11 min-w-0 flex-1 rounded-full border border-border bg-surface-2 px-4 text-sm text-text outline-none placeholder:text-muted focus:border-accent")} />
           <button type="button" onClick={() => { setFrameNote(null); pullProgress.current(); if (dedicate) chooseMode(false); setCard(false); meTap.current = Date.now(); setPicked(meIndex); }} aria-label={t("bottle.gestures")} title={t("bottle.gestures")} className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface-2 text-xl">😊</button>
           <button type="submit" disabled={!draft.trim()} aria-label={t("messages.send")} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#EE8A2B] text-white disabled:opacity-40"><SendHorizontal size={17} /></button>
         </form>
       </div>
+      {tour > 0 ? (
+        <div role="dialog" aria-label={t("bottle.tourTitle")} className={cn("absolute left-1/2 z-[62] w-[min(420px,calc(100%-24px))] -translate-x-1/2 animate-[bottle-pop_0.25s_ease-out] rounded-2xl border-2 border-[#FFD84D] bg-white p-3 text-[#1F2937] shadow-[0_10px_30px_rgba(0,0,0,0.35)]", tour === 6 ? "top-1/2 -translate-y-1/2" : "top-2")}>
+          {tour < 6 ? (
+            <>
+              <div className="flex items-center gap-2">
+                <span className="rounded-full bg-[#FFD84D] px-2 py-0.5 text-[11px] font-black text-[#7C5A00]">{t("bottle.tourStep").replace("{n}", String(tour)).replace("{total}", "5")}</span>
+                <p className="min-w-0 flex-1 truncate text-sm font-black">{t(`bottle.tour${tour}Title` as "bottle.tour1Title")}</p>
+                <button onClick={() => closeTour(false)} className="shrink-0 text-xs font-semibold text-[#9CA3AF] hover:text-[#4B5563]">{t("bottle.tourSkip")}</button>
+              </div>
+              <p className="mt-1.5 text-[13px] leading-snug text-[#4B5563]">{t(`bottle.tour${tour}Text` as "bottle.tour1Text")}</p>
+              <div className="mt-2 flex items-center gap-1">
+                {[1, 2, 3, 4, 5].map((n) => <span key={n} className={cn("h-1.5 flex-1 rounded-full", n <= tour ? "bg-[#F5B400]" : "bg-[#E5E7EB]")} />)}
+              </div>
+              {tour <= 2 ? <button onClick={() => setTour(tour + 1)} className="mt-2 h-9 w-full rounded-lg bg-[#8CC63F] text-sm font-bold text-white hover:brightness-105">{t("bottle.tourNext")}</button>
+                : <p className="mt-2 text-center text-[11px] font-semibold text-[#B45309]">👆 {t("bottle.tourDoIt")}</p>}
+            </>
+          ) : (
+            <div className="text-center">
+              <p className="text-lg font-black text-[#B45309]">🎉 {t("bottle.tourFinishTitle")}</p>
+              <p className="mt-1 text-sm text-[#4B5563]">{t("bottle.tourFinishText")}</p>
+              <p className="mt-2 flex items-center justify-center gap-1.5 text-2xl font-black text-[#E8203A]">+{tourBonus}<Heart size={24} fill="#E8352B" stroke="none" /></p>
+              <button onClick={() => closeTour(true)} className="mt-3 h-10 min-w-[160px] rounded-lg bg-[#8CC63F] px-4 text-sm font-bold text-white hover:brightness-105">{t("bottle.tourPlay")}</button>
+            </div>
+          )}
+        </div>
+      ) : null}
+      {heartFlights.map((item) => <Heart key={item.key} aria-hidden="true" size={26} fill="#E8352B" stroke="#FFFFFF" strokeWidth={2} className="pointer-events-none fixed z-[80] -ml-[13px] -mt-[13px] drop-shadow" style={{ left: item.x, top: item.y, ["--hx" as string]: `${item.dx}px`, ["--hy" as string]: `${item.dy}px`, animation: `heart-to-balance 1.4s cubic-bezier(0.4,0,0.2,1) ${item.delay}ms both` }} />)}
       {leagueResult && !daily ? (
         <div className="absolute inset-0 z-[61] flex items-center justify-center bg-black/40 p-4" onClick={() => setLeagueResult(null)}>
           <div role="dialog" aria-label={t("bottle.leagueResult")} onClick={(event) => event.stopPropagation()} className="relative w-full max-w-[360px] animate-[bottle-pop_0.25s_ease-out] rounded-2xl bg-white px-5 pb-5 pt-4 text-center text-[#1F2937] shadow-2xl">

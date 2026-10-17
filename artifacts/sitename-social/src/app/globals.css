@@ -139,3 +139,59 @@ button { cursor: pointer; }
 @media (prefers-reduced-motion: reduce) {
   [style*="fw-rocket"], [style*="fw-spark"], [style*="fw-flash"] { animation-duration: 1ms !important; }
 }
+
+/* Like the original: the bottle kicks back a little before it spins, the spinner's photo wobbles,
+   and a gift grows while it flies and shrinks back as it lands. */
+@keyframes bottle-kick {
+  0% { transform: rotate(0deg); }
+  35% { transform: rotate(-10deg); }
+  100% { transform: rotate(0deg); }
+}
+@keyframes seat-wobble {
+  0%, 100% { transform: rotate(0deg); }
+  30% { transform: rotate(-10deg); }
+  65% { transform: rotate(5deg); }
+}
+@keyframes gift-fly-scale {
+  0% { transform: scale(0.8); }
+  10%, 90% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+/* A heart flies from the table to the balance when hearts are won. */
+@keyframes heart-to-balance {
+  0% { transform: translate(0, 0) scale(0.6); opacity: 0; }
+  12% { transform: translate(0, -18px) scale(1.15); opacity: 1; }
+  85% { opacity: 1; }
+  100% { transform: translate(var(--hx), var(--hy)) scale(0.7); opacity: 0; }
+}
+@keyframes balance-pulse {
+  0%, 100% { transform: scale(1); }
+  40% { transform: scale(1.25); }
+}
+
+/* Boosters: a burning kiss and a slap over the pair in the middle of the table. */
+@keyframes boost-pop {
+  0% { transform: translate(-50%, -50%) scale(0.2); opacity: 0; }
+  20% { transform: translate(-50%, -50%) scale(1.25); opacity: 1; }
+  35% { transform: translate(-50%, -50%) scale(1); }
+  80% { opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1.1); opacity: 0; }
+}
+@keyframes boost-flame {
+  0% { transform: translate(0, 0) scale(0.6); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translate(var(--fx), -16cqmin) scale(1.3); opacity: 0; }
+}
+@keyframes boost-slap {
+  0% { transform: translate(var(--sx), -50%) rotate(var(--sr)) scale(0.8); opacity: 0; }
+  15% { opacity: 1; }
+  45% { transform: translate(-50%, -50%) rotate(0deg) scale(1.3); opacity: 1; }
+  55% { transform: translate(-50%, -50%) rotate(-8deg) scale(1.15); }
+  85% { opacity: 1; }
+  100% { transform: translate(-50%, -50%) rotate(0deg) scale(1.1); opacity: 0; }
+}
+@keyframes boost-bang {
+  0%, 40% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+  50% { transform: translate(-50%, -50%) scale(1.4); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1.8); opacity: 0; }
+}

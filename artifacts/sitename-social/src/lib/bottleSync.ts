@@ -2,7 +2,7 @@ import { supabase } from "./supabase";
 
 // Live tables of the bottle game. The database owns the game: seats, turns, where the bottle stops, answers and kisses.
 export type BottleSeat = { seat: number; id: string; name: string | null; avatar: string | null; gender: string | null; kisses: number; total?: number; smiles?: number; songs?: number; zodiac?: number | null; age: number | null; status?: string | null; frame?: number; pass?: boolean; kicked?: { by: string; at: number } | null; admirer?: { id: string; name: string | null; avatar: string | null; amount: number } | null };
-export type BottleChat = { id: number; from: string | null; to: string | null; kind: "text" | "kiss" | "wheel" | "song" | "gift" | "admire" | "admire_lost" | "kick" | "saved" | "kicked" | "compliment" | "bottle" | "gesture"; body: string | null };
+export type BottleChat = { id: number; from: string | null; to: string | null; kind: "text" | "kiss" | "wheel" | "song" | "gift" | "admire" | "admire_lost" | "kick" | "saved" | "kicked" | "compliment" | "bottle" | "gesture" | "booster"; body: string | null };
 export type BottleState = {
   table: number; me: string; now: number; hearts: number; chances?: number; winner?: { name: string | null; amount: number } | null;
   phase: "waiting" | "spinning" | "choice" | "result"; phase_at: number;
@@ -44,6 +44,11 @@ export const bottleDailyClaim = () => call<{ day: number; hearts: number; total:
 export type BottleLeague = { league: number; ends_ms: number; now_ms: number; limit: number; move: number; today: number; prizes: number[]; users: { id: string; name: string | null; avatar: string | null; score: number; place: number }[] };
 export const bottleLeagueInfo = () => call<BottleLeague>("bottle_league_info");
 export const bottleLeagueClaim = () => call<{ place: number | null; reward: number; league: number; next: number; score: number; total: number | null } | null>("bottle_league_claim");
+export type BottleItems = { kiss_fire: number; refuse_slap: number };
+export const bottleItems = () => call<BottleItems>("bottle_items_get");
+export const bottleItemBuy = (kind: keyof BottleItems) => call<number>("bottle_item_buy", { p_kind: kind });
+export const bottleBooster = (kind: keyof BottleItems) => call<number>("bottle_booster", { p_kind: kind });
+export const bottleTutorial = (finish: boolean) => call<{ done?: boolean; bonus?: number; total?: number }>("bottle_tutorial", { p_finish: finish });
 export const bottleAdmire = (to: string) => call<number>("bottle_admire", { p_to: to });
 export const bottleAdmireLeave = (to: string) => call<number>("bottle_admire_leave", { p_to: to });
 export type BottleRoom = { id: number; name: string; capacity: number; locked: boolean; mine: boolean; owner: { name: string | null; avatar: string | null } | null; boys: number; girls: number };
