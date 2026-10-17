@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type FormEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import Link from "next/link";
-import { AtSign, ChevronDown, LifeBuoy, Pause, Play, Clock, Flame, Search, Star, Ban, Flag, Mail, Gift as GiftIcon, Heart, Home, Maximize, ArrowUpRight, BadgeCheck, Crown, DoorOpen, Eye, EyeOff, KeyRound, Lock, Mars, Trash2, Venus, BookOpen, MessageSquare, Check, Menu, UserRound, Minimize, Music, Plus, UserCheck, Music2, RefreshCw, SendHorizontal, Settings, Trophy, UserPlus, UserRoundCog, Users, Volume2, VolumeX, X } from "lucide-react";
+import { AtSign, ChevronDown, ChevronLeft, LifeBuoy, Pause, Play, Clock, Flame, Search, Star, Ban, Flag, Mail, Gift as GiftIcon, Heart, Home, Maximize, ArrowUpRight, BadgeCheck, Crown, DoorOpen, Eye, EyeOff, KeyRound, Lock, Mars, Trash2, Venus, BookOpen, MessageSquare, Check, Menu, UserRound, Minimize, Music, Plus, UserCheck, Music2, RefreshCw, SendHorizontal, Settings, Trophy, UserPlus, UserRoundCog, Users, Volume2, VolumeX, X } from "lucide-react";
 import type { GiftId } from "@/types";
 import { cartoonAvatar } from "./avatarArt";
 import { useTranslation } from "@/i18n/useTranslation";
@@ -28,7 +28,7 @@ import { supabase } from "@/lib/supabase";
 import { refreshFriends } from "@/lib/friendsSync";
 import { ensureMessagesLoaded, openRemoteChat, remoteChats, sendRemoteMessage } from "@/lib/messagesSync";
 import { uploadBlob } from "@/lib/media";
-import { bottleAnswer, bottleAchSync, bottleAchView, bottleGesture, bottleProgress, bottleSkin, bottleBuyChances, bottleJoin, bottleMove, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleProfile, type BottleProfile, bottleDaily, bottleItems, bottleItemBuy, bottleBooster, bottleTutorial, bottleAdminIds, type BottleItems, bottleLeagueInfo, bottleLeagueClaim, type BottleLeague, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleGift, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState } from "@/lib/bottleSync";
+import { bottleAnswer, bottleAchSync, bottleAchView, bottleGesture, bottleProgress, bottleSkin, bottleBuyChances, bottleJoin, bottleMove, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleProfile, type BottleProfile, bottleDaily, bottleItems, bottleItemBuy, bottleBooster, bottleTutorial, bottleAdminIds, type BottleItems, bottleLeagueInfo, bottleLeagueClaim, type BottleLeague, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleGift, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState, type BottleSeat } from "@/lib/bottleSync";
 
 type Player = { id: string; name: string; age: number; female: boolean; avatar: string; me?: boolean; empty?: boolean; zodiac?: number | null };
 type Phase = "waiting" | "spinning" | "choice" | "kissed" | "declined";
@@ -1574,15 +1574,14 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // Who admires this player: the server keeps it on a live table, the demo keeps it here.
   function admirerOf(player: Player) {
     if (online) {
-      const found = net?.seats.find((seat) => seat.id === (player.me ? net.me : player.id))?.admirer;
-      return found ? { me: found.id === net?.me, self: found.id === (player.me ? net?.me : player.id), name: found.name ?? "", avatar: found.avatar ?? "", amount: found.amount } : null;
+      const found = net?.seats.find((seat) => seat.id === (player.me ? net.me : player.id))?.admirer ?? (cardOut && cardOut.id === player.id && prof?.id === player.id ? prof.data.admirer : null);
+      return found ? { id: found.id, me: found.id === net?.me, self: found.id === (player.me ? net?.me : player.id), name: found.name ?? "", avatar: found.avatar ?? "", amount: found.amount } : null;
     }
     const local = suitors[player.id];
     const who = local ? byId(local.by) : null;
-    return local && who ? { me: Boolean(who.me), self: local.by === (player.me ? "me" : player.id), name: who.name, avatar: who.avatar, amount: local.amount } : null;
+    return local && who ? { id: local.by, me: Boolean(who.me), self: local.by === (player.me ? "me" : player.id), name: who.name, avatar: who.avatar, amount: local.amount } : null;
   }
-  function court(index: number) {
-    const player = players[index];
+  function court(player: Player) {
     const current = admirerOf(player);
     const price = (current?.amount ?? 0) + 1;
     // Your own seat: you can only buy yourself out from someone else (the original "leave").
@@ -1609,6 +1608,30 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   }
   // The profile numbers (price, harem, places, league) come from the server when a card opens.
   const [prof, setProf] = useState<{ id: string; data: BottleProfile } | null>(null);
+  // The card can walk to the admirer's card (also someone not at this table) and come back with the arrow.
+  const [cardOut, setCardOut] = useState<Player | null>(null);
+  const [cardBack, setCardBack] = useState<{ picked: number | null; out: Player | null }[]>([]);
+  useEffect(() => { if (!card) { setCardOut(null); setCardBack([]); } }, [card]);
+  const cardPlayer = cardOut ?? (picked !== null ? players[picked] : null);
+  function openAdmirerCard(by: { id: string; name: string; avatar: string }) {
+    const index = players.findIndex((item) => !item.empty && (item.id === by.id || (item.me && (by.id === "me" || by.id === net?.me))));
+    setCardBack((list) => [...list, { picked, out: cardOut }]);
+    setFlagMenu(false); setSignOpen(false); setCardNote(null);
+    if (index >= 0) { setCardOut(null); setPicked(index); void loadProfile(players[index]); return; }
+    const out: Player = { id: by.id, name: by.name, age: 0, female: false, avatar: by.avatar || NO_PHOTO, zodiac: null };
+    setCardOut(out);
+    void loadProfile(out);
+  }
+  function cardGoBack() {
+    const last = cardBack[cardBack.length - 1];
+    if (!last) return;
+    setCardBack((list) => list.slice(0, -1));
+    setFlagMenu(false); setSignOpen(false); setCardNote(null);
+    setCardOut(last.out);
+    setPicked(last.picked);
+    const back = last.out ?? (last.picked !== null ? players[last.picked] : null);
+    if (back) void loadProfile(back);
+  }
   async function loadProfile(player: Player) {
     const id = player.me ? net?.me : player.id;
     if (!online || !id) return;
@@ -1686,7 +1709,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
   }, []);
-  useEffect(() => { if (card && picked !== null && players[picked]) void loadProfile(players[picked]); }, [card, picked]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (card && !cardOut && picked !== null && players[picked]) void loadProfile(players[picked]); }, [card, picked]); // eslint-disable-line react-hooks/exhaustive-deps
   // The profile card: on a computer it sits in the middle of the whole game, on a phone over the table.
   // Windows that show counters follow along live while they are open: rating, league, season pass, the profile card,
   // and the gift list (locks open as soon as the progress is reached).
@@ -1697,7 +1720,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (panel === "achievements" && achOf) pullAchOf(achOf.id);
     if (panel === "league") void bottleLeagueInfo().then((data) => { if (data) setLeague({ ...data, at: Date.now() }); });
     if (panel === "top" && topKind !== "help") void bottleTop(topKind, topPeriod).then((data) => { if (data) setTopData(data); });
-    if (card && picked !== null && players[picked]) void loadProfile(players[picked]);
+    if (card && cardPlayer) void loadProfile(cardPlayer);
     if (!card && picked !== null) pullProgress.current();
   };
   const liveOn = online && (panel === "pass" || panel === "league" || (panel === "top" && topKind !== "help") || picked !== null);
@@ -1706,15 +1729,18 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     const timer = window.setInterval(() => liveRef.current(), 3000);
     return () => window.clearInterval(timer);
   }, [liveOn]);
-  const cardView = card && picked !== null ? (() => {
-          const player = players[picked];
+  const cardView = card && cardPlayer ? (() => {
+          const loaded = prof && prof.id === cardPlayer.id ? prof.data : null;
+          const outside = Boolean(cardOut);
+          const player: Player = cardOut && loaded?.user ? { ...cardOut, name: loaded.user.name ?? cardOut.name, avatar: loaded.user.avatar || cardOut.avatar, age: loaded.user.age ?? 0, female: loaded.user.gender === "female", zodiac: loaded.user.zodiac } : cardPlayer;
+          const seed = picked ?? 0;
           const suitor = admirerOf(player);
           const by = suitor;
-          const seat = online ? net?.seats.find((item) => item.id === (player.me ? net.me : player.id)) : undefined;
+          const seat: BottleSeat | undefined = online ? net?.seats.find((item) => item.id === (player.me ? net.me : player.id)) ?? (outside && loaded ? { seat: -1, id: player.id, name: player.name, avatar: player.avatar, gender: null, kisses: 0, age: null, total: loaded.kisses, songs: loaded.songs, smiles: loaded.smiles, status: loaded.user?.status ?? null } : undefined) : undefined;
           const stats = [
             { key: "statKisses", color: "#D7261E", icon: <Gift id="e:💋" className="h-[22px] w-[22px]" />, value: online ? seat?.total ?? 0 : kisses[player.id] ?? 0 },
-            { key: "statSongs", color: "#C8489B", icon: <Music2 size={19} className="text-[#D35AA8]" strokeWidth={2.6} />, value: online ? seat?.songs ?? 0 : ((picked + 3) * 7919) % 900 },
-            { key: "statSmiles", color: "#F28C00", icon: <Gift id="e:😊" className="h-[21px] w-[21px]" />, value: online ? seat?.smiles ?? 0 : player.me ? mySmiles : ((picked + 5) * 104729) % 600 },
+            { key: "statSongs", color: "#C8489B", icon: <Music2 size={19} className="text-[#D35AA8]" strokeWidth={2.6} />, value: online ? seat?.songs ?? 0 : ((seed + 3) * 7919) % 900 },
+            { key: "statSmiles", color: "#F28C00", icon: <Gift id="e:😊" className="h-[21px] w-[21px]" />, value: online ? seat?.smiles ?? 0 : player.me ? mySmiles : ((seed + 5) * 104729) % 600 },
           ];
           const profileHref = player.me ? "/profile" : online ? `/user?id=${player.id}` : null;
           const sign = player.zodiac !== null && player.zodiac !== undefined ? zodiacSigns[player.zodiac] : null;
@@ -1724,15 +1750,15 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           const land = wide || landscape;
           const small = land ? window.innerWidth <= 692 : window.innerWidth <= 400;
           const actions = [
-            ...(player.me ? [] : [{ key: "kick", label: t("bottle.kick"), bg: "rgb(255,97,66)", icon: "act_kick.svg", size: !small ? "42px 35px" : "38px 32px", go: () => askKick(player) }]),
+            ...(player.me || outside ? [] : [{ key: "kick", label: t("bottle.kick"), bg: "rgb(255,97,66)", icon: "act_kick.svg", size: !small ? "42px 35px" : "38px 32px", go: () => askKick(player) }]),
             ...(profileHref ? [{ key: "social", label: t("bottle.openProfile"), bg: "rgb(241,138,0)", icon: "", size: "", go: () => { window.open(profileHref, "_blank"); } }] : []),
             player.me
               ? { key: "music", label: t("bottle.statSongs"), bg: "rgb(177,89,137)", icon: "act_music.svg", size: !small ? "28px 28px" : "26px 26px", go: () => { setCard(false); openSong(meIndex); } }
-              : { key: "gift", label: t("gifts.send"), bg: "rgb(249,116,43)", icon: "act_gift.svg", size: !small ? "30px 28px" : "28px 26px", go: () => setCard(false) },
+              : outside ? null : { key: "gift", label: t("gifts.send"), bg: "rgb(249,116,43)", icon: "act_gift.svg", size: !small ? "30px 28px" : "28px 26px", go: () => setCard(false) },
             { key: "ach", label: t("bottle.achievements"), bg: "rgb(252,165,41)", icon: "act_ach.svg", size: !small ? "30px 30px" : "28px 28px", go: () => { setCard(false); if (!player.me) { setAchOf({ id: player.id, name: player.name, values: null }); if (online) pullAchOf(player.id); } setPanel("achievements"); } },
-            ...(player.me ? [] : [{ key: "chat", label: t("bottle.chatMention"), bg: "rgb(89,175,225)", icon: "act_msg.svg", size: !small ? "30px 22px" : "28px 21px", go: () => { setDraft(`${player.name}, `); setCard(false); setPicked(null); window.setTimeout(() => { chatRef.current?.focus(); const end = chatRef.current?.value.length ?? 0; chatRef.current?.setSelectionRange(end, end); }, 60); } }]),
-          ];
-          const info = prof && prof.id === player.id ? prof.data : null;
+            ...(player.me || outside ? [] : [{ key: "chat", label: t("bottle.chatMention"), bg: "rgb(89,175,225)", icon: "act_msg.svg", size: !small ? "30px 22px" : "28px 21px", go: () => { setDraft(`${player.name}, `); setCard(false); setPicked(null); window.setTimeout(() => { chatRef.current?.focus(); const end = chatRef.current?.value.length ?? 0; chatRef.current?.setSelectionRange(end, end); }, 60); } }]),
+          ].filter((item): item is NonNullable<typeof item> => Boolean(item));
+          const info = loaded;
           const harem = online ? info?.harem ?? 0 : Object.entries(suitors).filter(([target, item]) => item.by === (player.me ? "me" : player.id) && target !== player.id).reduce((sum, [, item]) => sum + item.amount, 0);
           const cup = online ? info?.league ?? null : player.me && (kisses.me ?? 0) >= 100 ? 0 : null;
           const zodiacIcon = player.zodiac !== null && player.zodiac !== undefined ? (player.zodiac + 9) % 12 : null;
@@ -1750,6 +1776,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             <div className={cn("inset-0 flex items-center justify-center p-3", wide ? "absolute z-[45] bg-black/10" : "fixed z-[90] bg-black/50")} onClick={(event) => { event.stopPropagation(); setCard(false); }}>
               <div role="dialog" aria-modal="true" aria-label={`${player.name}, ${player.age}`} onClick={(event) => event.stopPropagation()} className={cn("relative shadow-[0_18px_50px_rgba(0,0,0,0.45)]", land ? "h-[400px] max-h-[80vh] max-w-[91%]" : "w-[400px] max-w-[80vw]")} style={{ borderRadius: 17, maxHeight: land ? undefined : "calc(94% - env(safe-area-inset-top))" }}>
                 <button onClick={() => setCard(false)} aria-label={t("photos.close")} title={t("photos.close")} className="absolute -right-3 -top-3 z-20 flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#8DC63F] bg-white text-[#8DC63F] shadow hover:bg-[#F0FBEA]"><X size={19} strokeWidth={3} /></button>
+                {cardBack.length ? <button onClick={cardGoBack} aria-label={t("bottle.back")} title={t("bottle.back")} className="absolute -left-3 -top-3 z-20 flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#8DC63F] bg-white text-[#8DC63F] shadow hover:bg-[#F0FBEA]"><ChevronLeft size={22} strokeWidth={3} /></button> : null}
                 {label ? <span aria-hidden="true" className="absolute -left-[19px] top-[15px] z-10 h-[43px] w-[64px] bg-contain bg-no-repeat" style={{ backgroundImage: `url(${P}${label})` }} /> : null}
                 <div className={cn("isolate flex h-full overflow-hidden rounded-[17px] bg-white", land ? "flex-row" : "max-h-[inherit] flex-col")}>
                 <div className={cn("relative shrink-0 overflow-hidden bg-[#F7F5F6]", land ? "aspect-square h-full" : "aspect-square max-h-[38dvh] w-full")}>
@@ -1792,12 +1819,12 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                       <div className="h-px w-full bg-[#F2F2F2]" />
                     </div>
                     <div className="flex shrink-0 py-[10px]">
-                      {by && !by.self ? <img src={by.avatar || NO_PHOTO} alt="" className="mr-[11px] h-16 w-16 shrink-0 rounded-[10px] object-cover object-top" /> : <span aria-hidden="true" className="mr-[11px] flex h-16 w-16 shrink-0 items-end justify-center overflow-hidden rounded-[10px] bg-[#EEF1F5]"><UserRound size={56} className="-mb-2 text-[#C3CAD4]" fill="#DDE2E9" strokeWidth={1.2} /></span>}
+                      {by && !by.self ? <button type="button" onClick={() => openAdmirerCard(by)} aria-label={by.name} title={by.name} className="mr-[11px] h-16 w-16 shrink-0 overflow-hidden rounded-[10px] active:brightness-75"><img src={by.avatar || NO_PHOTO} alt="" className="h-full w-full object-cover object-top" /></button> : <span aria-hidden="true" className="mr-[11px] flex h-16 w-16 shrink-0 items-end justify-center overflow-hidden rounded-[10px] bg-[#EEF1F5]"><UserRound size={56} className="-mb-2 text-[#C3CAD4]" fill="#DDE2E9" strokeWidth={1.2} /></span>}
                       <div className="flex min-w-0 flex-1 flex-col justify-between">
-                        <p className="flex shrink-0 text-[14px] leading-4 text-[#4A4A4A]">{by && !by.self ? <>{t("bottle.admirer")}<b className="ml-[5px] truncate text-[#1F49D6]">{by.me ? t("common.you") : by.name}</b></> : t("bottle.noAdmirer")}</p>
+                        <p className="flex shrink-0 text-[14px] leading-4 text-[#4A4A4A]">{by && !by.self ? <>{t("bottle.admirer")}<button type="button" onClick={() => openAdmirerCard(by)} className="ml-[5px] truncate font-bold text-[#1F49D6] hover:underline">{by.me ? t("common.you") : by.name}</button></> : t("bottle.noAdmirer")}</p>
                         <p className="flex h-[17px] items-center text-[14px] font-bold tabular-nums"><span aria-hidden="true" className="mr-[6px] h-[14px] w-[18px] bg-contain bg-no-repeat" style={{ backgroundImage: `url(${P}heart.svg)` }} />{suitor ? suitor.amount : 0}{info?.price_rank && info.price_rank < 5000 ? <span className="ml-[10px] truncate text-[11px] font-normal text-[#A7A7A7]">{t("bottle.rankOf").replace("{n}", info.price_rank.toLocaleString("ru-RU"))}</span> : null}</p>
-                        {player.me ? (suitor && !suitor.self ? <button onClick={() => court(picked)} title={`${suitor.amount + 1} ❤`} className="h-6 w-fit rounded-[3px] bg-[#8DC63F] px-[11px] text-[14px] text-white hover:brightness-105">{t("bottle.freeSelf")}</button> : null)
-                          : suitor?.me ? null : <button onClick={() => court(picked)} title={`${(suitor?.amount ?? 0) + 1} ❤`} className="h-6 w-fit rounded-[3px] bg-[#8DC63F] px-[11px] text-[14px] text-white hover:brightness-105">{t("bottle.beAdmirer")}</button>}
+                        {player.me ? (suitor && !suitor.self ? <button onClick={() => court(player)} title={`${suitor.amount + 1} ❤`} className="h-6 w-fit rounded-[3px] bg-[#8DC63F] px-[11px] text-[14px] text-white hover:brightness-105">{t("bottle.freeSelf")}</button> : null)
+                          : suitor?.me ? null : <button onClick={() => court(player)} title={`${(suitor?.amount ?? 0) + 1} ❤`} className="h-6 w-fit rounded-[3px] bg-[#8DC63F] px-[11px] text-[14px] text-white hover:brightness-105">{t("bottle.beAdmirer")}</button>}
                       </div>
                     </div>
                   </div>

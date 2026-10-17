@@ -41,7 +41,9 @@ export const bottleTop = (kind: "kisses" | "songs" | "cocktails" | "smiles" | "d
 export const bottleGift = (to: string, gift: string, price: number) => call<number>("bottle_gift", { p_to: to, p_gift: gift, p_price: price });
 export const bottleGiftShare = () => call<{ min: number; pct: number }>("bottle_gift_share");
 export const bottleDaily = (take: boolean) => call<{ day: number; hearts: number; premium?: boolean; total?: number } | null>("bottle_daily", { p_take: take });
-export type BottleProfile = { price: number; price_rank: number | null; harem: number; harem_rank: number | null; kisses: number; kisses_rank: number | null; songs: number; songs_rank: number | null; smiles: number; smiles_rank: number | null; league: number | null };
+export type BottleProfile = { price: number; price_rank: number | null; harem: number; harem_rank: number | null; kisses: number; kisses_rank: number | null; songs: number; songs_rank: number | null; smiles: number; smiles_rank: number | null; league: number | null;
+  user?: { name: string | null; avatar: string | null; gender: string | null; status: string | null; zodiac: number | null; age: number | null } | null;
+  admirer?: { id: string; name: string | null; avatar: string | null; amount: number } | null };
 export const bottleAchView = (user: string) => call<Record<string, number> | null>("bottle_ach_view", { p_user: user });
 export const bottleProfile = (user: string) => call<BottleProfile | null>("bottle_profile", { p_user: user });
 export type BottleLeague = { league: number; ends_ms: number; now_ms: number; limit: number; move: number; today: number; kiss_limit?: number; gift_limit?: number; today_kiss?: number; today_gift?: number; prizes: number[]; users: { id: string; name: string | null; avatar: string | null; score: number; place: number }[] };
