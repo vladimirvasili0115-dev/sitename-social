@@ -41,7 +41,7 @@ function Medal({ item, stars, size }: { item: Achievement; stars: number; size: 
   );
 }
 
-export function AchievementsPanel({ values }: { values: (metric: string) => number }) {
+export function AchievementsPanel({ values, heading }: { values: (metric: string) => number; heading?: string }) {
   const { t } = useTranslation();
   const [show, setShow] = useState<"all" | "done" | "locked">("all");
   const [open, setOpen] = useState<Achievement | null>(null);
@@ -57,7 +57,7 @@ export function AchievementsPanel({ values }: { values: (metric: string) => numb
 
   return (
     <div className="relative -mx-3 -mb-3 text-[#1F2937]">
-      <p className="mb-2 flex items-center justify-center gap-1.5 text-sm font-bold text-[#9CA3AF]">{t("bottle.achTitle")}<span className="flex items-center gap-0.5 text-[#E7A400]">★<span className="tabular-nums">{starCount}/{starTotal}</span></span></p>
+      <p className="mb-2 flex items-center justify-center gap-1.5 text-sm font-bold text-[#9CA3AF]">{heading ?? t("bottle.achTitle")}<span className="flex items-center gap-0.5 text-[#E7A400]">★<span className="tabular-nums">{starCount}/{starTotal}</span></span></p>
       <div className="mx-3 mb-2 h-2 overflow-hidden rounded-full bg-[#EEF0F3]"><span className="block h-full rounded-full bg-[linear-gradient(90deg,#FFD84A,#F59E0B)] transition-[width] duration-700" style={{ width: `${(starCount / starTotal) * 100}%` }} /></div>
       <div className="mb-2 flex items-center justify-center gap-2 text-xs">
         <span className="text-[#4B5563]">{t("bottle.achShow")}:</span>

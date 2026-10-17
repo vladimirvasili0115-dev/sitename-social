@@ -27,7 +27,7 @@ import { supabase } from "@/lib/supabase";
 import { refreshFriends } from "@/lib/friendsSync";
 import { ensureMessagesLoaded, openRemoteChat, remoteChats, sendRemoteMessage } from "@/lib/messagesSync";
 import { uploadBlob } from "@/lib/media";
-import { bottleAnswer, bottleAchSync, bottleGesture, bottleProgress, bottleSkin, bottleBuyChances, bottleJoin, bottleMove, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleProfile, type BottleProfile, bottleDaily, bottleItems, bottleItemBuy, bottleBooster, bottleTutorial, bottleAdminIds, type BottleItems, bottleLeagueInfo, bottleLeagueClaim, type BottleLeague, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleGift, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState } from "@/lib/bottleSync";
+import { bottleAnswer, bottleAchSync, bottleAchView, bottleGesture, bottleProgress, bottleSkin, bottleBuyChances, bottleJoin, bottleMove, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleProfile, type BottleProfile, bottleDaily, bottleItems, bottleItemBuy, bottleBooster, bottleTutorial, bottleAdminIds, type BottleItems, bottleLeagueInfo, bottleLeagueClaim, type BottleLeague, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleGift, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState } from "@/lib/bottleSync";
 
 type Player = { id: string; name: string; age: number; female: boolean; avatar: string; me?: boolean; empty?: boolean; zodiac?: number | null };
 type Phase = "waiting" | "spinning" | "choice" | "kissed" | "declined";
@@ -978,6 +978,11 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [statsTick, setStatsTick] = useState(0);
   useEffect(() => { markVisit(); void syncStats().then((ok) => { if (ok) setStatsTick((n) => n + 1); }); }, []);
   const achOpen = panel === "achievements";
+  // Another player's achievements (opened from their profile card, like the original); null means my own.
+  const [achOf, setAchOf] = useState<{ id: string; name: string; values: Record<string, number> | null } | null>(null);
+  useEffect(() => { if (!achOpen) setAchOf(null); }, [achOpen]);
+  const pullAchOf = (id: string) => { void bottleAchView(id).then((values) => setAchOf((cur) => (cur && cur.id === id ? { ...cur, values: values ?? {} } : cur))); };
+  const achOther = useMemo(() => (achOf ? (metric: string) => achOf.values?.[metric] ?? 0 : null), [achOf]);
   useEffect(() => { if (achOpen) void syncStats().then((ok) => { if (ok) setStatsTick((n) => n + 1); }); }, [achOpen]);
   // On a live table the server counts the achievements and pays every new star into the balance.
   const [achServer, setAchServer] = useState<Record<string, number> | null>(null);
@@ -1686,6 +1691,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   liveRef.current = () => {
     if (!online) return;
     if (panel === "pass") void bottlePass().then((data) => setPassData(data));
+    if (panel === "achievements" && achOf) pullAchOf(achOf.id);
     if (panel === "league") void bottleLeagueInfo().then((data) => { if (data) setLeague({ ...data, at: Date.now() }); });
     if (panel === "top" && topKind !== "help") void bottleTop(topKind, topPeriod).then((data) => { if (data) setTopData(data); });
     if (card && picked !== null && players[picked]) void loadProfile(players[picked]);
@@ -1720,7 +1726,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             player.me
               ? { key: "music", label: t("bottle.statSongs"), bg: "rgb(177,89,137)", icon: "act_music.svg", size: !small ? "28px 28px" : "26px 26px", go: () => { setCard(false); openSong(meIndex); } }
               : { key: "gift", label: t("gifts.send"), bg: "rgb(249,116,43)", icon: "act_gift.svg", size: !small ? "30px 28px" : "28px 26px", go: () => setCard(false) },
-            { key: "ach", label: t("bottle.achievements"), bg: "rgb(252,165,41)", icon: "act_ach.svg", size: !small ? "30px 30px" : "28px 28px", go: () => { setCard(false); if (player.me) setPanel("achievements"); else if (profileHref) window.open(profileHref, "_blank"); } },
+            { key: "ach", label: t("bottle.achievements"), bg: "rgb(252,165,41)", icon: "act_ach.svg", size: !small ? "30px 30px" : "28px 28px", go: () => { setCard(false); if (!player.me) { setAchOf({ id: player.id, name: player.name, values: null }); if (online) pullAchOf(player.id); } setPanel("achievements"); } },
             ...(player.me ? [] : [{ key: "chat", label: t("bottle.chatMention"), bg: "rgb(89,175,225)", icon: "act_msg.svg", size: !small ? "30px 22px" : "28px 21px", go: () => { setDraft(`${player.name}, `); setCard(false); setPicked(null); window.setTimeout(() => { chatRef.current?.focus(); const end = chatRef.current?.value.length ?? 0; chatRef.current?.setSelectionRange(end, end); }, 60); } }]),
           ];
           const info = prof && prof.id === player.id ? prof.data : null;
@@ -2442,7 +2448,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   </div>
                 );
               })() : panel === "achievements" ? (
-                <AchievementsPanel values={achValue} />
+                <AchievementsPanel values={achOther ?? achValue} heading={achOf ? t("bottle.achOf").replace("{name}", achOf.name) : undefined} />
               ) : panel === "gestures" ? (
                 <div className="-mx-3 -mb-3 bg-white">
                   <ul className="grid max-h-[min(60vh,420px)] grid-cols-4 gap-1.5 overflow-y-auto p-3 [scrollbar-width:thin] sm:grid-cols-5">
