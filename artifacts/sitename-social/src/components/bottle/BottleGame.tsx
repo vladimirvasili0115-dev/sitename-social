@@ -158,6 +158,39 @@ function TableShower({ emoji, seed }: { emoji: string[]; seed: number }) {
     </div>
   );
 }
+// The hint pointer: a hand that keeps tapping a spot (three spreading rings each second) with a short label beside it.
+// `angle` turns the hand around the spot like the original (0 = from below-left, 180 = from above).
+function HintHand({ target, label, angle }: { target: string; label: string; angle: number }) {
+  const [at, setAt] = useState<{ x: number; y: number } | null>(null);
+  useEffect(() => {
+    const find = () => {
+      const element = target.startsWith("seat:") ? document.querySelector(`[data-seat="${target.slice(5)}"]`)
+        : target === "gift-gem" ? document.querySelector('[role=menuitem][aria-disabled=false] img[src*="/gem1."]')?.closest("[role=menuitem]") ?? document.querySelector('[role=menuitem][aria-disabled=false]:nth-of-type(3)')
+        : document.querySelector(`[data-hint="${target}"]`);
+      if (!element) return setAt(null);
+      if (target === "gift-gem") (element as HTMLElement).scrollIntoView({ block: "nearest" });
+      const rect = element.getBoundingClientRect();
+      setAt({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
+    };
+    find();
+    const timer = window.setInterval(find, 250);
+    return () => window.clearInterval(timer);
+  }, [target]);
+  if (!at) return null;
+  const rad = (angle * Math.PI) / 180;
+  const width = Math.min(220, label.length * 8 + 28);
+  const textY = (Math.abs(110 * Math.cos(rad)) < 65 ? 65 * Math.sign(Math.cos(rad) || 1) : 110 * Math.cos(rad)) - 16;
+  const textX = Math.max(10 - at.x, Math.min(window.innerWidth - 10 - width - at.x, -58 * Math.sin(rad) - width / 2));
+  return (
+    <div aria-hidden="true" className="pointer-events-none fixed z-[75] h-0 w-0" style={{ left: at.x, top: at.y }}>
+      {[0, 1, 2].map((n) => <span key={n} className="absolute -left-[6px] -top-[6px] h-3 w-3 rounded-full border-2 border-white bg-white/30" style={{ animation: `hint-ripple 1s ease-out ${n * 0.165}s infinite` }} />)}
+      <span className="absolute left-0 top-0 block origin-top-left" style={{ transform: `rotate(${angle}deg)` }}>
+        <span className="absolute block text-[34px] leading-none drop-shadow-[0_3px_4px_rgba(0,0,0,0.45)]" style={{ left: -6, top: 4, animation: "hint-tap 1s ease-in-out infinite" }}>👆</span>
+      </span>
+      <span className="absolute whitespace-nowrap rounded-xl bg-white px-3 py-1.5 text-sm font-black text-[#1F2937] shadow-[0_4px_14px_rgba(0,0,0,0.35)]" style={{ left: textX, top: textY, animation: "bottle-pop 0.3s ease-out both" }}>{label}</span>
+    </div>
+  );
+}
 // League colours (header gradient) and badge: Bronze, Silver, Gold, Platinum, Diamond.
 const LEAGUE_COLORS: [string, string][] = [["#D08A52", "#9C5A2B"], ["#B8C2CC", "#7D8A96"], ["#F7C948", "#D49B0A"], ["#7FD3E6", "#3A9AB3"], ["#A78BFA", "#6D28D9"]];
 function LeagueBadge({ league, className }: { league: number; className?: string }) {
@@ -1692,6 +1725,82 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             </div>
           );
         })() : null;
+  // Interactive hints from the original (message → choice → gift): a hand with ripples points at one thing and waits.
+  // The first comes 10 s after entering a table, the next 15 s after the last one, never over an open window,
+  // and each one is shown only once.
+  const [hint, setHint] = useState<{ id: "message" | "choice" | "gift"; step: number; target: string; label: string; angle: number; until: number } | null>(null);
+  const hintNext = useRef(Date.now() + 10000);
+  const hintBase = useRef({ texts: 0, sent: 0 });
+  const hintsDone = () => { try { return Number(window.localStorage.getItem("bottle-hints") ?? "0") || 0; } catch { return 7; } };
+  const markHint = (mask: number) => { try { window.localStorage.setItem("bottle-hints", String(hintsDone() | mask)); } catch { /* storage is blocked */ } };
+  const anyWindowOpen = Boolean(panel || card || lock || daily || leagueResult || unlocked || tour || dm);
+  const tableNow = net?.table ?? tableNo;
+  useEffect(() => { hintNext.current = Math.max(hintNext.current, Date.now() + 10000); }, [tableNow]);
+  useEffect(() => { hintNext.current = Math.max(hintNext.current, Date.now() + 500); }, [anyWindowOpen]);
+  const [controlsAt, setControlsAt] = useState(0);
+  useEffect(() => { if (canAnswer) setControlsAt(Date.now()); }, [canAnswer]);
+  const playingRound = myRole !== null;
+  const hintMatch = (() => {
+    const me = players[meIndex];
+    const others = seated.filter((player) => !player.me && player.female !== me?.female);
+    if (!others.length || !me) return null;
+    return others.reduce((best, player) => (Math.abs(player.age - me.age) < Math.abs(best.age - me.age) ? player : best), others[0]);
+  })();
+  const finishHint = (mask: number) => { markHint(mask); setHint(null); hintNext.current = Date.now() + 15000; };
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      if (hint) {
+        if (Date.now() > hint.until) return finishHint(hint.id === "message" ? 1 : hint.id === "choice" ? 2 : 4);
+        return;
+      }
+      if (Date.now() < hintNext.current) return;
+      const done = hintsDone();
+      // Scenarios in the original order; the first one whose conditions hold now is shown.
+      if (!(done & 1) && !anyWindowOpen && !playingRound) {
+        hintBase.current.texts = myTexts;
+        return setHint({ id: "message", step: 1, target: "chat-input", label: t("bottle.hintMessage"), angle: 180, until: Date.now() + 15000 });
+      }
+      if (!(done & 2) && canAnswer && Date.now() - controlsAt < 1000 && !anyWindowOpen) {
+        return setHint({ id: "choice", step: 1, target: "kiss-button", label: t("bottle.hintKiss"), angle: 300, until: Date.now() + 7000 });
+      }
+      if (!(done & 4) && !anyWindowOpen && !playingRound && heartsRef.current > 0 && hintMatch) {
+        hintBase.current.sent = sentTotal;
+        return setHint({ id: "gift", step: 1, target: `seat:${hintMatch.id}`, label: t("bottle.hintGiftPhoto"), angle: 30, until: Date.now() + 15000 });
+      }
+    }, 300);
+    return () => window.clearInterval(timer);
+  });
+  // Moving on through each hint's steps, or giving up when the player does something else.
+  useEffect(() => {
+    if (!hint) return;
+    if (hint.id === "message") {
+      if (hint.step === 1 && anyWindowOpen) return finishHint(1);
+      if (hint.step === 2 && myTexts > hintBase.current.texts) return finishHint(1);
+      return;
+    }
+    if (hint.id === "choice") {
+      if (myRole && answers[myRole] !== null) return finishHint(2);
+      if (!canAnswer) return finishHint(2);
+      return;
+    }
+    if (hint.step === 1 && picked !== null && players[picked] && !players[picked].me) {
+      return setHint({ ...hint, step: 2, target: "gift-gem", label: t("bottle.hintGiftPick"), angle: 0, until: Date.now() + 15000 });
+    }
+    if (hint.step === 2 && (picked === null || sentTotal > hintBase.current.sent)) return finishHint(4);
+  }); // eslint-disable-line react-hooks/exhaustive-deps
+  // Tapping the chat box during the message hint fills in a greeting, then the hand moves to the send button.
+  useEffect(() => {
+    const input = chatRef.current;
+    if (!input || hint?.id !== "message" || hint.step !== 1) return;
+    const onTap = () => window.setTimeout(() => {
+      setDraft(t("bottle.hintMessageText"));
+      window.setTimeout(() => chatRef.current?.select(), 30);
+      hintBase.current.texts = myTexts;
+      setHint((value) => (value && value.id === "message" ? { ...value, step: 2, target: "chat-send", label: t("bottle.hintSend"), angle: 135, until: Date.now() + 15000 } : value));
+    }, 300);
+    input.addEventListener("click", onTap);
+    return () => input.removeEventListener("click", onTap);
+  }, [hint, myTexts]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <div className={cn("relative flex h-full w-full bg-surface text-text", wide ? "flex-row" : "flex-col")}>
       {/* On a phone-shaped window the title bar sits on the same wood as the table, with no seam between them. */}
@@ -1760,7 +1869,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           const active = index === turn || index === target;
           return (
             <div key={player.id} className={cn("absolute -translate-x-1/2 -translate-y-1/2 transition-[left,top]", wide ? "w-[17cqmin]" : "w-[16cqmin]", " duration-[1100ms] ease-in-out motion-reduce:duration-0", staged && active ? "z-30" : index === turn && "z-10")} style={staged && active ? { left: `calc(${CENTER_X}% ${index === turn ? "-" : "+"} 12.5cqmin)`, top: `${STAGE_Y}%` } : { left: `${seats[index][0]}%`, top: `${seats[index][1]}%` }}>
-              <button type="button" onClick={(event) => { event.stopPropagation(); if (dedicate) { if (!player.me) setChosen((list) => (list.includes(player.id) ? list.filter((id) => id !== player.id) : [...list, player.id])); return; } setGiftNote(null); setCardNote(null); setFlagMenu(false); setSignOpen(false); setLeaveAsk(false); if (player.me) { if (Date.now() - meTap.current > 15000 || picked !== index) { meTap.current = Date.now(); setFrameNote(null); pullProgress.current(); setCard(false); setPicked(index); return; } meTap.current = 0; setCard(true); setPicked(index); return; } setCard(picked === index); setPicked(index); }} aria-label={`${player.name}, ${player.age}`} className={cn("group relative block aspect-square w-full rounded-[14%] bg-surface-2 shadow-[0_4px_10px_rgba(0,0,0,0.4)]", phase === "spinning" && index === turn && "motion-safe:animate-[seat-wobble_0.4s_ease-out]", tour === 3 && !player.me && !player.empty && "ring-4 ring-[#FFD84D] motion-safe:animate-pulse", staged && index === target ? "ring-[0.9cqmin] ring-[#FFE2A8]" : active ? "ring-4 ring-white" : picked === index ? "ring-4 ring-[#8CC63F]" : player.me ? "ring-2 ring-white/80" : "")}>
+              <button type="button" onClick={(event) => { event.stopPropagation(); if (dedicate) { if (!player.me) setChosen((list) => (list.includes(player.id) ? list.filter((id) => id !== player.id) : [...list, player.id])); return; } setGiftNote(null); setCardNote(null); setFlagMenu(false); setSignOpen(false); setLeaveAsk(false); if (player.me) { if (Date.now() - meTap.current > 15000 || picked !== index) { meTap.current = Date.now(); setFrameNote(null); pullProgress.current(); setCard(false); setPicked(index); return; } meTap.current = 0; setCard(true); setPicked(index); return; } setCard(picked === index); setPicked(index); }} aria-label={`${player.name}, ${player.age}`} data-seat={player.id} className={cn("group relative block aspect-square w-full rounded-[14%] bg-surface-2 shadow-[0_4px_10px_rgba(0,0,0,0.4)]", phase === "spinning" && index === turn && "motion-safe:animate-[seat-wobble_0.4s_ease-out]", tour === 3 && !player.me && !player.empty && "ring-4 ring-[#FFD84D] motion-safe:animate-pulse", staged && index === target ? "ring-[0.9cqmin] ring-[#FFE2A8]" : active ? "ring-4 ring-white" : picked === index ? "ring-4 ring-[#8CC63F]" : player.me ? "ring-2 ring-white/80" : "")}>
                 {player.empty ? null : <span aria-hidden="true" className="pointer-events-none absolute left-1/2 top-1/2 z-[5] hidden h-[7cqmin] w-[7cqmin] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-[4cqmin] shadow [@media(hover:hover)]:group-hover:flex">{player.me ? "😊" : "🎁"}</span>}
                 <img src={player.avatar} alt="" className="h-full w-full rounded-[14%] object-cover" />
                 {frameOf(player) ? <FrameArt id={frameOf(player)} className={cn("pointer-events-none absolute z-[1]", frameOf(player) >= FIRST_ORIGINAL ? "-inset-[17%] h-[134%] w-[134%]" : "-inset-[9%] h-[118%] w-[118%]")} /> : null}
@@ -1841,7 +1950,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             {canAnswer && myRole ? (
               <div className="absolute z-30 flex -translate-x-1/2 gap-[2.5cqmin]" style={{ left: `${CENTER_X}%`, top: `calc(${STAGE_Y}% + 14.5cqmin)` }}>
                 <button onClick={() => { bumpStat("refusals"); setAnswers((value) => ({ ...value, [myRole]: false })); if (online) void bottleAnswer(false).then(pullRef.current); offerBoost("refuse_slap"); }} className="h-[7.5cqmin] w-[20cqmin] rounded-[1.8cqmin] bg-[#E2401F] text-[3cqmin] font-bold text-white shadow-lg hover:brightness-110">{t("bottle.no")}</button>
-                <button onClick={() => { bumpStat("kissesGiven"); setAnswers((value) => ({ ...value, [myRole]: true })); if (online) void bottleAnswer(true).then(pullRef.current); offerBoost("kiss_fire"); }} className="h-[7.5cqmin] w-[20cqmin] rounded-[1.8cqmin] bg-[#8CC63F] text-[3cqmin] font-bold text-white shadow-lg hover:brightness-110">{t("bottle.yes")}</button>
+                <button data-hint="kiss-button" onClick={() => { bumpStat("kissesGiven"); setAnswers((value) => ({ ...value, [myRole]: true })); if (online) void bottleAnswer(true).then(pullRef.current); offerBoost("kiss_fire"); }} className="h-[7.5cqmin] w-[20cqmin] rounded-[1.8cqmin] bg-[#8CC63F] text-[3cqmin] font-bold text-white shadow-lg hover:brightness-110">{t("bottle.yes")}</button>
               </div>
             ) : null}
           </>
@@ -2549,9 +2658,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           })}
         </div>
         <form onSubmit={handleChat} className={cn("flex items-center gap-2 border-t border-border p-2.5", picked !== null && "hidden")}>
-          <input ref={chatRef} value={draft} onChange={(event) => setDraft(event.target.value)} maxLength={200} aria-label={t("messages.placeholder")} placeholder={t("messages.placeholder")} autoComplete="off" className={cn(tour === 5 && "ring-4 ring-[#FFD84D]", "h-11 min-w-0 flex-1 rounded-full border border-border bg-surface-2 px-4 text-sm text-text outline-none placeholder:text-muted focus:border-accent")} />
+          <input ref={chatRef} data-hint="chat-input" value={draft} onChange={(event) => setDraft(event.target.value)} maxLength={200} aria-label={t("messages.placeholder")} placeholder={t("messages.placeholder")} autoComplete="off" className={cn(tour === 5 && "ring-4 ring-[#FFD84D]", "h-11 min-w-0 flex-1 rounded-full border border-border bg-surface-2 px-4 text-sm text-text outline-none placeholder:text-muted focus:border-accent")} />
           <button type="button" onClick={() => { setFrameNote(null); pullProgress.current(); if (dedicate) chooseMode(false); setCard(false); meTap.current = Date.now(); setPicked(meIndex); }} aria-label={t("bottle.gestures")} title={t("bottle.gestures")} className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface-2 text-xl">😊</button>
-          <button type="submit" disabled={!draft.trim()} aria-label={t("messages.send")} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#EE8A2B] text-white disabled:opacity-40"><SendHorizontal size={17} /></button>
+          <button type="submit" data-hint="chat-send" disabled={!draft.trim()} aria-label={t("messages.send")} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#EE8A2B] text-white disabled:opacity-40"><SendHorizontal size={17} /></button>
         </form>
       </div>
       {tour > 0 ? (
@@ -2580,6 +2689,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           )}
         </div>
       ) : null}
+      {hint && !tour ? <HintHand key={`${hint.id}-${hint.step}`} target={hint.target} label={hint.label} angle={hint.angle} /> : null}
       {heartFlights.map((item) => <Heart key={item.key} aria-hidden="true" size={26} fill="#E8352B" stroke="#FFFFFF" strokeWidth={2} className="pointer-events-none fixed z-[80] -ml-[13px] -mt-[13px] drop-shadow" style={{ left: item.x, top: item.y, ["--hx" as string]: `${item.dx}px`, ["--hy" as string]: `${item.dy}px`, animation: `heart-to-balance 1.4s cubic-bezier(0.4,0,0.2,1) ${item.delay}ms both` }} />)}
       {leagueResult && !daily ? (
         <div className="absolute inset-0 z-[61] flex items-center justify-center bg-black/40 p-4" onClick={() => setLeagueResult(null)}>
