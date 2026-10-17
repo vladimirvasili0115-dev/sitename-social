@@ -93,6 +93,8 @@ const lockedGifts: [string, number, number][] = [
 // Drinks pay the receiver +1 heart (the server does it); the receiver's photo shows a "+1" burst.
 
 const headGifts = new Set(["crown", "e:👑", "e:⛑️", "e:🤠", "e:🧢", "e:🐻", "e:🐮", "e:🐱", "e:🐰", "e:🦌", "e:🎀", "e:🌸", "e:🪖", "e:🕶️", "e:😈", "e:👒", "e:🎩", "e:🎓", "e:🔱"]);
+// Hats, ears and face masks are worn on the photo, so they are not also dropped onto it like other gifts.
+const wornGift = (gift: string) => (gift.startsWith("c:") ? customPlace(gift.slice(2)) !== "body" : headGifts.has(gift));
 // Gift pictures are glossy 3D emoji (Fluent Emoji 3D, MIT) kept in public/gifts, named by their code points.
 const giftEmoji: Record<string, string> = { crown: "👑", diamond: "💎", rose: "🌹" };
 const giftSrc = (emoji: string) => `/gifts/${Array.from(emoji).map((char) => char.codePointAt(0)!.toString(16)).filter((hex) => hex !== "fe0f").join("-")}.webp`;
@@ -1472,7 +1474,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       if (pour) heartBurst(key, index);
       fireworks(key, index, price, meIndex);
       setStickers((value) => ({ ...value, [player.id]: [...(value[player.id] ?? []), landed(gift)].slice(-6) }));
-      addPile(player.id, landed(gift));
+      if (!wornGift(landed(gift))) addPile(player.id, landed(gift));
       say({ from: "me", to: player.id, gift });
     }, ms + 100);
     setSent((value) => ({ ...value, [player.id]: (value[player.id] ?? 0) + 1 }));
@@ -1499,7 +1501,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       if (pour) heartBurst(key, toAt);
       fireworks(key, toAt, priceOf(gift), fromAt);
       setStickers((value) => ({ ...value, [toId]: [...(value[toId] ?? []), landed(gift)].slice(-6) }));
-      addPile(toId, landed(gift));
+      if (!wornGift(landed(gift))) addPile(toId, landed(gift));
       say({ from: fromId, to: toId, gift });
     }, ms + 100);
   };
