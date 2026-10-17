@@ -1961,7 +1961,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 {dedicate && !player.me ? (chosen.includes(player.id)
                   ? <span className="absolute inset-0 z-10 flex items-center justify-center rounded-[14%] bg-[#8CC63F]/85 ring-[0.5cqmin] ring-[#B678E8]"><Check className="h-[45%] w-[45%] text-white drop-shadow" strokeWidth={4} /></span>
                   : <span className="absolute inset-0 z-10 flex items-center justify-center rounded-[14%] bg-black/25"><Plus className="h-[45%] w-[45%] text-white drop-shadow-[0_2px_3px_rgba(0,0,0,0.5)]" strokeWidth={3.5} /></span>) : null}
-                {topIds.has(player.id) ? <span className="absolute left-1/2 -top-[1.4cqmin] z-[3] -translate-x-1/2 rounded bg-[#FACC15] px-[0.8cqmin] text-[2.2cqmin] font-black leading-[1.5] text-[#713F12] shadow">TOP</span> : null}
+                {topIds.has(player.id) ? <img src="/custom/profile/label_top.svg" alt="TOP" draggable={false} className="pointer-events-none absolute -left-[14%] top-[4%] z-[4] w-[52%] max-w-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]" /> : null}
                 {kisses[player.id] ? <LipsBadge count={kisses[player.id]} /> : null}
                 {(() => {
                   const mine = stickers[player.id] ?? [];

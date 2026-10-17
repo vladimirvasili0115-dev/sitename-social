@@ -51,18 +51,18 @@ export function AdminUsers({ owner }: { owner: boolean }) {
     loadFlags((list ?? []).map((user) => user.id));
   }), [loadFlags]);
   // Bonus hearts, kisses and songs for one player, typed right under the row; a negative number takes away.
-  const [bonus, setBonus] = useState<Record<string, { hearts: string; kisses: string; songs: string }>>({});
+  const [bonus, setBonus] = useState<Record<string, { hearts: string; kisses: string; songs: string; smiles: string }>>({});
   const [bonusNote, setBonusNote] = useState<{ id: string; ok: boolean } | null>(null);
   async function giveBonus(id: string) {
-    const draft = bonus[id] ?? { hearts: "", kisses: "", songs: "" };
-    const hearts = Math.trunc(Number(draft.hearts) || 0), kisses = Math.trunc(Number(draft.kisses) || 0), songs = Math.trunc(Number(draft.songs) || 0);
-    if (!hearts && !kisses && !songs) return;
+    const draft = bonus[id] ?? { hearts: "", kisses: "", songs: "", smiles: "" };
+    const hearts = Math.trunc(Number(draft.hearts) || 0), kisses = Math.trunc(Number(draft.kisses) || 0), songs = Math.trunc(Number(draft.songs) || 0), smiles = Math.trunc(Number(draft.smiles) || 0);
+    if (!hearts && !kisses && !songs && !smiles) return;
     setBusy(id);
-    const results = await Promise.all([hearts ? grantHearts(id, hearts) : 1, kisses ? gameGrant(id, "kisses", kisses) : 1, songs ? gameGrant(id, "dj", songs) : 1]);
+    const results = await Promise.all([hearts ? grantHearts(id, hearts) : 1, kisses ? gameGrant(id, "kisses", kisses) : 1, songs ? gameGrant(id, "dj", songs) : 1, smiles ? gameGrant(id, "smiles", smiles) : 1]);
     setBusy(null);
     const ok = results.every((value) => value !== null);
     setBonusNote({ id, ok });
-    if (ok) setBonus((cur) => ({ ...cur, [id]: { hearts: "", kisses: "", songs: "" } }));
+    if (ok) setBonus((cur) => ({ ...cur, [id]: { hearts: "", kisses: "", songs: "", smiles: "" } }));
     loadFlags([id]);
   }
   // VIP and TOP stay until they are taken back (about ten years).
@@ -185,11 +185,11 @@ export function AdminUsers({ owner }: { owner: boolean }) {
                   ) : null}
                   <form onSubmit={(event) => { event.preventDefault(); void giveBonus(user.id); }} className="mt-3 flex flex-wrap items-center gap-2 rounded-xl bg-surface-2/60 px-2.5 py-2">
                     <span className="text-xs font-semibold">{t("admin.bonus")}</span>
-                    {([["hearts", "❤️", "#F4511E", flags[user.id]?.hearts], ["kisses", "💋", "#DB3100", flags[user.id]?.kisses], ["songs", "🎵", "#B45D8C", flags[user.id]?.songs]] as const).map(([key, icon, color, have]) => (
+                    {([["hearts", "❤️", "#F4511E", flags[user.id]?.hearts], ["kisses", "💋", "#DB3100", flags[user.id]?.kisses], ["songs", "🎵", "#B45D8C", flags[user.id]?.songs], ["smiles", "😊", "#FC8300", flags[user.id]?.smiles]] as const).map(([key, icon, color, have]) => (
                       <label key={key} className="flex items-center gap-1" title={t(`admin.bonus_${key}` as TranslationKey)}>
                         <span aria-hidden="true">{icon}</span>
                         <span className="min-w-[2.5rem] text-[11px] font-semibold tabular-nums" style={{ color }}>{(have ?? 0).toLocaleString("ru-RU")}</span>
-                        <input type="number" step={1} placeholder="+0" value={bonus[user.id]?.[key] ?? ""} onChange={(event) => setBonus((cur) => ({ ...cur, [user.id]: { ...(cur[user.id] ?? { hearts: "", kisses: "", songs: "" }), [key]: event.target.value } }))} aria-label={t(`admin.bonus_${key}` as TranslationKey)} className="h-8 w-20 rounded-lg border border-border bg-surface px-2 text-xs tabular-nums text-text outline-none focus:border-accent" />
+                        <input type="number" step={1} placeholder="+0" value={bonus[user.id]?.[key] ?? ""} onChange={(event) => setBonus((cur) => ({ ...cur, [user.id]: { ...(cur[user.id] ?? { hearts: "", kisses: "", songs: "", smiles: "" }), [key]: event.target.value } }))} aria-label={t(`admin.bonus_${key}` as TranslationKey)} className="h-8 w-20 rounded-lg border border-border bg-surface px-2 text-xs tabular-nums text-text outline-none focus:border-accent" />
                       </label>
                     ))}
                     <button type="submit" disabled={locked} className="h-8 rounded-lg bg-accent px-3 text-[11px] font-semibold text-bg disabled:opacity-50">{t("admin.bonusGive")}</button>
@@ -258,7 +258,7 @@ function GamePanel({ id }: { id: string }) {
   const [data, setData] = useState<GameState | null>(null);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
-  const [drafts, setDrafts] = useState<Record<string, string>>({ hearts: "100", kisses: "100", dj: "10", chances: "5", kiss_fire: "5", refuse_slap: "5" });
+  const [drafts, setDrafts] = useState<Record<string, string>>({ hearts: "100", kisses: "100", smiles: "100", dj: "10", chances: "5", kiss_fire: "5", refuse_slap: "5" });
   useEffect(() => { void gameState(id).then((value) => { if (value && typeof value === "object") setData(value); }); }, [id]);
   async function apply(work: () => Promise<unknown>) {
     setBusy(true);
@@ -277,7 +277,7 @@ function GamePanel({ id }: { id: string }) {
       {until ? <button type="button" disabled={busy} onClick={() => void apply(() => gameGrant(id, kind, 0))} className="h-8 rounded-full border border-danger px-2.5 text-[11px] font-semibold text-danger hover:bg-surface-2 disabled:opacity-50">{t("admin.gameRemove")}</button> : null}
     </div>
   );
-  const amountRow = (key: "hearts" | "kisses" | "dj" | "chances" | "kiss_fire" | "refuse_slap", label: string, have: number | undefined, color: string) => (
+  const amountRow = (key: "hearts" | "kisses" | "smiles" | "dj" | "chances" | "kiss_fire" | "refuse_slap", label: string, have: number | undefined, color: string) => (
     <form key={key} onSubmit={(event) => { event.preventDefault(); const value = Math.trunc(Number(drafts[key])); if (!value) return; void apply(() => (key === "hearts" ? grantHearts(id, value) : gameGrant(id, key, value))); }} className="flex flex-wrap items-center gap-1.5">
       <span className="w-20 shrink-0 text-xs font-semibold" style={{ color }}>{label}</span>
       <span className="min-w-[110px] text-[11px] text-muted">{t("admin.gameHave").replace("{n}", String(have ?? 0))}</span>
@@ -290,6 +290,7 @@ function GamePanel({ id }: { id: string }) {
       <p className="text-xs font-semibold">{t("admin.gameTitle")}</p>
       {amountRow("hearts", t("admin.hearts"), data?.hearts, "#F4511E")}
       {amountRow("kisses", t("admin.bonus_kisses"), data?.kisses, "#DB3100")}
+      {amountRow("smiles", t("admin.bonus_smiles"), data?.smiles, "#FC8300")}
       {days("vip", [1, 7, 30, 365], data?.vip_until ?? null, "#D97706")}
       {days("top", [1, 7, 30], data?.top_until ?? null, "#CA8A04")}
       {amountRow("dj", t("admin.gameDj"), data?.dj, "#B45D8C")}
