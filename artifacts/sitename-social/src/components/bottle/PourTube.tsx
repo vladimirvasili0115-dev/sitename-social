@@ -51,14 +51,14 @@ export function PourTube({ from, to, ms, color = "#FF3D7F" }: { from: readonly [
 }
 
 // Hearts jumping out of the receiver's photo with "+1": their heart balance just went up.
-export function HeartBurst({ at }: { at: readonly [number, number] }) {
+export function HeartBurst({ at, amount = 1 }: { at: readonly [number, number]; amount?: number }) {
   const spread: [number, number][] = [[-7, -8], [7, -8], [-10, -1], [10, -1], [-4, -12], [4, -12]];
   return (
     <div aria-hidden="true" className="pointer-events-none absolute z-40 h-0 w-0" style={{ left: `${at[0]}%`, top: `${at[1]}%` }}>
       {spread.map(([dx, dy], n) => (
         <Heart key={n} size={30} fill="#E8352B" stroke="#FFFFFF" strokeWidth={2} className="absolute -left-[15px] -top-[15px] drop-shadow" style={{ ["--dx" as string]: `${dx}cqmin`, ["--dy" as string]: `${dy}cqmin`, animation: `heart-burst 1.3s ease-out ${n * 60}ms both` }} />
       ))}
-      <span className="absolute -left-[5cqmin] -top-[2cqmin] flex w-[10cqmin] items-center justify-center gap-[0.4cqmin] text-[4.6cqmin] font-black text-white [text-shadow:0_2px_3px_rgba(0,0,0,0.6)]" style={{ animation: "heart-plus 1.6s ease-out both" }}>+1<Heart size={24} fill="#E8352B" stroke="#FFFFFF" strokeWidth={2} /></span>
+      <span className="absolute -left-[8cqmin] -top-[2cqmin] flex w-[16cqmin] items-center justify-center gap-[0.4cqmin] text-[4.6cqmin] font-black text-white [text-shadow:0_2px_3px_rgba(0,0,0,0.6)]" style={{ animation: "heart-plus 1.6s ease-out both" }}>+{amount}<Heart size={24} fill="#E8352B" stroke="#FFFFFF" strokeWidth={2} /></span>
     </div>
   );
 }
