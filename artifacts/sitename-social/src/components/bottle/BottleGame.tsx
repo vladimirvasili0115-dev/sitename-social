@@ -8,6 +8,7 @@ import { useTranslation } from "@/i18n/useTranslation";
 import { GiftArt } from "@/components/gifts/GiftArt";
 import { useProfile } from "@/components/profile/useProfile";
 import { cn } from "@/lib/utils";
+import { useIsAdmin } from "@/components/report/useIsAdmin";
 import { customFile, useCustomArt } from "@/lib/customArt";
 import { durationSeconds, rankSongs, songScore } from "@/lib/songSearch";
 import { HeartBurst } from "./PourTube";
@@ -23,9 +24,10 @@ import { bumpStat, markVisit, readStats, syncStats } from "./achievements";
 import { BottleSvg, WaterBottleSvg, WoodTable } from "./BottleArt";
 import { playGiftSound, playSfx, playSound, setVolume } from "./sound";
 import { supabase } from "@/lib/supabase";
+import { refreshFriends } from "@/lib/friendsSync";
 import { ensureMessagesLoaded, openRemoteChat, remoteChats, sendRemoteMessage } from "@/lib/messagesSync";
 import { uploadBlob } from "@/lib/media";
-import { bottleAnswer, bottleAchSync, bottleGesture, bottleProgress, bottleSkin, bottleBuyChances, bottleJoin, bottleMove, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleAdmireLeave, bottleDaily, bottleItems, bottleItemBuy, bottleBooster, bottleTutorial, type BottleItems, bottleLeagueInfo, bottleLeagueClaim, type BottleLeague, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleGift, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState } from "@/lib/bottleSync";
+import { bottleAnswer, bottleAchSync, bottleGesture, bottleProgress, bottleSkin, bottleBuyChances, bottleJoin, bottleMove, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleAdmireLeave, bottleDaily, bottleItems, bottleItemBuy, bottleBooster, bottleTutorial, bottleAdminIds, type BottleItems, bottleLeagueInfo, bottleLeagueClaim, type BottleLeague, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleGift, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState } from "@/lib/bottleSync";
 
 type Player = { id: string; name: string; age: number; female: boolean; avatar: string; me?: boolean; empty?: boolean; zodiac?: number | null };
 type Phase = "waiting" | "spinning" | "choice" | "kissed" | "declined";
@@ -371,6 +373,11 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [giftNote, setGiftNote] = useState<string | null>(null);
   const [card, setCard] = useState(false);
   const [vip, setVip] = useState(false);
+  // Admins: everything in the game is open for them (to test it), and their seat and card look different.
+  const iAmAdmin = useIsAdmin() === true;
+  useEffect(() => { if (iAmAdmin) setVip(true); }, [iAmAdmin]);
+  const [adminIds, setAdminIds] = useState<string[]>([]);
+  useEffect(() => { if (online) void bottleAdminIds().then((ids) => { if (Array.isArray(ids)) setAdminIds(ids); }); }, [online]);
   const [doubleUntil, setDoubleUntil] = useState(0);
   const doubleRef = useRef(0);
   const jumpRef = useRef(false);
@@ -994,7 +1001,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const pullProgress = useRef<() => void>(() => {});
   pullProgress.current = () => { if (online) void bottleProgress().then((value) => { if (value) setServerProgress(value); }); };
   useEffect(() => { pullProgress.current(); const timer = window.setInterval(() => pullProgress.current(), 60000); return () => window.clearInterval(timer); }, [online]);
-  const progress: Progress = online && serverProgress ? serverProgress : { kisses: kisses.me ?? 0, friends: 0, dj: readStats().songsSent ?? 0, gestures: readStats().gestures ?? 0, vip };
+  const progress: Progress = iAmAdmin ? { kisses: 1e9, friends: 1e9, dj: 1e9, gestures: 1e9, vip: true } : online && serverProgress ? serverProgress : { kisses: kisses.me ?? 0, friends: 0, dj: readStats().songsSent ?? 0, gestures: readStats().gestures ?? 0, vip };
   const progressReady = !online || Boolean(serverProgress);
   const openKey = progressReady ? [...Object.entries(GIFT_RULES).filter(([, rule]) => rule[0] !== "vip" && rule[1] > 0 && missing(rule, progress) === 0).map(([gift]) => gift),
     ...GESTURES.filter(([, , kind, amount]) => kind !== "vip" && amount > 0 && missing([kind, amount], progress) === 0).map(([id]) => `g:${id}`)].sort().join(",") : "";
@@ -1069,6 +1076,15 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       }
     }
   }, [stickers, seated.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  // "Add friend" on a profile card sends a real friend request (the same one as on the Friends page).
+  async function sendFriend(player: Player) {
+    if (player.me) return;
+    if (!online || !supabase) return setCardNote(t("bottle.friendSent"));
+    const { error } = await supabase.from("friendships").insert({ addressee_id: player.id });
+    if (!error) { setCardNote(t("bottle.friendSent")); void refreshFriends(); return; }
+    setCardNote(error.code === "23505" ? t("bottle.friendAlready") : t("bottle.friendFail"));
+  }
+  const isAdminPlayer = (player: Player) => (player.me ? iAmAdmin : adminIds.includes(player.id));
   // Two players with the same name get a number, like the original: "Leyla [1]".
   const nameSuffix = (player: Player) => {
     const same = seated.filter((other) => other.name === player.name);
@@ -1673,7 +1689,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             ...(player.me ? [] : [{ key: "kick", short: t("bottle.cardKick"), label: t("bottle.kick"), color: "bg-[radial-gradient(circle_at_35%_30%,#FF7A7A,#D92B2B)]", icon: <Ban size={22} strokeWidth={2.4} />, go: () => askKick(player) }]),
             { key: "gift", short: t("bottle.cardGift"), label: t("gifts.send"), color: "bg-[radial-gradient(circle_at_35%_30%,#FFA05C,#F0661E)]", icon: <GiftIcon size={23} strokeWidth={2.2} />, go: () => setCard(false) },
             ...(player.me ? [] : [
-              { key: "friend", short: t("bottle.cardFriend"), label: t("bottle.addFriend"), color: "bg-[radial-gradient(circle_at_35%_30%,#FFD15C,#F5A300)]", icon: <BadgeCheck size={24} strokeWidth={2.2} />, go: () => setCardNote(t("bottle.friendSent")) },
+              { key: "friend", short: t("bottle.cardFriend"), label: t("bottle.addFriend"), color: "bg-[radial-gradient(circle_at_35%_30%,#FFD15C,#F5A300)]", icon: <BadgeCheck size={24} strokeWidth={2.2} />, go: () => sendFriend(player) },
               { key: "chat", short: t("bottle.chatMention"), label: t("bottle.chatMention"), color: "bg-[radial-gradient(circle_at_35%_30%,#6EE7B7,#10A36F)]", icon: <MessageSquare size={21} strokeWidth={2.4} />, go: () => { setDraft(`${player.name}, `); setCard(false); setPicked(null); window.setTimeout(() => { chatRef.current?.focus(); const end = chatRef.current?.value.length ?? 0; chatRef.current?.setSelectionRange(end, end); }, 60); } },
               { key: "dm", short: t("bottle.cardDm"), label: t("bottle.write"), color: "bg-[radial-gradient(circle_at_35%_30%,#7CC6FF,#2E8FE0)]", icon: <Mail size={22} strokeWidth={2.2} />, go: () => openDm(player) },
             ]),
@@ -1688,7 +1704,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   <img src={player.avatar} alt="" className="h-full w-full object-cover" />
                   <div className={cn("absolute inset-x-0 bottom-0 flex items-center justify-center gap-2 bg-gradient-to-t from-black/70 via-black/30 to-transparent pb-2.5 pt-10", wide ? "px-10" : "pl-2 pr-9")}>
                     {signBadge}
-                    <p className="truncate text-sm font-bold text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.6)]">{player.name}, {player.age}</p>
+                    <p className={cn("truncate text-sm font-bold [text-shadow:0_1px_2px_rgba(0,0,0,0.6)]", isAdminPlayer(player) ? "text-[#FFD54A]" : "text-white")}>{isAdminPlayer(player) ? "👑 " : ""}{player.name}, {player.age}</p>
                     {wide ? signBadge : null}
                   </div>
                   {signOpen && sign ? <span role="status" className="absolute bottom-11 left-1/2 z-10 -translate-x-1/2 rounded-full bg-black/80 px-3 py-1 text-sm font-semibold text-white">{t(`bottle.sign${player.zodiac}` as "bottle.sign0")}</span> : null}
@@ -1699,12 +1715,13 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                       <button role="menuitem" onClick={() => { setMutedIds((list) => (list.includes(player.id) ? list.filter((id) => id !== player.id) : [...list, player.id])); setFlagMenu(false); setCardNote(t(muted.includes(player.id) ? "bottle.unrejected" : "bottle.rejected")); }} className="block w-full px-3 py-2 text-left hover:bg-black/5">{t(muted.includes(player.id) ? "bottle.unreject" : "bottle.reject")}</button>
                       <button role="menuitem" onClick={() => { setDraft(`${player.name}, `); setFlagMenu(false); setCard(false); setPicked(null); window.setTimeout(() => chatRef.current?.focus(), 50); }} className="block w-full px-3 py-2 text-left hover:bg-black/5">{t("bottle.mention")}</button>
                       <button role="menuitem" onClick={() => { setFlagMenu(false); setCardNote(t("bottle.reportSent")); }} className="block w-full px-3 py-2 text-left hover:bg-black/5">{t("bottle.report")}</button>
-                      <button role="menuitem" onClick={() => { setFlagMenu(false); setCardNote(t("bottle.friendSent")); }} className="block w-full px-3 py-2 text-left hover:bg-black/5">{t("bottle.addFriend")}</button>
+                      <button role="menuitem" onClick={() => { setFlagMenu(false); sendFriend(player); }} className="block w-full px-3 py-2 text-left hover:bg-black/5">{t("bottle.addFriend")}</button>
                       <Link role="menuitem" href="/friends" className="block px-3 py-2 hover:bg-black/5">{t("bottle.myFriends")}</Link>
                     </div>
                   ) : null}
                 </div>
                 <div className={cn("flex min-w-0 flex-1 flex-col text-[#1F2937]", wide ? "p-4" : "p-2.5")}>
+                  {isAdminPlayer(player) ? <p className="mb-2 flex items-center justify-center gap-1.5 rounded-lg bg-[linear-gradient(90deg,#F5B400,#FFDD6E,#F5B400)] px-2 py-1 text-[13px] font-black uppercase tracking-wider text-[#5B3A00] shadow">👑 {t("bottle.adminBadge")}</p> : null}
                   {seat?.status ? <p className="mb-2.5 border-b border-[#E5E7EB] pb-2 text-[13px] italic leading-snug text-[#374151]">{seat.status}”</p> : null}
                   <div className="flex items-start gap-2">
                     <div className="min-w-0 flex-1 space-y-2">
@@ -1888,7 +1905,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           const active = index === turn || index === target;
           return (
             <div key={player.id} className={cn("absolute -translate-x-1/2 -translate-y-1/2 transition-[left,top]", wide ? "w-[17cqmin]" : "w-[16cqmin]", " duration-[1100ms] ease-in-out motion-reduce:duration-0", staged && active ? "z-30" : index === turn && "z-10")} style={staged && active ? { left: `calc(${CENTER_X}% ${index === turn ? "-" : "+"} 12.5cqmin)`, top: `${STAGE_Y}%` } : { left: `${seats[index][0]}%`, top: `${seats[index][1]}%` }}>
-              <button type="button" onClick={(event) => { event.stopPropagation(); if (dedicate) { if (!player.me) setChosen((list) => (list.includes(player.id) ? list.filter((id) => id !== player.id) : [...list, player.id])); return; } setGiftNote(null); setCardNote(null); setFlagMenu(false); setSignOpen(false); setLeaveAsk(false); if (player.me) { if (Date.now() - meTap.current > 15000 || picked !== index) { meTap.current = Date.now(); setFrameNote(null); pullProgress.current(); setCard(false); setPicked(index); return; } meTap.current = 0; setCard(true); setPicked(index); return; } setCard(picked === index); setPicked(index); }} aria-label={`${player.name}, ${player.age}`} data-seat={player.id} className={cn("group relative block aspect-square w-full rounded-[14%] bg-surface-2 shadow-[0_4px_10px_rgba(0,0,0,0.4)]", phase === "spinning" && index === turn && "motion-safe:animate-[seat-wobble_0.4s_ease-out]", tour === 3 && !player.me && !player.empty && "ring-4 ring-[#FFD84D] motion-safe:animate-pulse", staged && index === target ? "ring-[0.9cqmin] ring-[#FFE2A8]" : active ? "ring-4 ring-white" : picked === index ? "ring-4 ring-[#8CC63F]" : player.me ? "ring-2 ring-white/80" : "")}>
+              <button type="button" onClick={(event) => { event.stopPropagation(); if (dedicate) { if (!player.me) setChosen((list) => (list.includes(player.id) ? list.filter((id) => id !== player.id) : [...list, player.id])); return; } setGiftNote(null); setCardNote(null); setFlagMenu(false); setSignOpen(false); setLeaveAsk(false); if (player.me) { if (Date.now() - meTap.current > 15000 || picked !== index) { meTap.current = Date.now(); setFrameNote(null); pullProgress.current(); setCard(false); setPicked(index); return; } meTap.current = 0; setCard(true); setPicked(index); return; } setCard(picked === index); setPicked(index); }} aria-label={`${player.name}, ${player.age}`} data-seat={player.id} className={cn("group relative block aspect-square w-full rounded-[14%] bg-surface-2 shadow-[0_4px_10px_rgba(0,0,0,0.4)]", phase === "spinning" && index === turn && "motion-safe:animate-[seat-wobble_0.4s_ease-out]", tour === 3 && !player.me && !player.empty && "ring-4 ring-[#FFD84D] motion-safe:animate-pulse", !player.empty && isAdminPlayer(player) && "shadow-[0_0_0_0.6cqmin_#F5B400,0_0_14px_4px_rgba(245,180,0,0.65)]", staged && index === target ? "ring-[0.9cqmin] ring-[#FFE2A8]" : active ? "ring-4 ring-white" : picked === index ? "ring-4 ring-[#8CC63F]" : player.me ? "ring-2 ring-white/80" : "")}>
                 {player.empty ? null : <span aria-hidden="true" className="pointer-events-none absolute left-1/2 top-1/2 z-[5] hidden h-[7cqmin] w-[7cqmin] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-[4cqmin] shadow [@media(hover:hover)]:group-hover:flex">{player.me ? "😊" : "🎁"}</span>}
                 <img src={player.avatar} alt="" className="h-full w-full rounded-[14%] object-cover" />
                 {frameOf(player) ? <FrameArt id={frameOf(player)} className={cn("pointer-events-none absolute z-[1]", frameOf(player) >= FIRST_ORIGINAL ? "-inset-[17%] h-[134%] w-[134%]" : "-inset-[9%] h-[118%] w-[118%]")} /> : null}
@@ -1928,7 +1945,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   </div>
                 );
               })()}
-              <p className={cn("mt-px truncate text-center text-[2.6cqmin] font-semibold leading-tight [text-shadow:0_1px_3px_rgba(0,0,0,0.8)]", "text-white")}>{player.me ? t("common.you") : player.name}{!player.me && nameSuffix(player) ? ` [${nameSuffix(player)}]` : ""}, {player.age}</p>
+              <p className={cn("mt-px truncate text-center text-[2.6cqmin] font-semibold leading-tight [text-shadow:0_1px_3px_rgba(0,0,0,0.8)]", isAdminPlayer(player) ? "text-[#FFD54A]" : "text-white")}>{isAdminPlayer(player) ? "👑 " : ""}{player.me ? t("common.you") : player.name}{!player.me && nameSuffix(player) ? ` [${nameSuffix(player)}]` : ""}, {player.age}</p>
               {index === turn && !staged ? (() => {
                 // Like the original: the label sits beside the photo on the table side, with an arrow pointing at the player,
                 // so it never covers the seat below or its badges.
