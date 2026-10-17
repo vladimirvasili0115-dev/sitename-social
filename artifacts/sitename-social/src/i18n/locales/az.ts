@@ -5,7 +5,7 @@ const az = {
   "nav.settings": "Tənzimləmələr", "nav.online": "Onlayn istifadəçilər", "nav.gifts": "Hədiyyələr",
   "nav.mainNavigation": "Əsas naviqasiya",
   "header.search": "Dostları və paylaşımları axtar", "header.messages": "Mesajlar", "header.notifications": "Bildirişlər",
-  "header.profile": "Profil", "header.language": "Dil", "feed.greeting": "Salam, Aylin", "feed.subtitle": "Dostlarının həyatından yeni nə var?",
+  "header.profile": "Profil", "header.language": "Dil", "feed.greeting": "Salam, Aylin", "feed.subtitle": "Dostlarının həyatından yeni nə var?", "feed.gameTitle": "Oynamağa başla", "feed.gameContinueTitle": "Oynamağa davam et", "feed.gameContinue": "Davam et", "feed.gameLine": "Butulkanı fırlat, öp, tanış ol! 💋", "feed.gameTag": "Tanışlıq · Onlayn oyun",
   "feed.stories": "Hekayələr", "feed.addStory": "Hekayə əlavə et", "feed.composer": "Ağlından nə keçir?",
   "feed.composerHint": "Kiçik anları paylaş, əlaqədə qal.", "feed.photo": "Foto", "feed.feeling": "Hiss",
   "feed.publish": "Paylaş", "feed.latest": "Ən son", "feed.forYou": "Sənin üçün", "feed.following": "İzlədiklərin",

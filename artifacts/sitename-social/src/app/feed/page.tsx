@@ -10,6 +10,7 @@ import { StoriesBar } from "@/components/feed/StoriesBar";
 import { PostComposer } from "@/components/feed/PostComposer";
 import { PostCard } from "@/components/feed/PostCard";
 import { Card } from "@/components/ui/Card";
+import { GamePromo } from "@/components/feed/GamePromo";
 
 export default function FeedPage() {
   const { t } = useTranslation();
@@ -28,6 +29,7 @@ export default function FeedPage() {
       <button aria-label={t("feed.latest")} className="mb-1 flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-muted hover:bg-surface-2"><span>{t("feed.latest")}</span><ChevronDown size={14} /></button>
     </div>
     <StoriesBar />
+    <GamePromo />
     <PostComposer />
     <div className="mb-3 flex items-center gap-1 border-b border-border px-1">
       <button onClick={() => setTab("forYou")} aria-pressed={tab === "forYou"} className={tabClass(tab === "forYou")}>{t("feed.forYou")}{tab === "forYou" ? <span className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-accent" /> : null}</button>
