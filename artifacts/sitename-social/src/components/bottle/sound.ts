@@ -23,9 +23,9 @@ export function playSound(kind: "turn" | "chosen" | "kiss" | "decline") {
     context ??= new (window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
     if (context.state === "suspended") void context.resume();
     if (kind === "turn") return playClip("turn", () => { tone(880, 0, 0.16); tone(1175, 0.14, 0.24); });
-    if (kind === "chosen") { tone(660, 0, 0.14, 0.14, "triangle"); tone(990, 0.12, 0.3, 0.14, "triangle"); }
+    // The pair coming to the middle and a refusal are silent (the beeps sounded harsh).
+    if (kind === "chosen" || kind === "decline") return;
     if (kind === "kiss") return playClip(`sfx/${pick(["kissing_our", "kissing2", "kissing3"])}`, () => { tone(1320, 0, 0.09); tone(1760, 0.08, 0.12); tone(2093, 0.2, 0.3, 0.12); });
-    if (kind === "decline") tone(220, 0, 0.3, 0.12, "sawtooth");
   } catch {
     // Audio is unavailable or blocked: the game stays silent.
   }

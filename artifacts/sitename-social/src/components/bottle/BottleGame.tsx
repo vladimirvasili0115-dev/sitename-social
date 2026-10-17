@@ -25,7 +25,7 @@ import { playGiftSound, playSfx, playSound, setVolume } from "./sound";
 import { supabase } from "@/lib/supabase";
 import { ensureMessagesLoaded, openRemoteChat, remoteChats, sendRemoteMessage } from "@/lib/messagesSync";
 import { uploadBlob } from "@/lib/media";
-import { bottleAnswer, bottleAchSync, bottleGesture, bottleProgress, bottleSkin, bottleBuyChances, bottleJoin, bottleMove, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleAdmireLeave, bottleDailyClaim, bottleItems, bottleItemBuy, bottleBooster, bottleTutorial, type BottleItems, bottleLeagueInfo, bottleLeagueClaim, type BottleLeague, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleGift, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState } from "@/lib/bottleSync";
+import { bottleAnswer, bottleAchSync, bottleGesture, bottleProgress, bottleSkin, bottleBuyChances, bottleJoin, bottleMove, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleAdmireLeave, bottleDaily, bottleItems, bottleItemBuy, bottleBooster, bottleTutorial, type BottleItems, bottleLeagueInfo, bottleLeagueClaim, type BottleLeague, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleGift, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState } from "@/lib/bottleSync";
 
 type Player = { id: string; name: string; age: number; female: boolean; avatar: string; me?: boolean; empty?: boolean; zodiac?: number | null };
 type Phase = "waiting" | "spinning" | "choice" | "kissed" | "declined";
@@ -1048,10 +1048,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (online) {
       if (!net) return;
       dailyAsked.current = true;
-      void bottleDailyClaim().then((result) => {
+      void bottleDaily(false).then((result) => {
         if (!result || !result.day) return;
-        heartsRef.current = result.total;
-        setHearts(result.total);
         window.setTimeout(() => setDaily({ day: result.day, hearts: result.hearts }), 1500);
       });
       return;
@@ -1065,8 +1063,6 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       const day = saved?.last === yesterday ? Math.min(7, saved.day + 1) : 1;
       window.localStorage.setItem("bottle-daily", JSON.stringify({ last: today, day }));
       const prize = DAILY_PRIZES[day - 1];
-      heartsRef.current += prize;
-      setHearts(heartsRef.current);
       window.setTimeout(() => setDaily({ day, hearts: prize }), 1500);
     } catch { /* storage is blocked */ }
   }, [online, net]);
@@ -1095,6 +1091,16 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       window.setTimeout(() => setLeagueResult(result), 2500);
     });
   }, [online, net]);
+  // The hearts go into the balance when the player takes them (the button or closing the window).
+  function takeDaily() {
+    const prize = daily?.hearts ?? 0;
+    setDaily(null);
+    if (!prize) return;
+    heartsSeen.current = heartsSeen.current ? { ...heartsSeen.current, at: 0 } : null;
+    if (online) { void bottleDaily(true).then((result) => { if (result && typeof result.total === "number") { heartsRef.current = result.total; setHearts(result.total); } }); return; }
+    heartsRef.current += prize;
+    setHearts(heartsRef.current);
+  }
   // "New gifts unlocked": when the player's progress opens gifts or smileys that were locked, show which ones.
   const [unlocked, setUnlocked] = useState<string[] | null>(null);
   const openLock = (kind: RuleKind, total: number, item: { gift?: string; gesture?: string }) => setLock({ ...item, kind, total });
@@ -1689,7 +1695,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           </div>
         ) : null}
 
-        {waitNote && !myTurn && !staged ? <p role="status" className="pointer-events-none absolute z-30 -translate-x-1/2 whitespace-nowrap rounded-full bg-black/75 px-[3cqmin] py-[1cqmin] text-[3.2cqmin] font-bold text-white" style={{ left: `${CENTER_X}%`, top: `calc(${STAGE_Y}% + 17cqmin)` }}>{t("bottle.waitTurn")}</p> : null}
+        {waitNote && !myTurn && !staged ? <p role="status" className="pointer-events-none absolute z-30 -translate-x-1/2 whitespace-nowrap rounded-full bg-black/75 px-[2.4cqmin] py-[0.8cqmin] text-[2.6cqmin] font-bold text-white" style={{ left: `${CENTER_X}%`, top: `calc(${STAGE_Y}% + 17cqmin)` }}>{t("bottle.waitTurn")}</p> : null}
         {phase === "waiting" && !myTurn ? <p className="pointer-events-none absolute w-[40cqmin] -translate-x-1/2 -translate-y-1/2 text-center text-[3.4cqmin] font-bold leading-tight text-white [text-shadow:0_2px_6px_rgba(0,0,0,0.85)]" style={{ left: `${CENTER_X}%`, top: `${STAGE_Y}%` }}>{t(enoughGirls ? "bottle.waitingSpin" : net?.room ? "bottle.needPair" : "bottle.needGirls")}</p> : null}
 
         {players.map((player, index) => {
@@ -1717,8 +1723,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   return <>
                     {(piles[player.id] ?? []).map((item) => <span key={item.key} className="pointer-events-none absolute z-[2] animate-[gift-drop_0.35s_ease-out] transition-opacity duration-[2000ms]" style={{ left: `${item.x}%`, top: `${item.y}%`, width: `${item.s}%`, height: `${item.s}%`, transform: `rotate(${item.r}deg)`, opacity: pileNow - item.at > PILE_MS - 3000 ? 0 : 1 }}><Gift anim id={item.gift} className="h-full w-full drop-shadow-[0_2px_2px_rgba(0,0,0,0.35)]" /></span>)}
                     {face ? <Gift id={face} className="absolute left-[8%] top-[10%] z-[2] h-[84%] w-[84%] animate-[gift-drop_0.35s_ease-out]" /> : null}
-                    {ears ? <Gift anim id={ears} className="pointer-events-none absolute -top-[22%] left-[-8%] z-[2] h-[46%] w-[116%] animate-[gift-drop_0.35s_ease-out] drop-shadow" /> : null}
-                    {head ? <Gift anim id={head} className="pointer-events-none absolute -top-[30%] left-[17%] z-[2] h-[62%] w-[66%] animate-[gift-drop_0.35s_ease-out] drop-shadow" /> : null}
+                    {ears ? <Gift anim id={ears} className="pointer-events-none absolute -left-[22%] -top-[14%] z-[2] h-[44%] w-[80%] -rotate-45 animate-[gift-drop_0.35s_ease-out] drop-shadow" /> : null}
+                    {head ? <Gift anim id={head} className="pointer-events-none absolute -left-[16%] -top-[16%] z-[2] h-[56%] w-[56%] -rotate-45 animate-[gift-drop_0.35s_ease-out] drop-shadow" /> : null}
                     {rest.map((gift, position) => <Gift anim key={`${gift}-${position}`} id={gift} className={cn("absolute -bottom-[1.6cqmin] h-[48%] w-[48%] drop-shadow", position ? "-left-[1.6cqmin]" : "-right-[1.6cqmin]")} />)}
                   </>;
                 })()}
@@ -2532,9 +2538,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         </div>
       ) : null}
       {daily ? (
-        <div className="absolute inset-0 z-[61] flex items-center justify-center bg-black/40 p-4" onClick={() => setDaily(null)}>
+        <div className="absolute inset-0 z-[61] flex items-center justify-center bg-black/40 p-4" onClick={takeDaily}>
           <div role="dialog" aria-label={t("bottle.dailyTitle")} onClick={(event) => event.stopPropagation()} className="relative w-full max-w-[400px] animate-[bottle-pop_0.25s_ease-out] rounded-2xl bg-[linear-gradient(180deg,#FFF6E0,#FFFFFF)] px-4 pb-5 pt-4 text-center text-[#1F2937] shadow-2xl">
-            <button onClick={() => setDaily(null)} aria-label={t("photos.close")} title={t("photos.close")} className="absolute -right-2 -top-2 flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#8CC63F] bg-white text-[#8CC63F] shadow"><X size={18} strokeWidth={3} /></button>
+            <button onClick={takeDaily} aria-label={t("photos.close")} title={t("photos.close")} className="absolute -right-2 -top-2 flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#8CC63F] bg-white text-[#8CC63F] shadow"><X size={18} strokeWidth={3} /></button>
             <p className="text-lg font-black text-[#B45309]">🎁 {t("bottle.dailyTitle")}</p>
             <p className="mt-1 text-sm text-[#6B7280]">{t("bottle.dailyText")}</p>
             <ol className="mt-3 grid grid-cols-7 gap-1">
@@ -2552,7 +2558,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             </ol>
             <p className="mt-3 flex items-center justify-center gap-1.5 text-2xl font-black text-[#E8203A]">+{daily.hearts}<Heart size={24} fill="#E8352B" stroke="none" /></p>
             <p className="text-xs text-[#6B7280]">{t("bottle.dailyDay").replace("{n}", String(daily.day))}</p>
-            <button onClick={() => setDaily(null)} className="mt-3 h-10 min-w-[140px] rounded-lg bg-[#8CC63F] px-4 text-sm font-bold text-white hover:brightness-105">{t("bottle.dailyTake")}</button>
+            <button onClick={takeDaily} className="mt-3 h-10 min-w-[140px] rounded-lg bg-[#8CC63F] px-4 text-sm font-bold text-white hover:brightness-105">{t("bottle.dailyTake")}</button>
           </div>
         </div>
       ) : null}
