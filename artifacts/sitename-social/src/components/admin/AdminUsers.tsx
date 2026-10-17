@@ -2,10 +2,10 @@
 import { VerifiedMark } from "@/components/ui/VerifiedMark";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { BadgeCheck, Ban, ChevronDown, Coins, Crown, Heart, ShieldCheck, ShieldOff, Trash2, Undo2 } from "lucide-react";
+import { BadgeCheck, Ban, ChevronDown, Coins, Crown, Gamepad2, Heart, ShieldCheck, ShieldOff, Trash2, Undo2 } from "lucide-react";
 import { useSyncExternalStore } from "react";
 import { refreshVerified, verifiedStore } from "@/lib/verifiedSync";
-import { banUser, deleteUser, fetchAdminUsers, fetchUserDetail, grantCoins, grantHearts, setModerator, setVerified, vipAll, vipCount, type AdminUser, type UserDetail } from "@/lib/adminSync";
+import { banUser, deleteUser, fetchAdminUsers, fetchUserDetail, grantCoins, grantHearts, setModerator, setVerified, vipAll, vipCount, gameState, gameGrant, type GameState, type AdminUser, type UserDetail } from "@/lib/adminSync";
 import type { TranslationKey } from "@/i18n/LanguageProvider";
 import { initialsAvatar } from "@/lib/avatar";
 import { formatDay } from "@/lib/datetime";
@@ -32,6 +32,7 @@ export function AdminUsers({ owner }: { owner: boolean }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<string | null>(null);
   const [coinsFor, setCoinsFor] = useState<string | null>(null);
+  const [gameFor, setGameFor] = useState<string | null>(null);
   const [grantKind, setGrantKind] = useState<"coins" | "hearts">("coins");
   const [amount, setAmount] = useState("100");
   const [banFor, setBanFor] = useState<string | null>(null);
@@ -108,7 +109,7 @@ export function AdminUsers({ owner }: { owner: boolean }) {
                   </div>
                   <div className="mt-3 flex flex-wrap gap-2">
                     {owner ? <button disabled={locked} onClick={() => { setGrantKind("coins"); setCoinsFor(coinsFor === user.id && grantKind === "coins" ? null : user.id); setAmount("100"); }} className={action}><Coins size={14} />{t("admin.coins")}</button> : null}
-                    {owner ? <button disabled={locked} onClick={() => { setGrantKind("hearts"); setCoinsFor(coinsFor === user.id && grantKind === "hearts" ? null : user.id); setAmount("100"); }} className={action}><Heart size={14} />{t("admin.hearts")}</button> : null}
+                    <button disabled={locked} onClick={() => setGameFor(gameFor === user.id ? null : user.id)} aria-expanded={gameFor === user.id} className={action}><Gamepad2 size={14} />{t("admin.game")}</button>
                     {user.moderator ? null : user.banned
                       ? <button disabled={locked} onClick={() => void run(user.id, () => banUser(user.id, -1, ""))} className={action}><Undo2 size={14} />{t("settings.blkUnblock")}</button>
                       : <button disabled={locked} onClick={() => { setBanFor(banFor === user.id ? null : user.id); setBanDays(7); setReason(""); }} className={cn(danger, "text-danger hover:bg-surface-2")}><Ban size={14} />{t("admin.ban")}</button>}
@@ -156,6 +157,7 @@ export function AdminUsers({ owner }: { owner: boolean }) {
                       ) : <p className="text-xs text-muted">…</p>}
                     </div>
                   ) : null}
+                  {gameFor === user.id ? <GamePanel id={user.id} /> : null}
                   {coinsFor === user.id ? (
                     <form onSubmit={(event) => handleCoins(event, user.id)} className="mt-3 flex flex-wrap items-center gap-2">
                       <span className={`flex h-10 items-center gap-1.5 rounded-xl px-3 text-xs font-bold ${grantKind === "hearts" ? "bg-[#F4511E] text-white" : "bg-surface-2 text-text"}`}>{grantKind === "hearts" ? <Heart size={14} fill="currentColor" /> : <Coins size={14} />}{t(grantKind === "hearts" ? "admin.hearts" : "admin.coins")}</span>
@@ -209,5 +211,54 @@ function VipAllCard() {
       </div>
       {note ? <p role="status" className={cn("mt-2 text-xs font-semibold", note.ok ? "text-accent" : "text-danger")}>{note.text}</p> : null}
     </Card>
+  );
+}
+
+// Game grants for one player: hearts, VIP and TOP (days), DJ score, chances and boosters. Owner and moderators.
+function GamePanel({ id }: { id: string }) {
+  const { t } = useTranslation();
+  const [data, setData] = useState<GameState | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
+  const [drafts, setDrafts] = useState<Record<string, string>>({ hearts: "100", dj: "10", chances: "5", kiss_fire: "5", refuse_slap: "5" });
+  useEffect(() => { void gameState(id).then((value) => { if (value && typeof value === "object") setData(value); }); }, [id]);
+  async function apply(work: () => Promise<unknown>) {
+    setBusy(true);
+    const done = await work();
+    setBusy(false);
+    setNote(done === null ? { ok: false, text: t("admin.vipFail") } : { ok: true, text: t("admin.gameSaved") });
+    const fresh = await gameState(id);
+    if (fresh && typeof fresh === "object") setData(fresh);
+  }
+  const day = (value: string | null) => (value ? new Date(value).toLocaleDateString() : null);
+  const days = (kind: "vip" | "top", list: number[], until: string | null, color: string) => (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <span className="w-20 shrink-0 text-xs font-semibold" style={{ color }}>{kind === "vip" ? "VIP" : "TOP"}</span>
+      <span className="min-w-[110px] text-[11px] text-muted">{until ? t("admin.gameUntil").replace("{d}", day(until) ?? "") : t("admin.gameNone")}</span>
+      {list.map((n) => <button key={n} type="button" disabled={busy} onClick={() => void apply(() => gameGrant(id, kind, n))} className="h-8 rounded-full border border-border px-2.5 text-[11px] font-semibold text-text hover:bg-surface-2 disabled:opacity-50">+{t("admin.vipDays").replace("{n}", String(n))}</button>)}
+      {until ? <button type="button" disabled={busy} onClick={() => void apply(() => gameGrant(id, kind, 0))} className="h-8 rounded-full border border-danger px-2.5 text-[11px] font-semibold text-danger hover:bg-surface-2 disabled:opacity-50">{t("admin.gameRemove")}</button> : null}
+    </div>
+  );
+  const amountRow = (key: "hearts" | "dj" | "chances" | "kiss_fire" | "refuse_slap", label: string, have: number | undefined, color: string) => (
+    <form key={key} onSubmit={(event) => { event.preventDefault(); const value = Math.trunc(Number(drafts[key])); if (!value) return; void apply(() => (key === "hearts" ? grantHearts(id, value) : gameGrant(id, key, value))); }} className="flex flex-wrap items-center gap-1.5">
+      <span className="w-20 shrink-0 text-xs font-semibold" style={{ color }}>{label}</span>
+      <span className="min-w-[110px] text-[11px] text-muted">{t("admin.gameHave").replace("{n}", String(have ?? 0))}</span>
+      <input type="number" step={1} value={drafts[key]} onChange={(event) => setDrafts((cur) => ({ ...cur, [key]: event.target.value }))} aria-label={label} className="h-8 w-24 rounded-lg border border-border bg-surface-2 px-2 text-xs tabular-nums text-text outline-none focus:border-accent" />
+      <button type="submit" disabled={busy} className="h-8 rounded-lg bg-accent px-3 text-[11px] font-semibold text-bg disabled:opacity-50">{t("admin.gameGive")}</button>
+    </form>
+  );
+  return (
+    <div className="mt-3 space-y-2 rounded-xl border border-border bg-surface-2/40 p-3">
+      <p className="text-xs font-semibold">{t("admin.gameTitle")}</p>
+      {amountRow("hearts", t("admin.hearts"), data?.hearts, "#F4511E")}
+      {days("vip", [1, 7, 30, 365], data?.vip_until ?? null, "#D97706")}
+      {days("top", [1, 7, 30], data?.top_until ?? null, "#CA8A04")}
+      {amountRow("dj", t("admin.gameDj"), data?.dj, "#B45D8C")}
+      {amountRow("chances", t("admin.gameChances"), data?.chances, "#12998C")}
+      {amountRow("kiss_fire", t("admin.gameFire"), data?.kiss_fire, "#E2401F")}
+      {amountRow("refuse_slap", t("admin.gameSlap"), data?.refuse_slap, "#7C4DDB")}
+      <p className="text-[11px] leading-4 text-muted">{t("admin.gameHint")}</p>
+      {note ? <p role="status" className={cn("text-xs font-semibold", note.ok ? "text-accent" : "text-danger")}>{note.text}</p> : null}
+    </div>
   );
 }

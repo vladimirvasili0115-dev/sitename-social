@@ -955,6 +955,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     return true;
   };
   const topIds = new Set(seated.map((player) => ({ id: player.id, count: kisses[player.id] ?? 0 })).filter((item) => item.count > 0).sort((a, b) => b.count - a.count).slice(0, 3).map((item) => item.id));
+  // A TOP badge given in the admin panel shows as well.
+  if (online) for (const player of seated) if (net?.seats.find((seat) => seat.id === (player.me ? net.me : player.id))?.top) topIds.add(player.id);
   const skinFilter = (n: number) => (n % 15 ? `hue-rotate(${(n % 15) * 24}deg) saturate(${n % 3 === 0 ? 1.4 : 1.1})` : undefined);
   const art = useCustomArt();
   function chooseSkin(n: number) {
