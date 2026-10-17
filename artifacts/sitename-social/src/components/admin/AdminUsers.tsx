@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Award, BadgeCheck, Ban, ChevronDown, Coins, Crown, Gamepad2, Heart, ShieldCheck, ShieldOff, Trash2, Undo2 } from "lucide-react";
 import { useSyncExternalStore } from "react";
 import { refreshVerified, verifiedStore } from "@/lib/verifiedSync";
-import { banUser, deleteUser, fetchAdminUsers, fetchUserDetail, grantCoins, grantHearts, setModerator, setVerified, vipAll, vipCount, gameState, gameGrant, gameFlags, type GameState, type AdminUser, type UserDetail } from "@/lib/adminSync";
+import { banUser, deleteUser, fetchAdminUsers, fetchUserDetail, grantCoins, grantHearts, setModerator, setVerified, vipAll, vipCount, gameState, gameGrant, gameFlags, type GameFlags, type GameState, type AdminUser, type UserDetail } from "@/lib/adminSync";
 import type { TranslationKey } from "@/i18n/LanguageProvider";
 import { initialsAvatar } from "@/lib/avatar";
 import { formatDay } from "@/lib/datetime";
@@ -43,13 +43,28 @@ export function AdminUsers({ owner }: { owner: boolean }) {
   const [failed, setFailed] = useState(false);
   const verified = useSyncExternalStore(verifiedStore.subscribe, verifiedStore.get, verifiedStore.getServer);
   // VIP and TOP of every listed player, so each row shows "VIP et / VIP-i qaytar" and "TOP-a sal / TOP-dan çıxar".
-  const [flags, setFlags] = useState<Record<string, { vip: boolean; top: boolean }>>({});
+  const [flags, setFlags] = useState<Record<string, GameFlags>>({});
   const loadFlags = useCallback((ids: string[]) => { if (ids.length) void gameFlags(ids).then((value) => { if (value && typeof value === "object") setFlags((cur) => ({ ...cur, ...value })); }); }, []);
   const load = useCallback((search: string) => void fetchAdminUsers(search).then((list) => {
     setUsers(list ?? []);
     setFailed(!list);
     loadFlags((list ?? []).map((user) => user.id));
   }), [loadFlags]);
+  // Bonus hearts, kisses and songs for one player, typed right under the row; a negative number takes away.
+  const [bonus, setBonus] = useState<Record<string, { hearts: string; kisses: string; songs: string }>>({});
+  const [bonusNote, setBonusNote] = useState<{ id: string; ok: boolean } | null>(null);
+  async function giveBonus(id: string) {
+    const draft = bonus[id] ?? { hearts: "", kisses: "", songs: "" };
+    const hearts = Math.trunc(Number(draft.hearts) || 0), kisses = Math.trunc(Number(draft.kisses) || 0), songs = Math.trunc(Number(draft.songs) || 0);
+    if (!hearts && !kisses && !songs) return;
+    setBusy(id);
+    const results = await Promise.all([hearts ? grantHearts(id, hearts) : 1, kisses ? gameGrant(id, "kisses", kisses) : 1, songs ? gameGrant(id, "dj", songs) : 1]);
+    setBusy(null);
+    const ok = results.every((value) => value !== null);
+    setBonusNote({ id, ok });
+    if (ok) setBonus((cur) => ({ ...cur, [id]: { hearts: "", kisses: "", songs: "" } }));
+    loadFlags([id]);
+  }
   // VIP and TOP stay until they are taken back (about ten years).
   async function toggleGame(id: string, kind: "vip" | "top", on: boolean) {
     await run(id, async () => (await gameGrant(id, kind, on ? 0 : 3650)) !== null);
@@ -168,6 +183,18 @@ export function AdminUsers({ owner }: { owner: boolean }) {
                       ) : <p className="text-xs text-muted">…</p>}
                     </div>
                   ) : null}
+                  <form onSubmit={(event) => { event.preventDefault(); void giveBonus(user.id); }} className="mt-3 flex flex-wrap items-center gap-2 rounded-xl bg-surface-2/60 px-2.5 py-2">
+                    <span className="text-xs font-semibold">{t("admin.bonus")}</span>
+                    {([["hearts", "❤️", "#F4511E", flags[user.id]?.hearts], ["kisses", "💋", "#DB3100", flags[user.id]?.kisses], ["songs", "🎵", "#B45D8C", flags[user.id]?.songs]] as const).map(([key, icon, color, have]) => (
+                      <label key={key} className="flex items-center gap-1" title={t(`admin.bonus_${key}` as TranslationKey)}>
+                        <span aria-hidden="true">{icon}</span>
+                        <span className="min-w-[2.5rem] text-[11px] font-semibold tabular-nums" style={{ color }}>{(have ?? 0).toLocaleString("ru-RU")}</span>
+                        <input type="number" step={1} placeholder="+0" value={bonus[user.id]?.[key] ?? ""} onChange={(event) => setBonus((cur) => ({ ...cur, [user.id]: { ...(cur[user.id] ?? { hearts: "", kisses: "", songs: "" }), [key]: event.target.value } }))} aria-label={t(`admin.bonus_${key}` as TranslationKey)} className="h-8 w-20 rounded-lg border border-border bg-surface px-2 text-xs tabular-nums text-text outline-none focus:border-accent" />
+                      </label>
+                    ))}
+                    <button type="submit" disabled={locked} className="h-8 rounded-lg bg-accent px-3 text-[11px] font-semibold text-bg disabled:opacity-50">{t("admin.bonusGive")}</button>
+                    {bonusNote?.id === user.id ? <span role="status" className={cn("text-[11px] font-semibold", bonusNote.ok ? "text-accent" : "text-danger")}>{t(bonusNote.ok ? "admin.gameSaved" : "admin.vipFail")}</span> : null}
+                  </form>
                   {gameFor === user.id ? <GamePanel id={user.id} /> : null}
                   {coinsFor === user.id ? (
                     <form onSubmit={(event) => handleCoins(event, user.id)} className="mt-3 flex flex-wrap items-center gap-2">
