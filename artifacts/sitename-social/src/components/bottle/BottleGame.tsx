@@ -14,6 +14,7 @@ import { durationSeconds, rankSongs, songScore } from "@/lib/songSearch";
 import { HeartBurst } from "./PourTube";
 import { Fireworks, fireworksLevel } from "./Fireworks";
 import { GESTURES, GIFT_PRICES, GIFT_RULES, missing, type Progress, type RuleKind } from "./giftRules";
+import { OrigButton, OrigPopup } from "./OrigPopup";
 import { customGiftNames, customPlace, customPrice, landedName, isDrink } from "./customGifts";
 const landed = (gift: string) => (gift.startsWith("c:") ? `c:${landedName(gift.slice(2))}` : gift);
 import { AchievementsPanel } from "./AchievementsPanel";
@@ -2563,7 +2564,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       </div>
       </div>
 
-      <div className={cn("relative flex min-h-0 min-w-0 flex-1 flex-col", wide ? "-ml-px" : "-mt-px")}>
+      <div className={cn("relative flex min-h-0 min-w-0 flex-1 flex-col bg-[#F5F5F5]", wide ? "-ml-px" : "-mt-px")}>
         {video && wide && !musicMode ? (
           <div className={cn("relative w-full shrink-0 bg-black", picked !== null || dedicate ? "h-0 overflow-hidden" : "aspect-video max-h-[42%]")}>
             <iframe ref={frameRef} onLoad={() => window.setTimeout(pushMusic, 800)} src={ytSrc(video)} title="YouTube" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen className="h-full w-full" />
@@ -2625,8 +2626,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             {wide ? null : <span role="separator" aria-label={t("bottle.miniSize")} title={t("bottle.miniSize")} onPointerDown={(event) => startMini(event, "size")} className="absolute bottom-0 left-0 h-5 w-5 cursor-nesw-resize touch-none bg-[linear-gradient(225deg,transparent_50%,rgba(255,255,255,0.45)_50%)]" />}
           </div>
         ) : null}
-        <div className={cn("flex items-center gap-2 border-b border-border px-3 py-1.5", (picked !== null || dedicate || !wide) && "hidden")}>
-          <p className="min-w-0 flex-1 truncate text-[11px] text-muted">{online ? (net?.room ? `🔒 ${net.room.name} · ${seated.length}/${net.room.capacity}` : `${t("bottle.liveNote")} ${net?.table ?? ""} · ${seated.length}/12`) : t("bottle.demoNote")}</p>
+        <div className={cn("flex items-center gap-2 border-b border-[#E8E8E8] bg-white px-3 py-1.5", (picked !== null || dedicate || !wide) && "hidden")}>
+          <p className="min-w-0 flex-1 truncate text-[11px] text-[#9E9E9E]">{online ? (net?.room ? `🔒 ${net.room.name} · ${seated.length}/${net.room.capacity}` : `${t("bottle.liveNote")} ${net?.table ?? ""} · ${seated.length}/12`) : t("bottle.demoNote")}</p>
           {canDeleteRoom ? <button onClick={() => void deleteRoom()} className="flex h-7 shrink-0 items-center gap-1 rounded-full bg-[#7C2D12] px-2.5 text-xs font-bold text-white hover:bg-[#9A3412]"><Trash2 size={13} strokeWidth={2.6} />{t("bottle.roomDelete")}</button> : null}
           {net?.room ? <button onClick={leaveRoom} className="flex h-7 shrink-0 items-center gap-1 rounded-full bg-[#E5484D] px-2.5 text-xs font-bold text-white hover:bg-[#D13438]"><X size={13} strokeWidth={3} />{t("bottle.roomLeave")}</button> : null}
           {full && wide ? <button onClick={() => chooseMode(!dedicate)} aria-pressed={dedicate} aria-label={t("bottle.dedicate")} title={t("bottle.dedicate")} className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white", dedicate ? "bg-[#3E9B23] ring-2 ring-[#5CC93B]/40" : "bg-[#5CC93B] hover:bg-[#4DB52E]")}><Plus size={17} strokeWidth={3} /></button> : null}
@@ -2699,90 +2700,118 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             {giftNote ? <p role="status" className="border-t border-border px-3 py-2 text-center text-xs font-semibold text-text">{giftNote}</p> : null}
           </div>
         ) : null}
-        <div ref={listRef} className={cn("min-h-0 flex-1 space-y-2 overflow-y-auto p-3", (picked !== null || (dedicate && !wide)) && "hidden")}>
-          {lines.filter((line) => !line.text || !muted.includes(line.from)).map((line) => {
+        {/* The original chat (bottle-html5 ChatContent + chat CSS): light grey list, 30px photos, white bubbles with a tail,
+            and one-line info rows "photo → gift/kiss/song → photo" with the original icons. */}
+        <div ref={listRef} className={cn("flex min-h-0 flex-1 flex-col gap-[7px] overflow-y-auto bg-[#F5F5F5] py-[7px] text-[13px] text-black [overflow-wrap:break-word]", (picked !== null || (dedicate && !wide)) && "hidden")}>
+          {(() => {
+            const O = "/custom/orig/";
+            const ic = (name: string, w: number, h: number, extra = "") => <span aria-hidden="true" className={cn("inline-block shrink-0 bg-contain bg-center bg-no-repeat", extra)} style={{ width: w, height: h, backgroundImage: `url(${O}${name}.svg)` }} />;
+            const photo = (player: Player | null | undefined, extra = "") => player ? <button type="button" onClick={() => { const index = players.findIndex((item) => item.id === player.id); if (index >= 0) { setPicked(index); setCard(true); } }} title={player.name} className={cn("h-[30px] w-[30px] shrink-0 rounded-[4px] bg-cover bg-top", extra)} style={{ backgroundImage: `url(${player.avatar || NO_PHOTO})` }} /> : null;
+            const arrows = ic("chat_icon_arrows", 11, 11, "mx-[5px]");
+            const nameColor = (player: Player) => (player.female ? "#D6336C" : "#2F6FD6");
+            const info = "flex min-h-[30px] max-w-full items-center px-[7px]";
+            return lines.filter((line) => !line.text || !muted.includes(line.from)).map((line) => {
             const from = byId(line.from);
             const to = line.to ? byId(line.to) : null;
             if (line.boost) return (
-              <p key={line.id} className={cn("flex items-center rounded-lg px-2.5 py-1.5 text-[13px] font-semibold", line.boost.kind === "kiss_fire" ? "bg-[#FF8A3D]/10 text-[#FDBA74]" : "bg-[#9B7BFF]/10 text-[#C4B5FD]")}>
-                <img src={`/custom/ui/${line.boost.kind}.webp`} alt="" className="mr-1.5 h-7 w-7 shrink-0 object-contain" />
-                <span><b>{line.boost.a}</b> {t(line.boost.kind === "kiss_fire" ? "bottle.boostFireLine" : "bottle.boostSlapLine")} <b>{line.boost.b}</b></span>
-              </p>
+              <div key={line.id} className={info}>
+                {photo(from)}
+                <img src={`/custom/ui/${line.boost.kind}.webp`} alt="" className="ml-2.5 h-7 w-7 shrink-0 object-contain" />
+                <span className="min-w-0 px-2 leading-[15px] text-[#424242]"><b>{line.boost.a}</b> {t(line.boost.kind === "kiss_fire" ? "bottle.boostFireLine" : "bottle.boostSlapLine")} <b>{line.boost.b}</b></span>
+              </div>
             );
             if (line.event) return (
-              <p key={line.id} className={cn("rounded-lg px-2.5 py-1.5 text-[13px] font-semibold", line.event.kind === "saved" ? "bg-[#DCFCE7]/10 text-[#86EFAC]" : "bg-[#FEE2E2]/10 text-[#FCA5A5]")}>
-                <img src={emojiSrc(line.event.kind === "saved" ? "🛟" : "🦶")} alt="" className="mr-1.5 inline h-5 w-5 align-[-5px]" />
-                {line.event.kind === "kicked" ? <><b>{line.event.b}</b> {t("bottle.kickedLine")}</> : <><b>{line.event.a}</b> {t(line.event.kind === "kick" ? "bottle.kickLine" : "bottle.saveLine")} <b>{line.event.b}</b></>}
-              </p>
+              <div key={line.id} className={info} title={line.event.kind === "kicked" ? `${line.event.b} ${t("bottle.kickedLine")}` : `${line.event.a} ${t(line.event.kind === "kick" ? "bottle.kickLine" : "bottle.saveLine")} ${line.event.b}`}>
+                {photo(from)}
+                {ic(line.event.kind === "kick" ? "chat_icon_kick" : line.event.kind === "kicked" ? "chat_icon_kicked" : "chat_icon_save", line.event.kind === "kick" ? 26 : line.event.kind === "kicked" ? 20 : 19, 22, "ml-2.5")}
+                {arrows}
+                {photo(to) ?? <span className="truncate font-bold text-[#424242]">{line.event.b}</span>}
+              </div>
             );
             if (line.admire) return (
-              <div key={line.id} className="flex items-center gap-2 text-sm">
-                <img src={from?.avatar || line.admire.avatar || NO_PHOTO} alt="" className="h-8 w-8 shrink-0 rounded-md object-cover" />
-                {line.admire.lost && line.admire.self
-                  ? <p className="min-w-0 flex-1 text-text">💔 {t("bottle.selfFreed").replace("{by}", line.admire.by ?? "").replace("{n}", String(line.admire.amount ?? 0))}</p>
-                  : line.admire.self
-                  ? <p className="min-w-0 flex-1 text-text"><span className="font-semibold text-[#E0457B]">{from?.me ? t("common.you") : from?.name ?? line.admire.by}</span> {t("bottle.freedSelf")} <span className="inline-flex items-center gap-0.5 whitespace-nowrap font-bold"><Heart size={13} fill="#E8352B" stroke="none" className="inline" />{line.admire.amount}</span></p>
-                  : line.admire.lost
-                  ? <p className="min-w-0 flex-1 text-text">💔 <span className="font-semibold text-[#E0457B]">{line.admire.by}</span> {t("bottle.admireLost1")} <b>{line.admire.target}</b> {t("bottle.admireLost2")}</p>
-                  : <p className="min-w-0 flex-1 text-text"><span className="font-semibold text-[#E0457B]">{from?.me ? t("common.you") : from?.name ?? line.admire.by}</span> {t("bottle.admireLine")} <span className="inline-flex items-center gap-0.5 whitespace-nowrap font-bold"><Heart size={13} fill="#E8352B" stroke="none" className="inline" />{line.admire.amount}</span></p>}
-                {to ? <><span className="font-bold text-accent">»</span><img src={to.avatar} alt={to.name} title={to.name} className="h-8 w-8 shrink-0 rounded-md object-cover" /></> : null}
+              <div key={line.id} className={cn(info, "min-h-[30px]")}>
+                {photo(from) ?? (line.admire.avatar ? <span className="h-[30px] w-[30px] shrink-0 rounded-[4px] bg-cover bg-top" style={{ backgroundImage: `url(${line.admire.avatar})` }} /> : null)}
+                {ic(line.admire.lost ? "chat_icon_harem_free" : "chat_icon_harem_busy", 18, line.admire.lost ? 23 : 19, "ml-2.5")}
+                <span className="min-w-0 px-2 leading-[15px] text-[#424242]">
+                  {line.admire.lost && line.admire.self ? t("bottle.selfFreed").replace("{by}", line.admire.by ?? "").replace("{n}", String(line.admire.amount ?? 0))
+                    : line.admire.self ? <><b>{from?.me ? t("common.you") : from?.name ?? line.admire.by}</b> {t("bottle.freedSelf")} {ic("chat_icon_heart", 15, 11, "mx-0.5 align-[-1px]")}<b>{line.admire.amount}</b></>
+                    : line.admire.lost ? <><b>{line.admire.by}</b> {t("bottle.admireLost1")} <b>{line.admire.target}</b> {t("bottle.admireLost2")}</>
+                    : <><b>{from?.me ? t("common.you") : from?.name ?? line.admire.by}</b> {t("bottle.admireLine")} {ic("chat_icon_heart", 15, 11, "mx-0.5 align-[-1px]")}<b>{line.admire.amount}</b></>}
+                </span>
+                {photo(to)}
               </div>
             );
             if (!from) return null;
             if (line.gesture) return (
-              <div key={line.id} className="flex items-center gap-2 text-sm">
-                <img src={from.avatar} alt={from.name} className="h-8 w-8 shrink-0 rounded-md object-cover" />
-                <span className="font-semibold text-muted">{from.me ? t("common.you") : from.name}:</span>
-                <img src={`/custom/anim/ges_${line.gesture}.webp`} alt="" className="h-14 w-14 shrink-0 object-contain" />
+              <div key={line.id} className="flex max-w-full items-start px-[7px]">
+                {photo(from)}
+                <img src={`/custom/anim/ges_${line.gesture}.webp`} alt="" className="-mb-1.5 ml-[5px] -mt-[3px] h-10 w-10 shrink-0 object-contain" />
               </div>
             );
             if (line.bottle) return (
-              <div key={line.id} className="flex items-center gap-2 text-sm" title={`${from.name} ${t("bottle.bottleChanged")}`}>
-                <img src={from.avatar} alt={from.name} className="h-8 w-8 shrink-0 rounded-md object-cover" />
-                <span className="flex h-9 w-9 shrink-0 rotate-45 items-center justify-center opacity-60"><SkinArt set={art} n={line.bottle.a + 1} className="h-9" /></span>
-                <span className="font-bold text-accent">➜</span>
-                <span className="flex h-9 w-9 shrink-0 rotate-45 items-center justify-center"><SkinArt set={art} n={line.bottle.b + 1} className="h-9" /></span>
+              <div key={line.id} className={info} title={`${from.name} ${t("bottle.bottleChanged")}`}>
+                {photo(from)}
+                <span className="ml-[15px] mr-1 flex h-[42px] w-[30px] shrink-0 rotate-45 items-center justify-center grayscale"><SkinArt set={art} n={line.bottle.a + 1} className="h-[38px]" /></span>
+                {arrows}
+                <span className="ml-1 flex h-[42px] w-[30px] shrink-0 rotate-45 items-center justify-center"><SkinArt set={art} n={line.bottle.b + 1} className="h-[38px]" /></span>
               </div>
             );
             const receivers = (line.tos ?? (line.to ? [line.to] : [])).map((id) => byId(id)).filter((player): player is Player => Boolean(player));
             const fromIndex = players.findIndex((player) => player.id === line.from);
-            return (
-              <div key={line.id} className="relative flex items-center gap-2 text-sm">
-                <img src={from.avatar} alt={from.name} title={from.name} className="h-8 w-8 shrink-0 rounded-md object-cover" />
-                {line.text ? (
-                  <div className="min-w-0">
-                    <p onDoubleClick={() => !from.me && setLineMenu(line.id)} onContextMenu={(event) => { if (from.me) return; event.preventDefault(); setLineMenu(line.id); }} onTouchStart={() => { if (from.me) return; window.clearTimeout(pressTimer.current); pressTimer.current = window.setTimeout(() => setLineMenu(line.id), 500); }} onTouchEnd={() => window.clearTimeout(pressTimer.current)} onTouchMove={() => window.clearTimeout(pressTimer.current)} className={cn("break-words rounded-md text-text", lineMenu === line.id && "bg-white/10")}>
-                      <span className="font-semibold text-muted">{from.me ? t("common.you") : from.name}</span>{(() => { const decor = decorOf(line.from); return decor ? decor.startsWith("/") ? <img src={decor} alt="" className="ml-0.5 inline h-4 w-4 align-[-3px]" /> : <span title="VIP" className="ml-0.5 text-[11px]">💎</span> : null; })()}<span className="font-semibold text-muted">: </span>{line.text}
-                    </p>
-                    {!from.me && /[а-яёА-ЯЁ]|[\u0600-\u06FF]|[\u10A0-\u10FF]/.test(line.text) ? <a href={`https://translate.google.com/?sl=auto&tl=${lang}&text=${encodeURIComponent(line.text)}`} target="_blank" rel="noreferrer" className="text-[11px] font-semibold text-[#8AB4F8] hover:underline">{t("bottle.translate")}</a> : null}
-                    {lineMenu === line.id ? (
-                      <div role="menu" className="absolute left-10 top-full z-30 mt-1 w-44 overflow-hidden rounded-xl border border-border bg-surface text-sm shadow-xl" onMouseLeave={() => setLineMenu(null)}>
-                        <button role="menuitem" onClick={() => { setDraft(`${from.name}, `); setLineMenu(null); }} className="block w-full px-3 py-2 text-left hover:bg-surface-2">↩ {t("bottle.reply")}</button>
-                        <a role="menuitem" href={`https://translate.google.com/?sl=auto&tl=${lang}&text=${encodeURIComponent(line.text)}`} target="_blank" rel="noreferrer" onClick={() => setLineMenu(null)} className="block w-full px-3 py-2 text-left hover:bg-surface-2">🌐 {t("bottle.translate")}</a>
-                        <button role="menuitem" onClick={() => { setLineMenu(null); setGiftNote(null); say({ from: "me", text: `⚑ ${t("bottle.reportSent")}` }); }} className="block w-full px-3 py-2 text-left text-[#F87171] hover:bg-surface-2">⚑ {t("bottle.report")}</button>
-                      </div>
-                    ) : null}
-                  </div>
-                ) : null}
-                {line.song ? (() => { const song = songInfo(line.song); return <p className="flex min-w-0 flex-1 items-center gap-1 text-text"><span className="shrink-0 font-semibold text-muted">{from.me ? t("common.you") : from.name}:</span><span className="truncate font-semibold">{song.title}</span><Music2 size={16} className="shrink-0 text-[#8AB4F8]" /><span className="flex shrink-0 items-center gap-0.5 font-bold">{song.price}<Heart size={14} fill="#F87171" stroke="none" /></span></p>; })() : null}
-                {line.gift && receivers.length ? (
-                  <>
-                    <Gift id={line.gift} className="h-7 w-7 shrink-0" />
-                    {(line.count ?? 1) > 1 ? <span className="shrink-0 rounded-full bg-white/10 px-1.5 text-xs font-black text-[#FCD34D]">×{line.count}</span> : null}
-                    <span className="font-bold text-accent">»</span>
-                    <span className="flex min-w-0 flex-wrap items-center gap-1">{receivers.slice(0, 6).map((player) => <img key={player.id} src={player.avatar} alt={player.name} title={player.name} className={cn("shrink-0 rounded-md object-cover", receivers.length > 1 ? "h-6 w-6" : "h-8 w-8")} />)}{receivers.length > 6 ? <span className="text-xs font-bold text-muted">+{receivers.length - 6}</span> : null}</span>
-                    {!from.me && fromIndex >= 0 && !players[fromIndex].empty ? <button onClick={() => { const price = priceOf(line.gift ?? ""); if (price) giveGift(fromIndex, line.gift ?? "", price); }} aria-label={t("bottle.giftBack")} title={t("bottle.giftBack")} className="ml-auto flex h-7 shrink-0 items-center gap-0.5 rounded-full bg-[#5CC93B] px-2 text-[11px] font-bold text-white hover:bg-[#4DB52E]">↩<Heart size={11} fill="#FFFFFF" stroke="none" />{priceOf(line.gift ?? "")}</button> : null}
-                  </>
-                ) : null}
-                {to && !line.gift ? <>{line.song ? null : <span className="shrink-0 text-lg">💋</span>}<span className="font-bold text-accent">»</span><img src={to.avatar} alt={to.name} title={to.name} className="h-8 w-8 shrink-0 rounded-md object-cover" /></> : null}
+            if (line.text) return (
+              <div key={line.id} className="relative flex max-w-full items-start gap-[9px] px-[7px]">
+                {photo(from)}
+                <div onDoubleClick={() => !from.me && setLineMenu(line.id)} onContextMenu={(event) => { if (from.me) return; event.preventDefault(); setLineMenu(line.id); }} onTouchStart={() => { if (from.me) return; window.clearTimeout(pressTimer.current); pressTimer.current = window.setTimeout(() => setLineMenu(line.id), 500); }} onTouchEnd={() => window.clearTimeout(pressTimer.current)} onTouchMove={() => window.clearTimeout(pressTimer.current)}
+                  className={cn("group relative min-h-[17px] min-w-[100px] rounded-[5px] px-2 pb-1.5 pt-[7px] before:absolute before:-left-1.5 before:top-[9px] before:border-y-[6px] before:border-r-[6px] before:border-y-transparent before:content-['']", lineMenu === line.id ? "bg-[#498FE1] text-white before:border-r-[#498FE1]" : "bg-white before:border-r-white")}>
+                  <span className={cn("font-bold", isAdminPlayer(from) && "bg-[linear-gradient(rgb(240,208,51),rgb(217,131,0))] bg-clip-text text-transparent")} style={lineMenu === line.id || isAdminPlayer(from) ? undefined : { color: nameColor(from) }}>{from.me ? t("common.you") : from.name}</span>{(() => { const decor = decorOf(line.from); return decor ? decor.startsWith("/") ? <img src={decor} alt="" className="ml-0.5 inline h-3.5 w-3.5 align-[-2px]" /> : <span title="VIP" className="ml-0.5 text-[11px]">💎</span> : null; })()}<span className="font-bold">: </span><span className="[word-break:break-word]">{line.text}</span>
+                  {!from.me && /[а-яёА-ЯЁ]|[؀-ۿ]|[Ⴀ-ჿ]/.test(line.text) ? <a href={`https://translate.google.com/?sl=auto&tl=${lang}&text=${encodeURIComponent(line.text)}`} target="_blank" rel="noreferrer" className={cn("block text-[12px]", lineMenu === line.id ? "text-white" : "text-[#808080]")}>{t("bottle.translate")}</a> : null}
+                  {from.me ? null : <button type="button" onClick={() => setLineMenu(line.id)} aria-label={t("bottle.report")} className="absolute -right-[11px] -top-[11px] z-[1] hidden h-[25px] w-[25px] items-center justify-center group-hover:flex"><span className="h-3.5 w-3.5 rounded-full bg-[#498FE1] bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url(${O}chat_message_action.svg)` }} /></button>}
+                  {lineMenu === line.id ? (
+                    <div role="menu" className="absolute left-0 top-full z-30 mt-1 w-44 overflow-hidden rounded-xl bg-white text-[13px] text-[#1F2937] shadow-xl" onMouseLeave={() => setLineMenu(null)}>
+                      <button role="menuitem" onClick={() => { setDraft(`${from.name}, `); setLineMenu(null); }} className="block w-full px-3 py-2 text-left hover:bg-[#F3F4F6]">↩ {t("bottle.reply")}</button>
+                      <a role="menuitem" href={`https://translate.google.com/?sl=auto&tl=${lang}&text=${encodeURIComponent(line.text)}`} target="_blank" rel="noreferrer" onClick={() => setLineMenu(null)} className="block w-full px-3 py-2 text-left hover:bg-[#F3F4F6]">🌐 {t("bottle.translate")}</a>
+                      <button role="menuitem" onClick={() => { setLineMenu(null); setGiftNote(null); say({ from: "me", text: `⚑ ${t("bottle.reportSent")}` }); }} className="block w-full px-3 py-2 text-left text-[#E03D1F] hover:bg-[#F3F4F6]">⚑ {t("bottle.report")}</button>
+                    </div>
+                  ) : null}
+                </div>
+                {from.me ? null : <button type="button" onClick={() => { setDraft(`${from.name}, `); chatRef.current?.focus(); }} aria-label={t("bottle.reply")} title={t("bottle.reply")} className="h-[22px] w-[30px] shrink-0 self-center bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url(${O}chat_btn_reply.svg)` }} />}
               </div>
             );
-          })}
+            if (line.song) { const song = songInfo(line.song); return (
+              <div key={line.id} className={info} title={song.title}>
+                {photo(from)}
+                {ic("chat_icon_music", 17, 18, "ml-2.5")}
+                <span className="min-w-0 truncate px-2 text-[#424242]">{song.title}</span>
+                {to ? <>{arrows}{photo(to)}</> : null}
+              </div>
+            ); }
+            if (line.gift && receivers.length) return (
+              <div key={line.id} className={info}>
+                {photo(from)}
+                <Gift id={line.gift} className="ml-2.5 h-7 w-7 shrink-0" />
+                {(line.count ?? 1) > 1 ? <span className="ml-1 mt-0.5 flex h-[18px] items-center text-[16px] font-bold text-[#72BE61]">{ic("chat_icon_count", 9, 8, "mr-0.5")}{line.count}</span> : null}
+                {arrows}
+                <span className="flex flex-row-reverse gap-[5px]">{receivers.slice(0, 6).map((player) => <span key={player.id}>{photo(player)}</span>)}</span>
+                {receivers.length > 6 ? <span className="ml-1 text-xs font-bold text-[#9E9E9E]">+{receivers.length - 6}</span> : null}
+                {!from.me && fromIndex >= 0 && !players[fromIndex].empty ? <button type="button" onClick={() => { const price = priceOf(line.gift ?? ""); if (price) giveGift(fromIndex, line.gift ?? "", price); }} aria-label={t("bottle.giftBack")} title={`${t("bottle.giftBack")} · ${priceOf(line.gift ?? "")} ❤`} className="ml-[9px] h-[22px] w-[30px] shrink-0 bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url(${O}chat_btn_reply.svg)` }} /> : null}
+              </div>
+            );
+            if (to) return (
+              <div key={line.id} className={info}>
+                {photo(from)}
+                {ic("chat_icon_kiss", 24, 16, "ml-2.5")}
+                {arrows}
+                {photo(to)}
+              </div>
+            );
+            return null;
+          });
+          })()}
         </div>
-        <form onSubmit={handleChat} className={cn("flex items-center gap-2 border-t border-border p-2.5", picked !== null && "hidden")}>
-          <input ref={chatRef} data-hint="chat-input" value={draft} onChange={(event) => setDraft(event.target.value)} maxLength={200} aria-label={t("messages.placeholder")} placeholder={t("messages.placeholder")} autoComplete="off" className={cn(tour === 5 && "ring-4 ring-[#FFD84D]", "h-11 min-w-0 flex-1 rounded-full border border-border bg-surface-2 px-4 text-sm text-text outline-none placeholder:text-muted focus:border-accent")} />
-          <button type="button" onClick={() => { setFrameNote(null); pullProgress.current(); if (dedicate) chooseMode(false); setCard(false); meTap.current = Date.now(); setPicked(meIndex); }} aria-label={t("bottle.gestures")} title={t("bottle.gestures")} className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface-2 text-xl">😊</button>
-          <button type="submit" data-hint="chat-send" disabled={!draft.trim()} aria-label={t("messages.send")} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#EE8A2B] text-white disabled:opacity-40"><SendHorizontal size={17} /></button>
+        <form onSubmit={handleChat} className={cn("flex h-[39px] shrink-0 items-center bg-white shadow-[0_0_4px_rgba(0,0,0,0.07)]", picked !== null && "hidden")}>
+          <input ref={chatRef} data-hint="chat-input" value={draft} onChange={(event) => setDraft(event.target.value)} maxLength={200} aria-label={t("messages.placeholder")} placeholder={t("messages.placeholder")} autoComplete="off" className={cn(tour === 5 && "ring-4 ring-[#FFD84D]", "ml-[13px] h-full min-w-[100px] flex-1 border-0 bg-transparent text-[14px] text-black outline-none placeholder:text-[#CFCFCF]")} />
+          <button type="button" onClick={() => { setFrameNote(null); pullProgress.current(); if (dedicate) chooseMode(false); setCard(false); meTap.current = Date.now(); setPicked(meIndex); }} aria-label={t("bottle.gestures")} title={t("bottle.gestures")} className="ml-1 mr-1.5 h-[26px] w-[26px] shrink-0 rounded-full bg-contain bg-center bg-no-repeat active:brightness-75" style={{ backgroundImage: "url(/custom/orig/chat_btn_emoji.svg)" }} />
+          <button type="submit" data-hint="chat-send" disabled={!draft.trim()} aria-label={t("messages.send")} className="mr-2 h-[26px] w-[26px] shrink-0 rounded-full bg-contain bg-center bg-no-repeat active:brightness-75 disabled:opacity-40" style={{ backgroundImage: "url(/custom/orig/chat_btn_send.svg)" }} />
         </form>
       </div>
       {tour > 0 ? (
@@ -2868,28 +2897,30 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         </div>
       ) : null}
       {lock ? (() => {
+        // The original GiftLockedDialog: grey picture, why it is locked, a thin progress bar with "have/need" and two buttons.
         const have = lock.kind === "vip" ? 0 : Math.min(lock.total, progress[lock.kind as "kisses"] ?? 0);
-        const icon = lock.kind === "dj" ? "🎵" : lock.kind === "friends" ? "👥" : lock.kind === "gestures" ? "😊" : "💋";
-        const more = () => { setLock(null); if (lock.kind === "friends") openInvite(); else if (lock.kind === "vip") { setPayNote(false); setPanel("shop"); } else if (lock.kind === "kisses" || lock.kind === "dj") { setPicked(null); setCard(false); setTopPeriod("all"); setTopKind(lock.kind === "dj" ? "songs" : "kisses"); setPanel("top"); } else setPanel("rules"); };
+        const icon = lock.kind === "dj" ? "ic_top_dj_score" : lock.kind === "friends" ? "profile_icon_unlock" : lock.kind === "gestures" ? "token" : "ic_top_total_kisses";
+        const more = () => { setLock(null); if (lock.kind === "friends") openInvite(); else if (lock.kind === "vip") { setPayNote(false); setPanel("shop"); } else if (lock.kind === "kisses" || lock.kind === "dj" || lock.kind === "gestures") { setPicked(null); setCard(false); setTopPeriod("all"); setTopKind(lock.kind === "dj" ? "songs" : lock.kind === "gestures" ? "smiles" : "kisses"); setPanel("top"); } else setPanel("rules"); };
+        const text = lock.gesture && lock.kind === "kisses" ? t("bottle.lockGestureKiss") : lock.gesture && lock.kind === "vip" ? t("bottle.lockGestureVip") : t(`bottle.lockText_${lock.kind}` as "bottle.lockText_kisses");
         return (
-          <div className="absolute inset-0 z-[60] flex items-center justify-center bg-black/35 p-4" onClick={() => setLock(null)}>
-            <div role="dialog" aria-label={t(`bottle.lockTitle_${lock.kind}` as "bottle.lockTitle_kisses")} onClick={(event) => event.stopPropagation()} className="relative w-full max-w-[380px] animate-[bottle-pop_0.25s_ease-out] rounded-2xl bg-white px-5 pb-5 pt-4 text-center text-[#1F2937] shadow-2xl">
-              <button onClick={() => setLock(null)} aria-label={t("photos.close")} title={t("photos.close")} className="absolute -right-2 -top-2 flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#8CC63F] bg-white text-[#8CC63F] shadow"><X size={18} strokeWidth={3} /></button>
-              <p className="text-sm font-bold text-[#C4C9D0]">{t(`bottle.lockTitle_${lock.kind}` as "bottle.lockTitle_kisses")}</p>
-              <div className="mx-auto mt-3 flex h-20 w-20 items-center justify-center">{lock.gesture ? <img src={`/custom/anim/ges_${lock.gesture}.webp`} alt="" className="h-full w-full object-contain" /> : lock.gift ? <Gift id={lock.gift} className="h-full w-full" /> : null}</div>
-              <p className="mt-3 text-[15px] leading-snug">{t(`bottle.lockText_${lock.kind}` as "bottle.lockText_kisses")}</p>
+          <OrigPopup title={t(`bottle.lockTitle_${lock.kind}` as "bottle.lockTitle_kisses")} onClose={() => setLock(null)} buttons={<>
+            <OrigButton kind="cancel" onClick={() => setLock(null)}>{t("bottle.lockOk")}</OrigButton>
+            {lock.kind === "friends" ? <OrigButton kind="confirm" onClick={more}>{t("bottle.lockInvite")}</OrigButton> : <OrigButton kind="info" onClick={more}>{t("bottle.lockMore")}</OrigButton>}
+          </>}>
+            <div className="flex flex-col items-center">
+              <div className={cn("mb-[22px] mt-2 flex items-center justify-center grayscale", lock.gesture ? "mb-2.5 mt-0 h-[90px] w-[90px]" : "h-[60px] w-[60px]")}>{lock.gesture ? <img src={`/custom/anim/ges_${lock.gesture}.webp`} alt="" className="h-full w-full object-contain" /> : lock.gift ? <Gift id={lock.gift} className="h-full w-full" /> : null}</div>
+              <p className="whitespace-pre-line text-center text-[14px]">{text}</p>
               {lock.kind === "vip" ? null : (
                 <>
-                  <div className="mx-auto mt-3 h-2 w-[70%] overflow-hidden rounded-full bg-[#EEF0F3]"><span className="block h-full rounded-full bg-[linear-gradient(90deg,#FF6B81,#E8352B)] transition-[width]" style={{ width: `${Math.max(2, (have / Math.max(1, lock.total)) * 100)}%` }} /></div>
-                  <p className="mt-2 flex items-center justify-center gap-1.5 text-base"><span className="text-lg">{icon}</span><b className="tabular-nums">{have.toLocaleString("ru-RU")}</b><span className="tabular-nums text-[#6B7280]">/{lock.total.toLocaleString("ru-RU")}</span></p>
+                  <div className="mb-2.5 mt-[15px] w-[200px] rounded-[3px] bg-[#EBEBEB]"><div className="h-1.5 bg-[#9E9E9E] transition-[width]" style={{ width: `${Math.min(100, (have / Math.max(1, lock.total)) * 100)}%` }} /></div>
+                  <div className="mb-[5px] flex items-center text-[15px]">
+                    <span aria-hidden="true" className="mr-[3px] h-[19px] w-[25px] bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url(/custom/orig/${icon}.svg)` }} />
+                    <span><strong>{have.toLocaleString("ru-RU")}</strong>/{lock.total.toLocaleString("ru-RU")}</span>
+                  </div>
                 </>
               )}
-              <div className="mt-4 flex justify-center gap-3">
-                <button onClick={() => setLock(null)} className="h-10 min-w-[110px] rounded-lg border-2 border-[#8CC63F] px-4 text-sm font-semibold text-[#5B9A1F] hover:bg-[#F3FAE9]">{t("bottle.lockOk")}</button>
-                <button onClick={more} className="h-10 min-w-[110px] rounded-lg bg-[#2F80ED] px-4 text-sm font-semibold text-white hover:bg-[#2670D6]">{t(lock.kind === "vip" ? "bottle.lockVip" : "bottle.lockMore")}</button>
-              </div>
             </div>
-          </div>
+          </OrigPopup>
         );
       })() : null}
       {complimentIn ? (
