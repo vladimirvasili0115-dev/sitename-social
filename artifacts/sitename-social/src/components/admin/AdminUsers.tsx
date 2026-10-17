@@ -2,7 +2,7 @@
 import { VerifiedMark } from "@/components/ui/VerifiedMark";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { Award, BadgeCheck, Ban, ChevronDown, Coins, Crown, Gamepad2, Heart, ShieldCheck, ShieldOff, Trash2, Undo2 } from "lucide-react";
+import { Award, HeartOff, BadgeCheck, Ban, ChevronDown, Coins, Crown, Gamepad2, Heart, ShieldCheck, ShieldOff, Trash2, Undo2 } from "lucide-react";
 import { useSyncExternalStore } from "react";
 import { refreshVerified, verifiedStore } from "@/lib/verifiedSync";
 import { banUser, deleteUser, fetchAdminUsers, fetchUserDetail, grantCoins, grantHearts, setModerator, setVerified, vipAll, vipCount, gameState, gameGrant, gameFlags, type GameFlags, type GameState, type AdminUser, type UserDetail } from "@/lib/adminSync";
@@ -51,20 +51,20 @@ export function AdminUsers({ owner }: { owner: boolean }) {
     loadFlags((list ?? []).map((user) => user.id));
   }), [loadFlags]);
   // Bonus hearts, kisses and songs for one player, typed right under the row; a negative number takes away.
-  const [bonus, setBonus] = useState<Record<string, { hearts: string; kisses: string; songs: string; smiles: string }>>({});
+  const [bonus, setBonus] = useState<Record<string, { hearts: string; kisses: string; songs: string; smiles: string; price: string }>>({});
   const [bonusNote, setBonusNote] = useState<{ id: string; ok: boolean; max?: boolean } | null>(null);
   async function giveBonus(id: string) {
-    const draft = bonus[id] ?? { hearts: "", kisses: "", songs: "", smiles: "" };
-    const hearts = Math.trunc(Number(draft.hearts) || 0), kisses = Math.trunc(Number(draft.kisses) || 0), songs = Math.trunc(Number(draft.songs) || 0), smiles = Math.trunc(Number(draft.smiles) || 0);
-    if (!hearts && !kisses && !songs && !smiles) return;
+    const draft = bonus[id] ?? { hearts: "", kisses: "", songs: "", smiles: "", price: "" };
+    const hearts = Math.trunc(Number(draft.hearts) || 0), kisses = Math.trunc(Number(draft.kisses) || 0), songs = Math.trunc(Number(draft.songs) || 0), smiles = Math.trunc(Number(draft.smiles) || 0), price = Math.trunc(Number(draft.price) || 0);
+    if (!hearts && !kisses && !songs && !smiles && !price) return;
     // The server takes at most 100 000 000 at a time; say so instead of a bare "failed".
-    if ([hearts, kisses, songs, smiles].some((value) => Math.abs(value) > 100000000)) return setBonusNote({ id, ok: false, max: true });
+    if ([hearts, kisses, songs, smiles, price].some((value) => Math.abs(value) > 100000000)) return setBonusNote({ id, ok: false, max: true });
     setBusy(id);
-    const results = await Promise.all([hearts ? grantHearts(id, hearts) : 1, kisses ? gameGrant(id, "kisses", kisses) : 1, songs ? gameGrant(id, "dj", songs) : 1, smiles ? gameGrant(id, "smiles", smiles) : 1]);
+    const results = await Promise.all([hearts ? grantHearts(id, hearts) : 1, kisses ? gameGrant(id, "kisses", kisses) : 1, songs ? gameGrant(id, "dj", songs) : 1, smiles ? gameGrant(id, "smiles", smiles) : 1, price ? gameGrant(id, "price", price) : 1]);
     setBusy(null);
     const ok = results.every((value) => value !== null);
     setBonusNote({ id, ok });
-    if (ok) setBonus((cur) => ({ ...cur, [id]: { hearts: "", kisses: "", songs: "", smiles: "" } }));
+    if (ok) setBonus((cur) => ({ ...cur, [id]: { hearts: "", kisses: "", songs: "", smiles: "", price: "" } }));
     loadFlags([id]);
   }
   // VIP and TOP stay until they are taken back (about ten years).
@@ -137,6 +137,7 @@ export function AdminUsers({ owner }: { owner: boolean }) {
                     {owner ? <button disabled={locked} onClick={() => { setGrantKind("coins"); setCoinsFor(coinsFor === user.id && grantKind === "coins" ? null : user.id); setAmount("100"); }} className={action}><Coins size={14} />{t("admin.coins")}</button> : null}
                     <button disabled={locked} onClick={() => void toggleGame(user.id, "vip", Boolean(flags[user.id]?.vip))} className={cn(action, flags[user.id]?.vip ? "border-[#D97706] text-[#D97706]" : "")}><Crown size={14} />{t(flags[user.id]?.vip ? "admin.vipOff" : "admin.vipOn")}</button>
                     <button disabled={locked} onClick={() => void toggleGame(user.id, "top", Boolean(flags[user.id]?.top))} className={cn(action, flags[user.id]?.top ? "border-[#CA8A04] text-[#CA8A04]" : "")}><Award size={14} />{t(flags[user.id]?.top ? "admin.topOff" : "admin.topOn")}</button>
+                    <button disabled={locked} onClick={() => void run(user.id, async () => (await gameGrant(user.id, "admire_block", flags[user.id]?.block ? 0 : 1)) !== null)} className={cn(action, flags[user.id]?.block ? "border-danger text-danger" : "")}><HeartOff size={14} />{t(flags[user.id]?.block ? "admin.admireUnblock" : "admin.admireBlock")}</button>
                     <button disabled={locked} onClick={() => setGameFor(gameFor === user.id ? null : user.id)} aria-expanded={gameFor === user.id} className={action}><Gamepad2 size={14} />{t("admin.game")}</button>
                     {user.moderator ? null : user.banned
                       ? <button disabled={locked} onClick={() => void run(user.id, () => banUser(user.id, -1, ""))} className={action}><Undo2 size={14} />{t("settings.blkUnblock")}</button>
@@ -187,11 +188,11 @@ export function AdminUsers({ owner }: { owner: boolean }) {
                   ) : null}
                   <form onSubmit={(event) => { event.preventDefault(); void giveBonus(user.id); }} className="mt-3 flex flex-wrap items-center gap-2 rounded-xl bg-surface-2/60 px-2.5 py-2">
                     <span className="text-xs font-semibold">{t("admin.bonus")}</span>
-                    {([["hearts", "❤️", "#F4511E", flags[user.id]?.hearts], ["kisses", "💋", "#DB3100", flags[user.id]?.kisses], ["songs", "🎵", "#B45D8C", flags[user.id]?.songs], ["smiles", "😊", "#FC8300", flags[user.id]?.smiles]] as const).map(([key, icon, color, have]) => (
+                    {([["hearts", "❤️", "#F4511E", flags[user.id]?.hearts], ["kisses", "💋", "#DB3100", flags[user.id]?.kisses], ["songs", "🎵", "#B45D8C", flags[user.id]?.songs], ["smiles", "😊", "#FC8300", flags[user.id]?.smiles], ["price", "💘", "#D85723", flags[user.id]?.price]] as const).map(([key, icon, color, have]) => (
                       <label key={key} className="flex items-center gap-1" title={t(`admin.bonus_${key}` as TranslationKey)}>
                         <span aria-hidden="true">{icon}</span>
                         <span className="min-w-[2.5rem] text-[11px] font-semibold tabular-nums" style={{ color }}>{(have ?? 0).toLocaleString("ru-RU")}</span>
-                        <input type="number" step={1} min={-100000000} max={100000000} placeholder="+0" value={bonus[user.id]?.[key] ?? ""} onChange={(event) => setBonus((cur) => ({ ...cur, [user.id]: { ...(cur[user.id] ?? { hearts: "", kisses: "", songs: "", smiles: "" }), [key]: event.target.value } }))} aria-label={t(`admin.bonus_${key}` as TranslationKey)} className="h-8 w-20 rounded-lg border border-border bg-surface px-2 text-xs tabular-nums text-text outline-none focus:border-accent" />
+                        <input type="number" step={1} min={-100000000} max={100000000} placeholder="+0" value={bonus[user.id]?.[key] ?? ""} onChange={(event) => setBonus((cur) => ({ ...cur, [user.id]: { ...(cur[user.id] ?? { hearts: "", kisses: "", songs: "", smiles: "", price: "" }), [key]: event.target.value } }))} aria-label={t(`admin.bonus_${key}` as TranslationKey)} className="h-8 w-20 rounded-lg border border-border bg-surface px-2 text-xs tabular-nums text-text outline-none focus:border-accent" />
                       </label>
                     ))}
                     <button type="submit" disabled={locked} className="h-8 rounded-lg bg-accent px-3 text-[11px] font-semibold text-bg disabled:opacity-50">{t("admin.bonusGive")}</button>

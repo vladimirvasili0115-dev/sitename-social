@@ -1591,7 +1591,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       const target = player.me ? net?.me : player.id;
       if (!target) return;
       void bottleAdmire(target).then((left) => {
-        if (left === null || left < 0) return setCardNote(t("bottle.admireFail"));
+        if (left === null || left < 0) return setCardNote(t(left === -3 ? "bottle.admireBlocked" : "bottle.admireFail"));
         bumpStat("admire");
         heartsRef.current = left;
         setHearts(left);
@@ -1744,7 +1744,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
               <span className="sr-only">{t(`bottle.${key}` as "bottle.price")}</span>
             </div>
           );
-          const label = topIds.has(player.id) ? "label_top.svg" : seat?.pass || (player.me && vip) ? "label_vip.svg" : null;
+          const label = topIds.has(player.id) ? "label_top_vip.svg" : seat?.pass || (player.me && vip) ? "label_vip.svg" : null;
           return (
             <div className={cn("inset-0 flex items-center justify-center p-3", wide ? "absolute z-[45] bg-black/10" : "fixed z-[90] bg-black/50")} onClick={(event) => { event.stopPropagation(); setCard(false); }}>
               <div role="dialog" aria-modal="true" aria-label={`${player.name}, ${player.age}`} onClick={(event) => event.stopPropagation()} className={cn("relative shadow-[0_18px_50px_rgba(0,0,0,0.45)]", land ? "h-[400px] max-h-[80vh] max-w-[91%]" : "w-[400px] max-w-[80vw]")} style={{ borderRadius: 17, maxHeight: land ? undefined : "calc(94% - env(safe-area-inset-top))" }}>
@@ -1961,7 +1961,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 {dedicate && !player.me ? (chosen.includes(player.id)
                   ? <span className="absolute inset-0 z-10 flex items-center justify-center rounded-[14%] bg-[#8CC63F]/85 ring-[0.5cqmin] ring-[#B678E8]"><Check className="h-[45%] w-[45%] text-white drop-shadow" strokeWidth={4} /></span>
                   : <span className="absolute inset-0 z-10 flex items-center justify-center rounded-[14%] bg-black/25"><Plus className="h-[45%] w-[45%] text-white drop-shadow-[0_2px_3px_rgba(0,0,0,0.5)]" strokeWidth={3.5} /></span>) : null}
-                {topIds.has(player.id) ? <img src="/custom/profile/label_top.svg" alt="TOP" draggable={false} className="pointer-events-none absolute -left-[14%] top-[4%] z-[4] w-[52%] max-w-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]" /> : null}
+                {topIds.has(player.id) ? <img src="/custom/profile/label_top_vip.svg" alt="TOP" draggable={false} className="pointer-events-none absolute -left-[14%] top-[4%] z-[4] w-[52%] max-w-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]" /> : null}
                 {kisses[player.id] ? <LipsBadge count={kisses[player.id]} /> : null}
                 {(() => {
                   const mine = stickers[player.id] ?? [];
