@@ -1,0 +1,217 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #0B1215;
+  --surface: #121C21;
+  --surface-2: #1A272E;
+  --border: #22333B;
+  --text: #E6EEF0;
+  --text-muted: #8FA3AB;
+  --accent: #14B8A6;
+  --accent-2: #38BDF8;
+  --danger: #F43F5E;
+}
+
+:root { color-scheme: dark; }
+[data-theme="light"] {
+  color-scheme: light;
+  --bg: #F3F6F7;
+  --surface: #FFFFFF;
+  --surface-2: #EAF0F2;
+  --border: #D5DFE3;
+  --text: #0F1B20;
+  --text-muted: #5B6E76;
+  --accent: #0F766E;
+  --accent-2: #0284C7;
+  --danger: #E11D48;
+}
+
+* { box-sizing: border-box; }
+html { background: var(--bg); scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font-inter), var(--font-georgian), sans-serif; }
+button, input { font: inherit; }
+button { cursor: pointer; }
+::selection { background: var(--accent); color: var(--bg); }
+
+@keyframes bottle-drop {
+  from { transform: translateY(-110vh); opacity: 0.4; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@font-face {
+  font-family: "Lilita One";
+  src: url("/fonts/lilita-one.woff2") format("woff2");
+  font-display: block;
+}
+
+@keyframes medal-shine {
+  0%, 60% { background-position: 150% 0; }
+  100% { background-position: -50% 0; }
+}
+@keyframes bottle-pop {
+  from { transform: scale(0.85); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes spin-hint {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-1.2cqmin, -0.8cqmin); }
+}
+
+@keyframes gift-drop {
+  from { scale: 1.6; opacity: 0; }
+  to { scale: 1; opacity: 1; }
+}
+
+@keyframes pass-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 180, 0, 0.55); }
+  50% { box-shadow: 0 0 0 6px rgba(245, 180, 0, 0); }
+}
+
+@keyframes panel-drop {
+  0% { transform: translateY(-115vh) rotate(0deg); }
+  55% { transform: translateY(2.5%) rotate(0deg); }
+  70% { transform: translateY(-1%) rotate(-1.6deg); }
+  84% { transform: translateY(0.4%) rotate(0.9deg); }
+  100% { transform: translateY(0) rotate(0deg); }
+}
+@keyframes panel-up {
+  from { transform: translateY(0); opacity: 1; }
+  to { transform: translateY(-115vh); opacity: 0.6; }
+}
+@keyframes panel-fade {
+  from { background-color: rgba(0, 0, 0, 0); }
+  to { background-color: rgba(0, 0, 0, 0.35); }
+}
+
+@keyframes tube-grow {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+@keyframes tube-fill {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+@keyframes tube-life {
+  0% { opacity: 0; }
+  6%, 85% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes tube-heart {
+  0% { transform: translateX(0); opacity: 0; }
+  10%, 85% { opacity: 1; }
+  100% { transform: translateX(var(--len)); opacity: 0; }
+}
+@keyframes heart-burst {
+  0% { transform: translate(0, 0) scale(0.3); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) scale(1.1); opacity: 0; }
+}
+@keyframes heart-plus {
+  0% { transform: translateY(0) scale(0.5); opacity: 0; }
+  20% { transform: translateY(-2cqmin) scale(1.15); opacity: 1; }
+  75% { opacity: 1; }
+  100% { transform: translateY(-8cqmin) scale(1); opacity: 0; }
+}
+
+@keyframes eq-bar {
+  from { transform: scaleY(0.2); }
+  to { transform: scaleY(1); }
+}
+
+/* Fireworks over a photo when an expensive gift lands. */
+@keyframes fw-rocket {
+  0% { transform: translate(0, 0); opacity: 1; }
+  92% { opacity: 1; }
+  100% { transform: translate(var(--rx), var(--ry)); opacity: 0; }
+}
+@keyframes fw-flash {
+  0% { transform: scale(0.2); opacity: 0.95; }
+  100% { transform: scale(2.6); opacity: 0; }
+}
+@keyframes fw-spark {
+  0% { transform: translate(0, 0) scale(1.2); opacity: 1; }
+  65% { opacity: 1; }
+  100% { transform: translate(var(--dx), calc(var(--dy) + 3cqmin)) scale(0.3); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  [style*="fw-rocket"], [style*="fw-spark"], [style*="fw-flash"] { animation-duration: 1ms !important; }
+}
+
+/* Like the original: the bottle kicks back a little before it spins, the spinner's photo wobbles,
+   and a gift grows while it flies and shrinks back as it lands. */
+@keyframes bottle-kick {
+  0% { transform: rotate(0deg); }
+  35% { transform: rotate(-10deg); }
+  100% { transform: rotate(0deg); }
+}
+@keyframes seat-wobble {
+  0%, 100% { transform: rotate(0deg); }
+  30% { transform: rotate(-10deg); }
+  65% { transform: rotate(5deg); }
+}
+@keyframes gift-fly-scale {
+  0% { transform: scale(0.8); }
+  10%, 90% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+/* A heart flies from the table to the balance when hearts are won. */
+@keyframes heart-to-balance {
+  0% { transform: translate(0, 0) scale(0.6); opacity: 0; }
+  12% { transform: translate(0, -18px) scale(1.15); opacity: 1; }
+  85% { opacity: 1; }
+  100% { transform: translate(var(--hx), var(--hy)) scale(0.7); opacity: 0; }
+}
+@keyframes balance-pulse {
+  0%, 100% { transform: scale(1); }
+  40% { transform: scale(1.25); }
+}
+
+/* Boosters: a burning kiss and a slap over the pair in the middle of the table. */
+@keyframes boost-pop {
+  0% { transform: translate(-50%, -50%) scale(0.2); opacity: 0; }
+  20% { transform: translate(-50%, -50%) scale(1.25); opacity: 1; }
+  35% { transform: translate(-50%, -50%) scale(1); }
+  80% { opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1.1); opacity: 0; }
+}
+@keyframes boost-flame {
+  0% { transform: translate(0, 0) scale(0.6); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translate(var(--fx), -16cqmin) scale(1.3); opacity: 0; }
+}
+@keyframes boost-slap {
+  0% { transform: translate(var(--sx), -50%) rotate(var(--sr)) scale(0.8); opacity: 0; }
+  15% { opacity: 1; }
+  45% { transform: translate(-50%, -50%) rotate(0deg) scale(1.3); opacity: 1; }
+  55% { transform: translate(-50%, -50%) rotate(-8deg) scale(1.15); }
+  85% { opacity: 1; }
+  100% { transform: translate(-50%, -50%) rotate(0deg) scale(1.1); opacity: 0; }
+}
+@keyframes boost-bang {
+  0%, 40% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+  50% { transform: translate(-50%, -50%) scale(1.4); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1.8); opacity: 0; }
+}
+
+/* Table effect: things fall over the whole table, swaying a little. */
+@keyframes vfx-fall {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 0; }
+  8% { opacity: 1; }
+  50% { transform: translate(var(--sway), 55cqmin) rotate(160deg); }
+  90% { opacity: 1; }
+  100% { transform: translate(0, 112cqmin) rotate(320deg); opacity: 0; }
+}
+
+/* Interactive hints: rings spread from the tapped spot and the hand taps. */
+@keyframes hint-ripple {
+  0% { transform: scale(0); opacity: 1; }
+  60%, 100% { transform: scale(8.8); opacity: 0; }
+}
+@keyframes hint-tap {
+  0%, 55%, 100% { transform: translate(0, 0) rotate(0deg); }
+  70% { transform: translate(-4px, -6px) rotate(-4deg) scale(0.95); }
+  85% { transform: translate(0, 0) rotate(0deg); }
+}
