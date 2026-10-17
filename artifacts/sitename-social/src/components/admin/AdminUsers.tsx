@@ -2,10 +2,10 @@
 import { VerifiedMark } from "@/components/ui/VerifiedMark";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { BadgeCheck, Ban, ChevronDown, Coins, Heart, ShieldCheck, ShieldOff, Trash2, Undo2 } from "lucide-react";
+import { BadgeCheck, Ban, ChevronDown, Coins, Crown, Heart, ShieldCheck, ShieldOff, Trash2, Undo2 } from "lucide-react";
 import { useSyncExternalStore } from "react";
 import { refreshVerified, verifiedStore } from "@/lib/verifiedSync";
-import { banUser, deleteUser, fetchAdminUsers, fetchUserDetail, grantCoins, grantHearts, setModerator, setVerified, type AdminUser, type UserDetail } from "@/lib/adminSync";
+import { banUser, deleteUser, fetchAdminUsers, fetchUserDetail, grantCoins, grantHearts, setModerator, setVerified, vipAll, vipCount, type AdminUser, type UserDetail } from "@/lib/adminSync";
 import type { TranslationKey } from "@/i18n/LanguageProvider";
 import { initialsAvatar } from "@/lib/avatar";
 import { formatDay } from "@/lib/datetime";
@@ -81,6 +81,7 @@ export function AdminUsers({ owner }: { owner: boolean }) {
 
   return (
     <>
+      <VipAllCard />
       <SearchInput value={query} onChange={setQuery} label={t(owner ? "admin.searchUsers" : "admin.searchUsersMod")} className="mb-4" />
       {failed ? <p role="alert" className="mb-3 rounded-xl border border-danger px-4 py-2.5 text-sm text-danger">{t("report.failed")}</p> : null}
       {users === null ? null : users.length ? (
@@ -170,5 +171,43 @@ export function AdminUsers({ owner }: { owner: boolean }) {
         </ul>
       ) : <Card className="p-8 text-center text-sm text-muted">{t("friends.noResults")}</Card>}
     </>
+  );
+}
+
+// One click gives every player VIP for the chosen number of days (the owner and moderators can do it).
+function VipAllCard() {
+  const { t } = useTranslation();
+  const [days, setDays] = useState(7);
+  const [sure, setSure] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
+  const [count, setCount] = useState<{ vip: number; total: number } | null>(null);
+  const loadCount = useCallback(() => void vipCount().then((value) => { if (value && typeof value === "object") setCount(value); }), []);
+  useEffect(() => { loadCount(); }, [loadCount]);
+  async function give() {
+    if (!sure) return setSure(true);
+    setSure(false);
+    setBusy(true);
+    const done = await vipAll(days);
+    setBusy(false);
+    setNote(typeof done === "number" ? { ok: true, text: t("admin.vipDone").replace("{n}", String(done)) } : { ok: false, text: t("admin.vipFail") });
+    loadCount();
+  }
+  return (
+    <Card className="mb-4 p-4">
+      <div className="flex items-start gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#FEF3C7] text-[#D97706]"><Crown size={20} /></span>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold">{t("admin.vipAllTitle")}</p>
+          <p className="mt-0.5 text-xs leading-5 text-muted">{t("admin.vipAllText")}</p>
+          {count ? <p className="mt-1 text-xs text-muted">{t("admin.vipNow").replace("{vip}", String(count.vip)).replace("{total}", String(count.total))}</p> : null}
+        </div>
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        {[1, 7, 30, 365].map((n) => <button key={n} type="button" aria-pressed={days === n} onClick={() => { setDays(n); setSure(false); }} className={cn("h-9 rounded-full border px-3.5 text-xs font-semibold", days === n ? "border-[#D97706] bg-surface-2 text-[#D97706]" : "border-border text-muted hover:text-text")}>{t("admin.vipDays").replace("{n}", String(n))}</button>)}
+        <button type="button" disabled={busy} onClick={() => void give()} className={cn("ml-auto inline-flex h-9 items-center gap-1.5 rounded-xl px-3.5 text-xs font-semibold text-white disabled:opacity-50", sure ? "bg-danger" : "bg-[#D97706] hover:brightness-110")}><Crown size={14} />{sure ? t("admin.vipSure").replace("{n}", String(days)) : t("admin.vipGive")}</button>
+      </div>
+      {note ? <p role="status" className={cn("mt-2 text-xs font-semibold", note.ok ? "text-accent" : "text-danger")}>{note.text}</p> : null}
+    </Card>
   );
 }

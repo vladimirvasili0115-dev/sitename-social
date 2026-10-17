@@ -31,6 +31,9 @@ export async function fetchAdminUsers(search: string): Promise<AdminUser[] | nul
 export async function fetchIsOwner(): Promise<boolean> {
   return (await call<boolean>("is_owner")) === true;
 }
+// VIP for every player at once (owner and moderators); days are added on top of any VIP someone already has.
+export const vipAll = (days: number) => call<number>("admin_vip_all", { p_days: days });
+export const vipCount = () => call<{ vip: number; total: number }>("admin_vip_count");
 export const setModerator = async (id: string, enabled: boolean) => (await call("admin_set_moderator", { target: id, enabled })) !== null;
 export async function grantCoins(id: string, amount: number): Promise<number | null> {
   const total = await call<number>("admin_grant_coins", { target: id, amount });
