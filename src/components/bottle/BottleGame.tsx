@@ -309,7 +309,6 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // Gifts that just arrived lie scattered over the photo for a while (PILE_MS), then fade away.
   const [piles, setPiles] = useState<Record<string, { key: number; gift: string; x: number; y: number; r: number; s: number; at: number }[]>>({});
   const [pileNow, setPileNow] = useState(0);
-  const pileKey = useRef(1);
   const hasPiles = Object.values(piles).some((list) => list.length > 0);
   useEffect(() => {
     if (!hasPiles) return;
@@ -320,9 +319,6 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     }, 1000);
     return () => window.clearInterval(timer);
   }, [hasPiles]);
-  const addPile = useCallback((id: string, gift: string) => {
-    setPiles((value) => ({ ...value, [id]: [...(value[id] ?? []), { key: pileKey.current++, gift, x: 4 + Math.random() * 62, y: 4 + Math.random() * 62, r: Math.round(Math.random() * 50 - 25), s: 30 + Math.random() * 16, at: Date.now() }].slice(-30) }));
-  }, []);
   const [lines, setLines] = useState<Line[]>([{ id: 1, from: "b3", text: smallTalk[0] }, { id: 2, from: "b6", to: "b1" }]);
   const [draft, setDraft] = useState("");
   // Price of a gift by its id (used by the "send it back" button in the chat).
@@ -361,7 +357,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // "+" mode: choose several receivers on the table, then every gift goes to all of them.
   const [chosen, setChosen] = useState<string[]>([]);
   const [songMany, setSongMany] = useState<number[]>([]);
-  const [flying, setFlying] = useState<{ key: number; gift: string; from: number; to: number; moved: boolean; ms: number }[]>([]);
+  const [flying, setFlying] = useState<{ key: number; gift: string; from: number; to: number; moved: boolean; ms: number; corner?: boolean }[]>([]);
   // A drink landed: the receiver gets a "+1 heart" burst.
   const [bursts, setBursts] = useState<{ key: number; to: number; amount?: number }[]>([]);
   // Expensive gifts give the receiver a share of the price (the server keeps the numbers in bottle_config).
@@ -1518,7 +1514,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     // Drinks fly like every other gift (one by one); on landing the receiver gets the "+1 heart" burst.
     const pour = isDrink(gift) && index !== meIndex;
     {
-      setFlying((list) => [...list, { key, gift, from: meIndex, to: index, moved: false, ms }]);
+      setFlying((list) => [...list, { key, gift, from: meIndex, to: index, moved: false, ms, corner: !wornGift(landed(gift)) }]);
       window.setTimeout(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))), 40);
     }
     window.setTimeout(() => {
@@ -1527,7 +1523,6 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       if (pour) heartBurst(key, index);
       fireworks(key, index, price, meIndex);
       setStickers((value) => ({ ...value, [player.id]: [...(value[player.id] ?? []), landed(gift)].slice(-6) }));
-      if (!wornGift(landed(gift))) addPile(player.id, landed(gift));
       say({ from: "me", to: player.id, gift });
     }, ms + 100);
     setSent((value) => ({ ...value, [player.id]: (value[player.id] ?? 0) + 1 }));
@@ -1545,7 +1540,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     const pour = isDrink(gift) && fromAt >= 0 && fromAt !== toAt;
     playGiftSound(gift, "send");
     {
-      setFlying((list) => [...list, { key, gift, from: fromAt >= 0 ? fromAt : toAt, to: toAt, moved: false, ms }]);
+      setFlying((list) => [...list, { key, gift, from: fromAt >= 0 ? fromAt : toAt, to: toAt, moved: false, ms, corner: !wornGift(landed(gift)) }]);
       window.setTimeout(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))), 40);
     }
     window.setTimeout(() => {
@@ -1554,7 +1549,6 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       if (pour) heartBurst(key, toAt);
       fireworks(key, toAt, priceOf(gift), fromAt);
       setStickers((value) => ({ ...value, [toId]: [...(value[toId] ?? []), landed(gift)].slice(-6) }));
-      if (!wornGift(landed(gift))) addPile(toId, landed(gift));
       say({ from: fromId, to: toId, gift });
     }, ms + 100);
   };
@@ -1923,13 +1917,13 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   const ears = [...mine].reverse().find((gift) => placeOf(gift) === "ears");
                   const face = mine.length && placeOf(mine[mine.length - 1]) === "face" ? mine[mine.length - 1] : null;
                   const head = [...mine].reverse().find((gift) => placeOf(gift) === "head");
-                  const rest = mine.filter((gift) => placeOf(gift) === "body").slice(-2).reverse();
+                  const rest = mine.filter((gift) => placeOf(gift) === "body").slice(-1);
                   return <>
                     {(piles[player.id] ?? []).map((item) => <span key={item.key} className="pointer-events-none absolute z-[2] animate-[gift-drop_0.35s_ease-out] transition-opacity duration-[2000ms]" style={{ left: `${item.x}%`, top: `${item.y}%`, width: `${item.s}%`, height: `${item.s}%`, transform: `rotate(${item.r}deg)`, opacity: pileNow - item.at > PILE_MS - 3000 ? 0 : 1 }}><Gift anim id={item.gift} className="h-full w-full drop-shadow-[0_2px_2px_rgba(0,0,0,0.35)]" /></span>)}
                     {face ? <Gift id={face} className="absolute left-[8%] top-[10%] z-[2] h-[84%] w-[84%] animate-[gift-drop_0.35s_ease-out]" /> : null}
                     {ears ? <Gift anim id={ears} className="pointer-events-none absolute -left-[22%] -top-[14%] z-[2] h-[44%] w-[80%] -rotate-45 animate-[gift-drop_0.35s_ease-out] drop-shadow" /> : null}
                     {head ? <Gift anim id={head} className="pointer-events-none absolute -left-[16%] -top-[16%] z-[2] h-[56%] w-[56%] -rotate-45 animate-[gift-drop_0.35s_ease-out] drop-shadow" /> : null}
-                    {rest.map((gift, position) => <Gift anim key={`${gift}-${position}`} id={gift} className={cn("absolute -bottom-[1.6cqmin] h-[48%] w-[48%] drop-shadow", position ? "-left-[1.6cqmin]" : "-right-[1.6cqmin]")} />)}
+                    {rest.map((gift) => <Gift anim key={`${gift}-${mine.length}`} id={gift} className="absolute -bottom-[1.6cqmin] -right-[1.6cqmin] z-[2] h-[48%] w-[48%] animate-[gift-drop_0.35s_ease-out] drop-shadow" />)}
                   </>;
                 })()}
               </button>
@@ -1962,7 +1956,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         {shows.map((item) => <Fireworks key={`fw-${item.key}`} at={seats[item.to]} level={item.level} seed={item.key} />)}
         {tableVfx ? <TableShower key={tableVfx.key} emoji={tableVfx.emoji} seed={tableVfx.key % 1000} /> : null}
         {boostFx ? <BoostFx key={boostFx.key} kind={boostFx.kind} fromLeft={boostFx.fromLeft} x={CENTER_X} y={STAGE_Y} /> : null}
-        {flying.map((item) => <div key={item.key} className="pointer-events-none absolute z-40 h-[11cqmin] w-[11cqmin] -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_0_10px_rgba(255,240,150,0.95)] transition-[left,top] ease-in-out" style={{ transitionDuration: `${item.ms}ms`, left: `${seats[item.moved ? item.to : item.from][0]}%`, top: `${seats[item.moved ? item.to : item.from][1]}%` }}><span className="block h-full w-full" style={{ animation: `gift-fly-scale ${item.ms}ms ease-in-out both` }}><Gift anim id={item.gift} className="h-full w-full" /></span></div>)}
+        {flying.map((item) => <div key={item.key} className="pointer-events-none absolute z-40 h-[11cqmin] w-[11cqmin] -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_0_10px_rgba(255,240,150,0.95)] transition-[left,top] ease-in-out" style={{ transitionDuration: `${item.ms}ms`, left: item.moved && item.corner ? `calc(${seats[item.to][0]}% + 5.6cqmin)` : `${seats[item.moved ? item.to : item.from][0]}%`, top: item.moved && item.corner ? `calc(${seats[item.to][1]}% + 4.2cqmin)` : `${seats[item.moved ? item.to : item.from][1]}%` }}><span className="block h-full w-full" style={{ animation: `${item.corner ? "gift-fly-corner" : "gift-fly-scale"} ${item.ms}ms ease-in-out both` }}><Gift anim id={item.gift} className="h-full w-full" /></span></div>)}
 
         {staged && target !== null ? (
           <>
