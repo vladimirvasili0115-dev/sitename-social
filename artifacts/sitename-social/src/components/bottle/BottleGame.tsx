@@ -1695,7 +1695,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
               ? { key: "music", label: t("bottle.statSongs"), bg: "rgb(177,89,137)", icon: "act_music.svg", size: !small ? "28px 28px" : "26px 26px", go: () => { setCard(false); openSong(meIndex); } }
               : { key: "gift", label: t("gifts.send"), bg: "rgb(249,116,43)", icon: "act_gift.svg", size: !small ? "30px 28px" : "28px 26px", go: () => setCard(false) },
             { key: "ach", label: t("bottle.achievements"), bg: "rgb(252,165,41)", icon: "act_ach.svg", size: !small ? "30px 30px" : "28px 28px", go: () => { setCard(false); if (player.me) setPanel("achievements"); else if (profileHref) window.open(profileHref, "_blank"); } },
-            ...(player.me ? [] : [{ key: "dm", label: t("bottle.write"), bg: "rgb(89,175,225)", icon: "act_msg.svg", size: !small ? "30px 22px" : "28px 21px", go: () => openDm(player) }]),
+            ...(player.me ? [] : [{ key: "chat", label: t("bottle.chatMention"), bg: "rgb(89,175,225)", icon: "act_msg.svg", size: !small ? "30px 22px" : "28px 21px", go: () => { setDraft(`${player.name}, `); setCard(false); setPicked(null); window.setTimeout(() => { chatRef.current?.focus(); const end = chatRef.current?.value.length ?? 0; chatRef.current?.setSelectionRange(end, end); }, 60); } }]),
           ];
           const info = prof && prof.id === player.id ? prof.data : null;
           const harem = online ? info?.harem ?? 0 : Object.entries(suitors).filter(([target, item]) => item.by === (player.me ? "me" : player.id) && target !== player.id).reduce((sum, [, item]) => sum + item.amount, 0);
@@ -1743,7 +1743,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                       <div className="flex flex-col items-start">
                         {statRow("statKisses", "kiss.svg", "rgb(219,49,0)", stats[0].value, info?.kisses_rank)}
                         {statRow("statSongs", "dj.svg", "rgb(180,93,140)", stats[1].value, info?.songs_rank)}
-                        <div className={cn("flex flex-col overflow-hidden transition-all duration-[250ms] ease-linear", statsOpen ? "-mt-[10px] h-[64px]" : "mt-0 h-0")}>
+                        <div className={cn("flex flex-col overflow-hidden transition-all duration-[250ms] ease-linear", !statsOpen ? "mt-0 h-0" : big ? "-mt-[10px] h-[64px]" : "h-[42px]")}>
                           {statRow("price", "price.svg", "rgb(216,87,35)", suitor ? suitor.amount : 0, info?.price_rank)}
                           {statRow("harem", "harem.svg", "rgb(173,23,0)", harem, info?.harem_rank)}
                         </div>
@@ -1774,6 +1774,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                       </button>
                     ))}
                   </div>
+                  {player.me ? null : <button onClick={() => openDm(player)} className="mt-[10px] flex h-9 w-full shrink-0 items-center justify-center gap-2 rounded-full border border-[#59AFE1] text-[14px] font-semibold text-[#2D8FCC] hover:bg-[#EEF7FD] active:brightness-90"><Mail size={17} strokeWidth={2.2} />{t("bottle.privateMsg")}</button>}
                 </div>
                 </div>
               </div>
