@@ -252,7 +252,7 @@ function Gift({ id, className, anim }: { id: string; className?: string; anim?: 
   // Animated version (public/custom/anim) where the gift sits on the photo or flies.
   const custom = (anim && customFile(art, `anim/${name}`)) || customFile(art, `gifts/${name}`);
   if (custom) return <img src={custom} alt="" aria-hidden="true" draggable={false} className={cn("select-none object-contain drop-shadow-[0_2px_2px_rgba(60,25,0,0.3)]", className)} />;
-  if (id.startsWith("song:")) id = id === "song:video" ? "e:🎬" : "e:🎵";
+  if (id.startsWith("song:")) return <img src={`/custom/orig/${id === "song:video" ? "audio_video_icon" : "audio_music_icon"}.svg`} alt="" aria-hidden="true" draggable={false} className={cn("select-none object-contain", className)} />;
   if (giftEmoji[id]) id = `e:${giftEmoji[id]}`;
   if (!id.startsWith("e:")) return <GiftArt id={id as GiftId} className={className} />;
   return <img src={giftSrc(id.slice(2))} alt="" aria-hidden="true" draggable={false} className={cn("select-none object-contain drop-shadow-[0_2px_2px_rgba(60,25,0,0.3)]", className)} />;
@@ -1891,7 +1891,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
               <div role="dialog" aria-modal="true" aria-label={`${player.name}, ${player.age}`} onClick={(event) => event.stopPropagation()} className={cn("relative shadow-[0_18px_50px_rgba(0,0,0,0.45)]", land ? "h-[400px] max-h-[80vh] max-w-[91%]" : "w-[400px] max-w-[80vw]")} style={{ borderRadius: 17, maxHeight: land ? undefined : "calc(94% - env(safe-area-inset-top))" }}>
                 <button onClick={() => setCard(false)} aria-label={t("photos.close")} title={t("photos.close")} className="absolute -right-3 -top-3 z-20 flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#8DC63F] bg-white text-[#8DC63F] shadow hover:bg-[#F0FBEA]"><X size={19} strokeWidth={3} /></button>
                 {cardBack.length ? <button onClick={cardGoBack} aria-label={t("bottle.back")} title={t("bottle.back")} className="absolute -left-3 -top-3 z-20 flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#8DC63F] bg-white text-[#8DC63F] shadow hover:bg-[#F0FBEA]"><ChevronLeft size={22} strokeWidth={3} /></button> : null}
-                {labels.map((label, n) => <span key={label} aria-hidden="true" className="absolute -left-[13px] z-10 h-[30px] w-[45px] bg-contain bg-no-repeat" style={{ top: 15 + n * 32, backgroundImage: `url(${P}${label})` }} />)}
+                {labels.map((label, n) => { const top = label.includes("top"); return <span key={label} aria-hidden="true" className={cn("absolute z-10 bg-contain bg-no-repeat", top ? "-left-[21px] h-[48px] w-[72px]" : "-left-[13px] h-[30px] w-[45px]")} style={{ top: 15 + labels.slice(0, n).reduce((sum, item) => sum + (item.includes("top") ? 50 : 32), 0), backgroundImage: `url(${P}${label})` }} />; })}
                 <div className={cn("isolate flex h-full overflow-hidden rounded-[17px] bg-white", land ? "flex-row" : "max-h-[inherit] flex-col")}>
                 <div className={cn("relative shrink-0 overflow-hidden bg-[#F7F5F6]", land ? "aspect-square h-full" : "aspect-square max-h-[38dvh] w-full")}>
                   <img src={player.avatar} alt="" className="h-full w-full object-cover object-top" />
