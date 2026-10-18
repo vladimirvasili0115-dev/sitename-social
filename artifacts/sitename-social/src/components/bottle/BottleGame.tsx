@@ -1777,6 +1777,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     return true;
   }
   function giveMany(targets: number[], gift: string, price: number, need?: number) {
+    // A song with nobody chosen goes on for yourself only (no receiver, the chat says "for themselves").
+    if (!targets.length && gift.startsWith("song:")) { giveGift(meIndex, gift, price, need); setSongMany([]); return false; }
     if (!targets.length) { setGiftNote(t("bottle.pickReceivers")); return false; }
     if (gift.startsWith("song:")) { giveGift(targets[0], gift, price, need); setSongMany(targets); return false; }
     let sent = false;
@@ -2170,7 +2172,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           return (
             <div key={`name-${player.id}`} aria-hidden="true" className={cn("pointer-events-none absolute z-[31] -translate-x-1/2 -translate-y-1/2 transition-[left,top] duration-[1100ms] ease-in-out motion-reduce:duration-0", wide ? "w-[18.5cqmin]" : "w-[17.5cqmin]")} style={staged && active ? { left: `calc(${CENTER_X}% ${index === turn ? "-" : "+"} 12.5cqmin)`, top: `${STAGE_Y}%` } : { left: `${seats[index][0]}%`, top: `${seats[index][1]}%` }}>
               <div className="aspect-square w-full" />
-              <p className={cn("relative left-1/2 w-max max-w-[26cqmin] -translate-x-1/2 truncate px-[0.5cqmin] text-center text-[2.4cqmin] font-semibold leading-snug [text-shadow:0_1px_2px_rgba(0,0,0,0.8)]", framed ? "mt-[1.4cqmin]" : "mt-px", isAdminPlayer(player) ? "text-[#FFD54A]" : "text-white")}>{isAdminPlayer(player) ? "👑 " : ""}{player.me ? t("common.you") : player.name}{!player.me && nameSuffix(player) ? ` [${nameSuffix(player)}]` : ""}, {player.age}</p>
+              <p onClick={player.me ? undefined : (event) => { event.stopPropagation(); setDraft((value) => (value.startsWith(`${player.name}, `) ? value : `${player.name}, ${value}`)); setCard(false); setPicked(null); if (dedicate) chooseMode(false); window.setTimeout(() => chatRef.current?.focus(), 50); }} title={player.me ? undefined : t("bottle.chatMention")} className={cn("relative left-1/2 w-max max-w-[26cqmin] -translate-x-1/2 truncate px-[0.5cqmin] text-center text-[2.4cqmin] font-semibold leading-snug [text-shadow:0_1px_2px_rgba(0,0,0,0.8)]", !player.me && "pointer-events-auto cursor-pointer hover:underline", framed ? "mt-[1.4cqmin]" : "mt-px", isAdminPlayer(player) ? "text-[#FFD54A]" : "text-white")}>{isAdminPlayer(player) ? "👑 " : ""}{player.me ? t("common.you") : player.name}{!player.me && nameSuffix(player) ? ` [${nameSuffix(player)}]` : ""}, {player.age}</p>
             </div>
           );
         })}
@@ -3030,7 +3032,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 {photo(from)}
                 {ic("chat_icon_music", 17, 18, "ml-2.5")}
                 <span className="min-w-0 truncate px-2 text-[#424242]">{song.title}</span>
-                {to ? <>{arrows}{photo(to)}</> : null}
+                {to && !(to.me && from.me) ? <>{arrows}{photo(to)}</> : <span className="shrink-0 pr-1 text-[12px] font-semibold text-[#9E9E9E]">{t("bottle.songSelf")}</span>}
               </div>
             ); }
             if (line.gift && receivers.length) return (
