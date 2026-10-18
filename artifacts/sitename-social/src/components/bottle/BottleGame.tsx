@@ -294,8 +294,8 @@ const SPIN_SECONDS = 8;
 const PILE_MS = 45000;
 const ANSWER_SECONDS = 9;
 const packs: { hearts: number; price: number; bonus?: number; tag?: "best" | "hit"; art: string }[] = [
-  { hearts: 6750, price: 5000, bonus: 35, tag: "best", art: "🛒" }, { hearts: 1350, price: 1000, bonus: 35, art: "🧰" }, { hearts: 650, price: 500, bonus: 30, art: "🛢️" },
-  { hearts: 240, price: 200, bonus: 20, tag: "hit", art: "🍯" }, { hearts: 110, price: 100, bonus: 10, art: "👝" }, { hearts: 50, price: 50, art: "🎁" }, { hearts: 10, price: 10, art: "💕" },
+  { hearts: 7500, price: 5000, bonus: 35, tag: "best", art: "🛒" }, { hearts: 1500, price: 1000, bonus: 35, art: "🧰" }, { hearts: 720, price: 500, bonus: 30, art: "🛢️" },
+  { hearts: 265, price: 200, bonus: 20, tag: "hit", art: "🍯" }, { hearts: 120, price: 100, bonus: 10, art: "👝" }, { hearts: 55, price: 50, art: "🎁" }, { hearts: 11, price: 10, art: "💕" },
 ];
 const tool = "flex h-[min(50px,8cqmin)] w-[min(50px,8cqmin)] shrink-0 items-center justify-center rounded-full bg-[#E3893A]/85 text-white shadow-[0_2px_4px_rgba(90,40,0,0.25)] hover:bg-[#EE9545] [&_svg]:stroke-[2.4]";
 function youtubeId(value: string) {
@@ -2120,7 +2120,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         {shows.map((item) => <Fireworks key={`fw-${item.key}`} at={seats[item.to]} level={item.level} seed={item.key} />)}
         {tableVfx ? <TableShower key={tableVfx.key} emoji={tableVfx.emoji} seed={tableVfx.key % 1000} /> : null}
         {boostFx ? <BoostFx key={boostFx.key} kind={boostFx.kind} fromLeft={boostFx.fromLeft} x={CENTER_X} y={STAGE_Y} /> : null}
-        {flying.map((item) => <div key={item.key} className="pointer-events-none absolute z-40 -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_0_10px_rgba(255,240,150,0.95)] transition-[left,top] ease-in-out" style={{ width: `${item.base}cqmin`, height: `${item.base}cqmin`, transitionDuration: `${item.ms}ms`, left: item.moved ? `calc(${seatLeft(item.to)} + ${item.tx}cqmin)` : seatLeft(item.from), top: item.moved ? `calc(${seatTop(item.to)} + ${item.ty}cqmin)` : seatTop(item.from) }}><span className="block h-full w-full" style={{ animation: `${SPIN_FLIGHT.test(item.gift) ? "gift-fly-spin" : "gift-fly-to"} ${item.ms}ms ease-in-out both`, ["--end" as string]: item.end }}>{item.gift.startsWith("c:") && giftGroups[item.gift.slice(2)] && item.gift !== "c:wholeegg" ? <GiftCycle names={giftGroups[item.gift.slice(2)].map((name) => `c:${name}`)} className="h-full w-full" /> : <Gift anim id={item.gift} className="h-full w-full" />}</span></div>)}
+        {flying.map((item) => <div key={item.key} className="pointer-events-none absolute z-40 -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_0_10px_rgba(255,240,150,0.95)] transition-[left,top] ease-in-out" style={{ width: `${item.base}cqmin`, height: `${item.base}cqmin`, transitionDuration: `${item.ms}ms`, left: item.moved ? `calc(${seatLeft(item.to)} + ${item.tx}cqmin)` : seatLeft(item.from), top: item.moved ? `calc(${seatTop(item.to)} + ${item.ty}cqmin)` : seatTop(item.from) }}><span className="block h-full w-full" style={{ animation: `gift-fly-to ${item.ms}ms ease-in-out both`, ["--end" as string]: item.end }}><span className="block h-full w-full" style={SPIN_FLIGHT.test(item.gift) ? { animation: `gift-turn ${item.ms}ms linear both` } : undefined}>{item.gift.startsWith("c:") && giftGroups[item.gift.slice(2)] && item.gift !== "c:wholeegg" ? <GiftCycle names={giftGroups[item.gift.slice(2)].map((name) => `c:${name}`)} className="h-full w-full" /> : <Gift anim id={item.gift} className="h-full w-full" />}</span></span></div>)}
 
         {staged && target !== null ? (
           <>

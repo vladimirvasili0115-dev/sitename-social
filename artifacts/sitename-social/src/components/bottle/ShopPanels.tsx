@@ -12,8 +12,8 @@ const Pic = ({ e, className }: { e: string; className?: string }) => <img src={e
 const H = ({ size = 13 }: { size?: number }) => <Heart size={size} fill="#F2343F" stroke="none" className="inline shrink-0 align-[-2px]" />;
 
 export const shopPacks: { hearts: number; price: number; bonus?: number; tag?: "best" | "hit"; art: string }[] = [
-  { hearts: 6750, price: 5000, bonus: 35, tag: "best", art: "💎" }, { hearts: 1350, price: 1000, bonus: 35, art: "💰" }, { hearts: 650, price: 500, bonus: 30, art: "🪙" },
-  { hearts: 240, price: 200, bonus: 20, tag: "hit", art: "🍯" }, { hearts: 110, price: 100, bonus: 10, art: "👝" }, { hearts: 50, price: 50, art: "🎁" }, { hearts: 10, price: 10, art: "💕" },
+  { hearts: 7500, price: 5000, bonus: 35, tag: "best", art: "💎" }, { hearts: 1500, price: 1000, bonus: 35, art: "💰" }, { hearts: 720, price: 500, bonus: 30, art: "🪙" },
+  { hearts: 265, price: 200, bonus: 20, tag: "hit", art: "🍯" }, { hearts: 120, price: 100, bonus: 10, art: "👝" }, { hearts: 55, price: 50, art: "🎁" }, { hearts: 11, price: 10, art: "💕" },
 ];
 // Active play rewards: minutes of play today → hearts.
 export const activeLevels: [number, number][] = [[30, 5], [60, 10], [120, 20]];

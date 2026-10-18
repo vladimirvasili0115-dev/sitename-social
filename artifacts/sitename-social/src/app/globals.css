@@ -247,3 +247,6 @@ button { cursor: pointer; }
   85% { transform: scale(1.2) rotate(306deg); }
   100% { transform: scale(var(--end, 1)) rotate(360deg); }
 }
+
+/* One even full turn from the sender to the receiver. */
+@keyframes gift-turn { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
