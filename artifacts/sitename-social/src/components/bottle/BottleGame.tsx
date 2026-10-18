@@ -116,8 +116,7 @@ function planLanding(gift: string) {
   const scatter = SCATTER.has(gift) ? giftGroups[gift.slice(2)].map((item) => `c:${item}`) : null;
   const at = (s: number, x: number, y: number, kind: Spot["kind"]): Omit<Spot, "key"> => ({ gift: land, s, x, y, kind });
   let spot: Omit<Spot, "key"> | null;
-  if (name && /^ears/.test(name)) spot = Math.random() < 0.5 ? at(52, -18, -20, "hatL") : at(52, 66, -20, "hatR");
-  else if (name && HAT_SPOT.test(name)) spot = Math.random() < 0.5 ? at(40, -14, -16, "hatL") : at(40, 74, -16, "hatR");
+  if (name && (HAT_SPOT.test(name) || /^ears/.test(name))) spot = Math.random() < 0.5 ? at(40, -14, -16, "hatL") : at(40, 74, -16, "hatR");
   else if (name && RANDOM_SPOT.test(name)) { const size = name.startsWith("air_kiss") ? 23 : name.startsWith("bow_") ? 44 : 34; spot = at(size, 4 + Math.random() * (92 - size), 4 + Math.random() * (92 - size), "rand"); }
   else if (wornGift(land)) spot = null;
   else if (name === "cactus") spot = at(34, 66, 66, "corner");
