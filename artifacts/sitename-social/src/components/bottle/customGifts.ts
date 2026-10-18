@@ -7,7 +7,7 @@ const prices: [RegExp, number][] = [
   [/^(sweet\d|strawberry\d|tomato\d|wholeegg|smoothie|slug_\d)$/, 1],
   [/^(crown\d|blackcrown|icecrown|gem\d|goldenmic|dollar|djmixer\d*|drumkit\d*|makarov|bed|eiffeltower|clutch|knight|labubu\d*|monomachhat|blackring|kingcap)$/, 3],
   [/^(ruby\w+|oscar|iwatch|goldenapple|honeybarrel|kokoshnik|manekineko|sheriffstar|londonphone|mobile)$/, 3],
-  [/^redbull$/, 10],
+  [/^redbull(red)?$/, 10],
   [/^(ges_\w+|heart\d|notes\d|hamburger|tea|poop|heineken)$/, 1],
   [/^(air_kiss\d|candy\d+|egg\d|flower\d+|orchid|colander|maracas\d|nipple\d|pepper\d|cocoscocktail|bear\d)$/, 1],
 ];
@@ -24,7 +24,7 @@ export const customPlace = (name: string): Place =>
 export const customOrder = [
   "air_kiss1", "air_kiss2", "air_kiss3", "air_kiss4", "air_kiss5", "crown1", "crown2", "crown3", "crown4", "blackcrown", "icecrown", "gem1", "gem2", "gem3", "gem4",
   "flower1", "flower2", "flower3", "flower4", "flower5", "flower6", "flower7", "flower8", "flower9", "flower10", "flower11", "orchid", "cactus",
-  "bear1", "bear4", "bear6", "bear7", "labubu1", "catdress", "redbull", "flamingo", "cake", "cakeforher", "cakeforhim", "candybox", "candyheartcup", "icecream", "fruitbasket1", "cocoscocktail", "pepper1",
+  "bear1", "bear4", "bear6", "bear7", "labubu1", "catdress", "redbull", "redbullred", "flamingo", "cake", "cakeforher", "cakeforhim", "candybox", "candyheartcup", "icecream", "fruitbasket1", "cocoscocktail", "pepper1",
   "candy1", "candy2", "candy3", "candy4", "candy5", "candy6", "candy7", "candy8", "candy9", "candy10", "wholeegg",
   "bow_1", "bow_2", "bow_4", "bow_red", "bow_white", "ears1_2", "ears2_2", "ears3_2", "ears4_2", "ears5_2", "ears6_2", "ears7_2", "ears8", "ears9a",
   "babecap", "bosscap", "boybyecap", "classycap", "goodenuffcap", "goodvibescap", "kingcap", "mrcoolcap", "omgcap", "partycap", "baseballaz", "baseballam", "blackoverlordcap", "cappy",

@@ -119,6 +119,7 @@ function planLanding(gift: string) {
   if (name && (HAT_SPOT.test(name) || /^ears/.test(name))) spot = Math.random() < 0.5 ? at(40, -14, -16, "hatL") : at(40, 74, -16, "hatR");
   else if (name && RANDOM_SPOT.test(name)) { const size = name.startsWith("air_kiss") ? 23 : name.startsWith("bow_") ? 44 : 34; spot = at(size, 4 + Math.random() * (92 - size), 4 + Math.random() * (92 - size), "rand"); }
   else if (wornGift(land)) spot = null;
+  else if (/^redbull(red)?$/.test(name)) spot = at(58, 42, 42, "corner"); // Red Bull: only the bottom-right corner
   else {
     // Everything else sits inside the photo, in the bottom corner — left or right at random — and never sticks out.
     const size = /^(flagaz|eiffeltower|amurchik)$/.test(name) ? 78 : /^baloon\d$/.test(name) ? 48 : 58;
