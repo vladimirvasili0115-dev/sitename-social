@@ -116,10 +116,11 @@ function planLanding(gift: string) {
   const scatter = SCATTER.has(gift) ? giftGroups[gift.slice(2)].map((item) => `c:${item}`) : null;
   const at = (s: number, x: number, y: number, kind: Spot["kind"]): Omit<Spot, "key"> => ({ gift: land, s, x, y, kind });
   let spot: Omit<Spot, "key"> | null;
-  if (name && (HAT_SPOT.test(name) || /^(ears|bow_)/.test(name))) spot = at(42, -10, -10, "hatL"); // hats and ears: always the top-left corner, tilted 45° so they sit squarely on it
+  if (name && (HAT_SPOT.test(name) || /^(ears|bow_)/.test(name))) spot = at(71, -24, -24, "hatL"); // hats and ears (1.7× bigger): always the top-left corner, tilted 45° so they sit squarely on it
   else if (name && RANDOM_SPOT.test(name)) { const size = name.startsWith("air_kiss") ? 23 : name.startsWith("bow_") ? 44 : 34; const span = 100 - size + 16; spot = at(size, -8 + Math.random() * span, -8 + Math.random() * span, "rand"); /* anywhere on the photo, edge to edge */ }
+  else if (land === "e:🐓") spot = at(100, 0, 0, "corner"); // the rooster covers the whole photo
   else if (wornGift(land)) spot = null;
-  else if (/^redbull(red|yellow)?$/.test(name)) spot = at(58, 42, 42, "corner"); // Red Bull: only the bottom-right corner
+  else if (/^redbull(red|yellow)?$/.test(name)) spot = at(98, 2, 2, "corner"); // Red Bull: bottom-right corner, 1.7× bigger
   else {
     // Everything else sits inside the photo, in the bottom-right corner, and never sticks out.
     const size = /^(flagaz|eiffeltower|amurchik)$/.test(name) ? 78 : /^baloon\d$/.test(name) ? 48 : 58;
