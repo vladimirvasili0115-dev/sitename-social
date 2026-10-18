@@ -688,7 +688,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         const who = (id: string | null) => (id === data!.me ? "me" : id ?? "");
         // Gifts from other players fly across the table on every screen; my own gifts were already shown when I sent them.
         const gifts = all.filter((item) => item.kind === "gift" && item.from !== data!.me);
-        if (!first) gifts.forEach((item, order) => window.setTimeout(() => remoteGift.current(who(item.from), who(item.to), item.body ?? "", gifts.length > 1 ? 1000 : 2000), order * 150));
+        if (!first) gifts.forEach((item, order) => window.setTimeout(() => remoteGift.current(who(item.from), who(item.to), item.body ?? "", gifts.length > 1 ? 1200 : 2400), order * 150));
         for (const seat of data.seats) names.current[seat.id] = { name: (seat.name ?? "").split(" ")[0] || "?", avatar: seat.avatar ?? "" };
         const nameOf = (id: string | null) => (id === data!.me ? t("common.you") : names.current[id ?? ""]?.name ?? "?");
         if (!first) all.filter((item) => item.kind === "compliment" && item.to === data!.me).forEach((item) => setComplimentIn({ name: names.current[item.from ?? ""]?.name ?? "?", avatar: names.current[item.from ?? ""]?.avatar || NO_PHOTO, kind: Number(item.body) || 1 }));
@@ -1603,7 +1603,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // Where a seat really is right now: the two players kissing stand in the middle of the table.
   const seatLeft = (index: number) => (staged && (index === turn || index === target) ? `calc(${CENTER_X}% ${index === turn ? "-" : "+"} 12.5cqmin)` : `${seats[index][0]}%`);
   const seatTop = (index: number) => (staged && (index === turn || index === target) ? `${STAGE_Y}%` : `${seats[index][1]}%`);
-  function sendGift(index: number, gift: string, price: number, ms = 3000) {
+  function sendGift(index: number, gift: string, price: number, ms = 3600) {
     const player = players[index];
     if (heartsRef.current < price) return false;
     heartsRef.current -= price;
@@ -1755,7 +1755,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     cancelPress();
     const state = { started: false, x, y, timer: window.setTimeout(() => {
       state.started = true;
-      if (giveMany(targets, gift, price, need) && !gift.startsWith("song:")) hold.current = window.setInterval(() => { for (const index of targets) if (!sendGift(index, gift, price, 1000)) return stopHold(); }, 300);
+      if (giveMany(targets, gift, price, need) && !gift.startsWith("song:")) hold.current = window.setInterval(() => { for (const index of targets) if (!sendGift(index, gift, price, 1200)) return stopHold(); }, 300);
     }, 380) };
     pressed.current = state;
   }
