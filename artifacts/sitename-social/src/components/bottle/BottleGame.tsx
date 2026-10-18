@@ -1594,7 +1594,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // A single gift glides for 3 seconds; gifts sent in a rapid series (press and hold) fly in about a second.
   // The flight goes straight to where the gift will sit (offset from the seat centre in cqmin, and its final size).
   const flightTo = (plan: ReturnType<typeof planLanding>, gift: string) => {
-    const w = wide ? 17 : 16;
+    const w = wide ? 18.5 : 17.5;
     const base = SMALL_FLIGHT.has(gift) ? 7 : 11;
     if (!plan.spot) return { tx: -0.38 * w, ty: -0.38 * w, end: (0.56 * w) / base, base };
     const { x, y, s: size } = plan.spot;
@@ -2071,7 +2071,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           if (player.empty) return null;
           const active = index === turn || index === target;
           return (
-            <div key={player.id} className={cn("absolute -translate-x-1/2 -translate-y-1/2 transition-[left,top]", wide ? "w-[17cqmin]" : "w-[16cqmin]", " duration-[1100ms] ease-in-out motion-reduce:duration-0", staged && active ? "z-30" : index === turn && "z-10")} style={staged && active ? { left: `calc(${CENTER_X}% ${index === turn ? "-" : "+"} 12.5cqmin)`, top: `${STAGE_Y}%` } : { left: `${seats[index][0]}%`, top: `${seats[index][1]}%` }}>
+            <div key={player.id} className={cn("absolute -translate-x-1/2 -translate-y-1/2 transition-[left,top]", wide ? "w-[18.5cqmin]" : "w-[17.5cqmin]", " duration-[1100ms] ease-in-out motion-reduce:duration-0", staged && active ? "z-30" : index === turn && "z-10")} style={staged && active ? { left: `calc(${CENTER_X}% ${index === turn ? "-" : "+"} 12.5cqmin)`, top: `${STAGE_Y}%` } : { left: `${seats[index][0]}%`, top: `${seats[index][1]}%` }}>
               <button type="button" onClick={(event) => { event.stopPropagation(); if (dedicate) { if (!player.me) setChosen((list) => (list.includes(player.id) ? list.filter((id) => id !== player.id) : [...list, player.id])); return; } setGiftNote(null); setCardNote(null); setFlagMenu(false); setSignOpen(false); if (player.me) { if (Date.now() - meTap.current > 15000 || picked !== index) { meTap.current = Date.now(); setFrameNote(null); pullProgress.current(); setCard(false); setPicked(index); return; } meTap.current = 0; setCard(true); setPicked(index); return; } setCard(picked === index); setPicked(index); }} aria-label={`${player.name}, ${player.age}`} data-seat={player.id} className={cn("group relative block aspect-square w-full rounded-[14%] bg-surface-2 shadow-[0_4px_10px_rgba(0,0,0,0.4)]", phase === "spinning" && index === turn && "motion-safe:animate-[seat-wobble_0.4s_ease-out]", tour === 3 && !player.me && !player.empty && "ring-4 ring-[#FFD84D] motion-safe:animate-pulse", !player.empty && isAdminPlayer(player) && "shadow-[0_0_0_0.6cqmin_#F5B400,0_0_14px_4px_rgba(245,180,0,0.65)]", staged && index === target ? "ring-[0.9cqmin] ring-[#FFE2A8]" : active ? "ring-4 ring-white" : picked === index ? "ring-4 ring-[#8CC63F]" : player.me ? "ring-2 ring-white/80" : "")}>
                 {player.empty ? null : <span aria-hidden="true" className="pointer-events-none absolute left-1/2 top-1/2 z-[5] hidden h-[7cqmin] w-[7cqmin] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-[4cqmin] shadow [@media(hover:hover)]:group-hover:flex">{player.me ? "😊" : "🎁"}</span>}
                 <img src={player.avatar} alt="" className="h-full w-full rounded-[14%] object-cover" />
