@@ -61,6 +61,6 @@ export function landedName(name: string) {
   return name;
 }
 export const isListed = (name: string) => !hidden.test(name) && !grouped.has(name);
-// The cocktail (only "cherry") costs 2 hearts and gives the receiver 1 heart (the server pays it, see bottle_is_drink).
-const drinkNames = /^cherry$/;
-export const isDrink = (gift: string) => gift === "c:cherry";
+// The cocktails ("love" — pink glass — and "cherry") cost 2 hearts and gives the receiver 1 heart (the server pays it, see bottle_is_drink).
+const drinkNames = /^(cherry|love)$/;
+export const isDrink = (gift: string) => gift === "c:cherry" || gift === "c:love";
