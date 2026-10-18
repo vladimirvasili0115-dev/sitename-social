@@ -1471,10 +1471,10 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       pullRef.current();
     })();
   }
-  // After a song starts, nobody else can change it for 60 seconds (the server checks it too).
+  // After a song starts, nobody else can change it for 30 seconds (the server checks it too).
   function songBusy() {
     if (!online || !net?.track || net.track.by === net.me) return false;
-    const left = Math.ceil(60 - (net.now - net.track.at) / 1000);
+    const left = Math.ceil(30 - (net.now - net.track.at) / 1000);
     if (left <= 0) return false;
     setGiftNote(t("bottle.songBusy").replace("{n}", String(left)));
     return true;
