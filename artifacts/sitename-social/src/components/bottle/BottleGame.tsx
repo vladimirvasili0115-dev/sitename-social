@@ -348,7 +348,11 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [scatters, setScatters] = useState<{ key: number; to: string; names: string[]; dirs: [number, number][] }[]>([]);
   // A gift lands: worn ones go on the head, the rest take their spot; family gifts first burst over the whole photo.
   const landGift = (key: number, toId: string, plan: ReturnType<typeof planLanding>) => {
-    if (plan.spot) setSpots((value) => ({ ...value, [toId]: { ...plan.spot!, key } }));
+    if (plan.spot) {
+      setSpots((value) => ({ ...value, [toId]: { ...plan.spot!, key } }));
+      // Pacifiers only stay on the photo for about ten seconds.
+      if (/^c:nipple/.test(plan.land)) window.setTimeout(() => setSpots((value) => (value[toId]?.key === key ? Object.fromEntries(Object.entries(value).filter(([id]) => id !== toId)) : value)), 10000);
+    }
     else setStickers((value) => ({ ...value, [toId]: [...(value[toId] ?? []), plan.land].slice(-6) }));
     if (plan.scatter) {
       const dirs = plan.scatter.map((_, n) => { const angle = (n / plan.scatter!.length) * Math.PI * 2 + Math.random() * 0.8; return [Math.cos(angle) * (30 + Math.random() * 14), Math.sin(angle) * (30 + Math.random() * 14)] as [number, number]; });
@@ -906,6 +910,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   }, [waitTable]);
   useEffect(() => { if (online) void bottleGiftShare().then((share) => { if (share && typeof share.pct === "number") giftShare.current = share; }); }, [online]);
   const liveTable = net?.table;
+  // A new table or room starts clean: gifts that sat on the photos at the old table do not come along.
+  useEffect(() => { setStickers({}); setSpots({}); setPiles({}); setScatters([]); }, [liveTable]);
   useEffect(() => {
     if (!liveTable) return;
     try {
