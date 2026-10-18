@@ -48,6 +48,10 @@ export const giftGroups: Record<string, string[]> = {
   flower1: ["flower1", "flower2", "flower3", "flower4", "flower5", "flower6", "flower7", "flower8", "flower9", "flower10", "flower11"],
   loveis1: ["loveis1", "loveis2", "loveis3", "loveis4"],
   wholeegg: ["egg1", "egg2", "egg3"],
+  strawberry1: ["strawberry1", "strawberry2", "strawberry3", "strawberry4"],
+  valentine2: ["valentine2", "valentine3", "valentine4", "valentine5"],
+  salute2: ["salute2", "salute3", "salute4"],
+  polaroid1: ["polaroid1", "polaroid2", "polaroid3", "polaroid4", "polaroid5"],
 };
 const grouped = new Set(Object.entries(giftGroups).flatMap(([tile, list]) => list.filter((name) => name !== tile)));
 export function landedName(name: string) {

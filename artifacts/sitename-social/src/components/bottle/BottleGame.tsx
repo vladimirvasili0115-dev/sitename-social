@@ -103,7 +103,7 @@ const wornGift = (gift: string) => (gift.startsWith("c:") ? customPlace(gift.sli
 // land on a random spot (a new one every time); the cactus sits exactly in the corner, the ice cream peeks out from behind,
 // balloons grow a little in the corner, the flag, the Eiffel tower and cupid are a bit bigger; the rest stand in the corner.
 type Spot = { key: number; gift: string; x: number; y: number; s: number; kind: "rand" | "corner" | "behind" | "balloon" | "hatL" | "hatR" };
-const RANDOM_SPOT = /^(air_kiss\d|gem\d|flower\d+|loveis\d|iloveyou|bear\d+|egg\d|bow_\w+)$/;
+const RANDOM_SPOT = /^(air_kiss\d|gem\d|flower\d+|loveis\d|iloveyou|bear\d+|egg\d|bow_\w+|strawberry\d|valentine\d)$/;
 // Caps and hats sit on the top-left or the top-right corner of the photo, tilted towards it.
 const HAT_SPOT = /^(\w*cap|cappy|cowboy|cylinderw?|indianhat|napoleon|musketeer|nurse|bezkoz|monomachhat|noteshat\w|partyhat\d|clown|carnivalmask\d|horseheadhat2|baseballa\w)$/;
 // These spin a full turn on the way; kisses and gems fly a little smaller.
