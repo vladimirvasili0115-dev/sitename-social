@@ -1868,7 +1868,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
               <div role="dialog" aria-modal="true" aria-label={`${player.name}, ${player.age}`} onClick={(event) => event.stopPropagation()} className={cn("relative shadow-[0_18px_50px_rgba(0,0,0,0.45)]", land ? "h-[400px] max-h-[80vh] max-w-[91%]" : "w-[400px] max-w-[80vw]")} style={{ borderRadius: 17, maxHeight: land ? undefined : "calc(94% - env(safe-area-inset-top))" }}>
                 <button onClick={() => setCard(false)} aria-label={t("photos.close")} title={t("photos.close")} className="absolute -right-3 -top-3 z-20 flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#8DC63F] bg-white text-[#8DC63F] shadow hover:bg-[#F0FBEA]"><X size={19} strokeWidth={3} /></button>
                 {cardBack.length ? <button onClick={cardGoBack} aria-label={t("bottle.back")} title={t("bottle.back")} className="absolute -left-3 -top-3 z-20 flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#8DC63F] bg-white text-[#8DC63F] shadow hover:bg-[#F0FBEA]"><ChevronLeft size={22} strokeWidth={3} /></button> : null}
-                {label ? <span aria-hidden="true" className="absolute -left-[19px] top-[15px] z-10 h-[43px] w-[64px] bg-contain bg-no-repeat" style={{ backgroundImage: `url(${P}${label})` }} /> : null}
+                {label ? <span aria-hidden="true" className="absolute -left-[16px] top-[15px] z-10 h-[36px] w-[54px] bg-contain bg-no-repeat" style={{ backgroundImage: `url(${P}${label})` }} /> : null}
                 <div className={cn("isolate flex h-full overflow-hidden rounded-[17px] bg-white", land ? "flex-row" : "max-h-[inherit] flex-col")}>
                 <div className={cn("relative shrink-0 overflow-hidden bg-[#F7F5F6]", land ? "aspect-square h-full" : "aspect-square max-h-[38dvh] w-full")}>
                   <img src={player.avatar} alt="" className="h-full w-full object-cover object-top" />
@@ -2080,7 +2080,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 {dedicate && !player.me ? (chosen.includes(player.id)
                   ? <span className="absolute inset-0 z-10 flex items-center justify-center rounded-[14%] bg-[#8CC63F]/85 ring-[0.5cqmin] ring-[#B678E8]"><Check className="h-[45%] w-[45%] text-white drop-shadow" strokeWidth={4} /></span>
                   : <span className="absolute inset-0 z-10 flex items-center justify-center rounded-[14%] bg-black/25"><Plus className="h-[45%] w-[45%] text-white drop-shadow-[0_2px_3px_rgba(0,0,0,0.5)]" strokeWidth={3.5} /></span>) : null}
-                {topIds.has(player.id) ? <img src="/custom/profile/label_top_vip.svg" alt="TOP" draggable={false} className="pointer-events-none absolute -left-[14%] top-[4%] z-[4] w-[52%] max-w-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]" /> : null}
+                {topIds.has(player.id) ? <img src="/custom/profile/label_top_vip.svg" alt="TOP" draggable={false} className="pointer-events-none absolute -left-[11%] top-[5%] z-[4] w-[43%] max-w-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]" /> : null}
                 {kisses[player.id] ? <LipsBadge count={kisses[player.id]} /> : null}
                 {(() => {
                   const mine = stickers[player.id] ?? [];
