@@ -121,9 +121,9 @@ function planLanding(gift: string) {
   else if (wornGift(land)) spot = null;
   else if (/^redbull(red|yellow)?$/.test(name)) spot = at(58, 42, 42, "corner"); // Red Bull: only the bottom-right corner
   else {
-    // Everything else sits inside the photo, in the bottom corner — left or right at random — and never sticks out.
+    // Everything else sits inside the photo, in the bottom-right corner, and never sticks out.
     const size = /^(flagaz|eiffeltower|amurchik)$/.test(name) ? 78 : /^baloon\d$/.test(name) ? 48 : 58;
-    const x = Math.random() < 0.5 ? 0 : 100 - size;
+    const x = 100 - size; // always the bottom-right corner
     spot = at(size, x, 100 - size, /^baloon\d$/.test(name) ? "balloon" : "corner");
   }
   return { land, spot, scatter };
@@ -294,6 +294,7 @@ function LipsBadge({ count }: { count: number }) {
 }
 const SPIN_SECONDS = 8;
 const PILE_MS = 45000;
+const KISS_MS = 13000;
 const ANSWER_SECONDS = 9;
 const packs: { hearts: number; price: number; bonus?: number; tag?: "best" | "hit"; art: string }[] = [
   { hearts: 7500, price: 5000, bonus: 35, tag: "best", art: "🛒" }, { hearts: 1500, price: 1000, bonus: 35, art: "🧰" }, { hearts: 720, price: 500, bonus: 30, art: "🛢️" },
@@ -348,8 +349,15 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [spots, setSpots] = useState<Record<string, Spot>>({});
   const [scatters, setScatters] = useState<{ key: number; to: string; names: string[]; dirs: [number, number][] }[]>([]);
   // A gift lands: worn ones go on the head, the rest take their spot; family gifts first burst over the whole photo.
+  // Air kisses stay on the photo on their own (they don't push other gifts off) for KISS_MS, then fade away.
+  const [kissMarks, setKissMarks] = useState<Record<string, Spot[]>>({});
   const landGift = (key: number, toId: string, plan: ReturnType<typeof planLanding>) => {
-    if (plan.spot) {
+    if (plan.spot && /^c:air_kiss/.test(plan.land)) {
+      const mark = { ...plan.spot, key };
+      setKissMarks((value) => ({ ...value, [toId]: [...(value[toId] ?? []), mark].slice(-8) }));
+      window.setTimeout(() => setKissMarks((value) => ({ ...value, [toId]: (value[toId] ?? []).filter((item) => item.key !== key) })), KISS_MS);
+    }
+    else if (plan.spot) {
       setSpots((value) => ({ ...value, [toId]: { ...plan.spot!, key } }));
       // Pacifiers only stay on the photo for about ten seconds.
       if (/^c:nipple/.test(plan.land)) window.setTimeout(() => setSpots((value) => (value[toId]?.key === key ? Object.fromEntries(Object.entries(value).filter(([id]) => id !== toId)) : value)), 10000);
@@ -930,7 +938,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   useEffect(() => { if (online) void bottleGiftShare().then((share) => { if (share && typeof share.pct === "number") giftShare.current = share; }); }, [online]);
   const liveTable = net?.table;
   // A new table or room starts clean: gifts that sat on the photos at the old table do not come along.
-  useEffect(() => { setStickers({}); setSpots({}); setPiles({}); setScatters([]); }, [liveTable]);
+  useEffect(() => { setStickers({}); setSpots({}); setKissMarks({}); setPiles({}); setScatters([]); }, [liveTable]);
   useEffect(() => {
     if (!liveTable) return;
     try {
@@ -2120,6 +2128,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                     {face ? <Gift id={face} className="absolute left-[8%] top-[10%] z-[2] h-[84%] w-[84%] animate-[gift-drop_0.35s_ease-out]" /> : null}
                     {ears ? <Gift anim id={ears} className="pointer-events-none absolute -left-[22%] -top-[14%] z-[2] h-[44%] w-[80%] -rotate-45 animate-[gift-drop_0.35s_ease-out] drop-shadow" /> : null}
                     {head ? <Gift anim id={head} className="pointer-events-none absolute -left-[16%] -top-[16%] z-[2] h-[56%] w-[56%] -rotate-45 animate-[gift-drop_0.35s_ease-out] drop-shadow" /> : null}
+                    {(kissMarks[player.id] ?? []).map((mark) => <span key={mark.key} className="pointer-events-none absolute z-[3]" style={{ left: `${mark.x}%`, top: `${mark.y}%`, width: `${mark.s}%`, height: `${mark.s}%`, animation: `kiss-life ${KISS_MS}ms linear forwards` }}><Gift anim id={mark.gift} className="h-full w-full animate-[gift-drop_0.35s_ease-out] drop-shadow" /></span>)}
                     {spots[player.id] ? (() => { const spot = spots[player.id]; return <span key={spot.key} className={cn("pointer-events-none absolute", spot.kind === "behind" ? "-z-[1]" : spot.kind === "hatL" || spot.kind === "hatR" ? "z-[5]" : "z-[2]")} style={{ left: `${spot.x}%`, top: `${spot.y}%`, width: `${spot.s}%`, height: `${spot.s}%`, transform: spot.kind === "hatL" ? "rotate(-45deg)" : spot.kind === "hatR" ? "rotate(35deg)" : undefined }}><Gift anim id={spot.gift} className={cn("h-full w-full drop-shadow", spot.x < 20 ? "origin-bottom-left" : "origin-bottom-right", (spot.kind === "corner" || spot.kind === "balloon") && (spot.x < 20 ? "object-left-bottom" : "object-right-bottom"), spot.kind === "balloon" ? "animate-[gift-grow_0.7s_ease-out_forwards]" : "animate-[gift-drop_0.35s_ease-out]")} /></span>; })()
                       : rest.map((gift) => <Gift anim key={`${gift}-${mine.length}`} id={gift} className="absolute bottom-0 right-0 z-[2] h-[58%] w-[58%] animate-[gift-drop_0.35s_ease-out] drop-shadow" />)}
                     {scatters.filter((item) => item.to === player.id).flatMap((item) => item.names.map((name, n) => <span key={`${item.key}-${n}`} className="pointer-events-none absolute left-1/2 top-1/2 z-[3] h-[26%] w-[26%]" style={{ animation: "gift-scatter 1s ease-out forwards", ["--dx" as string]: `${item.dirs[n][0]}cqmin`, ["--dy" as string]: `${item.dirs[n][1]}cqmin` }}><Gift anim id={name} className="h-full w-full drop-shadow" /></span>))}
@@ -2170,7 +2179,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         {shows.map((item) => <Fireworks key={`fw-${item.key}`} at={seats[item.to]} level={item.level} seed={item.key} />)}
         {tableVfx ? <TableShower key={tableVfx.key} emoji={tableVfx.emoji} seed={tableVfx.key % 1000} /> : null}
         {boostFx ? <BoostFx key={boostFx.key} kind={boostFx.kind} fromLeft={boostFx.fromLeft} x={CENTER_X} y={STAGE_Y} /> : null}
-        {flying.map((item) => <div key={item.key} className="pointer-events-none absolute z-40 -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_0_10px_rgba(255,240,150,0.95)] transition-[left,top] ease-in-out" style={{ width: `${item.base}cqmin`, height: `${item.base}cqmin`, transitionDuration: `${item.ms}ms`, left: item.moved ? `calc(${seatLeft(item.to)} + ${item.tx}cqmin)` : seatLeft(item.from), top: item.moved ? `calc(${seatTop(item.to)} + ${item.ty}cqmin)` : seatTop(item.from) }}><span className="block h-full w-full" style={{ animation: `gift-fly-to ${item.ms}ms ease-in-out both`, ["--end" as string]: item.end }}><span className="block h-full w-full" style={SPIN_FLIGHT.test(item.gift) ? { animation: `gift-turn ${item.ms}ms linear both` } : undefined}>{item.gift.startsWith("c:") && giftGroups[item.gift.slice(2)] && item.gift !== "c:wholeegg" ? <GiftCycle names={giftGroups[item.gift.slice(2)].map((name) => `c:${name}`)} className="h-full w-full" /> : <Gift anim id={item.gift} className="h-full w-full" />}</span></span></div>)}
+        {flying.map((item) => <div key={item.key} className="pointer-events-none absolute z-40 -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_0_10px_rgba(255,240,150,0.95)] transition-[left,top] ease-in-out" style={{ width: `${item.base}cqmin`, height: `${item.base}cqmin`, transitionDuration: `${item.ms}ms`, transitionTimingFunction: item.gift === "c:air_kiss1" ? "cubic-bezier(0.25, 0.7, 0.4, 1)" : undefined, left: item.moved ? `calc(${seatLeft(item.to)} + ${item.tx}cqmin)` : seatLeft(item.from), top: item.moved ? `calc(${seatTop(item.to)} + ${item.ty}cqmin)` : seatTop(item.from) }}><span className="block h-full w-full" style={{ animation: `gift-fly-to ${item.ms}ms ease-in-out both`, ["--end" as string]: item.end }}><span className="block h-full w-full" style={SPIN_FLIGHT.test(item.gift) ? { animation: `gift-turn ${item.ms}ms linear both` } : undefined}>{item.gift.startsWith("c:") && giftGroups[item.gift.slice(2)] && item.gift !== "c:wholeegg" ? <GiftCycle names={giftGroups[item.gift.slice(2)].map((name) => `c:${name}`)} className="h-full w-full" /> : <Gift anim id={item.gift} className="h-full w-full" />}</span></span></div>)}
 
         {staged && target !== null ? (
           <>

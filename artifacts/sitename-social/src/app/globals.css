@@ -256,3 +256,6 @@ button { cursor: pointer; }
 [data-bottle-root] { -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
 /* iOS: iki dəfə tez toxunanda ekran yaxınlaşmasın */
 [data-bottle-root], [data-bottle-root] * { touch-action: manipulation; }
+
+/* An air kiss stays on the photo, then fades out at the end. */
+@keyframes kiss-life { 0%, 88% { opacity: 1; } 100% { opacity: 0; } }
