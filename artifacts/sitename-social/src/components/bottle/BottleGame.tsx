@@ -1021,7 +1021,6 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // A TOP badge given in the admin panel shows as well.
   // Online the TOP and VIP ribbons are the ones given in the admin panel; taking them back removes them.
   if (online) { topIds.clear(); for (const player of seated) if (net?.seats.find((seat) => seat.id === (player.me ? net.me : player.id))?.top) topIds.add(player.id); }
-  const vipIds = new Set(online ? seated.filter((player) => net?.seats.find((seat) => seat.id === (player.me ? net.me : player.id))?.vip_badge).map((player) => player.id) : []);
   const skinFilter = (n: number) => (n % 15 ? `hue-rotate(${(n % 15) * 24}deg) saturate(${n % 3 === 0 ? 1.4 : 1.1})` : undefined);
   const art = useCustomArt();
   function chooseSkin(n: number) {
@@ -1864,13 +1863,13 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
               <span className="sr-only">{t(`bottle.${key}` as "bottle.price")}</span>
             </div>
           );
-          const labels = [topIds.has(player.id) ? "label_top_vip.svg" : null, (online ? seat?.vip_badge : player.me && vip) ? "label_vip.svg" : null].filter((item): item is string => Boolean(item));
+          const labels = [topIds.has(player.id) ? "label_top_vip.svg" : null, (online ? seat?.vip_badge : player.me && vip) ? "label_vip_gold.svg" : null].filter((item): item is string => Boolean(item));
           return (
             <div className={cn("inset-0 flex items-center justify-center p-3", wide ? cn("absolute bg-black/10", panel ? "z-[60]" : "z-[45]") : "fixed z-[90] bg-black/50")} onClick={(event) => { event.stopPropagation(); setCard(false); }}>
               <div role="dialog" aria-modal="true" aria-label={`${player.name}, ${player.age}`} onClick={(event) => event.stopPropagation()} className={cn("relative shadow-[0_18px_50px_rgba(0,0,0,0.45)]", land ? "h-[400px] max-h-[80vh] max-w-[91%]" : "w-[400px] max-w-[80vw]")} style={{ borderRadius: 17, maxHeight: land ? undefined : "calc(94% - env(safe-area-inset-top))" }}>
                 <button onClick={() => setCard(false)} aria-label={t("photos.close")} title={t("photos.close")} className="absolute -right-3 -top-3 z-20 flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#8DC63F] bg-white text-[#8DC63F] shadow hover:bg-[#F0FBEA]"><X size={19} strokeWidth={3} /></button>
                 {cardBack.length ? <button onClick={cardGoBack} aria-label={t("bottle.back")} title={t("bottle.back")} className="absolute -left-3 -top-3 z-20 flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#8DC63F] bg-white text-[#8DC63F] shadow hover:bg-[#F0FBEA]"><ChevronLeft size={22} strokeWidth={3} /></button> : null}
-                {labels.map((label, n) => <span key={label} aria-hidden="true" className="absolute -left-[16px] z-10 h-[36px] w-[54px] bg-contain bg-no-repeat" style={{ top: 15 + n * 38, backgroundImage: `url(${P}${label})` }} />)}
+                {labels.map((label, n) => <span key={label} aria-hidden="true" className="absolute -left-[13px] z-10 h-[30px] w-[45px] bg-contain bg-no-repeat" style={{ top: 15 + n * 32, backgroundImage: `url(${P}${label})` }} />)}
                 <div className={cn("isolate flex h-full overflow-hidden rounded-[17px] bg-white", land ? "flex-row" : "max-h-[inherit] flex-col")}>
                 <div className={cn("relative shrink-0 overflow-hidden bg-[#F7F5F6]", land ? "aspect-square h-full" : "aspect-square max-h-[38dvh] w-full")}>
                   <img src={player.avatar} alt="" className="h-full w-full object-cover object-top" />
@@ -2082,8 +2081,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 {dedicate && !player.me ? (chosen.includes(player.id)
                   ? <span className="absolute inset-0 z-10 flex items-center justify-center rounded-[14%] bg-[#8CC63F]/85 ring-[0.5cqmin] ring-[#B678E8]"><Check className="h-[45%] w-[45%] text-white drop-shadow" strokeWidth={4} /></span>
                   : <span className="absolute inset-0 z-10 flex items-center justify-center rounded-[14%] bg-black/25"><Plus className="h-[45%] w-[45%] text-white drop-shadow-[0_2px_3px_rgba(0,0,0,0.5)]" strokeWidth={3.5} /></span>) : null}
-                {topIds.has(player.id) ? <img src="/custom/profile/label_top_vip.svg" alt="TOP" draggable={false} className="pointer-events-none absolute -left-[11%] top-[5%] z-[4] w-[43%] max-w-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]" /> : null}
-                {vipIds.has(player.id) ? <img src="/custom/profile/label_vip.svg" alt="VIP" draggable={false} className={cn("pointer-events-none absolute -left-[11%] z-[4] w-[43%] max-w-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]", topIds.has(player.id) ? "top-[33%]" : "top-[5%]")} /> : null}
+                {topIds.has(player.id) ? <img src="/custom/profile/label_top_vip.svg" alt="TOP" draggable={false} className="pointer-events-none absolute -left-[9%] top-[5%] z-[4] w-[37%] max-w-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]" /> : null}
                 {kisses[player.id] ? <LipsBadge count={kisses[player.id]} /> : null}
                 {(() => {
                   const mine = stickers[player.id] ?? [];
