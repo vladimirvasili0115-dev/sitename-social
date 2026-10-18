@@ -259,3 +259,9 @@ button { cursor: pointer; }
 
 /* An air kiss stays on the photo, then fades out at the end. */
 @keyframes kiss-life { 0%, 88% { opacity: 1; } 100% { opacity: 0; } }
+
+/* iOS Safari zooms the page in when a text field smaller than 16px is focused, and stays zoomed after sending.
+   On iPhone/iPad (only there) every text field in the game uses 16px, so tapping the chat no longer zooms. */
+@supports (-webkit-touch-callout: none) {
+  [data-bottle-root] input, [data-bottle-root] textarea, [data-bottle-root] select { font-size: 16px !important; }
+}
