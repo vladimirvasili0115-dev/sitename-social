@@ -49,11 +49,14 @@ export async function saveProfile(patch: ProfileEdits) {
   const changes: Record<string, unknown> = Object.fromEntries(columns.filter((column) => patch[column] !== undefined).map((column) => [column, patch[column] === "" && column === "birthday" ? null : patch[column]]));
   // Photos are uploaded to storage; the profile then points at the public URL instead of the local copy.
   if (isDataUrl(patch.avatar)) changes.avatar_url = await uploadImage(patch.avatar, "avatars");
+  // A photo that is already uploaded (picked from your photos) becomes the profile picture as it is.
+  const pickedAvatar = typeof patch.avatar === "string" && /^https?:\/\//.test(patch.avatar) ? patch.avatar : null;
+  if (pickedAvatar) changes.avatar_url = pickedAvatar;
   if (isDataUrl(patch.cover)) changes.cover_url = await uploadImage(patch.cover, "covers");
   if (changes.avatar_url || changes.cover_url) {
     writeProfileEdits({ ...readProfileEdits(), ...(changes.avatar_url ? { avatar: String(changes.avatar_url) } : {}), ...(changes.cover_url ? { cover: String(changes.cover_url) } : {}) });
   }
-  if (changes.avatar_url) {
+  if (changes.avatar_url && !pickedAvatar) {
     void addPhotoRow(String(changes.avatar_url), "profile");
     void createAvatarPost(String(changes.avatar_url));
   }

@@ -1,13 +1,13 @@
 "use client";
 import { useEffect } from "react";
-import { ChevronLeft, ChevronRight, Trash2, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Trash2, UserRound, X } from "lucide-react";
 import type { Photo } from "@/types";
 import { useTranslation } from "@/i18n/useTranslation";
 
-type Props = { photos: Photo[]; index: number; onChange: (index: number) => void; onClose: () => void; onDelete: (photo: Photo) => void };
+type Props = { photos: Photo[]; index: number; onChange: (index: number) => void; onClose: () => void; onDelete?: (photo: Photo) => void; onSetAvatar?: (photo: Photo) => void };
 const control = "flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border bg-surface text-text hover:bg-surface-2";
 
-export function Lightbox({ photos, index, onChange, onClose, onDelete }: Props) {
+export function Lightbox({ photos, index, onChange, onClose, onDelete, onSetAvatar }: Props) {
   const { t } = useTranslation();
   const photo = photos[index];
   const total = photos.length;
@@ -28,7 +28,8 @@ export function Lightbox({ photos, index, onChange, onClose, onDelete }: Props) 
       <div className="flex items-center justify-between gap-3 p-3 sm:p-4">
         <span className="px-2 text-sm tabular-nums text-muted">{index + 1} / {total}</span>
         <div className="flex gap-2">
-          {photo.own ? <button onClick={() => onDelete(photo)} aria-label={t("photos.delete")} title={t("photos.delete")} className={control}><Trash2 size={17} /></button> : null}
+          {photo.own && onSetAvatar ? <button onClick={() => onSetAvatar(photo)} aria-label={t("photos.setAvatar")} title={t("photos.setAvatar")} className="flex h-11 shrink-0 items-center gap-2 rounded-full border border-border bg-surface px-4 text-sm font-semibold text-text hover:bg-surface-2"><UserRound size={17} /><span className="max-sm:hidden">{t("photos.setAvatar")}</span></button> : null}
+          {photo.own && onDelete ? <button onClick={() => onDelete(photo)} aria-label={t("photos.delete")} title={t("photos.delete")} className={control}><Trash2 size={17} /></button> : null}
           <button onClick={onClose} aria-label={t("photos.close")} title={t("photos.close")} className={control}><X size={18} /></button>
         </div>
       </div>

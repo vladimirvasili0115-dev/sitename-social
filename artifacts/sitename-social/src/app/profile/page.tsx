@@ -23,7 +23,7 @@ export default function ProfilePage() {
   const [tab, setTab] = useState<ProfileTab>("wall");
   const [editing, setEditing] = useState(false);
   const { friends: friendList } = useFriends();
-  const { photos } = usePhotos();
+  const { photos, remove: removePhoto } = usePhotos();
   const { received: profileGifts } = useGifts();
   const profilePhotos = useMemo(() => photos.map((photo) => photo.src), [photos]);
   const friends = useMemo(() => friendList.map((item) => item.user), [friendList]);
@@ -43,7 +43,7 @@ export default function ProfilePage() {
           <div className="md:w-[270px] md:shrink-0">
             <ProfileAbout details={details} />
             <ProfileFriends friends={friends} onSeeAll={() => setTab("friends")} />
-            <ProfilePhotos photos={profilePhotos} onSeeAll={() => setTab("photos")} />
+            <ProfilePhotos photos={photos} onSeeAll={() => setTab("photos")} onDelete={(photo) => removePhoto(photo.id)} onSetAvatar={(photo) => update({ avatar: photo.src })} />
             <ProfileGifts gifts={profileGifts} onSeeAll={() => setTab("gifts")} />
           </div>
           <div className="min-w-0 flex-1">
@@ -54,7 +54,7 @@ export default function ProfilePage() {
       ) : null}
       {tab === "about" ? <ProfileAbout details={details} full /> : null}
       {tab === "friends" ? <ProfileFriends friends={friends} full /> : null}
-      {tab === "photos" ? <ProfilePhotos photos={profilePhotos} full /> : null}
+      {tab === "photos" ? <ProfilePhotos photos={photos} full onDelete={(photo) => removePhoto(photo.id)} onSetAvatar={(photo) => update({ avatar: photo.src })} /> : null}
       {tab === "gifts" ? <ProfileGifts gifts={profileGifts} full /> : null}
       {editing ? <EditProfileModal user={user} details={details} onSave={update} onClose={() => setEditing(false)} /> : null}
     </div>
