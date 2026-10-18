@@ -103,7 +103,7 @@ const wornGift = (gift: string) => (gift.startsWith("c:") ? customPlace(gift.sli
 // land on a random spot (a new one every time); the cactus sits exactly in the corner, the ice cream peeks out from behind,
 // balloons grow a little in the corner, the flag, the Eiffel tower and cupid are a bit bigger; the rest stand in the corner.
 type Spot = { key: number; gift: string; x: number; y: number; s: number; kind: "rand" | "corner" | "behind" | "balloon" | "hatL" | "hatR" };
-const RANDOM_SPOT = /^(air_kiss\d|gem\d|flower\d+|loveis\d|iloveyou|bear\d+|egg\d|bow_\w+|strawberry\d|valentine\d)$/;
+const RANDOM_SPOT = /^(air_kiss\d|gem\d|flower\d+|loveis\d|iloveyou|bear\d+|egg\d|strawberry\d|valentine\d)$/;
 // Caps and hats sit on the top-left or the top-right corner of the photo, tilted towards it.
 const HAT_SPOT = /^(\w*cap|cappy|cowboy|cylinderw?|indianhat|napoleon|musketeer|nurse|bezkoz|monomachhat|noteshat\w|partyhat\d|clown|carnivalmask\d|horseheadhat2|baseballa\w)$/;
 // These spin a full turn on the way; kisses and gems fly a little smaller.
@@ -116,7 +116,7 @@ function planLanding(gift: string) {
   const scatter = SCATTER.has(gift) ? giftGroups[gift.slice(2)].map((item) => `c:${item}`) : null;
   const at = (s: number, x: number, y: number, kind: Spot["kind"]): Omit<Spot, "key"> => ({ gift: land, s, x, y, kind });
   let spot: Omit<Spot, "key"> | null;
-  if (name && (HAT_SPOT.test(name) || /^ears/.test(name))) spot = at(42, -10, -10, "hatL"); // hats and ears: always the top-left corner, tilted 45° so they sit squarely on it
+  if (name && (HAT_SPOT.test(name) || /^(ears|bow_)/.test(name))) spot = at(42, -10, -10, "hatL"); // hats and ears: always the top-left corner, tilted 45° so they sit squarely on it
   else if (name && RANDOM_SPOT.test(name)) { const size = name.startsWith("air_kiss") ? 23 : name.startsWith("bow_") ? 44 : 34; spot = at(size, 4 + Math.random() * (92 - size), 4 + Math.random() * (92 - size), "rand"); }
   else if (wornGift(land)) spot = null;
   else if (/^redbull(red|yellow)?$/.test(name)) spot = at(58, 42, 42, "corner"); // Red Bull: only the bottom-right corner
