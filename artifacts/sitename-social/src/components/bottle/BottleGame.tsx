@@ -1627,6 +1627,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const seatLeft = (index: number) => (staged && (index === turn || index === target) ? `calc(${CENTER_X}% ${index === turn ? "-" : "+"} 12.5cqmin)` : `${seats[index][0]}%`);
   const seatTop = (index: number) => (staged && (index === turn || index === target) ? `${STAGE_Y}%` : `${seats[index][1]}%`);
   function sendGift(index: number, gift: string, price: number, ms = 4200) {
+    if (gift === "c:air_kiss1") ms = Math.round(ms * 1.3); // the air kiss flies 30% slower
     const player = players[index];
     if (heartsRef.current < price) return false;
     heartsRef.current -= price;
@@ -1657,6 +1658,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // A gift another player sent: it flies from their seat to the receiver, then sits on the photo and goes into the chat.
   const remoteGift = useRef<(from: string, to: string, gift: string, ms: number) => void>(() => {});
   remoteGift.current = (fromId, toId, gift, ms) => {
+    if (gift === "c:air_kiss1") ms = Math.round(ms * 1.3); // the air kiss flies 30% slower
     const fromAt = players.findIndex((player) => player.id === fromId);
     const toAt = players.findIndex((player) => player.id === toId);
     if (!gift || toAt < 0) return;
