@@ -67,7 +67,7 @@ const bots: Omit<Player, "avatar">[] = [
 ];
 const smallTalk = ["Salam hamıya 👋", "Bu gün bəxtim gətirir 😄", "Kim fırladır?", "Çay içən var? ☕", "Hahaha", "Bir də fırlat!", "Bakıdan kim var?", "Gecəniz xeyrə 🌙"];
 const giftChoices: [string, number][] = [
-  ["song:video", 9], ["song:mp3", 5], ["crown", 3], ["e:👑", 3], ["e:🤴", 3], ["e:👸", 3], ["e:💋", 1], ["diamond", 1], ["e:🍓", 1], ["e:🍅", 1], ["e:🐸", 2], ["rose", 1], ["e:🍬", 1], ["e:🦆", 1], ["e:🐿️", 1], ["e:🦛", 1], ["e:🐧", 1], ["e:🐵", 1], ["e:💐", 1], ["e:🌼", 1], ["e:🪴", 1], ["e:🌵", 1], ["e:🍨", 1], ["e:🍰", 1], ["e:🥛", 1], ["e:🍷", 1], ["e:🥃", 1], ["e:🍵", 1], ["tea", 1], ["e:🥒", 3], ["e:☕", 1], ["e:🥂", 1], ["e:🍺", 1], ["e:🍸", 1], ["e:🍹", 1], ["e:🧸", 1], ["e:🧣", 1], ["e:⛑️", 2], ["e:🤠", 2], ["e:🧢", 2], ["e:👽", 2], ["e:🐻", 2], ["e:🐮", 2], ["e:🔥", 2], ["e:🐱", 2], ["e:🕶️", 2], ["e:🐞", 2], ["e:😈", 2], ["e:🐰", 2], ["e:🦋", 5], ["e:🎀", 5], ["e:🌸", 5],
+  ["song:video", 9], ["song:mp3", 5], ["e:🤴", 3], ["e:👸", 3], ["e:🧸", 1], ["e:🦋", 5], ["e:🎀", 5], ["e:🌸", 5],
 ];
 // The wheel of fortune: 16 sectors clockwise from the top. The database does the real draw with its own odds; the weights here are only used by the offline demo.
 const wheelSectors: { hearts?: number; chances?: number; kisses?: number; smiles?: number; weight: number }[] = [
