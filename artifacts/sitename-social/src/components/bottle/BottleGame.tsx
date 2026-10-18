@@ -109,7 +109,7 @@ const HAT_SPOT = /^(\w*cap|cappy|cowboy|cylinderw?|indianhat|napoleon|musketeer|
 // These spin a full turn on the way; kisses and gems fly a little smaller.
 const SPIN_FLIGHT = /^c:(bear\d+|labubu1|wholeegg)$/;
 const SMALL_FLIGHT = new Set(["c:air_kiss1", "c:gem1"]);
-const SCATTER = new Set(["c:air_kiss1", "c:gem1", "c:wholeegg"]);
+const SCATTER = new Set(["c:gem1", "c:wholeegg"]);
 function planLanding(gift: string) {
   const land = landed(gift);
   const name = land.startsWith("c:") ? land.slice(2) : "";
