@@ -2133,7 +2133,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   </div>
                 );
               })()}
-              <p className={cn("mt-px truncate text-center text-[2.6cqmin] font-semibold leading-tight [text-shadow:0_1px_3px_rgba(0,0,0,0.8)]", isAdminPlayer(player) ? "text-[#FFD54A]" : "text-white")}>{isAdminPlayer(player) ? "👑 " : ""}{player.me ? t("common.you") : player.name}{!player.me && nameSuffix(player) ? ` [${nameSuffix(player)}]` : ""}, {player.age}</p>
+              {/* Ad üst qatda ayrıca çəkilir (aşağıda), burada yalnız yer tutur */}
+              <p aria-hidden="true" className="invisible mt-px truncate text-center text-[2.6cqmin] leading-tight">&nbsp;</p>
               {index === turn && !staged ? (() => {
                 // Like the original: the label sits beside the photo on the table side, with an arrow pointing at the player,
                 // so it never covers the seat below or its badges.
@@ -2141,6 +2142,19 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 const side = x < 30 ? "left" : x > 70 ? "right" : null;
                 return <p className={cn("pointer-events-none absolute z-[6] whitespace-nowrap rounded-full bg-black/55 px-[1.6cqmin] py-[0.3cqmin] text-[2.3cqmin] font-semibold leading-tight text-white shadow", side === "left" ? "left-full top-[40%] ml-[1cqmin] -translate-y-1/2" : side === "right" ? "right-full top-[40%] mr-[1cqmin] -translate-y-1/2" : y > 60 ? "bottom-full left-1/2 mb-[0.6cqmin] -translate-x-1/2" : "left-1/2 top-full mt-[3.2cqmin] -translate-x-1/2")}>{side === "left" ? "← " : side === "right" ? "" : y > 60 ? "↓ " : "↑ "}{t("bottle.spinsBottle")}{side === "right" ? " →" : ""}</p>;
               })() : null}
+            </div>
+          );
+        })}
+
+        {/* Adlar: çərçivələrin və qonşu oyunçuların üstündə, tam görünür */}
+        {players.map((player, index) => {
+          if (player.empty) return null;
+          const active = index === turn || index === target;
+          const framed = Boolean(frameOf(player));
+          return (
+            <div key={`name-${player.id}`} aria-hidden="true" className={cn("pointer-events-none absolute z-[31] -translate-x-1/2 -translate-y-1/2 transition-[left,top] duration-[1100ms] ease-in-out motion-reduce:duration-0", wide ? "w-[18.5cqmin]" : "w-[17.5cqmin]")} style={staged && active ? { left: `calc(${CENTER_X}% ${index === turn ? "-" : "+"} 12.5cqmin)`, top: `${STAGE_Y}%` } : { left: `${seats[index][0]}%`, top: `${seats[index][1]}%` }}>
+              <div className="aspect-square w-full" />
+              <p className={cn("relative left-1/2 w-max max-w-[26cqmin] -translate-x-1/2 truncate rounded-full bg-black/40 px-[1cqmin] text-center text-[2.4cqmin] font-semibold leading-snug [text-shadow:0_1px_2px_rgba(0,0,0,0.8)]", framed ? "mt-[1.4cqmin]" : "mt-px", isAdminPlayer(player) ? "text-[#FFD54A]" : "text-white")}>{isAdminPlayer(player) ? "👑 " : ""}{player.me ? t("common.you") : player.name}{!player.me && nameSuffix(player) ? ` [${nameSuffix(player)}]` : ""}, {player.age}</p>
             </div>
           );
         })}
