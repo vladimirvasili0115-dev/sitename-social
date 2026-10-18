@@ -254,3 +254,5 @@ button { cursor: pointer; }
 /* iPhone/iPad: pressing and holding a picture in the game must not pop it up big (no image preview or "save image" menu). */
 [data-bottle-root] img, [data-bottle-root] svg { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; -webkit-user-drag: none; }
 [data-bottle-root] { -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+/* iOS: iki dəfə tez toxunanda ekran yaxınlaşmasın */
+[data-bottle-root], [data-bottle-root] * { touch-action: manipulation; }
