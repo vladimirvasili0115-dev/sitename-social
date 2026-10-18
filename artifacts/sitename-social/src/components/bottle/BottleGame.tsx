@@ -117,7 +117,7 @@ function planLanding(gift: string) {
   const at = (s: number, x: number, y: number, kind: Spot["kind"]): Omit<Spot, "key"> => ({ gift: land, s, x, y, kind });
   let spot: Omit<Spot, "key"> | null;
   if (name && (HAT_SPOT.test(name) || /^(ears|bow_)/.test(name))) spot = at(42, -10, -10, "hatL"); // hats and ears: always the top-left corner, tilted 45° so they sit squarely on it
-  else if (name && RANDOM_SPOT.test(name)) { const size = name.startsWith("air_kiss") ? 23 : name.startsWith("bow_") ? 44 : 34; spot = at(size, 4 + Math.random() * (92 - size), 4 + Math.random() * (92 - size), "rand"); }
+  else if (name && RANDOM_SPOT.test(name)) { const size = name.startsWith("air_kiss") ? 23 : name.startsWith("bow_") ? 44 : 34; const span = 100 - size + 16; spot = at(size, -8 + Math.random() * span, -8 + Math.random() * span, "rand"); /* anywhere on the photo, edge to edge */ }
   else if (wornGift(land)) spot = null;
   else if (/^redbull(red|yellow)?$/.test(name)) spot = at(58, 42, 42, "corner"); // Red Bull: only the bottom-right corner
   else {
