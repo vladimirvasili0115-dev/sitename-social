@@ -2154,7 +2154,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           return (
             <div key={`name-${player.id}`} aria-hidden="true" className={cn("pointer-events-none absolute z-[31] -translate-x-1/2 -translate-y-1/2 transition-[left,top] duration-[1100ms] ease-in-out motion-reduce:duration-0", wide ? "w-[18.5cqmin]" : "w-[17.5cqmin]")} style={staged && active ? { left: `calc(${CENTER_X}% ${index === turn ? "-" : "+"} 12.5cqmin)`, top: `${STAGE_Y}%` } : { left: `${seats[index][0]}%`, top: `${seats[index][1]}%` }}>
               <div className="aspect-square w-full" />
-              <p className={cn("relative left-1/2 w-max max-w-[26cqmin] -translate-x-1/2 truncate rounded-full bg-black/40 px-[1cqmin] text-center text-[2.4cqmin] font-semibold leading-snug [text-shadow:0_1px_2px_rgba(0,0,0,0.8)]", framed ? "mt-[1.4cqmin]" : "mt-px", isAdminPlayer(player) ? "text-[#FFD54A]" : "text-white")}>{isAdminPlayer(player) ? "👑 " : ""}{player.me ? t("common.you") : player.name}{!player.me && nameSuffix(player) ? ` [${nameSuffix(player)}]` : ""}, {player.age}</p>
+              <p className={cn("relative left-1/2 w-max max-w-[26cqmin] -translate-x-1/2 truncate px-[0.5cqmin] text-center text-[2.4cqmin] font-semibold leading-snug [text-shadow:0_1px_2px_rgba(0,0,0,0.8)]", framed ? "mt-[1.4cqmin]" : "mt-px", isAdminPlayer(player) ? "text-[#FFD54A]" : "text-white")}>{isAdminPlayer(player) ? "👑 " : ""}{player.me ? t("common.you") : player.name}{!player.me && nameSuffix(player) ? ` [${nameSuffix(player)}]` : ""}, {player.age}</p>
             </div>
           );
         })}
