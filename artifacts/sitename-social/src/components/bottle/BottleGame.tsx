@@ -294,8 +294,8 @@ function LipsBadge({ count }: { count: number }) {
   );
 }
 const SPIN_SECONDS = 8;
-const PILE_MS = 45000;
-const KISS_MS = 13000;
+const PILE_MS = 90000;
+const KISS_MS = 26000;
 const ANSWER_SECONDS = 9;
 const packs: { hearts: number; price: number; bonus?: number; tag?: "best" | "hit"; art: string }[] = [
   { hearts: 7500, price: 5000, bonus: 35, tag: "best", art: "🛒" }, { hearts: 1500, price: 1000, bonus: 35, art: "🧰" }, { hearts: 720, price: 500, bonus: 30, art: "🛢️" },
@@ -360,8 +360,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     }
     else if (plan.spot) {
       setSpots((value) => ({ ...value, [toId]: { ...plan.spot!, key } }));
-      // Pacifiers only stay on the photo for about ten seconds.
-      if (/^c:nipple/.test(plan.land)) window.setTimeout(() => setSpots((value) => (value[toId]?.key === key ? Object.fromEntries(Object.entries(value).filter(([id]) => id !== toId)) : value)), 10000);
+      // Pacifiers only stay on the photo for about twenty seconds.
+      if (/^c:nipple/.test(plan.land)) window.setTimeout(() => setSpots((value) => (value[toId]?.key === key ? Object.fromEntries(Object.entries(value).filter(([id]) => id !== toId)) : value)), 20000);
     }
     else setStickers((value) => ({ ...value, [toId]: [...(value[toId] ?? []), plan.land].slice(-6) }));
     if (plan.scatter) {
