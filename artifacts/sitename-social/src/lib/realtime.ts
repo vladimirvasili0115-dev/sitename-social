@@ -11,6 +11,8 @@ export function startRealtime(userId: string) {
   const client = supabase;
   const channel = client.channel(`user-${userId}`)
     .on("postgres_changes", { event: "*", schema: "public", table: "messages", filter: `recipient_id=eq.${userId}` }, () => void refreshMessages())
+    // My message was read: the second tick turns blue.
+    .on("postgres_changes", { event: "UPDATE", schema: "public", table: "messages", filter: `sender_id=eq.${userId}` }, () => void refreshMessages())
     .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` }, (payload) => {
       void refreshNotices();
       const type = (payload.new as { type?: string }).type;

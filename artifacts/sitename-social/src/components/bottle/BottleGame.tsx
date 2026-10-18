@@ -29,7 +29,7 @@ import { supabase } from "@/lib/supabase";
 import { refreshFriends } from "@/lib/friendsSync";
 import { ensureMessagesLoaded, openRemoteChat, remoteChats, sendRemoteMessage } from "@/lib/messagesSync";
 import { uploadBlob } from "@/lib/media";
-import { bottleAnswer, bottleAchSync, bottleAchView, bottleGesture, bottleProgress, bottleSkin, bottleBuyChances, bottleJoin, bottleMove, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleProfile, type BottleProfile, bottleDaily, bottleItems, bottleItemBuy, bottleBooster, bottleTutorial, bottleAdminIds, type BottleItems, bottleLeagueInfo, bottleLeagueClaim, type BottleLeague, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleKickPrice, bottleGift, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState, type BottleSeat } from "@/lib/bottleSync";
+import { bottleAnswer, bottleAchSync, bottleAchView, bottleGesture, bottleProgress, bottleGesturesOpen, bottleSkin, bottleBuyChances, bottleJoin, bottleMove, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleProfile, type BottleProfile, bottleDaily, bottleItems, bottleItemBuy, bottleBooster, bottleTutorial, bottleAdminIds, type BottleItems, bottleLeagueInfo, bottleLeagueClaim, type BottleLeague, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleKickPrice, bottleGift, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState, type BottleSeat } from "@/lib/bottleSync";
 
 type Player = { id: string; name: string; age: number; female: boolean; avatar: string; me?: boolean; empty?: boolean; zodiac?: number | null };
 type Phase = "waiting" | "spinning" | "choice" | "kissed" | "declined";
@@ -119,11 +119,11 @@ function planLanding(gift: string) {
   if (name && (HAT_SPOT.test(name) || /^ears/.test(name))) spot = Math.random() < 0.5 ? at(40, -14, -16, "hatL") : at(40, 74, -16, "hatR");
   else if (name && RANDOM_SPOT.test(name)) { const size = name.startsWith("air_kiss") ? 23 : name.startsWith("bow_") ? 44 : 34; spot = at(size, 4 + Math.random() * (92 - size), 4 + Math.random() * (92 - size), "rand"); }
   else if (wornGift(land)) spot = null;
-  else if (name === "cactus") spot = at(34, 66, 66, "corner");
+  else if (name === "cactus") spot = at(58, 42, 42, "corner");
   else if (name === "icecream") spot = at(34, 94, 50, "behind");
-  else if (/^baloon\d$/.test(name)) spot = at(34, 76, 76, "balloon");
-  else if (/^(flagaz|eiffeltower|amurchik)$/.test(name)) spot = at(46, 64, 64, "corner");
-  else spot = at(34, 76, 76, "corner");
+  else if (/^baloon\d$/.test(name)) spot = at(58, 52, 52, "balloon");
+  else if (/^(flagaz|eiffeltower|amurchik)$/.test(name)) spot = at(78, 32, 32, "corner");
+  else spot = at(58, 52, 52, "corner");
   return { land, spot, scatter };
 }
 // While flying, a family gift changes colour through its members.
@@ -1098,9 +1098,12 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // What the player has reached for unlocking gifts and smileys (kisses, songs, friends, smileys sent, VIP).
   const [serverProgress, setServerProgress] = useState<Progress | null>(null);
   const pullProgress = useRef<() => void>(() => {});
-  pullProgress.current = () => { if (online) void bottleProgress().then((value) => { if (value) setServerProgress(value); }); };
+  // Admin paneldən "bütün smayliklər açıq" seçilibsə, smayliklər hamıya kilidsiz görünür.
+  const [gesOpen, setGesOpen] = useState(false);
+  pullProgress.current = () => { if (online) { void bottleProgress().then((value) => { if (value) setServerProgress(value); }); void bottleGesturesOpen().then((value) => setGesOpen(value === true)); } };
   useEffect(() => { pullProgress.current(); const timer = window.setInterval(() => pullProgress.current(), 15000); return () => window.clearInterval(timer); }, [online]);
   const progress: Progress = iAmAdmin ? { kisses: 1e9, friends: 1e9, dj: 1e9, gestures: 1e9, vip: true } : online && serverProgress ? serverProgress : { kisses: kisses.me ?? 0, friends: 0, dj: readStats().songsSent ?? 0, gestures: readStats().gestures ?? 0, vip };
+  const gesProgress: Progress = gesOpen ? { kisses: 1e9, friends: 1e9, dj: 1e9, gestures: 1e9, vip: true } : progress;
   const progressReady = !online || Boolean(serverProgress);
   const openKey = progressReady ? [...Object.entries(GIFT_RULES).filter(([, rule]) => rule[0] !== "vip" && rule[1] > 0 && missing(rule, progress) === 0).map(([gift]) => gift),
     ...GESTURES.filter(([, , kind, amount]) => kind !== "vip" && amount > 0 && missing([kind, amount], progress) === 0).map(([id]) => `g:${id}`)].sort().join(",") : "";
@@ -1324,7 +1327,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     window.setTimeout(() => setSeatGes((value) => (value[who]?.key === key ? Object.fromEntries(Object.entries(value).filter(([name]) => name !== who)) : value)), 4500);
   }, []);
   function sendGesture(id: string, price: number, rule: [RuleKind, number]) {
-    const left = missing(rule, progress);
+    const left = missing(rule, gesProgress);
     if (left) return openLock(left < 0 ? "vip" : rule[0], rule[1], { gesture: id });
     if (heartsRef.current < price) return setFrameNote(t("bottle.noHearts"));
     setFrameNote(null);
@@ -2114,7 +2117,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                     {ears ? <Gift anim id={ears} className="pointer-events-none absolute -left-[22%] -top-[14%] z-[2] h-[44%] w-[80%] -rotate-45 animate-[gift-drop_0.35s_ease-out] drop-shadow" /> : null}
                     {head ? <Gift anim id={head} className="pointer-events-none absolute -left-[16%] -top-[16%] z-[2] h-[56%] w-[56%] -rotate-45 animate-[gift-drop_0.35s_ease-out] drop-shadow" /> : null}
                     {spots[player.id] ? (() => { const spot = spots[player.id]; return <span key={spot.key} className={cn("pointer-events-none absolute", spot.kind === "behind" ? "-z-[1]" : spot.kind === "hatL" || spot.kind === "hatR" ? "z-[5]" : "z-[2]")} style={{ left: `${spot.x}%`, top: `${spot.y}%`, width: `${spot.s}%`, height: `${spot.s}%`, transform: spot.kind === "hatL" ? "rotate(-35deg)" : spot.kind === "hatR" ? "rotate(35deg)" : undefined }}><Gift anim id={spot.gift} className={cn("h-full w-full origin-bottom-right drop-shadow", spot.kind === "balloon" ? "animate-[gift-grow_0.7s_ease-out_forwards]" : "animate-[gift-drop_0.35s_ease-out]")} /></span>; })()
-                      : rest.map((gift) => <Gift anim key={`${gift}-${mine.length}`} id={gift} className="absolute -bottom-[1.6cqmin] -right-[1.6cqmin] z-[2] h-[34%] w-[34%] animate-[gift-drop_0.35s_ease-out] drop-shadow" />)}
+                      : rest.map((gift) => <Gift anim key={`${gift}-${mine.length}`} id={gift} className="absolute -bottom-[1.6cqmin] -right-[1.6cqmin] z-[2] h-[58%] w-[58%] animate-[gift-drop_0.35s_ease-out] drop-shadow" />)}
                     {scatters.filter((item) => item.to === player.id).flatMap((item) => item.names.map((name, n) => <span key={`${item.key}-${n}`} className="pointer-events-none absolute left-1/2 top-1/2 z-[3] h-[26%] w-[26%]" style={{ animation: "gift-scatter 1s ease-out forwards", ["--dx" as string]: `${item.dirs[n][0]}cqmin`, ["--dy" as string]: `${item.dirs[n][1]}cqmin` }}><Gift anim id={name} className="h-full w-full drop-shadow" /></span>))}
                   </>;
                 })()}
@@ -2688,7 +2691,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 <div className="-mx-3 -mb-3 bg-white">
                   <ul className="grid max-h-[min(60vh,420px)] grid-cols-4 gap-1.5 overflow-y-auto p-3 [scrollbar-width:thin] sm:grid-cols-5">
                     {GESTURES.map(([id, price, kind, amount]) => {
-                      const left = missing([kind, amount], progress);
+                      const left = missing([kind, amount], gesProgress);
                       return (
                         <li key={id}>
                           <button onClick={() => sendGesture(id, price, [kind, amount])} title={left ? (left < 0 ? t("bottle.vipOnly") : lockNote(kind, left)) : undefined} className={cn("flex w-full flex-col items-center rounded-xl border border-[#EEF0F3] p-1 transition-transform hover:-translate-y-0.5 hover:shadow", left !== 0 && "opacity-60")}>
@@ -2885,7 +2888,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             {!dedicate && picked !== null && players[picked].me ? (
             <div role="menu" className={cn("grid min-h-0 flex-1 content-start gap-0.5 overflow-y-auto bg-white p-2", wide ? "grid-cols-[repeat(auto-fill,minmax(68px,1fr))]" : "grid-cols-[repeat(auto-fill,minmax(56px,1fr))]")}>
               {GESTURES.map(([id, price, kind, amount]) => {
-                const left = missing([kind, amount], progress);
+                const left = missing([kind, amount], gesProgress);
                 return (
                   <button key={id} role="menuitem" aria-disabled={left !== 0} onClick={() => sendGesture(id, price, [kind, amount])} title={left ? (left < 0 ? t("bottle.vipOnly") : lockNote(kind, left)) : undefined} className="group flex flex-col items-center gap-0.5 rounded-xl p-1 hover:bg-[#FFF4E5]">
                     <img src={`/custom/gifts/ges_${id}.webp`} alt="" loading="lazy" className={cn("object-contain transition-transform duration-150 group-hover:scale-110", wide ? "h-14 w-14" : "h-11 w-11", left !== 0 && "opacity-75 grayscale")} />

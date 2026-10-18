@@ -41,7 +41,7 @@ export async function refreshMessages() {
     const mine = row.sender_id === userId;
     const other = mine ? row.recipient_id : row.sender_id;
     const chat = byUser.get(other) ?? { userId: other, unread: 0, messages: [] };
-    chat.messages.push({ id: row.id, from: mine ? "me" : "them", text: row.text, image: row.image_url ?? undefined, audio: row.audio_url ?? undefined, at: Date.parse(row.created_at) });
+    chat.messages.push({ id: row.id, from: mine ? "me" : "them", text: row.text, image: row.image_url ?? undefined, audio: row.audio_url ?? undefined, at: Date.parse(row.created_at), read: mine ? Boolean(row.read_at) : undefined });
     if (!mine && !row.read_at) chat.unread += 1;
     byUser.set(other, chat);
   });

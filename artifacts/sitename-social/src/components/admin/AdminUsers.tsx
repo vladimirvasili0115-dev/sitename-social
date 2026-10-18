@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Eye, EyeOff, KeyRound, Award, HeartOff, BadgeCheck, Ban, ChevronDown, Coins, Crown, Gamepad2, Heart, ShieldCheck, ShieldOff, Trash2, Undo2 } from "lucide-react";
 import { useSyncExternalStore } from "react";
 import { refreshVerified, verifiedStore } from "@/lib/verifiedSync";
-import { banUser, deleteUser, fetchAdminUsers, fetchUserDetail, grantCoins, grantHearts, setModerator, setVerified, vipAll, vipCount, gameState, gameGrant, gameFlags, type GameFlags, type GameState, type AdminUser, type UserDetail } from "@/lib/adminSync";
+import { banUser, deleteUser, fetchAdminUsers, fetchUserDetail, grantCoins, grantHearts, setModerator, setVerified, vipAll, vipCount, gesturesOpenGet, gesturesOpenSet, gameState, gameGrant, gameFlags, type GameFlags, type GameState, type AdminUser, type UserDetail } from "@/lib/adminSync";
 import type { TranslationKey } from "@/i18n/LanguageProvider";
 import { initialsAvatar } from "@/lib/avatar";
 import { formatDay } from "@/lib/datetime";
@@ -115,6 +115,7 @@ export function AdminUsers({ owner }: { owner: boolean }) {
   return (
     <>
       <VipAllCard />
+      <GesturesOpenCard />
       <SearchInput value={query} onChange={setQuery} label={t(owner ? "admin.searchUsers" : "admin.searchUsersMod")} className="mb-4" />
       {failed ? <p role="alert" className="mb-3 rounded-xl border border-danger px-4 py-2.5 text-sm text-danger">{t("report.failed")}</p> : null}
       {users === null ? null : users.length ? (
@@ -225,6 +226,38 @@ export function AdminUsers({ owner }: { owner: boolean }) {
 }
 
 // One click gives every player VIP for the chosen number of days (the owner and moderators can do it).
+function GesturesOpenCard() {
+  const { t } = useTranslation();
+  const [on, setOn] = useState<boolean | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => { void gesturesOpenGet().then((value) => setOn(value === true)); }, []);
+  async function flip() {
+    if (on === null) return;
+    setBusy(true);
+    const done = await gesturesOpenSet(!on);
+    setBusy(false);
+    setFailed(typeof done !== "boolean");
+    if (typeof done === "boolean") setOn(done);
+  }
+  return (
+    <Card className="mb-4 p-4">
+      <div className="flex items-start gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#FFEDD5] text-xl">😊</span>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold">{t("admin.gesOpenTitle")}</p>
+          <p className="mt-0.5 text-xs leading-5 text-muted">{t("admin.gesOpenText")}</p>
+          <p className={cn("mt-1 text-xs font-semibold", on ? "text-accent" : "text-muted")}>{on === null ? "…" : t(on ? "admin.gesOpenOn" : "admin.gesOpenOff")}</p>
+        </div>
+      </div>
+      <div className="mt-3 flex justify-end">
+        <button type="button" disabled={busy || on === null} onClick={() => void flip()} className={cn("inline-flex h-9 items-center rounded-xl px-3.5 text-xs font-semibold text-white disabled:opacity-50", on ? "bg-[#6B7280] hover:brightness-110" : "bg-[#EA580C] hover:brightness-110")}>{t(on ? "admin.gesOpenUndo" : "admin.gesOpenDo")}</button>
+      </div>
+      {failed ? <p role="status" className="mt-2 text-xs font-semibold text-danger">{t("admin.vipFail")}</p> : null}
+    </Card>
+  );
+}
+
 function VipAllCard() {
   const { t } = useTranslation();
   const [days, setDays] = useState(7);

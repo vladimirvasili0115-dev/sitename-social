@@ -2,7 +2,7 @@
 import { VerifiedMark } from "@/components/ui/VerifiedMark";
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import Link from "next/link";
-import { ArrowLeft, ImagePlus, SendHorizontal, Smile, Trash2, X } from "lucide-react";
+import { ArrowLeft, Check, CheckCheck, ImagePlus, SendHorizontal, Smile, Trash2, X } from "lucide-react";
 import { userHref } from "@/lib/links";
 import { dayDiff, formatClock, formatDay } from "@/lib/datetime";
 import { resizeImage } from "@/lib/profile";
@@ -82,7 +82,7 @@ export function ChatPane({ chat, onBack, onSend, onDelete, className }: Props) {
                   {message.audio ? <audio src={message.audio} controls preload="metadata" onClick={(event) => event.stopPropagation()} className="mx-2 mt-2 h-10 w-[230px] max-w-full" /> : null}
                   <div className="px-3.5 py-2">
                     {message.text ? <p className="whitespace-pre-wrap break-words text-sm leading-5">{message.text}</p> : null}
-                    <p className={cn("mt-0.5 text-right text-[10px]", mine ? "text-bg" : "text-muted")}>{formatClock(message.at)}</p>
+                    <p className={cn("mt-0.5 flex items-center justify-end gap-1 text-[10px]", mine ? "text-bg" : "text-muted")}>{formatClock(message.at)}{mine && message.read !== undefined ? (message.read ? <CheckCheck size={15} strokeWidth={2.4} aria-label={t("messages.read")} className="text-[#34B7F1]" /> : <Check size={15} strokeWidth={2.4} aria-label={t("messages.sent")} className="opacity-80" />) : null}</p>
                   </div>
                 </div>
               </div>

@@ -66,6 +66,7 @@ export const bottleRoomCreate = (name: string, password: string, capacity: numbe
 export const bottleRoomDelete = () => call<BottleMove & { error?: string }>("bottle_room_delete");
 export const bottleFrame = (frame: number) => call<{ hearts?: number; frame?: number; frames?: number[]; error?: "hearts" | "vip" | "bad" }>("bottle_frame", { p_frame: frame });
 export const bottleSkin = (skin: number) => call<boolean>("bottle_skin", { p_skin: skin });
+export const bottleGesturesOpen = () => call<boolean>("bottle_gestures_open");
 export const bottleProgress = () => call<{ kisses: number; friends: number; dj: number; gestures: number; vip: boolean }>("bottle_progress");
 export const bottleGesture = (id: string) => call<number>("bottle_gesture", { p_id: id });
 export const bottleAchSync = () => call<{ values: Record<string, number>; gained: number; new: string[]; hearts: number | null }>("bottle_ach_sync");

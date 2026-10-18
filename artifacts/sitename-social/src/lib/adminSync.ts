@@ -39,6 +39,9 @@ export const gameState = (id: string) => call<GameState>("admin_game_state", { t
 export const gameGrant = (id: string, kind: "vip" | "top" | "price" | "influence" | "admire_block" | "dj" | "kisses" | "smiles" | "chances" | "kiss_fire" | "refuse_slap", amount: number) => call<GameState>("admin_game_grant", { target: id, p_kind: kind, amount });
 // VIP for every player at once (owner and moderators); days are added on top of any VIP someone already has.
 export const vipAll = (days: number) => call<number>("admin_vip_all", { p_days: days });
+// All smileys unlocked for everyone (on) or back to the normal unlock rules (off).
+export const gesturesOpenGet = () => call<boolean>("bottle_gestures_open");
+export const gesturesOpenSet = (on: boolean) => call<boolean>("admin_gestures_open_set", { p_on: on });
 export const vipCount = () => call<{ vip: number; total: number }>("admin_vip_count");
 export const setModerator = async (id: string, enabled: boolean) => (await call("admin_set_moderator", { target: id, enabled })) !== null;
 export async function grantCoins(id: string, amount: number): Promise<number | null> {
