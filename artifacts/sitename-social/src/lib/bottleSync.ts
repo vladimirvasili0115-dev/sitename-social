@@ -71,7 +71,8 @@ export const bottleGesture = (id: string) => call<number>("bottle_gesture", { p_
 export const bottleAchSync = () => call<{ values: Record<string, number>; gained: number; new: string[]; hearts: number | null }>("bottle_ach_sync");
 export const bottleStatBump = (metric: string, by: number, max: boolean) => call<null>("bottle_stat_bump", { p_metric: metric, p_by: by, p_max: max });
 export const bottleStatsMerge = (stats: Record<string, number>) => call<Record<string, number>>("bottle_stats_merge", { p_stats: stats });
-export const bottleKick = (to: string) => call<"ok" | "vip" | "bad">("bottle_kick", { p_to: to });
+export const bottleKick = (to: string) => call<"ok" | "vip" | "bad" | "hearts">("bottle_kick", { p_to: to });
+export const bottleKickPrice = () => call<number>("bottle_kick_price");
 export const bottleSave = (to: string) => call<boolean>("bottle_save", { p_to: to });
 export const bottleCompliment = (to: string, kind: number) => call<{ count?: number; hearts?: number; bonus?: boolean; error?: "bad" | "again" }>("bottle_compliment", { p_to: to, p_kind: kind });
 export const bottleActiveClaim = (level: number) => call<number>("bottle_active_claim", { p_level: level });

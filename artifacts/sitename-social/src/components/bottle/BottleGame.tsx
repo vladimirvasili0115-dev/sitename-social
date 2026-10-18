@@ -29,7 +29,7 @@ import { supabase } from "@/lib/supabase";
 import { refreshFriends } from "@/lib/friendsSync";
 import { ensureMessagesLoaded, openRemoteChat, remoteChats, sendRemoteMessage } from "@/lib/messagesSync";
 import { uploadBlob } from "@/lib/media";
-import { bottleAnswer, bottleAchSync, bottleAchView, bottleGesture, bottleProgress, bottleSkin, bottleBuyChances, bottleJoin, bottleMove, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleProfile, type BottleProfile, bottleDaily, bottleItems, bottleItemBuy, bottleBooster, bottleTutorial, bottleAdminIds, type BottleItems, bottleLeagueInfo, bottleLeagueClaim, type BottleLeague, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleGift, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState, type BottleSeat } from "@/lib/bottleSync";
+import { bottleAnswer, bottleAchSync, bottleAchView, bottleGesture, bottleProgress, bottleSkin, bottleBuyChances, bottleJoin, bottleMove, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleProfile, type BottleProfile, bottleDaily, bottleItems, bottleItemBuy, bottleBooster, bottleTutorial, bottleAdminIds, type BottleItems, bottleLeagueInfo, bottleLeagueClaim, type BottleLeague, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleKickPrice, bottleGift, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState, type BottleSeat } from "@/lib/bottleSync";
 
 type Player = { id: string; name: string; age: number; female: boolean; avatar: string; me?: boolean; empty?: boolean; zodiac?: number | null };
 type Phase = "waiting" | "spinning" | "choice" | "kissed" | "declined";
@@ -103,7 +103,7 @@ const wornGift = (gift: string) => (gift.startsWith("c:") ? customPlace(gift.sli
 // land on a random spot (a new one every time); the cactus sits exactly in the corner, the ice cream peeks out from behind,
 // balloons grow a little in the corner, the flag, the Eiffel tower and cupid are a bit bigger; the rest stand in the corner.
 type Spot = { key: number; gift: string; x: number; y: number; s: number; kind: "rand" | "corner" | "behind" | "balloon" | "hatL" | "hatR" };
-const RANDOM_SPOT = /^(air_kiss\d|gem\d|flower\d+|loveis\d|iloveyou|bear\d+|egg\d|bow_\w+|ears\w+)$/;
+const RANDOM_SPOT = /^(air_kiss\d|gem\d|flower\d+|loveis\d|iloveyou|bear\d+|egg\d|bow_\w+)$/;
 // Caps and hats sit on the top-left or the top-right corner of the photo, tilted towards it.
 const HAT_SPOT = /^(\w*cap|cappy|cowboy|cylinderw?|indianhat|napoleon|musketeer|nurse|bezkoz|monomachhat|noteshat\w|partyhat\d|clown|carnivalmask\d|horseheadhat2|baseballa\w)$/;
 // These spin a full turn on the way; kisses and gems fly a little smaller.
@@ -116,7 +116,8 @@ function planLanding(gift: string) {
   const scatter = SCATTER.has(gift) ? giftGroups[gift.slice(2)].map((item) => `c:${item}`) : null;
   const at = (s: number, x: number, y: number, kind: Spot["kind"]): Omit<Spot, "key"> => ({ gift: land, s, x, y, kind });
   let spot: Omit<Spot, "key"> | null;
-  if (name && HAT_SPOT.test(name)) spot = Math.random() < 0.5 ? at(40, -14, -16, "hatL") : at(40, 74, -16, "hatR");
+  if (name && /^ears/.test(name)) spot = Math.random() < 0.5 ? at(52, -18, -20, "hatL") : at(52, 66, -20, "hatR");
+  else if (name && HAT_SPOT.test(name)) spot = Math.random() < 0.5 ? at(40, -14, -16, "hatL") : at(40, 74, -16, "hatR");
   else if (name && RANDOM_SPOT.test(name)) { const size = name.startsWith("air_kiss") ? 23 : name.startsWith("bow_") ? 44 : 34; spot = at(size, 4 + Math.random() * (92 - size), 4 + Math.random() * (92 - size), "rand"); }
   else if (wornGift(land)) spot = null;
   else if (name === "cactus") spot = at(34, 66, 66, "corner");
@@ -468,6 +469,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [kickFor, setKickFor] = useState<{ id: string; name: string; avatar: string } | null>(null);
   const [kickNote, setKickNote] = useState<string | null>(null);
   const [kickHelp, setKickHelp] = useState(false);
+  // Kicking costs hearts; the kicked player can buy themselves free for the same price.
+  const [kickPrice, setKickPrice] = useState(10);
+  useEffect(() => { if (online) void bottleKickPrice().then((value) => { if (typeof value === "number" && value >= 0) setKickPrice(value); }); }, [online]);
   const [complimentIn, setComplimentIn] = useState<{ name: string; avatar: string; kind: number } | null>(null);
   const [kickedToast, setKickedToast] = useState(false);
   const [refInfo, setRefInfo] = useState<{ invited: number; done: number }>({ invited: 0, done: 0 });
@@ -992,7 +996,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (!online) { setKickNote(t("bottle.kickDemo")); return; }
     const result = await bottleKick(kickFor.id);
     if (result === "ok") { setPanel(null); pullRef.current(); }
-    else setKickNote(t(result === "vip" ? "bottle.kickNeedVip" : "bottle.kickFail"));
+    else setKickNote(t(result === "vip" ? "bottle.kickNeedVip" : result === "hearts" ? "bottle.noHearts" : "bottle.kickFail"));
   }
   // Invited by a friend's link: tell the server once, the inviter gets hearts when we reach 50 kisses.
   useEffect(() => {
@@ -2095,12 +2099,13 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 const kick = online ? net?.seats.find((seat) => seat.id === (player.me ? net.me : player.id))?.kicked : null;
                 if (!kick || !net) return null;
                 const left = Math.max(0, Math.ceil(30 - (net.now - kick.at) / 1000));
-                const canSave = !player.me && kick.by !== net.me;
+                const self = Boolean(player.me);
+                const canSave = self || kick.by !== net.me;
                 return (
                   <div className="absolute left-0 top-0 z-[3] flex aspect-square w-full flex-col items-center justify-center rounded-[14%] bg-[#7F1D1D]/60 ring-[0.6cqmin] ring-[#EF4444]">
                     <img src={emojiSrc("🦶")} alt="" className="h-[42%] w-[42%] animate-pulse" />
                     <span className="text-[3.4cqmin] font-black tabular-nums text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.7)]">{left}</span>
-                    {canSave ? <button onClick={(event) => { event.stopPropagation(); void bottleSave(player.id).then(pullRef.current); }} className="absolute -bottom-[2.4cqmin] flex items-center gap-[0.6cqmin] rounded-full bg-[linear-gradient(180deg,#9BD65A,#5DB13A)] px-[1.6cqmin] py-[0.5cqmin] text-[2.4cqmin] font-bold text-white shadow-lg"><img src={emojiSrc("🛟")} alt="" className="h-[3cqmin] w-[3cqmin]" />{t("bottle.saveBtn")}</button> : null}
+                    {canSave ? <button onClick={(event) => { event.stopPropagation(); if (self && heartsRef.current < kickPrice) { setCardNote(`${t("bottle.noHearts")} (${kickPrice})`); return; } void bottleSave(self ? net.me : player.id).then(pullRef.current); }} className="absolute -bottom-[2.4cqmin] flex items-center gap-[0.6cqmin] whitespace-nowrap rounded-full bg-[linear-gradient(180deg,#9BD65A,#5DB13A)] px-[1.6cqmin] py-[0.5cqmin] text-[2.4cqmin] font-bold text-white shadow-lg"><img src={emojiSrc("🛟")} alt="" className="h-[3cqmin] w-[3cqmin]" />{self ? <>{t("bottle.kickDefend")} ❤{kickPrice}</> : t("bottle.saveBtn")}</button> : null}
                   </div>
                 );
               })()}
@@ -2415,6 +2420,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                       <p className="ml-3">{(() => { const [a, b = ""] = t("bottle.kickAskFull").split("{name}"); return <>{a}<b className="text-[#2F6FD6]">{kickFor.name}</b>{b}</>; })()}</p>
                     </div>
                     <p className="mb-[9px] mt-[17px] whitespace-pre-wrap rounded-[10px] bg-[#FFFAE2] px-[7px] pb-2.5 pt-[9px] text-center leading-[1.23]">{liveVip ? t("bottle.kickWarn") : t("bottle.kickNeedVip")}</p>
+                    <p className="flex items-center justify-center gap-1 text-center">{t("bottle.kickPrice")} <b className="bg-no-repeat pl-4 text-[rgb(255,62,0)] [background-position:left_center] [background-size:14px_11px]" style={{ backgroundImage: "url(/custom/orig/bank_heart.svg)" }}>{kickPrice}</b></p>
                     {kickNote ? <p role="status" className="text-center text-[12px] font-semibold text-[#E03D1F]">{kickNote}</p> : null}
                   </div>
                   <div className="flex shrink-0 items-center justify-center gap-5 p-[15px]">
