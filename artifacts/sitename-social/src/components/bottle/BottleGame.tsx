@@ -545,6 +545,24 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [video, setVideo] = useState<string | null>(null);
   // The site's own music player pauses while the game is open, so two songs do not play at once.
   useEffect(() => siteMusic.pause(), []);
+  // iOS: iki dəfə tez toxunanda Safari ekranı yaxınlaşdırır. İkinci toxunuşda yaxınlaşmanı dayandırıb kliki özümüz veririk.
+  useEffect(() => {
+    let last = 0;
+    const stop = (event: TouchEvent) => {
+      const now = Date.now();
+      const target = event.target as HTMLElement | null;
+      const typing = target?.closest("input, textarea, select, [contenteditable]");
+      if (target?.closest("[data-bottle-root]") && !typing && event.changedTouches.length === 1 && now - last < 400) {
+        event.preventDefault();
+        (target?.closest("button, a, [role=button], label") as HTMLElement | null ?? target)?.click();
+      }
+      last = now;
+    };
+    document.addEventListener("touchend", stop, { passive: false });
+    const gesture = (event: Event) => event.preventDefault();
+    document.addEventListener("gesturestart", gesture);
+    return () => { document.removeEventListener("touchend", stop); document.removeEventListener("gesturestart", gesture); };
+  }, []);
   // Songs from the MP3 tab play in "music mode": a small square player with the title, no big video.
   const [musicMode, setMusicMode] = useState(false);
   const [tune, setTune] = useState({ playing: false, cur: 0, dur: 0 });
