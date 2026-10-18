@@ -2,7 +2,7 @@
 import { VerifiedMark } from "@/components/ui/VerifiedMark";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { Award, HeartOff, BadgeCheck, Ban, ChevronDown, Coins, Crown, Gamepad2, Heart, ShieldCheck, ShieldOff, Trash2, Undo2 } from "lucide-react";
+import { Eye, EyeOff, KeyRound, Award, HeartOff, BadgeCheck, Ban, ChevronDown, Coins, Crown, Gamepad2, Heart, ShieldCheck, ShieldOff, Trash2, Undo2 } from "lucide-react";
 import { useSyncExternalStore } from "react";
 import { refreshVerified, verifiedStore } from "@/lib/verifiedSync";
 import { banUser, deleteUser, fetchAdminUsers, fetchUserDetail, grantCoins, grantHearts, setModerator, setVerified, vipAll, vipCount, gameState, gameGrant, gameFlags, type GameFlags, type GameState, type AdminUser, type UserDetail } from "@/lib/adminSync";
@@ -14,6 +14,10 @@ import { useTranslation } from "@/i18n/useTranslation";
 import { Card } from "@/components/ui/Card";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/lib/supabase";
+
+// E-mail is hidden until the eye is pressed (a@b.com → a•••@b.com).
+const maskEmail = (email: string) => { const [name, domain = ""] = email.split("@"); return `${name.slice(0, 1)}•••@${domain}`; };
 
 const chip = "rounded-full border px-2 py-0.5 text-[10px] font-semibold";
 const action = "inline-flex h-9 items-center gap-1.5 rounded-xl border border-border px-2.5 text-xs font-semibold text-text hover:bg-surface-2 disabled:opacity-50";
@@ -36,6 +40,8 @@ export function AdminUsers({ owner }: { owner: boolean }) {
   const [grantKind, setGrantKind] = useState<"coins" | "hearts">("coins");
   const [amount, setAmount] = useState("100");
   const [banFor, setBanFor] = useState<string | null>(null);
+  const [shown, setShown] = useState<Record<string, boolean>>({});
+  const [resetSent, setResetSent] = useState<Record<string, boolean>>({});
   const [banDays, setBanDays] = useState(7);
   const [reason, setReason] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
@@ -129,7 +135,7 @@ export function AdminUsers({ owner }: { owner: boolean }) {
                         {user.banned ? <span className={cn(chip, "border-danger text-danger")}>{t("admin.statBanned")}</span> : null}
                         {online ? <span className={cn(chip, "border-border text-accent")}>{t("common.onlineNow")}</span> : null}
                       </div>
-                      <p className="truncate text-xs text-muted">{user.email ? `${user.email} · ` : ""}@{user.handle}</p>
+                      <p className="flex min-w-0 items-center gap-1 text-xs text-muted">{user.email ? <><span className="truncate">{shown[user.id] ? user.email : maskEmail(user.email)}</span><button type="button" onClick={() => setShown((value) => ({ ...value, [user.id]: !value[user.id] }))} aria-label={t(shown[user.id] ? "admin.emailHide" : "admin.emailShow")} title={t(shown[user.id] ? "admin.emailHide" : "admin.emailShow")} className="shrink-0 rounded p-0.5 text-muted hover:text-text">{shown[user.id] ? <EyeOff size={13} /> : <Eye size={13} />}</button><span className="shrink-0">·</span></> : null}<span className="truncate">@{user.handle}</span></p>
                       <p className="mt-0.5 text-[11px] text-muted">{t("admin.joined")}: {formatDay(user.joined)} · {t("gifts.balance")}: <span className="tabular-nums text-text">{user.balance}</span></p>
                     </div>
                   </div>
@@ -139,6 +145,7 @@ export function AdminUsers({ owner }: { owner: boolean }) {
                     <button disabled={locked} onClick={() => void toggleGame(user.id, "top", Boolean(flags[user.id]?.top))} className={cn(action, flags[user.id]?.top ? "border-[#CA8A04] text-[#CA8A04]" : "")}><Award size={14} />{t(flags[user.id]?.top ? "admin.topOff" : "admin.topOn")}</button>
                     <button disabled={locked} onClick={() => void run(user.id, async () => (await gameGrant(user.id, "admire_block", flags[user.id]?.block ? 0 : 1)) !== null)} className={cn(action, flags[user.id]?.block ? "border-danger text-danger" : "")}><HeartOff size={14} />{t(flags[user.id]?.block ? "admin.admireUnblock" : "admin.admireBlock")}</button>
                     <button disabled={locked} onClick={() => setGameFor(gameFor === user.id ? null : user.id)} aria-expanded={gameFor === user.id} className={action}><Gamepad2 size={14} />{t("admin.game")}</button>
+                    {user.email && supabase ? <button disabled={locked || resetSent[user.id]} onClick={() => { if (!supabase || !user.email) return; void supabase.auth.resetPasswordForEmail(user.email, { redirectTo: `${window.location.origin}/reset-password` }).then(({ error }) => setResetSent((value) => ({ ...value, [user.id]: !error }))); }} title={t("admin.resetHint")} className={action}><KeyRound size={14} />{t(resetSent[user.id] ? "admin.resetSent" : "admin.resetPass")}</button> : null}
                     {user.moderator ? null : user.banned
                       ? <button disabled={locked} onClick={() => void run(user.id, () => banUser(user.id, -1, ""))} className={action}><Undo2 size={14} />{t("settings.blkUnblock")}</button>
                       : <button disabled={locked} onClick={() => { setBanFor(banFor === user.id ? null : user.id); setBanDays(7); setReason(""); }} className={cn(danger, "text-danger hover:bg-surface-2")}><Ban size={14} />{t("admin.ban")}</button>}
