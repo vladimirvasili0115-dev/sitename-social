@@ -2012,7 +2012,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     return () => input.removeEventListener("click", onTap);
   }, [hint, myTexts]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
-    <div className={cn("relative flex h-full w-full bg-surface text-text", wide ? "flex-row" : "flex-col")}>
+    <div data-bottle-root className={cn("relative flex h-full w-full bg-surface text-text", wide ? "flex-row" : "flex-col")}>
       {/* On a phone-shaped window the title bar sits on the same wood as the table, with no seam between them. */}
       <div className={cn("relative shrink-0", wide ? "h-full w-[54%]" : "mx-auto w-full max-w-[64dvh]")}>
       {wide ? null : <WoodTable className="pointer-events-none absolute inset-0 h-full w-full" />}
