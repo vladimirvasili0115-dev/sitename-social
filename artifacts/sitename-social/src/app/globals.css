@@ -221,3 +221,21 @@ button { cursor: pointer; }
   10%, 85% { transform: scale(1.2); }
   100% { transform: scale(0.7); }
 }
+
+/* A gift flies straight to its spot and ends at the size it sits there (--end). */
+@keyframes gift-fly-to {
+  0% { transform: scale(0.8); }
+  10%, 85% { transform: scale(1.2); }
+  100% { transform: scale(var(--end, 1)); }
+}
+/* Family gifts (kisses, gems, eggs) burst over the whole photo before one of them stays. */
+@keyframes gift-scatter {
+  0% { transform: translate(-50%, -50%) scale(0.4); opacity: 1; }
+  65% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1); opacity: 1; }
+  100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0.9); opacity: 0; }
+}
+/* Balloons grow a little once they arrive. */
+@keyframes gift-grow {
+  0% { transform: scale(0.6); }
+  100% { transform: scale(1.2); }
+}

@@ -16,7 +16,7 @@ import { Fireworks, fireworksLevel } from "./Fireworks";
 import { GESTURES, GIFT_PRICES, GIFT_RULES, missing, type Progress, type RuleKind } from "./giftRules";
 import { OrigButton, OrigPopup } from "./OrigPopup";
 import { siteMusic } from "@/components/music/siteMusic";
-import { customGiftNames, customPlace, customPrice, landedName, isDrink } from "./customGifts";
+import { customGiftNames, customPlace, customPrice, giftGroups, landedName, isDrink } from "./customGifts";
 const landed = (gift: string) => (gift.startsWith("c:") ? `c:${landedName(gift.slice(2))}` : gift);
 import { AchievementsPanel } from "./AchievementsPanel";
 import { FIRST_ORIGINAL, FRAME_PRICE, FrameArt, ORIGINAL_FRAMES, frameLooks, frameStone } from "./FrameArt";
@@ -99,6 +99,33 @@ const lockedGifts: [string, number, number][] = [
 const headGifts = new Set(["crown", "e:👑", "e:⛑️", "e:🤠", "e:🧢", "e:🐻", "e:🐮", "e:🐱", "e:🐰", "e:🦌", "e:🎀", "e:🌸", "e:🪖", "e:🕶️", "e:😈", "e:👒", "e:🎩", "e:🎓", "e:🔱"]);
 // Hats, ears and face masks are worn on the photo, so they are not also dropped onto it like other gifts.
 const wornGift = (gift: string) => (gift.startsWith("c:") ? customPlace(gift.slice(2)) !== "body" : headGifts.has(gift));
+// Where a landed gift sits on the photo (in % of the photo). Kisses, gems, flowers, gum, eggs, plush toys, bows, ears and caps
+// land on a random spot (a new one every time); the cactus sits exactly in the corner, the ice cream peeks out from behind,
+// balloons grow a little in the corner, the flag, the Eiffel tower and cupid are a bit bigger; the rest stand in the corner.
+type Spot = { key: number; gift: string; x: number; y: number; s: number; kind: "rand" | "corner" | "behind" | "balloon" };
+const RANDOM_SPOT = /^(air_kiss\d|gem\d|flower\d+|loveis\d|iloveyou|bear\d+|egg\d|bow_\w+|ears\w+|\w*cap|cappy|cowboy|cylinderw?|indianhat|napoleon|musketeer|nurse|bezkoz|monomachhat|noteshat\w|partyhat\d|clown|carnivalmask\d|horseheadhat2)$/;
+const SCATTER = new Set(["c:air_kiss1", "c:gem1", "c:wholeegg"]);
+function planLanding(gift: string) {
+  const land = landed(gift);
+  const name = land.startsWith("c:") ? land.slice(2) : "";
+  const scatter = SCATTER.has(gift) ? giftGroups[gift.slice(2)].map((item) => `c:${item}`) : null;
+  const at = (s: number, x: number, y: number, kind: Spot["kind"]): Omit<Spot, "key"> => ({ gift: land, s, x, y, kind });
+  let spot: Omit<Spot, "key"> | null;
+  if (name && RANDOM_SPOT.test(name)) { const size = name.startsWith("air_kiss") ? 23 : 34; spot = at(size, 4 + Math.random() * (92 - size), 4 + Math.random() * (92 - size), "rand"); }
+  else if (wornGift(land)) spot = null;
+  else if (name === "cactus") spot = at(34, 66, 66, "corner");
+  else if (name === "icecream") spot = at(34, 94, 50, "behind");
+  else if (/^baloon\d$/.test(name)) spot = at(34, 76, 76, "balloon");
+  else if (/^(flagaz|eiffeltower|amurchik)$/.test(name)) spot = at(46, 64, 64, "corner");
+  else spot = at(34, 76, 76, "corner");
+  return { land, spot, scatter };
+}
+// While flying, a family gift changes colour through its members.
+function GiftCycle({ names, className }: { names: string[]; className?: string }) {
+  const [n, setN] = useState(0);
+  useEffect(() => { const timer = window.setInterval(() => setN((value) => (value + 1) % names.length), 160); return () => window.clearInterval(timer); }, [names.length]);
+  return <Gift anim id={names[n]} className={className} />;
+}
 // Gift pictures are glossy 3D emoji (Fluent Emoji 3D, MIT) kept in public/gifts, named by their code points.
 const giftEmoji: Record<string, string> = { crown: "👑", diamond: "💎", rose: "🌹" };
 const giftSrc = (emoji: string) => `/gifts/${Array.from(emoji).map((char) => char.codePointAt(0)!.toString(16)).filter((hex) => hex !== "fe0f").join("-")}.webp`;
@@ -310,6 +337,18 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [seconds, setSeconds] = useState(0);
   const [kisses, setKisses] = useState<Record<string, number>>({ b1: 3, b4: 8, b7: 1 });
   const [stickers, setStickers] = useState<Record<string, string[]>>({ b2: ["tea"], b5: ["rose"] });
+  const [spots, setSpots] = useState<Record<string, Spot>>({});
+  const [scatters, setScatters] = useState<{ key: number; to: string; names: string[]; dirs: [number, number][] }[]>([]);
+  // A gift lands: worn ones go on the head, the rest take their spot; family gifts first burst over the whole photo.
+  const landGift = (key: number, toId: string, plan: ReturnType<typeof planLanding>) => {
+    if (plan.spot) setSpots((value) => ({ ...value, [toId]: { ...plan.spot!, key } }));
+    else setStickers((value) => ({ ...value, [toId]: [...(value[toId] ?? []), plan.land].slice(-6) }));
+    if (plan.scatter) {
+      const dirs = plan.scatter.map((_, n) => { const angle = (n / plan.scatter!.length) * Math.PI * 2 + Math.random() * 0.8; return [Math.cos(angle) * (30 + Math.random() * 14), Math.sin(angle) * (30 + Math.random() * 14)] as [number, number]; });
+      setScatters((list) => [...list, { key, to: toId, names: plan.scatter!, dirs }]);
+      window.setTimeout(() => setScatters((list) => list.filter((item) => item.key !== key)), 1100);
+    }
+  };
   // Gifts that just arrived lie scattered over the photo for a while (PILE_MS), then fade away.
   const [piles, setPiles] = useState<Record<string, { key: number; gift: string; x: number; y: number; r: number; s: number; at: number }[]>>({});
   const [pileNow, setPileNow] = useState(0);
@@ -361,7 +400,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // "+" mode: choose several receivers on the table, then every gift goes to all of them.
   const [chosen, setChosen] = useState<string[]>([]);
   const [songMany, setSongMany] = useState<number[]>([]);
-  const [flying, setFlying] = useState<{ key: number; gift: string; from: number; to: number; moved: boolean; ms: number; corner?: boolean }[]>([]);
+  const [flying, setFlying] = useState<{ key: number; gift: string; from: number; to: number; moved: boolean; ms: number; tx: number; ty: number; end: number }[]>([]);
   // A drink landed: the receiver gets a "+1 heart" burst.
   const [bursts, setBursts] = useState<{ key: number; to: number; amount?: number }[]>([]);
   // Expensive gifts give the receiver a share of the price (the server keeps the numbers in bottle_config).
@@ -869,6 +908,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     setTableNo(1 + Math.floor(Math.random() * 240));
     setKisses({});
     setStickers({});
+    setSpots({});
     setLines([]);
     setPicked(null);
     setTarget(null);
@@ -1536,6 +1576,13 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     window.setTimeout(() => setBursts((list) => list.filter((item) => item.key !== key)), 1700);
   }
   // A single gift glides for 3 seconds; gifts sent in a rapid series (press and hold) fly in about a second.
+  // The flight goes straight to where the gift will sit (offset from the seat centre in cqmin, and its final size).
+  const flightTo = (plan: ReturnType<typeof planLanding>) => {
+    const w = wide ? 17 : 16;
+    if (!plan.spot) return { tx: -0.38 * w, ty: -0.38 * w, end: (0.56 * w) / 11 };
+    const { x, y, s: size } = plan.spot;
+    return { tx: ((x + size / 2 - 50) / 100) * w, ty: ((y + size / 2 - 50) / 100) * w, end: ((size / 100) * w) / 11 };
+  };
   function sendGift(index: number, gift: string, price: number, ms = 3000) {
     const player = players[index];
     if (heartsRef.current < price) return false;
@@ -1546,8 +1593,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     playGiftSound(gift, "send");
     // Drinks fly like every other gift (one by one); on landing the receiver gets the "+1 heart" burst.
     const pour = isDrink(gift) && index !== meIndex;
+    const plan = planLanding(gift);
     {
-      setFlying((list) => [...list, { key, gift, from: meIndex, to: index, moved: false, ms, corner: !wornGift(landed(gift)) }]);
+      setFlying((list) => [...list, { key, gift, from: meIndex, to: index, moved: false, ms, ...flightTo(plan) }]);
       window.setTimeout(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))), 40);
     }
     window.setTimeout(() => {
@@ -1555,7 +1603,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       playGiftSound(gift, "land");
       if (pour) heartBurst(key, index);
       fireworks(key, index, price, meIndex);
-      setStickers((value) => ({ ...value, [player.id]: [...(value[player.id] ?? []), landed(gift)].slice(-6) }));
+      landGift(key, player.id, plan);
       say({ from: "me", to: player.id, gift });
     }, ms + 100);
     setSent((value) => ({ ...value, [player.id]: (value[player.id] ?? 0) + 1 }));
@@ -1572,8 +1620,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     const key = flyId.current++;
     const pour = isDrink(gift) && fromAt >= 0 && fromAt !== toAt;
     playGiftSound(gift, "send");
+    const plan = planLanding(gift);
     {
-      setFlying((list) => [...list, { key, gift, from: fromAt >= 0 ? fromAt : toAt, to: toAt, moved: false, ms, corner: !wornGift(landed(gift)) }]);
+      setFlying((list) => [...list, { key, gift, from: fromAt >= 0 ? fromAt : toAt, to: toAt, moved: false, ms, ...flightTo(plan) }]);
       window.setTimeout(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))), 40);
     }
     window.setTimeout(() => {
@@ -1581,7 +1630,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       playGiftSound(gift, "land");
       if (pour) heartBurst(key, toAt);
       fireworks(key, toAt, priceOf(gift), fromAt);
-      setStickers((value) => ({ ...value, [toId]: [...(value[toId] ?? []), landed(gift)].slice(-6) }));
+      landGift(key, toId, plan);
       say({ from: fromId, to: toId, gift });
     }, ms + 100);
   };
@@ -2026,7 +2075,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                     {face ? <Gift id={face} className="absolute left-[8%] top-[10%] z-[2] h-[84%] w-[84%] animate-[gift-drop_0.35s_ease-out]" /> : null}
                     {ears ? <Gift anim id={ears} className="pointer-events-none absolute -left-[22%] -top-[14%] z-[2] h-[44%] w-[80%] -rotate-45 animate-[gift-drop_0.35s_ease-out] drop-shadow" /> : null}
                     {head ? <Gift anim id={head} className="pointer-events-none absolute -left-[16%] -top-[16%] z-[2] h-[56%] w-[56%] -rotate-45 animate-[gift-drop_0.35s_ease-out] drop-shadow" /> : null}
-                    {rest.map((gift) => <Gift anim key={`${gift}-${mine.length}`} id={gift} className="absolute -bottom-[1.6cqmin] -right-[1.6cqmin] z-[2] h-[48%] w-[48%] animate-[gift-drop_0.35s_ease-out] drop-shadow" />)}
+                    {spots[player.id] ? (() => { const spot = spots[player.id]; return <span key={spot.key} className={cn("pointer-events-none absolute", spot.kind === "behind" ? "-z-[1]" : "z-[2]")} style={{ left: `${spot.x}%`, top: `${spot.y}%`, width: `${spot.s}%`, height: `${spot.s}%` }}><Gift anim id={spot.gift} className={cn("h-full w-full origin-bottom-right drop-shadow", spot.kind === "balloon" ? "animate-[gift-grow_0.7s_ease-out_forwards]" : "animate-[gift-drop_0.35s_ease-out]")} /></span>; })()
+                      : rest.map((gift) => <Gift anim key={`${gift}-${mine.length}`} id={gift} className="absolute -bottom-[1.6cqmin] -right-[1.6cqmin] z-[2] h-[34%] w-[34%] animate-[gift-drop_0.35s_ease-out] drop-shadow" />)}
+                    {scatters.filter((item) => item.to === player.id).flatMap((item) => item.names.map((name, n) => <span key={`${item.key}-${n}`} className="pointer-events-none absolute left-1/2 top-1/2 z-[3] h-[26%] w-[26%]" style={{ animation: "gift-scatter 1s ease-out forwards", ["--dx" as string]: `${item.dirs[n][0]}cqmin`, ["--dy" as string]: `${item.dirs[n][1]}cqmin` }}><Gift anim id={name} className="h-full w-full drop-shadow" /></span>))}
                   </>;
                 })()}
               </button>
@@ -2059,7 +2110,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         {shows.map((item) => <Fireworks key={`fw-${item.key}`} at={seats[item.to]} level={item.level} seed={item.key} />)}
         {tableVfx ? <TableShower key={tableVfx.key} emoji={tableVfx.emoji} seed={tableVfx.key % 1000} /> : null}
         {boostFx ? <BoostFx key={boostFx.key} kind={boostFx.kind} fromLeft={boostFx.fromLeft} x={CENTER_X} y={STAGE_Y} /> : null}
-        {flying.map((item) => <div key={item.key} className="pointer-events-none absolute z-40 h-[11cqmin] w-[11cqmin] -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_0_10px_rgba(255,240,150,0.95)] transition-[left,top] ease-in-out" style={{ transitionDuration: `${item.ms}ms`, left: item.moved && item.corner ? `calc(${seats[item.to][0]}% + 5.6cqmin)` : `${seats[item.moved ? item.to : item.from][0]}%`, top: item.moved && item.corner ? `calc(${seats[item.to][1]}% + 4.2cqmin)` : `${seats[item.moved ? item.to : item.from][1]}%` }}><span className="block h-full w-full" style={{ animation: `${item.corner ? "gift-fly-corner" : "gift-fly-scale"} ${item.ms}ms ease-in-out both` }}><Gift anim id={item.gift} className="h-full w-full" /></span></div>)}
+        {flying.map((item) => <div key={item.key} className="pointer-events-none absolute z-40 h-[11cqmin] w-[11cqmin] -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_0_10px_rgba(255,240,150,0.95)] transition-[left,top] ease-in-out" style={{ transitionDuration: `${item.ms}ms`, left: item.moved ? `calc(${seats[item.to][0]}% + ${item.tx}cqmin)` : `${seats[item.from][0]}%`, top: item.moved ? `calc(${seats[item.to][1]}% + ${item.ty}cqmin)` : `${seats[item.from][1]}%` }}><span className="block h-full w-full" style={{ animation: `gift-fly-to ${item.ms}ms ease-in-out both`, ["--end" as string]: item.end }}>{item.gift.startsWith("c:") && giftGroups[item.gift.slice(2)] && item.gift !== "c:wholeegg" ? <GiftCycle names={giftGroups[item.gift.slice(2)].map((name) => `c:${name}`)} className="h-full w-full" /> : <Gift anim id={item.gift} className="h-full w-full" />}</span></div>)}
 
         {staged && target !== null ? (
           <>

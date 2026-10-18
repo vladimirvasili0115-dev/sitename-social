@@ -23,8 +23,8 @@ export const customPlace = (name: string): Place =>
 export const customOrder = [
   "air_kiss1", "air_kiss2", "air_kiss3", "air_kiss4", "air_kiss5", "crown1", "crown2", "crown3", "crown4", "blackcrown", "icecrown", "gem1", "gem2", "gem3", "gem4",
   "flower1", "flower2", "flower3", "flower4", "flower5", "flower6", "flower7", "flower8", "flower9", "flower10", "flower11", "orchid", "cactus",
-  "bear1", "bear4", "bear6", "bear7", "flamingo", "labubu1", "cake", "cakeforher", "cakeforhim", "candybox", "candyheartcup", "icecream", "fruitbasket1", "cocoscocktail", "pepper1",
-  "candy1", "candy2", "candy3", "candy4", "candy5", "candy6", "candy7", "candy8", "candy9", "candy10", "egg1", "egg2", "egg3",
+  "bear1", "bear4", "bear6", "bear7", "labubu1", "flamingo", "cake", "cakeforher", "cakeforhim", "candybox", "candyheartcup", "icecream", "fruitbasket1", "cocoscocktail", "pepper1",
+  "candy1", "candy2", "candy3", "candy4", "candy5", "candy6", "candy7", "candy8", "candy9", "candy10", "wholeegg",
   "bow_1", "bow_2", "bow_4", "bow_red", "bow_white", "ears1_2", "ears2_2", "ears3_2", "ears4_2", "ears5_2", "ears6_2", "ears7_2", "ears8", "ears9a",
   "babecap", "bosscap", "boybyecap", "classycap", "goodenuffcap", "goodvibescap", "kingcap", "mrcoolcap", "omgcap", "partycap", "baseballaz", "baseballam", "blackoverlordcap", "cappy",
   "cowboy", "cylinder", "cylinderw", "indianhat", "napoleon", "musketeer", "nurse", "bezkoz", "monomachhat", "noteshatb", "noteshatw", "partyhat1", "partyhat2", "partyhat3", "clown", "carnivalmask1", "carnivalmask2", "horseheadhat2", "knight",
@@ -41,12 +41,26 @@ export function customGiftNames(files: Set<string>) {
 // Pictures that are only shown after landing (a thrown cake or tomato splats on the face), not sold on their own.
 const hidden = /^(prankcake_\w+2|tomato[23]|slug_[23])$/;
 // What lands on the photo when this gift arrives.
+// One tile in the list stands for a whole family; on landing one of them is picked (a rose or jasmine more often).
+export const giftGroups: Record<string, string[]> = {
+  air_kiss1: ["air_kiss1", "air_kiss2", "air_kiss3", "air_kiss4", "air_kiss5"],
+  gem1: ["gem1", "gem2", "gem3", "gem4"],
+  flower1: ["flower1", "flower2", "flower3", "flower4", "flower5", "flower6", "flower7", "flower8", "flower9", "flower10", "flower11"],
+  loveis1: ["loveis1", "loveis2", "loveis3", "loveis4"],
+  wholeegg: ["egg1", "egg2", "egg3"],
+};
+const grouped = new Set(Object.entries(giftGroups).flatMap(([tile, list]) => list.filter((name) => name !== tile)));
 export function landedName(name: string) {
+  const group = giftGroups[name];
+  if (group) {
+    if (name === "flower1") { const bag = [...group, "flower1", "flower1", "flower1", "flower5", "flower5", "flower5"]; return bag[Math.floor(Math.random() * bag.length)]; }
+    return group[Math.floor(Math.random() * group.length)];
+  }
   if (/^prankcake_\w+1$/.test(name)) return name.replace(/1$/, "2");
   if (name === "tomato1") return Math.random() < 0.5 ? "tomato2" : "tomato3";
   return name;
 }
-export const isListed = (name: string) => !hidden.test(name);
+export const isListed = (name: string) => !hidden.test(name) && !grouped.has(name);
 // The cocktail (only "cherry") costs 2 hearts and gives the receiver 1 heart (the server pays it, see bottle_is_drink).
 const drinkNames = /^cherry$/;
 export const isDrink = (gift: string) => gift === "c:cherry";
