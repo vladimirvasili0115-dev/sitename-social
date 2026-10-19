@@ -116,7 +116,7 @@ function planLanding(gift: string, taken: { x: number; y: number; s: number }[] 
   const scatter = SCATTER.has(gift) ? giftGroups[gift.slice(2)].map((item) => `c:${item}`) : null;
   const at = (s: number, x: number, y: number, kind: Spot["kind"]): Omit<Spot, "key"> => ({ gift: land, s, x, y, kind });
   let spot: Omit<Spot, "key"> | null;
-  if (name && (HAT_SPOT.test(name) || /^(ears|bow_)/.test(name))) spot = at(71, -30, -30, "hatL"); // hats and ears (1.7× bigger), pushed right into the corner: always the top-left corner, tilted 45° so they sit squarely on it
+  if (name && (HAT_SPOT.test(name) || /^(ears|bow_)/.test(name))) spot = at(38, -10, -13, "hatL"); // like the original: a small hat sitting on the top-left corner, a little tilted: always the top-left corner, tilted 45° so they sit squarely on it
   else if (name && RANDOM_SPOT.test(name)) { const size = /^(air_kiss|gem)/.test(name) ? 40 : 60; /* a gift keeps the size it flies with (7 or 11 cqmin of a ~17.5cqmin seat), it never shrinks on landing */ const span = 100 - size + 30;
     // Try a dozen random places and take the one farthest from the gifts already lying on the photo.
     const centres = taken.map((item) => [item.x + item.s / 2, item.y + item.s / 2]);
@@ -129,12 +129,10 @@ function planLanding(gift: string, taken: { x: number; y: number; s: number }[] 
     spot = at(size, best.x, best.y, "rand"); /* anywhere on the photo, edge to edge */ }
   else if (land === "e:🐓") spot = at(100, 0, 0, "corner"); // the rooster covers the whole photo
   else if (wornGift(land)) spot = null;
-  else if (/^redbull(red|yellow)?$/.test(name)) spot = at(98, 2, 2, "corner"); // Red Bull: bottom-right corner, 1.7× bigger
-  else {
-    // Everything else sits inside the photo, in the bottom-right corner, and never sticks out.
-    const size = /^(flagaz|eiffeltower|amurchik)$/.test(name) ? 78 : /^baloon\d$/.test(name) ? 48 : 58;
-    const x = 100 - size; // always the bottom-right corner
-    spot = at(size, x, 100 - size, /^baloon\d$/.test(name) ? "balloon" : "corner");
+    else {
+    // Like the original: a small gift sitting on the bottom-right corner, a quarter of it over the edge.
+    const size = /^(redbull\w*|catdress|fairy|donkey|flagaz|eiffeltower|amurchik)$/.test(name) ? 46 : /^baloon\d$/.test(name) ? 32 : 38;
+    spot = at(size, 100 - size * 0.72, 100 - size * 0.76, /^baloon\d$/.test(name) ? "balloon" : "corner");
   }
   return { land, spot, scatter };
 }
@@ -2144,7 +2142,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                     {ears ? <Gift anim id={ears} className="pointer-events-none absolute -left-[22%] -top-[14%] z-[2] h-[44%] w-[80%] -rotate-45 animate-[gift-drop_0.35s_ease-out] drop-shadow" /> : null}
                     {head ? <Gift anim id={head} className="pointer-events-none absolute -left-[16%] -top-[16%] z-[2] h-[56%] w-[56%] -rotate-45 animate-[gift-drop_0.35s_ease-out] drop-shadow" /> : null}
                     {(kissMarks[player.id] ?? []).map((mark) => <span key={mark.key} className="pointer-events-none absolute z-[3]" style={{ left: `${mark.x}%`, top: `${mark.y}%`, width: `${mark.s}%`, height: `${mark.s}%`, animation: `kiss-life ${KISS_MS}ms linear forwards` }}><Gift anim id={mark.gift} className="h-full w-full animate-[gift-drop_0.35s_ease-out] drop-shadow" /></span>)}
-                    {spots[player.id] ? (() => { const spot = spots[player.id]; return <span key={spot.key} className={cn("pointer-events-none absolute", spot.kind === "behind" ? "-z-[1]" : spot.kind === "hatL" || spot.kind === "hatR" ? "z-[5]" : "z-[2]")} style={{ left: `${spot.x}%`, top: `${spot.y}%`, width: `${spot.s}%`, height: `${spot.s}%`, transform: spot.kind === "hatL" ? "rotate(-45deg)" : spot.kind === "hatR" ? "rotate(35deg)" : undefined }}><Gift anim id={spot.gift} className={cn("h-full w-full drop-shadow", spot.x + spot.s / 2 < 45 ? "origin-bottom-left" : "origin-bottom-right", (spot.kind === "corner" || spot.kind === "balloon") && (spot.x + spot.s / 2 < 45 ? "object-left-bottom" : "object-right-bottom"), spot.kind === "balloon" ? "animate-[gift-grow_0.7s_ease-out_forwards]" : "animate-[gift-drop_0.35s_ease-out]")} /></span>; })()
+                    {spots[player.id] ? (() => { const spot = spots[player.id]; return <span key={spot.key} className={cn("pointer-events-none absolute", spot.kind === "behind" ? "-z-[1]" : spot.kind === "hatL" || spot.kind === "hatR" ? "z-[5]" : "z-[2]")} style={{ left: `${spot.x}%`, top: `${spot.y}%`, width: `${spot.s}%`, height: `${spot.s}%`, transform: spot.kind === "hatL" ? "rotate(-18deg)" : spot.kind === "hatR" ? "rotate(35deg)" : undefined }}><Gift anim id={spot.gift} className={cn("h-full w-full drop-shadow", spot.x + spot.s / 2 < 45 ? "origin-bottom-left" : "origin-bottom-right", (spot.kind === "corner" || spot.kind === "balloon") && (spot.x + spot.s / 2 < 45 ? "object-left-bottom" : "object-right-bottom"), spot.kind === "balloon" ? "animate-[gift-grow_0.7s_ease-out_forwards]" : "animate-[gift-drop_0.35s_ease-out]")} /></span>; })()
                       : rest.map((gift) => <Gift anim key={`${gift}-${mine.length}`} id={gift} className="absolute bottom-0 right-0 z-[2] h-[58%] w-[58%] animate-[gift-drop_0.35s_ease-out] drop-shadow" />)}
                     {scatters.filter((item) => item.to === player.id).flatMap((item) => item.names.map((name, n) => <span key={`${item.key}-${n}`} className="pointer-events-none absolute left-1/2 top-1/2 z-[3] h-[26%] w-[26%]" style={{ animation: "gift-scatter 1s ease-out forwards", ["--dx" as string]: `${item.dirs[n][0]}cqmin`, ["--dy" as string]: `${item.dirs[n][1]}cqmin` }}><Gift anim id={name} className="h-full w-full drop-shadow" /></span>))}
                   </>;
