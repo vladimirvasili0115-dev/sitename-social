@@ -16,7 +16,7 @@ import { Fireworks, fireworksLevel } from "./Fireworks";
 import { GESTURES, GIFT_PRICES, GIFT_RULES, missing, type Progress, type RuleKind } from "./giftRules";
 import { OrigButton, OrigPopup } from "./OrigPopup";
 import { siteMusic } from "@/components/music/siteMusic";
-import { customGiftNames, customPlace, customPrice, giftGroups, landedName, isDrink } from "./customGifts";
+import { customGiftNames, customPlace, customPrice, giftGroups, landedName, isDrink, colorSteps, nextColor } from "./customGifts";
 const landed = (gift: string) => (gift.startsWith("c:") ? `c:${landedName(gift.slice(2))}` : gift);
 import { AchievementsPanel } from "./AchievementsPanel";
 import { FIRST_ORIGINAL, FRAME_PRICE, FrameArt, ORIGINAL_FRAMES, frameLooks, frameStone } from "./FrameArt";
@@ -109,14 +109,14 @@ const HAT_SPOT = /^(\w*cap|cappy|cowboy|cylinderw?|indianhat|napoleon|musketeer|
 // These spin a full turn on the way; kisses and gems fly a little smaller.
 const SPIN_FLIGHT = /^c:(bear\d+|labubu1|wholeegg)$/;
 const SMALL_FLIGHT = new Set(["c:air_kiss1", "c:gem1"]);
-const SCATTER = new Set(["c:gem1", "c:wholeegg"]);
+const SCATTER = new Set(["c:wholeegg"]);
 function planLanding(gift: string) {
   const land = landed(gift);
   const name = land.startsWith("c:") ? land.slice(2) : "";
   const scatter = SCATTER.has(gift) ? giftGroups[gift.slice(2)].map((item) => `c:${item}`) : null;
   const at = (s: number, x: number, y: number, kind: Spot["kind"]): Omit<Spot, "key"> => ({ gift: land, s, x, y, kind });
   let spot: Omit<Spot, "key"> | null;
-  if (name && (HAT_SPOT.test(name) || /^(ears|bow_)/.test(name))) spot = at(71, -24, -24, "hatL"); // hats and ears (1.7× bigger): always the top-left corner, tilted 45° so they sit squarely on it
+  if (name && (HAT_SPOT.test(name) || /^(ears|bow_)/.test(name))) spot = at(71, -30, -30, "hatL"); // hats and ears (1.7× bigger), pushed right into the corner: always the top-left corner, tilted 45° so they sit squarely on it
   else if (name && RANDOM_SPOT.test(name)) { const size = /^(air_kiss|gem)/.test(name) ? 40 : 60; /* a gift keeps the size it flies with (7 or 11 cqmin of a ~17.5cqmin seat), it never shrinks on landing */ const span = 100 - size + 16; spot = at(size, -8 + Math.random() * span, -8 + Math.random() * span, "rand"); /* anywhere on the photo, edge to edge */ }
   else if (land === "e:🐓") spot = at(100, 0, 0, "corner"); // the rooster covers the whole photo
   else if (wornGift(land)) spot = null;
@@ -1636,6 +1636,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const seatLeft = (index: number) => (staged && (index === turn || index === target) ? `calc(${CENTER_X}% ${index === turn ? "-" : "+"} 12.5cqmin)` : `${seats[index][0]}%`);
   const seatTop = (index: number) => (staged && (index === turn || index === target) ? `${STAGE_Y}%` : `${seats[index][1]}%`);
   function sendGift(index: number, gift: string, price: number, ms = 4200) {
+    if (gift.startsWith("c:") && colorSteps.has(gift.slice(2))) gift = `c:${nextColor(gift.slice(2))}`; // one colour per tap, in order
     if (gift === "c:air_kiss1") ms = Math.round(ms * 1.3); // the air kiss flies 30% slower
     const player = players[index];
     if (heartsRef.current < price) return false;
@@ -2184,7 +2185,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         {shows.map((item) => <Fireworks key={`fw-${item.key}`} at={seats[item.to]} level={item.level} seed={item.key} />)}
         {tableVfx ? <TableShower key={tableVfx.key} emoji={tableVfx.emoji} seed={tableVfx.key % 1000} /> : null}
         {boostFx ? <BoostFx key={boostFx.key} kind={boostFx.kind} fromLeft={boostFx.fromLeft} x={CENTER_X} y={STAGE_Y} /> : null}
-        {flying.map((item) => <div key={item.key} className="pointer-events-none absolute z-40 -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_0_10px_rgba(255,240,150,0.95)] transition-[left,top] ease-in-out" style={{ width: `${item.base}cqmin`, height: `${item.base}cqmin`, transitionDuration: `${item.ms}ms`, transitionTimingFunction: "cubic-bezier(0.25, 0.7, 0.4, 1)", /* every gift leaves the sender at once */ left: item.moved ? `calc(${seatLeft(item.to)} + ${item.tx}cqmin)` : seatLeft(item.from), top: item.moved ? `calc(${seatTop(item.to)} + ${item.ty}cqmin)` : seatTop(item.from) }}><span className="block h-full w-full" style={{ animation: `gift-fly-to ${item.ms}ms ease-in-out both`, ["--end" as string]: item.end }}><span className="block h-full w-full" style={SPIN_FLIGHT.test(item.gift) ? { animation: `gift-turn ${item.ms}ms linear both` } : undefined}>{item.gift.startsWith("c:") && giftGroups[item.gift.slice(2)] && item.gift !== "c:wholeegg" ? <GiftCycle names={giftGroups[item.gift.slice(2)].map((name) => `c:${name}`)} className="h-full w-full" /> : <Gift anim id={item.gift} className="h-full w-full" />}</span></span></div>)}
+        {flying.map((item) => <div key={item.key} className="pointer-events-none absolute z-40 -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_0_10px_rgba(255,240,150,0.95)] transition-[left,top] ease-in-out" style={{ width: `${item.base}cqmin`, height: `${item.base}cqmin`, transitionDuration: `${item.ms}ms`, transitionTimingFunction: "cubic-bezier(0.25, 0.7, 0.4, 1)", /* every gift leaves the sender at once */ left: item.moved ? `calc(${seatLeft(item.to)} + ${item.tx}cqmin)` : seatLeft(item.from), top: item.moved ? `calc(${seatTop(item.to)} + ${item.ty}cqmin)` : seatTop(item.from) }}><span className="block h-full w-full" style={{ animation: `gift-fly-to ${item.ms}ms ease-in-out both`, ["--end" as string]: item.end }}><span className="block h-full w-full" style={SPIN_FLIGHT.test(item.gift) ? { animation: `gift-turn ${item.ms}ms linear both` } : undefined}>{item.gift.startsWith("c:") && giftGroups[item.gift.slice(2)] && item.gift !== "c:wholeegg" && !colorSteps.has(item.gift.slice(2)) ? <GiftCycle names={giftGroups[item.gift.slice(2)].map((name) => `c:${name}`)} className="h-full w-full" /> : <Gift anim id={item.gift} className="h-full w-full" />}</span></span></div>)}
 
         {staged && target !== null ? (
           <>
