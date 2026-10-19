@@ -1655,6 +1655,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       setFlying((list) => list.filter((item) => item.key !== key));
       playGiftSound(gift, "land");
       if (pour) heartBurst(key, index);
+      if (gift === "c:heart1000") heartBurst(key + 0.5, index, 1000);
       fireworks(key, index, price, meIndex);
       landGift(key, player.id, plan);
       say({ from: "me", to: player.id, gift });
@@ -1683,6 +1684,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       setFlying((list) => list.filter((item) => item.key !== key));
       playGiftSound(gift, "land");
       if (pour) heartBurst(key, toAt);
+      if (gift === "c:heart1000") heartBurst(key + 0.5, toAt, 1000);
       fireworks(key, toAt, priceOf(gift), fromAt);
       landGift(key, toId, plan);
       say({ from: fromId, to: toId, gift });
@@ -2918,7 +2920,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
               {(() => {
                 // Like the original gift list: the gifts you can send first, then the ones still locked
                 // (by kisses, from the nearest to the farthest, and the VIP ones last). Locked gifts are grey with a lock.
-                const all = [...giftChoices.slice(0, 2), ...customGiftNames(art).filter((name) => !name.startsWith("ges_")).map((name) => [`c:${name}`, GIFT_PRICES[name] ?? customPrice(name), missing(GIFT_RULES[`c:${name}`], progress)] as [string, number, number]), ...giftChoices.slice(2), ...lockedGifts.map(([gift, price, need]) => [gift, price, Math.max(0, need - progress.kisses)] as [string, number, number])]
+                const all = [...(iAmAdmin ? [["c:heart1000", 1000, 0] as [string, number, number]] : []), ...giftChoices.slice(0, 2), ...customGiftNames(art).filter((name) => !name.startsWith("ges_") && name !== "heart1000").map((name) => [`c:${name}`, GIFT_PRICES[name] ?? customPrice(name), missing(GIFT_RULES[`c:${name}`], progress)] as [string, number, number]), ...giftChoices.slice(2), ...lockedGifts.map(([gift, price, need]) => [gift, price, Math.max(0, need - progress.kisses)] as [string, number, number])]
                   .map(([gift, price, need]) => [gift, price, need ?? 0] as [string, number, number]);
                 const isLocked = (need: number) => (need === -1 ? !vip : need > 0);
                 const open = all.filter(([, , need]) => !isLocked(need));

@@ -8,6 +8,7 @@ const prices: [RegExp, number][] = [
   [/^(crown\d|blackcrown|icecrown|gem\d|goldenmic|dollar|djmixer\d*|drumkit\d*|makarov|bed|eiffeltower|clutch|knight|labubu\d*|monomachhat|blackring|kingcap)$/, 3],
   [/^(ruby\w+|oscar|iwatch|goldenapple|honeybarrel|kokoshnik|manekineko|sheriffstar|londonphone|mobile)$/, 3],
   [/^redbull(red|yellow)?$/, 10],
+  [/^heart1000$/, 1000],
   [/^(donkey|fairy)$/, 5],
   [/^(ges_\w+|heart\d|notes\d|hamburger|tea|poop|heineken)$/, 1],
   [/^(air_kiss\d|candy\d+|egg\d|flower\d+|orchid|colander|maracas\d|nipple\d|pepper\d|cocoscocktail|bear\d)$/, 1],
