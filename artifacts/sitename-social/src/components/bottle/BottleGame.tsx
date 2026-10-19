@@ -110,14 +110,23 @@ const HAT_SPOT = /^(\w*cap|cappy|cowboy|cylinderw?|indianhat|napoleon|musketeer|
 const SPIN_FLIGHT = /^c:(bear\d+|labubu1|wholeegg)$/;
 const SMALL_FLIGHT = new Set(["c:air_kiss1", "c:gem1"]);
 const SCATTER = new Set(["c:wholeegg"]);
-function planLanding(gift: string) {
+function planLanding(gift: string, taken: { x: number; y: number; s: number }[] = []) {
   const land = landed(gift);
   const name = land.startsWith("c:") ? land.slice(2) : "";
   const scatter = SCATTER.has(gift) ? giftGroups[gift.slice(2)].map((item) => `c:${item}`) : null;
   const at = (s: number, x: number, y: number, kind: Spot["kind"]): Omit<Spot, "key"> => ({ gift: land, s, x, y, kind });
   let spot: Omit<Spot, "key"> | null;
   if (name && (HAT_SPOT.test(name) || /^(ears|bow_)/.test(name))) spot = at(71, -30, -30, "hatL"); // hats and ears (1.7× bigger), pushed right into the corner: always the top-left corner, tilted 45° so they sit squarely on it
-  else if (name && RANDOM_SPOT.test(name)) { const size = /^(air_kiss|gem)/.test(name) ? 40 : 60; /* a gift keeps the size it flies with (7 or 11 cqmin of a ~17.5cqmin seat), it never shrinks on landing */ const span = 100 - size + 16; spot = at(size, -8 + Math.random() * span, -8 + Math.random() * span, "rand"); /* anywhere on the photo, edge to edge */ }
+  else if (name && RANDOM_SPOT.test(name)) { const size = /^(air_kiss|gem)/.test(name) ? 40 : 60; /* a gift keeps the size it flies with (7 or 11 cqmin of a ~17.5cqmin seat), it never shrinks on landing */ const span = 100 - size + 30;
+    // Try a dozen random places and take the one farthest from the gifts already lying on the photo.
+    const centres = taken.map((item) => [item.x + item.s / 2, item.y + item.s / 2]);
+    let best = { x: 0, y: 0, d: -1 };
+    for (let n = 0; n < 14; n++) {
+      const x = -15 + Math.random() * span, y = -15 + Math.random() * span;
+      const d = centres.length ? Math.min(...centres.map(([cx, cy]) => Math.hypot(x + size / 2 - cx, y + size / 2 - cy))) : Math.random();
+      if (d > best.d) best = { x, y, d };
+    }
+    spot = at(size, best.x, best.y, "rand"); /* anywhere on the photo, edge to edge */ }
   else if (land === "e:🐓") spot = at(100, 0, 0, "corner"); // the rooster covers the whole photo
   else if (wornGift(land)) spot = null;
   else if (/^redbull(red|yellow)?$/.test(name)) spot = at(98, 2, 2, "corner"); // Red Bull: bottom-right corner, 1.7× bigger
@@ -1647,7 +1656,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     playGiftSound(gift, "send");
     // Drinks fly like every other gift (one by one); on landing the receiver gets the "+1 heart" burst.
     const pour = isDrink(gift) && index !== meIndex;
-    const plan = planLanding(gift);
+    const plan = planLanding(gift, [...(kissMarks[player.id] ?? []), ...(spots[player.id] ? [spots[player.id]] : [])]);
     {
       setFlying((list) => [...list, { key, gift, from: meIndex, to: index, moved: false, ms, ...flightTo(plan, gift) }]);
       window.setTimeout(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))), 40);
@@ -1676,7 +1685,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     const key = flyId.current++;
     const pour = isDrink(gift) && fromAt >= 0 && fromAt !== toAt;
     playGiftSound(gift, "send");
-    const plan = planLanding(gift);
+    const plan = planLanding(gift, [...(kissMarks[toId] ?? []), ...(spots[toId] ? [spots[toId]] : [])]);
     {
       setFlying((list) => [...list, { key, gift, from: fromAt >= 0 ? fromAt : toAt, to: toAt, moved: false, ms, ...flightTo(plan, gift) }]);
       window.setTimeout(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))), 40);
