@@ -117,7 +117,7 @@ function planLanding(gift: string) {
   const at = (s: number, x: number, y: number, kind: Spot["kind"]): Omit<Spot, "key"> => ({ gift: land, s, x, y, kind });
   let spot: Omit<Spot, "key"> | null;
   if (name && (HAT_SPOT.test(name) || /^(ears|bow_)/.test(name))) spot = at(71, -24, -24, "hatL"); // hats and ears (1.7× bigger): always the top-left corner, tilted 45° so they sit squarely on it
-  else if (name && RANDOM_SPOT.test(name)) { const size = name.startsWith("air_kiss") ? 16 : 24; /* 30% smaller than before */ const span = 100 - size + 16; spot = at(size, -8 + Math.random() * span, -8 + Math.random() * span, "rand"); /* anywhere on the photo, edge to edge */ }
+  else if (name && RANDOM_SPOT.test(name)) { const size = name.startsWith("air_kiss") ? 40 : 24; /* the air kiss keeps the size it flies with (7cqmin of a ~17.5cqmin seat) */ const span = 100 - size + 16; spot = at(size, -8 + Math.random() * span, -8 + Math.random() * span, "rand"); /* anywhere on the photo, edge to edge */ }
   else if (land === "e:🐓") spot = at(100, 0, 0, "corner"); // the rooster covers the whole photo
   else if (wornGift(land)) spot = null;
   else if (/^redbull(red|yellow)?$/.test(name)) spot = at(98, 2, 2, "corner"); // Red Bull: bottom-right corner, 1.7× bigger
@@ -1619,13 +1619,6 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (level >= 3) window.setTimeout(() => playSfx("jackpot_firecracker"), 900);
     window.setTimeout(() => setShows((list) => list.filter((item) => item.key !== key)), 1300 + [0, 3, 5, 7, 9][level] * 280 + 600);
   }
-  // "+1000": a big TikTok-style show over the whole table — the heart flies in huge, hearts rain, the names show.
-  const [big, setBig] = useState<{ key: number; from: string; to: string } | null>(null);
-  function bigShow(key: number, from: string, to: string) {
-    setBig({ key, from, to });
-    playSfx("jackpot_firecracker");
-    window.setTimeout(() => setBig((value) => (value?.key === key ? null : value)), 4200);
-  }
   function heartBurst(key: number, to: number, amount = 1) {
     setBursts((list) => [...list, { key, to, amount }]);
     window.setTimeout(() => setBursts((list) => list.filter((item) => item.key !== key)), 1700);
@@ -1662,7 +1655,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       setFlying((list) => list.filter((item) => item.key !== key));
       playGiftSound(gift, "land");
       if (pour) heartBurst(key, index);
-      if (gift === "c:heart1000") { heartBurst(key + 0.5, index, 1000); bigShow(key, players[meIndex]?.name ?? "", player.name); }
+      if (gift === "c:heart1000") heartBurst(key + 0.5, index, 1000);
       fireworks(key, index, price, meIndex, gift);
       landGift(key, player.id, plan);
       say({ from: "me", to: player.id, gift });
@@ -1691,7 +1684,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       setFlying((list) => list.filter((item) => item.key !== key));
       playGiftSound(gift, "land");
       if (pour) heartBurst(key, toAt);
-      if (gift === "c:heart1000") { heartBurst(key + 0.5, toAt, 1000); bigShow(key, players[fromAt]?.name ?? "", players[toAt]?.name ?? ""); }
+      if (gift === "c:heart1000") heartBurst(key + 0.5, toAt, 1000);
       fireworks(key, toAt, priceOf(gift), fromAt, gift);
       landGift(key, toId, plan);
       say({ from: fromId, to: toId, gift });
@@ -2187,16 +2180,6 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           );
         })}
 
-        {big ? (
-          <div key={big.key} aria-hidden="true" className="pointer-events-none absolute inset-0 z-[45] overflow-hidden" style={{ animation: "big-fade 4.2s ease-in-out forwards" }}>
-            <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(255,40,80,0.35),rgba(0,0,0,0.45)_70%)]" />
-            {Array.from({ length: 26 }, (_, n) => <span key={n} className="absolute text-[5cqmin]" style={{ left: `${(n * 37) % 100}%`, top: "-8%", animation: `big-rain ${2.2 + (n % 5) * 0.35}s linear ${(n % 9) * 0.18}s forwards` }}>{n % 3 ? "❤️" : "💖"}</span>)}
-            <div className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center">
-              <img src="/custom/anim/heart1000.webp" alt="" className="h-[46cqmin] w-[46cqmin] object-contain drop-shadow-[0_0_30px_rgba(255,210,63,0.9)]" style={{ animation: "big-pop 1s cubic-bezier(0.2,1.6,0.4,1) both" }} />
-              <p className="-mt-[2cqmin] whitespace-nowrap rounded-full bg-black/55 px-[3cqmin] py-[1cqmin] text-[3.6cqmin] font-black text-[#FFE066] [text-shadow:0_2px_4px_rgba(0,0,0,0.7)]" style={{ animation: "big-pop 0.8s ease-out 0.4s both" }}>{big.from} → {big.to} · +1000 ❤</p>
-            </div>
-          </div>
-        ) : null}
         {bursts.map((item) => <HeartBurst key={item.key} at={seats[item.to]} amount={item.amount} />)}
         {shows.map((item) => <Fireworks key={`fw-${item.key}`} at={seats[item.to]} level={item.level} seed={item.key} />)}
         {tableVfx ? <TableShower key={tableVfx.key} emoji={tableVfx.emoji} seed={tableVfx.key % 1000} /> : null}
