@@ -1,5 +1,5 @@
 "use client";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { Lock, ShieldCheck } from "lucide-react";
 import { MIN_PASSWORD_LENGTH } from "@/lib/auth";
@@ -10,6 +10,7 @@ import { AuthField } from "./AuthField";
 import { FormError } from "./FormError";
 import { PasswordStrength } from "./PasswordStrength";
 import { useAuth, type AuthResult } from "./AuthProvider";
+import { supabase } from "@/lib/supabase";
 
 export function ResetPasswordForm() {
   const { t } = useTranslation();
@@ -20,6 +21,31 @@ export function ResetPasswordForm() {
   const [failure, setFailure] = useState<AuthResult>(null);
   const [pending, setPending] = useState(false);
   const [done, setDone] = useState(false);
+  // The e-mail link opens this page with a one-time key in the address. The page turns that key into a session
+  // itself (both link styles Supabase sends), and waits for it instead of saying "expired" too early.
+  const [linking, setLinking] = useState(true);
+  const [linkError, setLinkError] = useState(false);
+  useEffect(() => {
+    if (!supabase) { setLinking(false); return; }
+    const client = supabase;
+    const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    const query = new URLSearchParams(window.location.search);
+    if (hash.get("error") || query.get("error")) { setLinkError(true); setLinking(false); return; }
+    void (async () => {
+      try {
+        const code = query.get("code");
+        const access = hash.get("access_token");
+        const refresh = hash.get("refresh_token");
+        const tokenHash = query.get("token_hash");
+        if (code) await client.auth.exchangeCodeForSession(code);
+        else if (tokenHash) await client.auth.verifyOtp({ type: "recovery", token_hash: tokenHash });
+        else if (access && refresh) { const now = await client.auth.getSession(); if (!now.data.session) await client.auth.setSession({ access_token: access, refresh_token: refresh }); }
+      } catch { setLinkError(true); }
+      const { data } = await client.auth.getSession();
+      if (!data.session) setLinkError(true);
+      setLinking(false);
+    })();
+  }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -44,7 +70,9 @@ export function ResetPasswordForm() {
       </div>
     );
   }
-  if (ready && !user) return <FormError message={t("auth.resetExpired")} />;
+  if (linking || (!ready && !linkError)) return <p role="status" className="py-4 text-center text-sm text-muted">{t("auth.wait")}</p>;
+  if (!user && linkError) return <div className="space-y-3"><FormError message={t("auth.resetExpired")} /><Link href="/forgot-password" className="block text-center text-sm font-semibold text-accent">{t("auth.resetAgain")}</Link></div>;
+  if (ready && !user) return <p role="status" className="py-4 text-center text-sm text-muted">{t("auth.wait")}</p>;
   return (
     <form onSubmit={handleSubmit} noValidate className="space-y-4">
       <div>
