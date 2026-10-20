@@ -37,7 +37,7 @@ export const bottleMove = (table: number | null) => call<BottleMove>("bottle_mov
 export const bottleRejoin = () => call<BottleMove | null>("bottle_rejoin");
 export const bottleQueueLeave = () => call<null>("bottle_queue_leave");
 export const bottlePlay = (to: string | null, kind: "youtube" | "mp3", ref: string, title: string) => call<number>("bottle_play", { p_to: to, p_kind: kind, p_ref: ref, p_title: title.slice(0, 120) });
-export type BottleTopRow = { id: string; name: string | null; avatar: string | null; count: number; place: number };
+export type BottleTopRow = { id: string; name: string | null; avatar: string | null; count: number; place: number; gender?: string | null; vip?: boolean };
 export type BottleTop = { list: BottleTopRow[]; me: { place: number; count: number } | null };
 export const bottleTop = (kind: "kisses" | "songs" | "cocktails" | "smiles" | "dear" | "influence", period: "all" | "month" | "week" | "day") => call<BottleTop>("bottle_top", { p_kind: kind, p_period: period });
 export const bottleGift = (to: string, gift: string, price: number, seed?: number) => call<number>("bottle_gift", seed ? { p_to: to, p_gift: gift, p_price: price, p_seed: seed } : { p_to: to, p_gift: gift, p_price: price });
