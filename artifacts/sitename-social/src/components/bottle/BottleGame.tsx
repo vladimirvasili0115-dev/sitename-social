@@ -792,7 +792,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         const gifts = all.filter((item) => item.kind === "gift" && item.from !== data!.me);
         if (!first) gifts.forEach((item, order) => window.setTimeout(() => remoteGift.current(who(item.from), who(item.to), item.body ?? "", gifts.length > 1 ? 1800 : 3600, item.seed ?? item.id), order * 150));
         for (const seat of data.seats) names.current[seat.id] = { name: (seat.name ?? "").split(" ")[0] || "?", avatar: seat.avatar ?? "" };
-        const nameOf = (id: string | null) => (id === data!.me ? t("common.you") : names.current[id ?? ""]?.name ?? "?");
+        const nameOf = (id: string | null) => names.current[id ?? ""]?.name ?? "?"; // own name too, not "you"
         if (!first) all.filter((item) => item.kind === "compliment" && item.to === data!.me).forEach((item) => setComplimentIn({ name: names.current[item.from ?? ""]?.name ?? "?", avatar: names.current[item.from ?? ""]?.avatar || NO_PHOTO, kind: Number(item.body) || 1 }));
         if (!first && all.some((item) => item.kind === "kick" && item.to === data!.me)) setKickedToast(true);
         // Somebody wrote to me by name ("Aylin, ..."): a ding and a note.
@@ -1331,7 +1331,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     showBoost(kind, "me");
     if (online) { void bottleBooster(kind).then((left) => { if (typeof left === "number" && left >= 0) setItems((value) => ({ ...value, [kind]: left })); }); return; }
     const other = players[turn]?.me ? players[target ?? -1] : players[turn];
-    say({ from: "me", boost: { kind, a: t("common.you"), b: other?.name ?? "?" } });
+    say({ from: "me", boost: { kind, a: players[meIndex]?.name ?? t("common.you"), b: other?.name ?? "?" } });
   }
   function buyItem(kind: keyof BottleItems) {
     setPayNote(false);
@@ -3118,9 +3118,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 {ic(line.admire.lost ? "chat_icon_harem_free" : "chat_icon_harem_busy", 18, line.admire.lost ? 23 : 19, "ml-2.5")}
                 <span className="min-w-0 px-2 leading-[15px] text-[#424242]">
                   {line.admire.lost && line.admire.self ? t("bottle.selfFreed").replace("{by}", line.admire.by ?? "").replace("{n}", String(line.admire.amount ?? 0))
-                    : line.admire.self ? <><b>{from?.me ? t("common.you") : from?.name ?? line.admire.by}</b> {t("bottle.freedSelf")} {ic("chat_icon_heart", 15, 11, "mx-0.5 align-[-1px]")}<b>{line.admire.amount}</b></>
+                    : line.admire.self ? <><b>{from?.name ?? line.admire.by}</b> {t("bottle.freedSelf")} {ic("chat_icon_heart", 15, 11, "mx-0.5 align-[-1px]")}<b>{line.admire.amount}</b></>
                     : line.admire.lost ? <><b>{line.admire.by}</b> {t("bottle.admireLost1")} <b>{line.admire.target}</b> {t("bottle.admireLost2")}</>
-                    : <><b>{from?.me ? t("common.you") : from?.name ?? line.admire.by}</b> {t("bottle.admireLine")} {ic("chat_icon_heart", 15, 11, "mx-0.5 align-[-1px]")}<b>{line.admire.amount}</b></>}
+                    : <><b>{from?.name ?? line.admire.by}</b> {t("bottle.admireLine")} {ic("chat_icon_heart", 15, 11, "mx-0.5 align-[-1px]")}<b>{line.admire.amount}</b></>}
                 </span>
                 {photo(to)}
               </div>
@@ -3147,7 +3147,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 {photo(from)}
                 <div onDoubleClick={() => !from.me && setLineMenu(line.id)} onContextMenu={(event) => { if (from.me) return; event.preventDefault(); setLineMenu(line.id); }} onTouchStart={() => { if (from.me) return; window.clearTimeout(pressTimer.current); pressTimer.current = window.setTimeout(() => setLineMenu(line.id), 500); }} onTouchEnd={() => window.clearTimeout(pressTimer.current)} onTouchMove={() => window.clearTimeout(pressTimer.current)}
                   className={cn("group relative min-h-[17px] min-w-[100px] rounded-[5px] px-2 pb-1.5 pt-[7px] before:absolute before:-left-1.5 before:top-[9px] before:border-y-[6px] before:border-r-[6px] before:border-y-transparent before:content-['']", lineMenu === line.id ? "bg-[#498FE1] text-white before:border-r-[#498FE1]" : "bg-white before:border-r-white")}>
-                  <button type="button" onClick={(event) => { event.stopPropagation(); if (from.me) return; window.clearTimeout(pressTimer.current); setDraft((value) => (value.startsWith(`${from.name}, `) ? value : `${from.name}, ${value}`)); window.setTimeout(() => { chatRef.current?.focus(); const end = chatRef.current?.value.length ?? 0; chatRef.current?.setSelectionRange(end, end); }, 30); }} onTouchStart={(event) => event.stopPropagation()} className={cn("font-bold", nameColorClass(nameColors[from.me ? net?.me ?? "" : from.id]) || (isAdminPlayer(from) && "bg-[linear-gradient(rgb(240,208,51),rgb(217,131,0))] bg-clip-text text-transparent"))} style={lineMenu === line.id || isAdminPlayer(from) || nameColors[from.me ? net?.me ?? "" : from.id] ? undefined : { color: nameColor(from) }}>{from.me ? t("common.you") : from.name}</button>{(() => { const decor = decorOf(line.from); return decor ? decor.startsWith("/") ? <img src={decor} alt="" className="ml-0.5 inline h-3.5 w-3.5 align-[-2px]" /> : <span title="VIP" className="ml-0.5 text-[11px]">💎</span> : null; })()}<span className="font-bold">: </span><span className="[word-break:break-word]">{line.text}</span>
+                  <button type="button" onClick={(event) => { event.stopPropagation(); if (from.me) return; window.clearTimeout(pressTimer.current); setDraft((value) => (value.startsWith(`${from.name}, `) ? value : `${from.name}, ${value}`)); window.setTimeout(() => { chatRef.current?.focus(); const end = chatRef.current?.value.length ?? 0; chatRef.current?.setSelectionRange(end, end); }, 30); }} onTouchStart={(event) => event.stopPropagation()} className={cn("font-bold", nameColorClass(nameColors[from.me ? net?.me ?? "" : from.id]) || (isAdminPlayer(from) && "bg-[linear-gradient(rgb(240,208,51),rgb(217,131,0))] bg-clip-text text-transparent"))} style={lineMenu === line.id || isAdminPlayer(from) || nameColors[from.me ? net?.me ?? "" : from.id] ? undefined : { color: nameColor(from) }}>{from.name}</button>{(() => { const decor = decorOf(line.from); return decor ? decor.startsWith("/") ? <img src={decor} alt="" className="ml-0.5 inline h-3.5 w-3.5 align-[-2px]" /> : <span title="VIP" className="ml-0.5 text-[11px]">💎</span> : null; })()}<span className="font-bold">: </span><span className="[word-break:break-word]">{line.text}</span>
                   {!from.me && /[а-яёА-ЯЁ]|[؀-ۿ]|[Ⴀ-ჿ]/.test(line.text) ? <a href={`https://translate.google.com/?sl=auto&tl=${lang}&text=${encodeURIComponent(line.text)}`} target="_blank" rel="noreferrer" className={cn("block text-[12px]", lineMenu === line.id ? "text-white" : "text-[#808080]")}>{t("bottle.translate")}</a> : null}
                   {from.me ? null : <button type="button" onClick={() => setLineMenu(line.id)} aria-label={t("bottle.report")} className="absolute -right-[11px] -top-[11px] z-[1] hidden h-[25px] w-[25px] items-center justify-center group-hover:flex"><span className="h-3.5 w-3.5 rounded-full bg-[#498FE1] bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url(${O}chat_message_action.svg)` }} /></button>}
                   {lineMenu === line.id ? (
