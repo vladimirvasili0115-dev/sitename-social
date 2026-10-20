@@ -795,7 +795,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     pullRef.current = () => void pull();
     setLines([]);
     void pull();
-    const timer = window.setInterval(() => void pull(), 1000);
+    // A hidden tab asks only every 5 seconds (enough to keep the seat), a visible one every second.
+    let hiddenTick = 0;
+    const timer = window.setInterval(() => { if (document.hidden && ++hiddenTick % 5) return; void pull(); }, 1000);
     const bye = () => void bottleLeave();
     window.addEventListener("pagehide", bye);
     return () => { alive = false; window.clearInterval(timer); window.removeEventListener("pagehide", bye); void bottleLeave(); };
