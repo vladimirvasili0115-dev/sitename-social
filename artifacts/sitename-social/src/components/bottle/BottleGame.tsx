@@ -436,7 +436,11 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // "+" mode: choose several receivers on the table, then every gift goes to all of them.
   const [chosen, setChosen] = useState<string[]>([]);
   const [songMany, setSongMany] = useState<number[]>([]);
-  const [flying, setFlying] = useState<{ key: number; gift: string; from: number; to: number; moved: boolean; ms: number; rot?: number; mine?: boolean; still?: boolean; tx: number; ty: number; end: number; base: number }[]>([]);
+  const [flying, setFlying] = useState<{ key: number; gift: string; from: number; to: number; moved: boolean; ms: number; rot?: number; mine?: boolean; still?: boolean; toId?: string; tx: number; ty: number; end: number; base: number }[]>([]);
+  // When a receiver leaves the table (or moves to another one), the gifts flying to them stop; they never land on an empty seat.
+  const playersRef = useRef(players);
+  playersRef.current = players;
+  useEffect(() => { setFlying((list) => { const next = list.filter((item) => !item.toId || players[item.to]?.id === item.toId); return next.length === list.length ? list : next; }); }, [players]);
   useEffect(() => { airborne.current = flying.length; }, [flying.length]);
   // A drink landed: the receiver gets a "+1 heart" burst.
   const [bursts, setBursts] = useState<{ key: number; to: number; amount?: number }[]>([]);
@@ -1739,10 +1743,11 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const seatYq = (index: number) => (staged && (index === turn || index === target) ? `${STAGE_Y}cqh` : `${seats[index][1]}cqh`);
   function sendGift(index: number, gift: string, price: number, ms = 5200) {
     const seed = 1 + Math.floor(Math.random() * 2e9); // goes to the server with the gift, so every screen puts it in the same spot
-    ms = Math.round(ms / 0.56); // all gifts fly slower (−30%, then −20% more)
+    ms = Math.round(ms / 0.756); // flight speed: slowed down, then made 35% faster again
     if (gift.startsWith("c:") && colorSteps.has(gift.slice(2))) gift = `c:${nextColor(gift.slice(2))}`; // one colour per tap, in order
     if (gift === "c:air_kiss1") ms = Math.round(ms * 1.3); // the air kiss flies 30% slower
     const player = players[index];
+    if (!player || player.empty) return false;
     if (heartsRef.current < price) return false;
     heartsRef.current -= price;
     setHearts(heartsRef.current);
@@ -1756,13 +1761,13 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       // My own gifts always fly on my screen: when the sky is full, the oldest gift from someone else makes room.
       // A gift already in the air is never removed before it arrives. When the sky is full, someone else's oldest gift makes room;
       // if all of them are mine, the new one simply lands without a flight.
-      setFlying((list) => { if (list.length < 40) return [...list, { key, gift, from: meIndex, to: index, moved: false, ms, mine: true, still: list.length >= 12, rot: plan.spot?.r ?? 0, ...flightTo(plan, gift) }]; const other = list.findIndex((item) => !item.mine); if (other < 0) return list; const next = [...list]; next.splice(other, 1); return [...next, { key, gift, from: meIndex, to: index, moved: false, ms, mine: true, still: list.length >= 12, rot: plan.spot?.r ?? 0, ...flightTo(plan, gift) }]; });
+      setFlying((list) => { if (list.length < 40) return [...list, { key, gift, from: meIndex, to: index, toId: player.id, moved: false, ms, mine: true, still: list.length >= 12, rot: plan.spot?.r ?? 0, ...flightTo(plan, gift) }]; const other = list.findIndex((item) => !item.mine); if (other < 0) return list; const next = [...list]; next.splice(other, 1); return [...next, { key, gift, from: meIndex, to: index, toId: player.id, moved: false, ms, mine: true, still: list.length >= 12, rot: plan.spot?.r ?? 0, ...flightTo(plan, gift) }]; });
       window.setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))))), 20);
     }
     const gen = tableGen.current;
     window.setTimeout(() => {
       setFlying((list) => list.filter((item) => item.key !== key));
-      if (gen !== tableGen.current) return;
+      if (gen !== tableGen.current || playersRef.current[index]?.id !== player.id) return;
       playGiftSound(gift, "land");
       if (pour) heartBurst(key, index);
       if (gift === "c:heart1000") heartBurst(key + 0.5, index, 1000);
@@ -1778,7 +1783,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // A gift another player sent: it flies from their seat to the receiver, then sits on the photo and goes into the chat.
   const remoteGift = useRef<(from: string, to: string, gift: string, ms: number, seed: number) => void>(() => {});
   remoteGift.current = (fromId, toId, gift, ms, seed) => {
-    ms = Math.round(ms / 0.56); // all gifts fly slower (−30%, then −20% more)
+    ms = Math.round(ms / 0.756); // flight speed: slowed down, then made 35% faster again
     if (gift === "c:air_kiss1") ms = Math.round(ms * 1.3); // the air kiss flies 30% slower
     const fromAt = players.findIndex((player) => player.id === fromId);
     const toAt = players.findIndex((player) => player.id === toId);
@@ -1792,13 +1797,13 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     else playGiftSound(gift, "send");
     const plan = planLanding(gift, seed);
     {
-      if (!busy) setFlying((list) => (list.length >= 40 ? list : [...list, { key, gift, from: fromAt >= 0 ? fromAt : toAt, to: toAt, moved: false, ms, still: list.length >= 12, rot: plan.spot?.r ?? 0, ...flightTo(plan, gift) }]));
+      if (!busy) setFlying((list) => (list.length >= 40 ? list : [...list, { key, gift, from: fromAt >= 0 ? fromAt : toAt, to: toAt, toId, moved: false, ms, still: list.length >= 12, rot: plan.spot?.r ?? 0, ...flightTo(plan, gift) }]));
       window.setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))))), 20);
     }
     const gen = tableGen.current;
     window.setTimeout(() => {
       setFlying((list) => list.filter((item) => item.key !== key));
-      if (gen !== tableGen.current) return;
+      if (gen !== tableGen.current || playersRef.current[toAt]?.id !== toId) return;
       playGiftSound(gift, "land");
       if (pour) heartBurst(key, toAt);
       if (gift === "c:heart1000") heartBurst(key + 0.5, toAt, 1000);
@@ -1916,7 +1921,13 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     cancelPress();
     const state = { started: false, x, y, timer: window.setTimeout(() => {
       state.started = true;
-      if (giveMany(targets, gift, price, need) && !gift.startsWith("song:")) hold.current = window.setInterval(() => { for (const index of targets) if (!sendGift(index, gift, price, 1800)) return stopHold(); }, Math.max(300, targets.length * 160)); // with many receivers the stream is a little sparser, so it stays smooth
+      const ids = targets.map((index) => players[index]?.id).filter(Boolean);
+      // The stream follows the receivers by who they are: one who leaves the table drops out, and when nobody is left it stops.
+      if (giveMany(targets, gift, price, need) && !gift.startsWith("song:")) hold.current = window.setInterval(() => {
+        const now = ids.map((id) => playersRef.current.findIndex((item) => item.id === id && !item.empty)).filter((index) => index >= 0);
+        if (!now.length) return stopHold();
+        for (const index of now) if (!sendGift(index, gift, price, 1800)) return stopHold();
+      }, Math.max(300, targets.length * 160)); // with many receivers the stream is a little sparser, so it stays smooth
     }, 380) };
     pressed.current = state;
   }
