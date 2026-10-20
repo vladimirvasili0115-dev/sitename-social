@@ -10,7 +10,7 @@ function rand(seed: number) {
 }
 
 export function Fireworks({ at, level, seed }: { at: readonly [number, number]; level: number; seed: number }) {
-  const count = [0, 3, 5, 7, 9][Math.max(1, Math.min(4, level))];
+  const count = [0, 2, 3, 4, 5][Math.max(1, Math.min(4, level))];
   const bursts = Array.from({ length: count }, (_, n) => {
     const r = (k: number) => rand(seed * 31 + n * 7 + k);
     return {
@@ -30,13 +30,13 @@ export function Fireworks({ at, level, seed }: { at: readonly [number, number]; 
             style={{ ["--rx" as string]: `${burst.x}cqmin`, ["--ry" as string]: `${burst.y}cqmin`, animation: `fw-rocket 480ms cubic-bezier(0.2,0.7,0.4,1) ${burst.delay}ms both` }} />
           <span className="absolute -left-[3cqmin] -top-[3cqmin] h-[9cqmin] w-[9cqmin] rounded-full"
             style={{ left: `calc(${burst.x}cqmin - 4.5cqmin)`, top: `calc(${burst.y}cqmin - 4.5cqmin)`, background: `radial-gradient(circle, #FFFFFF, ${burst.color} 40%, transparent 70%)`, animation: `fw-flash 500ms ease-out ${burst.delay + 470}ms both` }} />
-          {Array.from({ length: 26 }, (_, k) => {
-            const angle = (k / 26) * Math.PI * 2;
+          {Array.from({ length: 12 }, (_, k) => {
+            const angle = (k / 12) * Math.PI * 2;
             const reach = burst.size * (k % 3 === 0 ? 0.55 : k % 2 ? 0.8 : 1);
             const color = k % 3 ? burst.color : burst.second;
             return (
-              <span key={k} className="absolute h-[1.7cqmin] w-[1.7cqmin] rounded-full"
-                style={{ left: `calc(${burst.x}cqmin - 0.85cqmin)`, top: `calc(${burst.y}cqmin - 0.85cqmin)`, background: `radial-gradient(circle, #FFFFFF 15%, ${color} 55%)`, boxShadow: `0 0 8px 2px ${color}`,
+              <span key={k} className="absolute h-[2cqmin] w-[2cqmin] rounded-full will-change-transform"
+                style={{ left: `calc(${burst.x}cqmin - 0.85cqmin)`, top: `calc(${burst.y}cqmin - 0.85cqmin)`, background: `radial-gradient(circle, #FFFFFF 15%, ${color} 55%)`,
                   ["--dx" as string]: `${Math.cos(angle) * reach}cqmin`, ["--dy" as string]: `${Math.sin(angle) * reach}cqmin`,
                   animation: `fw-spark 1300ms cubic-bezier(0.1,0.8,0.3,1) ${burst.delay + 470}ms both` }} />
             );

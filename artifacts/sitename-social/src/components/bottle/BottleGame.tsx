@@ -399,6 +399,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // Long press / double click on a chat message opens a small menu (reply, translate, report).
   const [lineMenu, setLineMenu] = useState<number | null>(null);
   const pressTimer = useRef(0);
+  const showsRef = useRef(0);
   const [picked, setPicked] = useState<number | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   // The phone video can be dragged by the avatar and resized from its lower-left corner.
@@ -1437,8 +1438,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (!key) return setTrackState("nokey");
     const cacheKey = `bottle-yt:${search.toLowerCase()}`;
     try {
-      const cached = JSON.parse(window.sessionStorage.getItem(cacheKey) ?? "null") as Track[] | null;
-      if (cached) { setTracks(cached); return setTrackState("idle"); }
+      // Kept for 12 hours on this device: every YouTube search spends a big share of the daily quota.
+      const cached = JSON.parse(window.localStorage.getItem(cacheKey) ?? "null") as { at: number; list: Track[] } | null;
+      if (cached?.list?.length && Date.now() - cached.at < 12 * 3600_000) { setTracks(cached.list); return setTrackState("idle"); }
     } catch { /* no cache */ }
     setTrackState("loading");
     const api = "https://www.googleapis.com/youtube/v3";
@@ -1452,7 +1454,11 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       let ids = "";
       if (search) {
         const found = await fetch(`${api}/search?part=id&type=video&videoEmbeddable=true&videoCategoryId=10&maxResults=25&q=${encodeURIComponent(search)}&key=${key}`);
-        if (!found.ok) return setTrackState("fail");
+        if (!found.ok) {
+          const own = [...favs, ...recent].filter((item, index, all) => all.findIndex((other) => other.id === item.id) === index && songScore(search, item.title) >= 0.5);
+          if (own.length) { setTracks(own); return setTrackState("idle"); }
+          return setTrackState("fail");
+        }
         ids = (((await found.json()) as { items?: { id: { videoId: string } }[] }).items ?? []).map((item) => item.id.videoId).join(",");
         if (!ids) return setTrackState("idle");
       }
@@ -1464,7 +1470,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       const shown = search && ranked.length ? ranked : list;
       setTracks(shown);
       setTrackState("idle");
-      try { window.sessionStorage.setItem(cacheKey, JSON.stringify(shown)); } catch { /* storage is full or blocked */ }
+      try { window.localStorage.setItem(cacheKey, JSON.stringify({ at: Date.now(), list: shown })); } catch { /* storage is full or blocked */ }
     } catch {
       setTrackState("fail");
     }
@@ -1653,15 +1659,18 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (gift !== "c:heart1000" && to >= 0 && from !== to && pct > 0 && price >= min) heartBurst(key + 0.5, to, Math.max(1, Math.floor((price * pct) / 100)));
     const level = fireworksLevel(price);
     if (!level || to < 0) return;
-    setShows((list) => [...list, { key, to, level }]);
+    if (showsRef.current >= 2) return; // at most two shows at once, so a flood of gifts does not freeze the page
+    showsRef.current += 1;
+    window.setTimeout(() => { showsRef.current -= 1; }, 1300 + [0, 2, 3, 4, 5][level] * 280 + 600);
+    setShows((list) => [...list, { key, to, level }].slice(-2));
     playSfx("sparkling1");
     const booms = [0, 1, 2, 3, 4].slice(0, level + 1);
     booms.forEach((n) => window.setTimeout(() => playSfx(n % 2 ? "boom2" : "boom1"), 470 + n * 560));
     if (level >= 3) window.setTimeout(() => playSfx("jackpot_firecracker"), 900);
-    window.setTimeout(() => setShows((list) => list.filter((item) => item.key !== key)), 1300 + [0, 3, 5, 7, 9][level] * 280 + 600);
+    window.setTimeout(() => setShows((list) => list.filter((item) => item.key !== key)), 1300 + [0, 2, 3, 4, 5][level] * 280 + 600);
   }
   function heartBurst(key: number, to: number, amount = 1) {
-    setBursts((list) => [...list, { key, to, amount }]);
+    setBursts((list) => [...list, { key, to, amount }].slice(-4));
     window.setTimeout(() => setBursts((list) => list.filter((item) => item.key !== key)), 1700);
   }
   // A single gift glides for 3 seconds; gifts sent in a rapid series (press and hold) fly in about a second.
