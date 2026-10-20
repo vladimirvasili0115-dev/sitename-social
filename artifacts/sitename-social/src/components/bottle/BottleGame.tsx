@@ -833,7 +833,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     return seat?.avatar || players.find((player) => player.id === by)?.avatar || NO_PHOTO;
   })();
   useEffect(() => {
-    if (!track || !net || track.at === trackAt.current) return;
+    if (!track || !net || track.at === trackAt.current || (track.by !== net.me && !net.seats.some((seat) => seat.id === net.me))) return;
     const first = trackAt.current === 0;
     trackAt.current = track.at;
     if (first && net.now - track.at > 5 * 60 * 1000) return;
@@ -1022,7 +1022,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   useEffect(() => { if (online) void bottleGiftShare().then((share) => { if (share && typeof share.pct === "number") giftShare.current = share; }); }, [online]);
   const liveTable = net?.table;
   // A new table or room starts clean: gifts that sat on the photos at the old table do not come along.
-  useEffect(() => { setStickers({}); setSpots({}); setPiles({}); setScatters([]); }, [liveTable]);
+  // Every table has its own music: moving to another table stops the song of the old one and plays the new table's song (if any).
+  useEffect(() => { setStickers({}); setSpots({}); setPiles({}); setScatters([]); setVideo(null); setAudio(null); trackAt.current = 0; }, [liveTable]);
   useEffect(() => {
     if (!liveTable) return;
     try {
