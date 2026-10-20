@@ -266,3 +266,7 @@ button { cursor: pointer; }
   [data-bottle-root] input, [data-bottle-root] textarea, [data-bottle-root] select { font-size: 16px !important; }
 }
 
+
+/* Top-3 places in the ratings: real gold, shining */
+.gold-name { background: linear-gradient(100deg, #8A6200 0%, #F5C400 25%, #FFF4B0 45%, #F5C400 60%, #B8860B 100%); background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: gold-shine 2.4s linear infinite; }
+@keyframes gold-shine { from { background-position: 100% 0; } to { background-position: -120% 0; } }

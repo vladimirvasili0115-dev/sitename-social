@@ -16,7 +16,7 @@ import { Fireworks, fireworksLevel } from "./Fireworks";
 import { GESTURES, GIFT_PRICES, GIFT_RULES, missing, type Progress, type RuleKind } from "./giftRules";
 import { OrigButton, OrigPopup } from "./OrigPopup";
 import { siteMusic } from "@/components/music/siteMusic";
-import { customGiftNames, customPlace, customPrice, giftGroups, landedName, isDrink, colorSteps, nextColor } from "./customGifts";
+import { customGiftNames, customPlace, customPrice, giftGroups, landedName, isDrink, colorSteps, nextColor, onPhoto } from "./customGifts";
 const landed = (gift: string) => (gift.startsWith("c:") ? `c:${landedName(gift.slice(2))}` : gift);
 import { AchievementsPanel } from "./AchievementsPanel";
 import { FIRST_ORIGINAL, FRAME_PRICE, FrameArt, ORIGINAL_FRAMES, frameLooks, frameStone } from "./FrameArt";
@@ -116,8 +116,8 @@ function planLanding(gift: string, taken: { x: number; y: number; s: number }[] 
   const scatter = SCATTER.has(gift) ? giftGroups[gift.slice(2)].map((item) => `c:${item}`) : null;
   const at = (s: number, x: number, y: number, kind: Spot["kind"]): Omit<Spot, "key"> => ({ gift: land, s, x, y, kind });
   let spot: Omit<Spot, "key"> | null;
-  if (name && (HAT_SPOT.test(name) || /^(ears|bow_)/.test(name))) spot = at(38, -10, -13, "hatL"); // like the original: a small hat sitting on the top-left corner, a little tilted: always the top-left corner, tilted 45° so they sit squarely on it
-  else if (name && RANDOM_SPOT.test(name)) { const size = /^(air_kiss|gem)/.test(name) ? 40 : 60; /* a gift keeps the size it flies with (7 or 11 cqmin of a ~17.5cqmin seat), it never shrinks on landing */ const span = 100 - size + 30;
+  if (name && (HAT_SPOT.test(name) || /^(ears|bow_)/.test(name))) spot = at(34, -13, -16, "hatL"); // like the original: a small hat sitting on the top-left corner, a little tilted: always the top-left corner, tilted 45° so they sit squarely on it
+  else if (name && (RANDOM_SPOT.test(name) || onPhoto(name) || name === "fairy")) { const size = 40; /* a gift keeps the size it flies with (7 or 11 cqmin of a ~17.5cqmin seat), it never shrinks on landing */ const span = 100 - size + 30;
     // Try a dozen random places and take the one farthest from the gifts already lying on the photo.
     const centres = taken.map((item) => [item.x + item.s / 2, item.y + item.s / 2]);
     let best = { x: 0, y: 0, d: -1 };
@@ -131,7 +131,7 @@ function planLanding(gift: string, taken: { x: number; y: number; s: number }[] 
   else if (wornGift(land)) spot = null;
     else {
     // Like the original: a small gift sitting on the bottom-right corner, a quarter of it over the edge.
-    const size = /^(redbull\w*|catdress|fairy|donkey|flagaz|eiffeltower|amurchik)$/.test(name) ? 46 : /^baloon\d$/.test(name) ? 32 : 38;
+    const size = /^(redbull\w*|catdress|donkey|flagaz|eiffeltower|amurchik)$/.test(name) ? 92 : /^baloon\d$/.test(name) ? 64 : 76;
     spot = at(size, 100 - size * 0.72, 100 - size * 0.76, /^baloon\d$/.test(name) ? "balloon" : "corner");
   }
   return { land, spot, scatter };
@@ -363,7 +363,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (plan.spot && /^c:air_kiss/.test(plan.land)) {
       const mark = { ...plan.spot, key };
       setKissMarks((value) => ({ ...value, [toId]: [...(value[toId] ?? []), mark].slice(-8) }));
-      window.setTimeout(() => setKissMarks((value) => ({ ...value, [toId]: (value[toId] ?? []).filter((item) => item.key !== key) })), KISS_MS);
+      window.setTimeout(() => setKissMarks((value) => { const list = value[toId] ?? []; return list.length <= 1 ? value : { ...value, [toId]: list.filter((item) => item.key !== key) }; }), KISS_MS);
     }
     else if (plan.spot) {
       setSpots((value) => ({ ...value, [toId]: { ...plan.spot!, key } }));
@@ -698,13 +698,35 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const backWait = useRef(false);
   // The first answer from the server only fills the chat; later ones also play the events (gifts, compliments, kicks).
   const primed = useRef(false);
+  // The game stops talking to the server after 10 minutes without a touch, or when the same game opens in another tab.
+  const stopped = useRef(false);
+  const [gone, setGone] = useState<null | "idle" | "tab">(null);
+  const [mentionToast, setMentionToast] = useState<string | null>(null);
+  useEffect(() => { if (!mentionToast) return; const timer = window.setTimeout(() => setMentionToast(null), 5000); return () => window.clearTimeout(timer); }, [mentionToast]);
+  useEffect(() => {
+    if (!online) return;
+    let last = Date.now();
+    const touch = () => { last = Date.now(); };
+    const stop = (why: "idle" | "tab") => { if (stopped.current) return; stopped.current = true; setGone(why); void bottleLeave(); };
+    const timer = window.setInterval(() => { if (Date.now() - last > 10 * 60 * 1000) stop("idle"); }, 20000);
+    const events = ["pointerdown", "keydown", "wheel", "touchstart"] as const;
+    events.forEach((name) => window.addEventListener(name, touch, { passive: true }));
+    let channel: BroadcastChannel | null = null;
+    const me = Math.random().toString(36).slice(2);
+    try {
+      channel = new BroadcastChannel("bottle-game");
+      channel.onmessage = (event) => { if (event.data?.open && event.data.open !== me) stop("tab"); };
+      channel.postMessage({ open: me });
+    } catch { /* old browser */ }
+    return () => { window.clearInterval(timer); events.forEach((name) => window.removeEventListener(name, touch)); channel?.close(); };
+  }, [online]);
   const pullRef = useRef<() => void>(() => {});
   useEffect(() => {
     if (!online) return;
     let alive = true;
     let busy = false;
     const pull = async () => {
-      if (busy) return;
+      if (busy || stopped.current) return;
       busy = true;
       try {
         let data = await bottleSync(lastChat.current);
@@ -724,11 +746,17 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         const who = (id: string | null) => (id === data!.me ? "me" : id ?? "");
         // Gifts from other players fly across the table on every screen; my own gifts were already shown when I sent them.
         const gifts = all.filter((item) => item.kind === "gift" && item.from !== data!.me);
-        if (!first) gifts.forEach((item, order) => window.setTimeout(() => remoteGift.current(who(item.from), who(item.to), item.body ?? "", gifts.length > 1 ? 1400 : 2800), order * 150));
+        if (!first) gifts.forEach((item, order) => window.setTimeout(() => remoteGift.current(who(item.from), who(item.to), item.body ?? "", gifts.length > 1 ? 1800 : 3600), order * 150));
         for (const seat of data.seats) names.current[seat.id] = { name: (seat.name ?? "").split(" ")[0] || "?", avatar: seat.avatar ?? "" };
         const nameOf = (id: string | null) => (id === data!.me ? t("common.you") : names.current[id ?? ""]?.name ?? "?");
         if (!first) all.filter((item) => item.kind === "compliment" && item.to === data!.me).forEach((item) => setComplimentIn({ name: names.current[item.from ?? ""]?.name ?? "?", avatar: names.current[item.from ?? ""]?.avatar || NO_PHOTO, kind: Number(item.body) || 1 }));
         if (!first && all.some((item) => item.kind === "kick" && item.to === data!.me)) setKickedToast(true);
+        // Somebody wrote to me by name ("Aylin, ..."): a ding and a note.
+        if (!first) {
+          const mine = (names.current[data.me]?.name ?? "").toLowerCase();
+          const mention = mine ? all.find((item) => item.kind === "text" && item.from !== data!.me && (item.body ?? "").toLowerCase().startsWith(mine)) : undefined;
+          if (mention) { playSfx("ding"); setMentionToast(names.current[mention.from ?? ""]?.name ?? "?"); }
+        }
         if (!first) all.filter((item) => item.kind === "gesture" && item.from !== data!.me).forEach((item) => showSeatGesture(who(item.from), item.body ?? ""));
         if (!first) all.filter((item) => item.kind === "booster" && item.from !== data!.me).forEach((item) => showBoostRef.current(item.body === "refuse_slap" ? "refuse_slap" : "kiss_fire", who(item.from)));
         if (!first) all.filter((item) => item.kind === "admire_lost" && item.to === data!.me).forEach((item) => { try { setLostToast(JSON.parse(item.body ?? "{}") as AdmireNote); } catch { /* bad body */ } });
@@ -1642,7 +1670,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // Where a seat really is right now: the two players kissing stand in the middle of the table.
   const seatLeft = (index: number) => (staged && (index === turn || index === target) ? `calc(${CENTER_X}% ${index === turn ? "-" : "+"} 12.5cqmin)` : `${seats[index][0]}%`);
   const seatTop = (index: number) => (staged && (index === turn || index === target) ? `${STAGE_Y}%` : `${seats[index][1]}%`);
-  function sendGift(index: number, gift: string, price: number, ms = 4200) {
+  function sendGift(index: number, gift: string, price: number, ms = 5200) {
     if (gift.startsWith("c:") && colorSteps.has(gift.slice(2))) gift = `c:${nextColor(gift.slice(2))}`; // one colour per tap, in order
     if (gift === "c:air_kiss1") ms = Math.round(ms * 1.3); // the air kiss flies 30% slower
     const player = players[index];
@@ -1750,6 +1778,12 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     void loadProfile(out);
   }
   // Open anyone's card (from the ratings and other lists): a player at the table or someone elsewhere.
+  // VIP names: girls in a red-pink-purple gradient, boys in dark blue; everyone else stays light.
+  const vipName = (player: Player) => {
+    const isVip = online ? Boolean(net?.seats.find((seat) => seat.id === (player.me ? net.me : player.id))?.vip_badge) : Boolean(player.me && vip);
+    if (!isVip) return "";
+    return player.female ? "bg-[linear-gradient(90deg,#FF2D55,#FF6FB5,#B15CFF)] bg-clip-text text-transparent [filter:drop-shadow(0_1px_1px_rgba(0,0,0,0.6))] [text-shadow:none]" : "text-[#1E3A8A] [text-shadow:0_0_3px_#fff,0_0_6px_rgba(255,255,255,0.8)]";
+  };
   function showUserCard(user: { id: string; name: string; avatar: string }) {
     const index = players.findIndex((item) => !item.empty && (item.id === user.id || (item.me && (user.id === "me" || user.id === net?.me))));
     setCardBack([]); setFlagMenu(false); setSignOpen(false); setCardNote(null);
@@ -1801,7 +1835,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     cancelPress();
     const state = { started: false, x, y, timer: window.setTimeout(() => {
       state.started = true;
-      if (giveMany(targets, gift, price, need) && !gift.startsWith("song:")) hold.current = window.setInterval(() => { for (const index of targets) if (!sendGift(index, gift, price, 1400)) return stopHold(); }, 300);
+      if (giveMany(targets, gift, price, need) && !gift.startsWith("song:")) hold.current = window.setInterval(() => { for (const index of targets) if (!sendGift(index, gift, price, 1800)) return stopHold(); }, 300);
     }, 380) };
     pressed.current = state;
   }
@@ -1904,7 +1938,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           const statRow = (key: string, icon: string, color: string, value: number, rank: number | null | undefined) => (
             <div key={key} className={cn("flex h-[17px] items-center", big ? "mb-[10px] first:mt-[10px]" : "mb-1 last:mb-0")} title={t(`bottle.${key}` as "bottle.price")}>
               <span aria-hidden="true" className="mr-[7px] h-[17px] w-[23px] shrink-0 bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url(${P}${icon})` }} />
-              <b className="mr-[10px] whitespace-nowrap text-[14px] tabular-nums" style={{ color }}>{value.toLocaleString("ru-RU")}</b>
+              <b className="mr-[10px] whitespace-nowrap text-[14px] tabular-nums" style={{ color }}>{online && !net ? "…" : value.toLocaleString("ru-RU")}</b>
               {rank && rank < 5000 ? <span className="truncate text-[11px] tracking-[-0.24px] text-[#A7A7A7]">{t("bottle.rankOf").replace("{n}", rank.toLocaleString("ru-RU"))}</span> : null}
               <span className="sr-only">{t(`bottle.${key}` as "bottle.price")}</span>
             </div>
@@ -2069,7 +2103,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           <button ref={balanceRef} key={balancePulse} type="button" onClick={() => { setPayNote(false); setPanel("shop"); }} aria-label={`${t("bottle.shop")}: ${hearts}`} className={cn("flex items-center text-white hover:brightness-110", balancePulse > 0 && "motion-safe:animate-[balance-pulse_0.45s_ease-out]", wide ? "flex-col" : "gap-1.5")} title={t("bottle.shop")}>
             {/* The original balance button: an orange heart with a white rim (bottle-html5 btn_gold_add_heart_up). */}
             <img src="/custom/orig/btn_gold_add_heart_up.svg" alt="" aria-hidden="true" draggable={false} className={cn("drop-shadow-[0_2px_3px_rgba(90,30,0,0.35)]", wide ? "h-[min(56px,10cqmin)] w-[min(62px,11cqmin)]" : "h-[8cqmin] max-h-10 w-[8.8cqmin] max-w-11")} />
-            <span className={cn("font-bold tabular-nums leading-tight [text-shadow:0_1px_2px_rgba(0,0,0,0.45)]", wide ? "text-[min(20px,3.4cqmin)]" : "text-[max(12px,2.6cqmin)]")}>{hearts}</span>
+            <span className={cn("font-bold tabular-nums leading-tight [text-shadow:0_1px_2px_rgba(0,0,0,0.45)]", wide ? "text-[min(20px,3.4cqmin)]" : "text-[max(12px,2.6cqmin)]")}>{online && !net ? "…" : hearts}</span>
           </button>
           <span className="flex-1" />
           <button onClick={onToggleFull} aria-label={t("bottle.fullscreen")} title={t("bottle.fullscreen")} className={cn(tool, !wide && "max-sm:hidden")}>{full ? <Minimize size={17} /> : <Maximize size={17} />}</button>
@@ -2183,7 +2217,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           return (
             <div key={`name-${player.id}`} aria-hidden="true" className={cn("pointer-events-none absolute z-[31] -translate-x-1/2 -translate-y-1/2 transition-[left,top] duration-[1100ms] ease-in-out motion-reduce:duration-0", wide ? "w-[18.5cqmin]" : "w-[17.5cqmin]")} style={staged && active ? { left: `calc(${CENTER_X}% ${index === turn ? "-" : "+"} 12.5cqmin)`, top: `${STAGE_Y}%` } : { left: `${seats[index][0]}%`, top: `${seats[index][1]}%` }}>
               <div className="aspect-square w-full" />
-              <p onClick={player.me ? undefined : (event) => { event.stopPropagation(); setDraft((value) => (value.startsWith(`${player.name}, `) ? value : `${player.name}, ${value}`)); setCard(false); setPicked(null); if (dedicate) chooseMode(false); window.setTimeout(() => chatRef.current?.focus(), 50); }} title={player.me ? undefined : t("bottle.chatMention")} className={cn("relative left-1/2 w-max max-w-[26cqmin] -translate-x-1/2 truncate px-[0.5cqmin] text-center text-[2.4cqmin] font-semibold leading-snug [text-shadow:0_1px_2px_rgba(0,0,0,0.8)]", !player.me && "pointer-events-auto cursor-pointer hover:underline", framed ? "mt-[1.4cqmin]" : "mt-px", isAdminPlayer(player) ? "text-[#FFD54A]" : "text-white")}>{isAdminPlayer(player) ? "👑 " : ""}{player.me ? t("common.you") : player.name}{!player.me && nameSuffix(player) ? ` [${nameSuffix(player)}]` : ""}, {player.age}</p>
+              <p onClick={player.me ? undefined : (event) => { event.stopPropagation(); setDraft((value) => (value.startsWith(`${player.name}, `) ? value : `${player.name}, ${value}`)); setCard(false); setPicked(null); if (dedicate) chooseMode(false); window.setTimeout(() => chatRef.current?.focus(), 50); }} title={player.me ? undefined : t("bottle.chatMention")} className={cn("relative left-1/2 w-max max-w-[26cqmin] -translate-x-1/2 truncate px-[0.5cqmin] text-center text-[2.4cqmin] font-semibold leading-snug [text-shadow:0_1px_2px_rgba(0,0,0,0.8)]", !player.me && "pointer-events-auto cursor-pointer hover:underline", framed ? "mt-[1.4cqmin]" : "mt-px", isAdminPlayer(player) ? "text-[#FFD54A]" : "text-white")}><span className={vipName(player)}>{isAdminPlayer(player) ? "👑 " : ""}{player.name}{!player.me && nameSuffix(player) ? ` [${nameSuffix(player)}]` : ""}, {player.age}</span></p>
             </div>
           );
         })}
@@ -2446,7 +2480,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 </div>
               ) : panel === "chances" ? (
                 <div>
-                  <p className="mb-2 flex items-center justify-center gap-1.5 rounded-lg bg-white/90 py-1.5 text-sm font-bold text-[#134E4A]">{t("bottle.balance")}: <Heart size={15} fill="#F4511E" stroke="none" /><span className="tabular-nums">{hearts}</span> · 🎲 <span className="tabular-nums">{chances}</span></p>
+                  <p className="mb-2 flex items-center justify-center gap-1.5 rounded-lg bg-white/90 py-1.5 text-sm font-bold text-[#134E4A]">{t("bottle.balance")}: <Heart size={15} fill="#F4511E" stroke="none" /><span className="tabular-nums">{online && !net ? "…" : hearts}</span> · 🎲 <span className="tabular-nums">{chances}</span></p>
                   <ul className="grid grid-cols-3 gap-1.5">
                     {chancePacks.map(([pack, price]) => (
                       <li key={pack}>
@@ -2573,7 +2607,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                               <button onClick={open} aria-label={row.name ?? ""} className="h-[42px] w-[42px] shrink-0 rounded-[4px] bg-cover bg-top bg-no-repeat" style={{ backgroundImage: `url(${row.avatar || NO_PHOTO})` }} />
                               <div className={cn("flex h-9 min-w-0 flex-1 items-center rounded-r-[7px]", viewer && "bg-[#FFF5AE]")}>
                                 <b className="ml-2 shrink-0 text-[14px] tabular-nums">{row.place ? `${row.place}. ` : ""}</b>
-                                <button onClick={open} className="ml-0.5 w-px min-w-0 flex-1 truncate text-left text-[14px] leading-4">{viewer ? me?.name ?? row.name : row.name}</button>
+                                <button onClick={open} className={cn("ml-0.5 w-px min-w-0 flex-1 truncate text-left text-[14px] leading-4", row.place && row.place <= 3 ? "gold-name font-extrabold" : topKind === "dear" ? "font-bold text-[#16A34A]" : topKind === "songs" || topKind === "smiles" || topKind === "influence" ? "font-bold text-[#E0A100]" : "")}>{viewer ? me?.name ?? row.name : row.name}</button>
                                 <span aria-hidden="true" className="shrink-0 bg-contain bg-no-repeat" style={{ backgroundImage: `url(${O}${iconName}.svg)`, width: iconSize.split(" ")[0], height: iconSize.split(" ")[1] }} />
                                 <b className="ml-[7px] min-w-[73px] shrink-0 text-left text-[14px] tabular-nums" style={{ color }}>{row.count.toLocaleString("ru-RU")}</b>
                               </div>
@@ -2967,7 +3001,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           {(() => {
             const O = "/custom/orig/";
             const ic = (name: string, w: number, h: number, extra = "") => <span aria-hidden="true" className={cn("inline-block shrink-0 bg-contain bg-center bg-no-repeat", extra)} style={{ width: w, height: h, backgroundImage: `url(${O}${name}.svg)` }} />;
-            const photo = (player: Player | null | undefined, extra = "") => player ? <button type="button" onClick={() => { const index = players.findIndex((item) => item.id === player.id); if (index >= 0) { setPicked(index); setCard(true); } }} title={player.name} className={cn("h-[30px] w-[30px] shrink-0 rounded-[4px] bg-cover bg-top", extra)} style={{ backgroundImage: `url(${player.avatar || NO_PHOTO})` }} /> : null;
+            const photo = (player: Player | null | undefined, extra = "") => player ? <button type="button" onClick={() => { const index = players.findIndex((item) => item.id === player.id); if (index >= 0) { setPicked(index); setCard(true); } else showUserCard({ id: player.id, name: player.name, avatar: player.avatar }); }} title={player.name} className={cn("h-[30px] w-[30px] shrink-0 rounded-[4px] bg-cover bg-top", extra)} style={{ backgroundImage: `url(${player.avatar || NO_PHOTO})` }} /> : null;
             const arrows = ic("chat_icon_arrows", 11, 11, "mx-[5px]");
             const nameColor = (player: Player) => (player.female ? "#D6336C" : "#2F6FD6");
             const info = "flex min-h-[30px] max-w-full items-center px-[7px]";
@@ -3200,6 +3234,23 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             <div className="mt-3"><ComplimentPill kind={complimentIn.kind} big /></div>
             <button onClick={() => setComplimentIn(null)} className="mt-3 h-11 w-full rounded-xl bg-[linear-gradient(180deg,#F87171,#E5484D)] text-sm font-bold text-white shadow hover:brightness-110">{t("bottle.cmpThanks")} 💗</button>
           </div>
+        </div>
+      ) : null}
+      {gone ? (
+        <div role="alertdialog" aria-modal="true" className="absolute inset-0 z-[90] flex items-center justify-center bg-black/70 p-4">
+          <div className="w-[min(360px,100%)] rounded-2xl bg-white p-5 text-center text-[#1F2937] shadow-2xl">
+            <p className="text-3xl">{gone === "idle" ? "😴" : "🔌"}</p>
+            <p className="mt-2 text-base font-bold">{t("bottle.serverStopped")}</p>
+            <p className="mt-1 text-sm text-[#6B7280]">{t(gone === "idle" ? "bottle.goneIdle" : "bottle.goneTab")}</p>
+            <button onClick={() => window.location.reload()} className="mt-4 h-11 w-full rounded-xl bg-[#EE8A2B] text-sm font-bold text-white hover:brightness-110">{t("bottle.goneBack")}</button>
+          </div>
+        </div>
+      ) : null}
+      {mentionToast ? (
+        <div role="status" className="absolute left-1/2 top-3 z-[58] flex w-[min(360px,calc(100%-24px))] -translate-x-1/2 items-center gap-2 rounded-2xl border border-[#93C5FD] bg-white p-2 text-[#1F2937] shadow-2xl">
+          <span aria-hidden="true" className="text-2xl">💬</span>
+          <p className="min-w-0 flex-1 text-sm font-semibold">{t("bottle.mentionYou").replace("{name}", mentionToast)}</p>
+          <button onClick={() => setMentionToast(null)} aria-label={t("photos.close")} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#6B7280]"><X size={16} /></button>
         </div>
       ) : null}
       {kickedToast ? (

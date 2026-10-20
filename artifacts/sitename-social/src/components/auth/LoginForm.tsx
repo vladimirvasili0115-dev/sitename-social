@@ -40,8 +40,8 @@ export function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit} noValidate className="space-y-4">
-      <AuthField label={t("auth.email")} icon={Mail} type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} error={errors.email && t(errors.email)} />
-      <AuthField label={t("auth.password")} icon={Lock} type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} error={errors.password && t(errors.password)} />
+      <AuthField label={t("auth.email")} icon={Mail} type="email" name="email" autoComplete="username email" value={email} onChange={(event) => setEmail(event.target.value)} error={errors.email && t(errors.email)} />
+      <AuthField label={t("auth.password")} icon={Lock} type="password" name="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} error={errors.password && t(errors.password)} />
       <div className="flex items-center justify-between gap-3 text-xs">
         <label className="flex cursor-pointer items-center gap-2 text-muted">
           <input type="checkbox" checked={remember} onChange={(event) => setRemember(event.target.checked)} className="h-4 w-4 accent-[var(--accent)]" />
