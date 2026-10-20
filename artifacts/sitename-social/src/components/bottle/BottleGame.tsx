@@ -291,15 +291,14 @@ function SkinArt({ set, n, className }: { set: Set<string>; n: number; className
 }
 // The kiss counter on a photo is a pair of red lips with the number on it.
 function LipsBadge({ count }: { count: number }) {
+  // Like the original: a red round seal with a jagged edge on the right side of the photo, the number of kisses at this table in white.
   return (
-    <span className="absolute -right-[1.6cqmin] -top-[1.6cqmin] z-[2] flex h-[5.2cqmin] w-[6.6cqmin] items-center justify-center">
-      <svg viewBox="0 0 60 44" aria-hidden="true" className="absolute inset-0 h-full w-full drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]">
-        <defs><linearGradient id="lips-red" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#FF4D5E" /><stop offset="1" stopColor="#C8102E" /></linearGradient></defs>
-        <path d="M2 21C8 9 17 3 24 6c3 1 4.500 3 6 3s3-2 6-3c7-3 16 3 22 15-5 12-15 21-28 21S7 33 2 21z" fill="url(#lips-red)" />
-        <path d="M5 21c8 2 17 3 25 3s17-1 25-3c-7 3-16 5-25 5S12 24 5 21z" fill="#8E0B21" opacity="0.7" />
-        <path d="M14 11c4-3 9-3 12 0" stroke="#FFB3BC" strokeWidth="2.500" strokeLinecap="round" fill="none" opacity="0.8" />
+    <span className="absolute -right-[3.2cqmin] top-[4%] z-[6] flex h-[6.4cqmin] w-[6.4cqmin] items-center justify-center">
+      <svg viewBox="0 0 60 60" aria-hidden="true" className="absolute inset-0 h-full w-full drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]">
+        <defs><radialGradient id="kiss-seal" cx="0.4" cy="0.35" r="0.75"><stop offset="0" stopColor="#FF5A4E" /><stop offset="1" stopColor="#D3122B" /></radialGradient></defs>
+        <polygon points="30.0,0.0 34.5,4.4 40.3,1.8 43.0,7.5 49.3,7.0 49.9,13.3 56.0,15.0 54.4,21.1 59.5,24.8 56.0,30.0 59.5,35.2 54.4,38.9 56.0,45.0 49.9,46.7 49.3,53.0 43.0,52.5 40.3,58.2 34.5,55.6 30.0,60.0 25.5,55.6 19.7,58.2 17.0,52.5 10.7,53.0 10.1,46.7 4.0,45.0 5.6,38.9 0.5,35.2 4.0,30.0 0.5,24.8 5.6,21.1 4.0,15.0 10.1,13.3 10.7,7.0 17.0,7.5 19.7,1.8 25.5,4.4" fill="url(#kiss-seal)" />
       </svg>
-      <span className="relative text-[2.5cqmin] font-black tabular-nums leading-none text-white [text-shadow:0_1px_1px_rgba(0,0,0,0.5)]">{count >= 10000 ? `${Math.floor(count / 1000)}k` : count >= 1000 ? `${(Math.floor(count / 100) / 10).toFixed(1)}k` : count}</span>
+      <span className="relative text-[2.7cqmin] font-black tabular-nums leading-none text-white [text-shadow:0_1px_1px_rgba(0,0,0,0.45)]">{count >= 10000 ? `${Math.floor(count / 1000)}k` : count >= 1000 ? `${(Math.floor(count / 100) / 10).toFixed(1)}k` : count}</span>
     </span>
   );
 }
@@ -405,6 +404,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const pressTimer = useRef(0);
   // Changes with every table: gifts still in the air when you move to another table never land there (the new table starts clean).
   const tableGen = useRef(0);
+  // How many gifts are in the air right now (kept in step with the flying list below).
+  const airborne = useRef(0);
   const showsRef = useRef(0);
   const [picked, setPicked] = useState<number | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -435,7 +436,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // "+" mode: choose several receivers on the table, then every gift goes to all of them.
   const [chosen, setChosen] = useState<string[]>([]);
   const [songMany, setSongMany] = useState<number[]>([]);
-  const [flying, setFlying] = useState<{ key: number; gift: string; from: number; to: number; moved: boolean; ms: number; rot?: number; tx: number; ty: number; end: number; base: number }[]>([]);
+  const [flying, setFlying] = useState<{ key: number; gift: string; from: number; to: number; moved: boolean; ms: number; rot?: number; mine?: boolean; tx: number; ty: number; end: number; base: number }[]>([]);
+  useEffect(() => { airborne.current = flying.length; }, [flying.length]);
   // A drink landed: the receiver gets a "+1 heart" burst.
   const [bursts, setBursts] = useState<{ key: number; to: number; amount?: number }[]>([]);
   // Expensive gifts give the receiver a share of the price (the server keeps the numbers in bottle_config).
@@ -1751,7 +1753,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     const pour = isDrink(gift) && index !== meIndex;
     const plan = planLanding(gift, seed);
     {
-      setFlying((list) => (list.length >= 40 ? list : [...list, { key, gift, from: meIndex, to: index, moved: false, ms, rot: plan.spot?.r ?? 0, ...flightTo(plan, gift) }])); // a flight already in the air is never cut off; past 40 at once a new gift just lands
+      // My own gifts always fly on my screen: when the sky is full, the oldest gift from someone else makes room.
+      setFlying((list) => { const next = [...list]; if (next.length >= 40) { const other = next.findIndex((item) => !item.mine); next.splice(other >= 0 ? other : 0, 1); } return [...next, { key, gift, from: meIndex, to: index, moved: false, ms, mine: true, rot: plan.spot?.r ?? 0, ...flightTo(plan, gift) }]; });
       window.setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))))), 20);
     }
     const gen = tableGen.current;
@@ -1780,10 +1783,14 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (!gift || toAt < 0) return;
     const key = flyId.current++;
     const pour = isDrink(gift) && fromAt >= 0 && fromAt !== toAt;
-    playGiftSound(gift, "send");
+    // A flood of gifts from other players: past 30 in the air, a new one lands straight away (no flight and no "sent" sound),
+    // so nothing is heard without being seen.
+    const busy = airborne.current >= 30;
+    if (busy) ms = 500;
+    else playGiftSound(gift, "send");
     const plan = planLanding(gift, seed);
     {
-      setFlying((list) => (list.length >= 40 ? list : [...list, { key, gift, from: fromAt >= 0 ? fromAt : toAt, to: toAt, moved: false, ms, rot: plan.spot?.r ?? 0, ...flightTo(plan, gift) }])); // a flight already in the air is never cut off; past 40 at once a new gift just lands
+      if (!busy) setFlying((list) => (list.length >= 40 ? list : [...list, { key, gift, from: fromAt >= 0 ? fromAt : toAt, to: toAt, moved: false, ms, rot: plan.spot?.r ?? 0, ...flightTo(plan, gift) }]));
       window.setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))))), 20);
     }
     const gen = tableGen.current;
@@ -2297,7 +2304,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         {shows.map((item) => <Fireworks key={`fw-${item.key}`} at={seats[item.to]} level={item.level} seed={item.key} />)}
         {tableVfx ? <TableShower key={tableVfx.key} emoji={tableVfx.emoji} seed={tableVfx.key % 1000} /> : null}
         {boostFx ? <BoostFx key={boostFx.key} kind={boostFx.kind} fromLeft={boostFx.fromLeft} x={CENTER_X} y={STAGE_Y} /> : null}
-        {flying.map((item) => <div key={item.key} className="pointer-events-none absolute z-40 -translate-x-1/2 -translate-y-1/2" style={{ width: `${item.base}cqmin`, height: `${item.base}cqmin`, left: seatLeft(item.from), top: seatTop(item.from) }}><span className="block h-full w-full will-change-transform" style={{ /* moved with transform only (GPU): smooth like butter, no layout work while flying */ transform: item.moved ? `translate(calc(${seatXq(item.to)} - ${seatXq(item.from)} + ${item.tx}cqmin), calc(${seatYq(item.to)} - ${seatYq(item.from)} + ${item.ty}cqmin))` : "translate(0, 0)", transition: `transform ${item.ms}ms cubic-bezier(0.25, 0.7, 0.4, 1)` }}><span className="block h-full w-full" style={{ animation: `gift-fly-to ${item.ms}ms ease-in-out both`, ["--end" as string]: item.end }}><span className="block h-full w-full" style={SPIN_FLIGHT.test(item.gift) ? { animation: `gift-turn ${item.ms}ms linear both` } : { transform: `rotate(${item.moved ? item.rot ?? 0 : 0}deg)`, transition: `transform ${item.ms}ms cubic-bezier(0.25, 0.7, 0.4, 1)` }}>{item.gift.startsWith("c:") && giftGroups[item.gift.slice(2)] && item.gift !== "c:wholeegg" && !colorSteps.has(item.gift.slice(2)) ? <GiftCycle names={giftGroups[item.gift.slice(2)].map((name) => `c:${name}`)} className="h-full w-full" /> : <Gift anim id={item.gift} className="h-full w-full" />}</span></span></span></div>)}
+        {flying.map((item) => <div key={item.key} className="pointer-events-none absolute z-40 -translate-x-1/2 -translate-y-1/2" style={{ width: `${item.base}cqmin`, height: `${item.base}cqmin`, left: seatLeft(item.from), top: seatTop(item.from) }}><span className="block h-full w-full" style={{ /* moved with transform only (GPU): smooth like butter, no layout work while flying */ transform: item.moved ? `translate(calc(${seatXq(item.to)} - ${seatXq(item.from)} + ${item.tx}cqmin), calc(${seatYq(item.to)} - ${seatYq(item.from)} + ${item.ty}cqmin))` : "translate(0, 0)", transition: `transform ${item.ms}ms cubic-bezier(0.25, 0.7, 0.4, 1)` }}><span className="block h-full w-full" style={{ animation: `gift-fly-to ${item.ms}ms ease-in-out both`, ["--end" as string]: item.end }}><span className="block h-full w-full" style={SPIN_FLIGHT.test(item.gift) ? { animation: `gift-turn ${item.ms}ms linear both` } : { transform: `rotate(${item.moved ? item.rot ?? 0 : 0}deg)`, transition: `transform ${item.ms}ms cubic-bezier(0.25, 0.7, 0.4, 1)` }}>{item.gift.startsWith("c:") && giftGroups[item.gift.slice(2)] && item.gift !== "c:wholeegg" && !colorSteps.has(item.gift.slice(2)) ? <GiftCycle names={giftGroups[item.gift.slice(2)].map((name) => `c:${name}`)} className="h-full w-full" /> : <Gift anim id={item.gift} className="h-full w-full" />}</span></span></span></div>)}
 
         {staged && target !== null ? (
           <>
