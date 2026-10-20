@@ -789,7 +789,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         const all = data.chat.filter((item) => item.id > lastChat.current && item.kind !== "wheel");
         const who = (id: string | null) => (id === data!.me ? "me" : id ?? "");
         // Gifts from other players fly across the table on every screen; my own gifts were already shown when I sent them.
-        const gifts = all.filter((item) => item.kind === "gift" && item.from !== data!.me);
+        const gifts = all.filter((item) => item.kind === "gift" && item.from !== data!.me && !(item.seed && seenSeeds.current.has(item.seed)));
+        for (const item of gifts) if (item.seed) seenSeeds.current.add(item.seed);
         if (!first) gifts.forEach((item, order) => window.setTimeout(() => remoteGift.current(who(item.from), who(item.to), item.body ?? "", gifts.length > 1 ? 1800 : 3600, item.seed ?? item.id), order * Math.min(150, 900 / gifts.length))); // a big batch still starts within a second
         for (const seat of data.seats) names.current[seat.id] = { name: (seat.name ?? "").split(" ")[0] || "?", avatar: seat.avatar ?? "" };
         const nameOf = (id: string | null) => names.current[id ?? ""]?.name ?? "?"; // own name too, not "you"
@@ -1739,6 +1740,44 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // The same seat positions in container units, for moving a flying gift with transform (cqw/cqh = % of the table box).
   const seatXq = (index: number) => (staged && (index === turn || index === target) ? `(${CENTER_X}cqw ${index === turn ? "-" : "+"} 12.5cqmin)` : `${seats[index][0]}cqw`);
   const seatYq = (index: number) => (staged && (index === turn || index === target) ? `${STAGE_Y}cqh` : `${seats[index][1]}cqh`);
+  // Realtime: every gift is also announced on the table's live channel at once, so everybody at the table sees it fly
+  // within a fraction of a second (the database is not asked for it). The 1-second sync stays as the backup; a gift that
+  // already came over the live channel (same seed) is not flown a second time.
+  const liveChannel = useRef<ReturnType<NonNullable<typeof supabase>["channel"]> | null>(null);
+  const seenSeeds = useRef(new Set<number>());
+  const liveOut = useRef<{ from: string; to: string; gift: string; seed: number }[]>([]);
+  const liveTimer = useRef(0);
+  const meId = useRef("");
+  meId.current = net?.me ?? "";
+  function liveSend(item: { from: string; to: string; gift: string; seed: number }) {
+    if (!liveChannel.current) return;
+    seenSeeds.current.add(item.seed);
+    liveOut.current.push(item);
+    if (liveTimer.current) return;
+    liveTimer.current = window.setTimeout(() => {
+      liveTimer.current = 0;
+      const items = liveOut.current.splice(0, liveOut.current.length);
+      if (items.length && liveChannel.current) void liveChannel.current.send({ type: "broadcast", event: "gifts", payload: { items } });
+    }, 120);
+  }
+  const liveTableId = net?.table;
+  useEffect(() => {
+    if (!online || !supabase || !liveTableId) return;
+    const client = supabase;
+    const channel = client.channel(`bottle-table-${liveTableId}`, { config: { broadcast: { self: false } } });
+    channel.on("broadcast", { event: "gifts" }, (message: { payload?: { items?: { from: string; to: string; gift: string; seed: number }[] } }) => {
+      const items = (message.payload?.items ?? []).filter((item) => item && typeof item.seed === "number" && !seenSeeds.current.has(item.seed));
+      if (seenSeeds.current.size > 5000) seenSeeds.current.clear();
+      const who = (id: string) => (id === meId.current ? "me" : id);
+      items.forEach((item, order) => {
+        seenSeeds.current.add(item.seed);
+        window.setTimeout(() => remoteGift.current(who(item.from), who(item.to), item.gift, items.length > 1 ? 1800 : 3600, item.seed), order * Math.min(120, 600 / items.length));
+      });
+    });
+    channel.subscribe();
+    liveChannel.current = channel;
+    return () => { liveChannel.current = null; void client.removeChannel(channel); };
+  }, [online, liveTableId]); // eslint-disable-line react-hooks/exhaustive-deps
   // Gifts go to the server in small batches (one request every 0.3 s), so a long stream is a handful of requests, not hundreds.
   const giftQueue = useRef<{ to: string; gift: string; price: number; seed: number }[]>([]);
   const giftTimer = useRef(0);
@@ -1760,7 +1799,10 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (heartsRef.current < price) return false;
     heartsRef.current -= price;
     setHearts(heartsRef.current);
-    if (online) queueGift({ to: player.me ? net?.me ?? "" : player.id, gift, price, seed });
+    if (online) {
+      queueGift({ to: player.me ? net?.me ?? "" : player.id, gift, price, seed });
+      liveSend({ from: net?.me ?? "", to: player.me ? net?.me ?? "" : player.id, gift, seed });
+    }
     const key = flyId.current++;
     playGiftSound(gift, "send");
     // Drinks fly like every other gift (one by one); on landing the receiver gets the "+1 heart" burst.
