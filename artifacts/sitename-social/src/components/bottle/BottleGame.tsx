@@ -1743,9 +1743,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const seatYq = (index: number) => (staged && (index === turn || index === target) ? `${STAGE_Y}cqh` : `${seats[index][1]}cqh`);
   function sendGift(index: number, gift: string, price: number, ms = 5200) {
     const seed = 1 + Math.floor(Math.random() * 2e9); // goes to the server with the gift, so every screen puts it in the same spot
-    ms = Math.round(ms / 0.378); // flight speed (latest: half as fast as before)
+    ms = 5000; // like the original ok.ru game (GiftAnimations.ts): every gift flies exactly 5 seconds, ease-out
     if (gift.startsWith("c:") && colorSteps.has(gift.slice(2))) gift = `c:${nextColor(gift.slice(2))}`; // one colour per tap, in order
-    if (gift === "c:air_kiss1") ms = Math.round(ms * 1.3); // the air kiss flies 30% slower
     const player = players[index];
     if (!player || player.empty) return false;
     if (heartsRef.current < price) return false;
@@ -1783,8 +1782,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // A gift another player sent: it flies from their seat to the receiver, then sits on the photo and goes into the chat.
   const remoteGift = useRef<(from: string, to: string, gift: string, ms: number, seed: number) => void>(() => {});
   remoteGift.current = (fromId, toId, gift, ms, seed) => {
-    ms = Math.round(ms / 0.378); // flight speed (latest: half as fast as before)
-    if (gift === "c:air_kiss1") ms = Math.round(ms * 1.3); // the air kiss flies 30% slower
+    ms = 5000; // like the original ok.ru game (GiftAnimations.ts): every gift flies exactly 5 seconds, ease-out
     const fromAt = players.findIndex((player) => player.id === fromId);
     const toAt = players.findIndex((player) => player.id === toId);
     if (!gift || toAt < 0) return;
