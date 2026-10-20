@@ -70,11 +70,11 @@ export function nextColor(name: string) {
   stepAt[name] = (at + 1) % group.length;
   return group[at];
 }
-export function landedName(name: string) {
+export function landedName(name: string, rand: () => number = Math.random) {
   const group = colorSteps.has(name) ? undefined : giftGroups[name];
   if (group) {
-    if (name === "flower1") { const bag = [...group, "flower1", "flower1", "flower1", "flower5", "flower5", "flower5"]; return bag[Math.floor(Math.random() * bag.length)]; }
-    return group[Math.floor(Math.random() * group.length)];
+    if (name === "flower1") { const bag = [...group, "flower1", "flower1", "flower1", "flower5", "flower5", "flower5"]; return bag[Math.floor(rand() * bag.length)]; }
+    return group[Math.floor(rand() * group.length)];
   }
   if (/^prankcake_\w+1$/.test(name)) return name.replace(/1$/, "2");
   if (name === "tomato1") return Math.random() < 0.5 ? "tomato2" : "tomato3";

@@ -17,7 +17,7 @@ import { GESTURES, GIFT_PRICES, GIFT_RULES, missing, type Progress, type RuleKin
 import { OrigButton, OrigPopup } from "./OrigPopup";
 import { siteMusic } from "@/components/music/siteMusic";
 import { customGiftNames, customPlace, customPrice, giftGroups, landedName, isDrink, colorSteps, nextColor, onPhoto } from "./customGifts";
-const landed = (gift: string) => (gift.startsWith("c:") ? `c:${landedName(gift.slice(2))}` : gift);
+const landed = (gift: string, rand?: () => number) => (gift.startsWith("c:") ? `c:${landedName(gift.slice(2), rand)}` : gift);
 import { AchievementsPanel } from "./AchievementsPanel";
 import { FIRST_ORIGINAL, FRAME_PRICE, FrameArt, ORIGINAL_FRAMES, frameLooks, frameStone } from "./FrameArt";
 import { PassPanel, type PassData } from "./PassPanel";
@@ -118,7 +118,7 @@ const SPIN_FLIGHT = /^c:(bear\d+|labubu1|wholeegg)$/;
 const SMALL_FLIGHT = new Set(["c:air_kiss1", "c:gem1"]);
 const SCATTER = new Set(["c:wholeegg"]);
 function planLanding(gift: string, seed: number = Math.random() * 1e9) {
-  const land = landed(gift);
+  const land = landed(gift, seeded(seed + 7)); // which flower/colour lands is the same on every screen too
   const name = land.startsWith("c:") ? land.slice(2) : "";
   const scatter = SCATTER.has(gift) ? giftGroups[gift.slice(2)].map((item) => `c:${item}`) : null;
   const at = (s: number, x: number, y: number, kind: Spot["kind"]): Omit<Spot, "key"> => ({ gift: land, s, x, y, kind });
@@ -2304,7 +2304,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         {shows.map((item) => <Fireworks key={`fw-${item.key}`} at={seats[item.to]} level={item.level} seed={item.key} />)}
         {tableVfx ? <TableShower key={tableVfx.key} emoji={tableVfx.emoji} seed={tableVfx.key % 1000} /> : null}
         {boostFx ? <BoostFx key={boostFx.key} kind={boostFx.kind} fromLeft={boostFx.fromLeft} x={CENTER_X} y={STAGE_Y} /> : null}
-        {flying.map((item) => <div key={item.key} className="pointer-events-none absolute z-40 -translate-x-1/2 -translate-y-1/2" style={{ width: `${item.base}cqmin`, height: `${item.base}cqmin`, left: seatLeft(item.from), top: seatTop(item.from) }}><span className="block h-full w-full" style={{ /* moved with transform only (GPU): smooth like butter, no layout work while flying */ transform: item.moved ? `translate(calc(${seatXq(item.to)} - ${seatXq(item.from)} + ${item.tx}cqmin), calc(${seatYq(item.to)} - ${seatYq(item.from)} + ${item.ty}cqmin))` : "translate(0, 0)", transition: `transform ${item.ms}ms cubic-bezier(0.25, 0.7, 0.4, 1)` }}><span className="block h-full w-full" style={{ animation: `gift-fly-to ${item.ms}ms ease-in-out both`, ["--end" as string]: item.end }}><span className="block h-full w-full" style={SPIN_FLIGHT.test(item.gift) ? { animation: `gift-turn ${item.ms}ms linear both` } : { transform: `rotate(${item.moved ? item.rot ?? 0 : 0}deg)`, transition: `transform ${item.ms}ms cubic-bezier(0.25, 0.7, 0.4, 1)` }}>{item.gift.startsWith("c:") && giftGroups[item.gift.slice(2)] && item.gift !== "c:wholeegg" && !colorSteps.has(item.gift.slice(2)) ? <GiftCycle names={giftGroups[item.gift.slice(2)].map((name) => `c:${name}`)} className="h-full w-full" /> : <Gift anim id={item.gift} className="h-full w-full" />}</span></span></span></div>)}
+        {flying.map((item) => <div key={item.key} className="pointer-events-none absolute z-40 -translate-x-1/2 -translate-y-1/2" style={{ width: `${item.base}cqmin`, height: `${item.base}cqmin`, left: seatLeft(item.from), top: seatTop(item.from) }}><span className="block h-full w-full" style={{ /* moved with transform only (GPU): smooth like butter, no layout work while flying */ transform: item.moved ? `translate(calc(${seatXq(item.to)} - ${seatXq(item.from)} + ${item.tx}cqmin), calc(${seatYq(item.to)} - ${seatYq(item.from)} + ${item.ty}cqmin))` : "translate(0, 0)", transition: `transform ${item.ms}ms cubic-bezier(0.25, 0.7, 0.4, 1)` }}><span className="block h-full w-full" style={{ animation: `gift-fly-to ${item.ms}ms ease-in-out both`, ["--end" as string]: item.end }}><span className="block h-full w-full" style={SPIN_FLIGHT.test(item.gift) ? { animation: `gift-turn ${item.ms}ms linear both` } : { transform: `rotate(${item.moved ? item.rot ?? 0 : 0}deg)`, transition: `transform ${item.ms}ms cubic-bezier(0.25, 0.7, 0.4, 1)` }}>{item.gift.startsWith("c:") && giftGroups[item.gift.slice(2)] && item.gift !== "c:wholeegg" && item.gift !== "c:flower1" && !colorSteps.has(item.gift.slice(2)) ? <GiftCycle names={giftGroups[item.gift.slice(2)].map((name) => `c:${name}`)} className="h-full w-full" /> : <Gift anim id={item.gift} className="h-full w-full" />}</span></span></span></div>)}
 
         {staged && target !== null ? (
           <>
