@@ -2,8 +2,9 @@
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Compass, LogOut, Mail, Search } from "lucide-react";
-import { SITE_NAME } from "@/config/site";
+import { LogOut, Mail, Search } from "lucide-react";
+import { LogoMark } from "@/components/ui/LogoMark";
+import { Wordmark } from "@/components/ui/Logo";
 import { useTranslation } from "@/i18n/useTranslation";
 import { Avatar } from "@/components/ui/Avatar";
 import { IconButton } from "@/components/ui/IconButton";
@@ -30,8 +31,8 @@ export function Header() {
     <header className="sticky top-0 z-40 border-b border-border bg-bg/95 backdrop-blur">
       <div className="relative mx-auto flex h-[72px] max-w-[1160px] items-center gap-2 px-4 sm:gap-5 md:px-6">
         <Link href="/feed" className="flex min-w-0 items-center gap-2.5">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent text-bg"><Compass size={20} strokeWidth={2.5} /></span>
-          <span className={`text-[19px] font-bold tracking-[-0.04em] text-text ${musicOn ? "max-sm:hidden" : ""}`}>{SITE_NAME}<span className="text-accent">.</span></span>
+          <LogoMark className="h-9 w-9 shrink-0 drop-shadow-[0_2px_6px_rgba(255,77,141,0.35)]" />
+          <Wordmark className={musicOn ? "max-sm:hidden" : ""} />
         </Link>
         <form onSubmit={handleSearch} role="search" className="hidden h-10 max-w-[340px] flex-1 items-center gap-2.5 rounded-xl border border-border bg-surface px-3.5 text-muted focus-within:border-accent md:flex">
           <Search size={16} />
