@@ -124,7 +124,7 @@ function planLanding(gift: string, seed: number = Math.random() * 1e9) {
   const at = (s: number, x: number, y: number, kind: Spot["kind"]): Omit<Spot, "key"> => ({ gift: land, s, x, y, kind });
   let spot: Omit<Spot, "key"> | null;
   const rnd = seeded(seed);
-  if (name && (HAT_SPOT.test(name) || /^(ears|bow_)/.test(name))) spot = at(34, -17, -17, "hatL"); // the original "hat": centred on the top-left corner, turned -45°
+  if (name && (HAT_SPOT.test(name) || /^(ears|bow_)/.test(name))) spot = at(50, -30, -30, "hatL"); // the original "hat": a bigger hat sitting right on the top-left (90°) corner, turned -45°
   else if (name && (RANDOM_SPOT.test(name) || onPhoto(name) || name === "fairy")) {
     // The original "ava": a random point anywhere on the photo and a random angle (0–360°), the same on every screen.
     const size = 40;
@@ -403,6 +403,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // Long press / double click on a chat message opens a small menu (reply, translate, report).
   const [lineMenu, setLineMenu] = useState<number | null>(null);
   const pressTimer = useRef(0);
+  // Changes with every table: gifts still in the air when you move to another table never land there (the new table starts clean).
+  const tableGen = useRef(0);
   const showsRef = useRef(0);
   const [picked, setPicked] = useState<number | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -1023,7 +1025,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const liveTable = net?.table;
   // A new table or room starts clean: gifts that sat on the photos at the old table do not come along.
   // Every table has its own music: moving to another table stops the song of the old one and plays the new table's song (if any).
-  useEffect(() => { setStickers({}); setSpots({}); setPiles({}); setScatters([]); setVideo(null); setAudio(null); trackAt.current = 0; }, [liveTable]);
+  useEffect(() => { tableGen.current += 1; setFlying([]); setBursts([]); setShows([]); setStickers({}); setSpots({}); setPiles({}); setScatters([]); setVideo(null); setAudio(null); trackAt.current = 0; }, [liveTable]);
   useEffect(() => {
     if (!liveTable) return;
     try {
@@ -1735,7 +1737,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const seatYq = (index: number) => (staged && (index === turn || index === target) ? `${STAGE_Y}cqh` : `${seats[index][1]}cqh`);
   function sendGift(index: number, gift: string, price: number, ms = 5200) {
     const seed = 1 + Math.floor(Math.random() * 2e9); // goes to the server with the gift, so every screen puts it in the same spot
-    ms = Math.round(ms / 0.7); // all gifts fly 30% slower
+    ms = Math.round(ms / 0.56); // all gifts fly slower (−30%, then −20% more)
     if (gift.startsWith("c:") && colorSteps.has(gift.slice(2))) gift = `c:${nextColor(gift.slice(2))}`; // one colour per tap, in order
     if (gift === "c:air_kiss1") ms = Math.round(ms * 1.3); // the air kiss flies 30% slower
     const player = players[index];
@@ -1752,8 +1754,10 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       setFlying((list) => (list.length >= 40 ? list : [...list, { key, gift, from: meIndex, to: index, moved: false, ms, rot: plan.spot?.r ?? 0, ...flightTo(plan, gift) }])); // a flight already in the air is never cut off; past 40 at once a new gift just lands
       window.setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))))), 20);
     }
+    const gen = tableGen.current;
     window.setTimeout(() => {
       setFlying((list) => list.filter((item) => item.key !== key));
+      if (gen !== tableGen.current) return;
       playGiftSound(gift, "land");
       if (pour) heartBurst(key, index);
       if (gift === "c:heart1000") heartBurst(key + 0.5, index, 1000);
@@ -1769,7 +1773,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // A gift another player sent: it flies from their seat to the receiver, then sits on the photo and goes into the chat.
   const remoteGift = useRef<(from: string, to: string, gift: string, ms: number, seed: number) => void>(() => {});
   remoteGift.current = (fromId, toId, gift, ms, seed) => {
-    ms = Math.round(ms / 0.7); // all gifts fly 30% slower
+    ms = Math.round(ms / 0.56); // all gifts fly slower (−30%, then −20% more)
     if (gift === "c:air_kiss1") ms = Math.round(ms * 1.3); // the air kiss flies 30% slower
     const fromAt = players.findIndex((player) => player.id === fromId);
     const toAt = players.findIndex((player) => player.id === toId);
@@ -1782,8 +1786,10 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       setFlying((list) => (list.length >= 40 ? list : [...list, { key, gift, from: fromAt >= 0 ? fromAt : toAt, to: toAt, moved: false, ms, rot: plan.spot?.r ?? 0, ...flightTo(plan, gift) }])); // a flight already in the air is never cut off; past 40 at once a new gift just lands
       window.setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))))), 20);
     }
+    const gen = tableGen.current;
     window.setTimeout(() => {
       setFlying((list) => list.filter((item) => item.key !== key));
+      if (gen !== tableGen.current) return;
       playGiftSound(gift, "land");
       if (pour) heartBurst(key, toAt);
       if (gift === "c:heart1000") heartBurst(key + 0.5, toAt, 1000);
@@ -2239,8 +2245,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   return <>
                     {(piles[player.id] ?? []).map((item) => <span key={item.key} className="pointer-events-none absolute z-[2] animate-[gift-drop_0.35s_ease-out] transition-opacity duration-[2000ms]" style={{ left: `${item.x}%`, top: `${item.y}%`, width: `${item.s}%`, height: `${item.s}%`, transform: `rotate(${item.r}deg)`, opacity: pileNow - item.at > PILE_MS - 3000 ? 0 : 1 }}><Gift anim id={item.gift} className="h-full w-full drop-shadow-[0_2px_2px_rgba(0,0,0,0.35)]" /></span>)}
                     {face ? <Gift id={face} className="absolute left-[8%] top-[10%] z-[2] h-[84%] w-[84%] animate-[gift-drop_0.35s_ease-out]" /> : null}
-                    {ears ? <Gift anim id={ears} className="pointer-events-none absolute -left-[22%] -top-[14%] z-[2] h-[44%] w-[80%] -rotate-45 animate-[gift-drop_0.35s_ease-out] drop-shadow" /> : null}
-                    {head ? <Gift anim id={head} className="pointer-events-none absolute -left-[16%] -top-[16%] z-[2] h-[56%] w-[56%] -rotate-45 animate-[gift-drop_0.35s_ease-out] drop-shadow" /> : null}
+                    {ears ? <Gift anim id={ears} className="pointer-events-none absolute -left-[34%] -top-[22%] z-[2] h-[58%] w-[104%] -rotate-45 animate-[gift-drop_0.35s_ease-out] drop-shadow" /> : null}
+                    {head ? <Gift anim id={head} className="pointer-events-none absolute -left-[30%] -top-[30%] z-[2] h-[72%] w-[72%] -rotate-45 animate-[gift-drop_0.35s_ease-out] drop-shadow" /> : null}
                     {spots[player.id]?.length ? spots[player.id].map((spot) => <span key={spot.key} className={cn("pointer-events-none absolute transition-opacity duration-[2000ms]", spot.kind === "behind" ? "-z-[1]" : spot.kind === "hatL" || spot.kind === "hatR" ? "z-[5]" : "z-[2]")} style={{ left: `${spot.x}%`, top: `${spot.y}%`, width: `${spot.s}%`, height: `${spot.s}%`, opacity: spot.fade ? 0 : 1, transform: spot.kind === "hatL" ? "rotate(-45deg)" : spot.kind === "hatR" ? "rotate(45deg)" : spot.r ? `rotate(${spot.r}deg)` : undefined }}><Gift anim id={spot.gift} className={cn("h-full w-full drop-shadow", spot.x + spot.s / 2 < 45 ? "origin-bottom-left" : "origin-bottom-right", (spot.kind === "corner" || spot.kind === "balloon") && (spot.x + spot.s / 2 < 45 ? "object-left-bottom" : "object-right-bottom"), spot.kind === "balloon" ? "animate-[gift-grow_0.7s_ease-out_forwards]" : "animate-[gift-drop_0.35s_ease-out]")} /></span>)
                       : rest.map((gift) => <Gift anim key={`${gift}-${mine.length}`} id={gift} className="absolute bottom-0 right-0 z-[2] h-[58%] w-[58%] animate-[gift-drop_0.35s_ease-out] drop-shadow" />)}
                     {scatters.filter((item) => item.to === player.id).flatMap((item) => item.names.map((name, n) => <span key={`${item.key}-${n}`} className="pointer-events-none absolute left-1/2 top-1/2 z-[3] h-[26%] w-[26%]" style={{ animation: "gift-scatter 1s ease-out forwards", ["--dx" as string]: `${item.dirs[n][0]}cqmin`, ["--dy" as string]: `${item.dirs[n][1]}cqmin` }}><Gift anim id={name} className="h-full w-full drop-shadow" /></span>))}
