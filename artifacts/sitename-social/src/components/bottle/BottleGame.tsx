@@ -305,8 +305,8 @@ const PILE_MS = 90000;
 const KISS_MS = 26000;
 const ANSWER_SECONDS = 9;
 const packs: { hearts: number; price: number; bonus?: number; tag?: "best" | "hit"; art: string }[] = [
-  { hearts: 7500, price: 5000, bonus: 35, tag: "best", art: "🛒" }, { hearts: 1500, price: 1000, bonus: 35, art: "🧰" }, { hearts: 720, price: 500, bonus: 30, art: "🛢️" },
-  { hearts: 265, price: 200, bonus: 20, tag: "hit", art: "🍯" }, { hearts: 120, price: 100, bonus: 10, art: "👝" }, { hearts: 55, price: 50, art: "🎁" }, { hearts: 11, price: 10, art: "💕" },
+  { hearts: 240000, price: 220, bonus: 118, tag: "best", art: "🛒" }, { hearts: 120000, price: 140, bonus: 71, art: "🧰" }, { hearts: 60000, price: 75, bonus: 60, art: "🛢️" },
+  { hearts: 30000, price: 45, bonus: 33, tag: "hit", art: "🍯" }, { hearts: 15000, price: 25, art: "👝" }, { hearts: 7500, price: 15, art: "💕" },
 ];
 const tool = "flex h-[min(50px,8cqmin)] w-[min(50px,8cqmin)] shrink-0 items-center justify-center rounded-full bg-[#E3893A]/85 text-white shadow-[0_2px_4px_rgba(90,40,0,0.25)] hover:bg-[#EE9545] [&_svg]:stroke-[2.4]";
 function youtubeId(value: string) {
@@ -587,19 +587,21 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [tune, setTune] = useState({ playing: false, cur: 0, dur: 0 });
   useEffect(() => {
     setTune({ playing: false, cur: 0, dur: 0 });
-    if (!video || !musicMode) return;
+    if (!video) return;
     const hear = (event: MessageEvent) => {
       if (typeof event.origin !== "string" || !event.origin.includes("youtube")) return;
       try {
         const data = JSON.parse(String(event.data)) as { event?: string; info?: { currentTime?: number; duration?: number; playerState?: number } };
         const info = data.info;
         if (data.event !== "infoDelivery" || !info) return;
+        if (info.playerState === 0) { setVideo(null); return; } // the song is over: the player closes and its line leaves the chat
         setTune((v) => ({ playing: info.playerState === undefined ? v.playing : info.playerState === 1, cur: info.currentTime ?? v.cur, dur: info.duration || v.dur }));
       } catch { /* not a player message */ }
     };
     window.addEventListener("message", hear);
     return () => window.removeEventListener("message", hear);
   }, [video, musicMode]);
+  const lastSongLine = lines.filter((line) => line.song).at(-1)?.id;
   const clock = (sec: number) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, "0")}`;
   const [videoTitle, setVideoTitle] = useState("");
   const [badLink, setBadLink] = useState(false);
@@ -2889,7 +2891,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       <div className={cn("relative flex min-h-0 min-w-0 flex-1 flex-col bg-[#F5F5F5]", wide ? "-ml-px" : "-mt-px")}>
         {video && wide && !musicMode ? (
           <div className={cn("relative w-full shrink-0 bg-black", picked !== null || dedicate ? "h-0 overflow-hidden" : "aspect-video max-h-[42%]")}>
-            <iframe ref={frameRef} onLoad={() => window.setTimeout(pushMusic, 800)} src={ytSrc(video)} title="YouTube" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen className="h-full w-full" />
+            <iframe ref={frameRef} onLoad={() => { window.setTimeout(pushMusic, 800); frameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: "listening", id: 1 }), "*"); }} src={ytSrc(video)} title="YouTube" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen className="h-full w-full" />
             {soundPill}
             <button onClick={() => setVideo(null)} aria-label={t("photos.close")} title={t("photos.close")} className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80"><X size={15} /></button>
           </div>
@@ -2898,7 +2900,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           <div ref={miniRef} style={mini.x === null ? { right: 0, top: mini.y, width: musicMode ? Math.max(mini.w, 262) : mini.w } : { left: mini.x, top: mini.y, width: musicMode ? Math.max(mini.w, 262) : mini.w }} className={cn("absolute z-20 overflow-hidden border shadow-lg", musicMode ? "border-[#4C1D95] bg-[linear-gradient(160deg,#1E1B3A,#4C1D95_65%,#BE185D)] text-white" : "border-border bg-surface", mini.x === null ? "rounded-l-2xl border-r-0" : "rounded-2xl")}>
             <div className="flex items-center">
               <img src={players[meIndex].avatar} alt="" title={t("bottle.miniMove")} onPointerDown={(event) => startMini(event, "move")} className="mx-2 h-10 w-10 shrink-0 cursor-move touch-none select-none rounded-full border-2 border-border object-cover" draggable={false} />
-              <div className={cn(musicMode ? "my-1 mr-1 h-[200px] w-[200px] shrink-0 overflow-hidden rounded-xl" : "aspect-video min-w-0 flex-1", "bg-black", miniBusy && "pointer-events-none")}><iframe ref={frameRef} onLoad={() => window.setTimeout(pushMusic, 800)} src={ytSrc(video)} title="YouTube" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen className="h-full w-full" /></div>
+              <div className={cn(musicMode ? "my-1 mr-1 h-[200px] w-[200px] shrink-0 overflow-hidden rounded-xl" : "aspect-video min-w-0 flex-1", "bg-black", miniBusy && "pointer-events-none")}><iframe ref={frameRef} onLoad={() => { window.setTimeout(pushMusic, 800); frameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: "listening", id: 1 }), "*"); }} src={ytSrc(video)} title="YouTube" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen className="h-full w-full" /></div>
             </div>
             {musicMode ? <div className="flex items-center gap-2 px-2 pt-0.5"><Equalizer className="h-4 shrink-0" /><p className="min-w-0 flex-1 truncate text-xs font-bold">{videoTitle}</p></div> : null}
             {soundPill}
@@ -2913,7 +2915,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         {audio || (video && musicMode) ? (
           // PC: a bar above the chat. Phone: a small square window like the video one, which can be moved and resized.
           <div ref={wide ? undefined : miniRef} style={wide ? undefined : mini.x === null ? { right: 4, top: mini.y, width: Math.min(mini.w, 220) } : { left: mini.x, top: mini.y, width: Math.min(mini.w, 220) }} className={cn("overflow-hidden bg-[linear-gradient(120deg,#1E1B3A,#4C1D95_60%,#BE185D)] text-white", wide ? "relative shrink-0 p-2.5" : "absolute z-20 rounded-2xl border border-white/15 p-2 pt-7 shadow-xl", miniBusy && !wide && "select-none")}>
-            {audio ? <audio src={audio.url} autoPlay playsInline ref={(node) => { audioRef.current = node; if (node) node.volume = music / 100; }} onPlay={() => setTune((v) => ({ ...v, playing: true }))} onPause={() => setTune((v) => ({ ...v, playing: false }))} onEnded={() => setTune((v) => ({ ...v, playing: false }))} onLoadedMetadata={(event) => { const node = event.currentTarget; const dur = node.duration || 0; const at = songNow(); if (at > 2 && at < dur) node.currentTime = at; setTune((v) => ({ ...v, dur })); }} onTimeUpdate={(event) => { const cur = event.currentTarget.currentTime; setTune((v) => ({ ...v, cur })); }} className="hidden" /> : null}
+            {audio ? <audio src={audio.url} autoPlay playsInline ref={(node) => { audioRef.current = node; if (node) node.volume = music / 100; }} onPlay={() => setTune((v) => ({ ...v, playing: true }))} onPause={() => setTune((v) => ({ ...v, playing: false }))} onEnded={() => setAudio(null)} onLoadedMetadata={(event) => { const node = event.currentTarget; const dur = node.duration || 0; const at = songNow(); if (at > 2 && at < dur) node.currentTime = at; setTune((v) => ({ ...v, dur })); }} onTimeUpdate={(event) => { const cur = event.currentTarget.currentTime; setTune((v) => ({ ...v, cur })); }} className="hidden" /> : null}
             {/* Songs from the MP3 tab: the YouTube player plays behind the card, only the music player is seen. */}
             {!audio && video ? <iframe ref={frameRef} onLoad={() => { window.setTimeout(pushMusic, 800); frameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: "listening", id: 1 }), "*"); }} src={ytSrc(video)} title="YouTube" allow="autoplay; encrypted-media" tabIndex={-1} aria-hidden="true" className="pointer-events-none absolute left-0 top-0 h-[200px] w-[200px] opacity-0" /> : null}
             {wide ? (
@@ -3099,6 +3101,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 {from.me ? null : <button type="button" onClick={() => { setDraft(`${from.name}, `); chatRef.current?.focus(); }} aria-label={t("bottle.reply")} title={t("bottle.reply")} className="h-[22px] w-[30px] shrink-0 self-center bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url(${O}chat_btn_reply.svg)` }} />}
               </div>
             );
+            if (line.song && (line.id !== lastSongLine || !(video || audio))) return null; // only the song that is playing now stays in the chat
             if (line.song) { const song = songInfo(line.song); return (
               <div key={line.id} className={info} title={song.title}>
                 {photo(from)}
