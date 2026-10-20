@@ -578,9 +578,22 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       last = now;
     };
     document.addEventListener("touchend", stop, { passive: false });
+    // İki barmaqla yaxınlaşdırma (pinch) oyunda bağlıdır: iOS və Android-də oyun çərçivəsi eyni ölçüdə qalır.
     const gesture = (event: Event) => event.preventDefault();
-    document.addEventListener("gesturestart", gesture);
-    return () => { document.removeEventListener("touchend", stop); document.removeEventListener("gesturestart", gesture); };
+    const pinch = (event: TouchEvent) => { if (event.touches.length > 1) event.preventDefault(); };
+    ["gesturestart", "gesturechange", "gestureend"].forEach((name) => document.addEventListener(name, gesture, { passive: false }));
+    document.addEventListener("touchstart", pinch, { passive: false });
+    document.addEventListener("touchmove", pinch, { passive: false });
+    const meta = document.querySelector<HTMLMetaElement>('meta[name="viewport"]');
+    const before = meta?.getAttribute("content") ?? null;
+    meta?.setAttribute("content", "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover");
+    return () => {
+      document.removeEventListener("touchend", stop);
+      ["gesturestart", "gesturechange", "gestureend"].forEach((name) => document.removeEventListener(name, gesture));
+      document.removeEventListener("touchstart", pinch);
+      document.removeEventListener("touchmove", pinch);
+      if (meta && before !== null) meta.setAttribute("content", before);
+    };
   }, []);
   // Songs from the MP3 tab play in "music mode": a small square player with the title, no big video.
   const [musicMode, setMusicMode] = useState(false);
