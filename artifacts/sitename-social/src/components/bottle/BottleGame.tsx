@@ -752,7 +752,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         const who = (id: string | null) => (id === data!.me ? "me" : id ?? "");
         // Gifts from other players fly across the table on every screen; my own gifts were already shown when I sent them.
         const gifts = all.filter((item) => item.kind === "gift" && item.from !== data!.me);
-        if (!first) gifts.forEach((item, order) => window.setTimeout(() => remoteGift.current(who(item.from), who(item.to), item.body ?? "", gifts.length > 1 ? 1800 : 3600), order * 150));
+        if (!first) gifts.slice(-12).forEach((item, order) => window.setTimeout(() => remoteGift.current(who(item.from), who(item.to), item.body ?? "", gifts.length > 1 ? 1800 : 3600), order * 150));
         for (const seat of data.seats) names.current[seat.id] = { name: (seat.name ?? "").split(" ")[0] || "?", avatar: seat.avatar ?? "" };
         const nameOf = (id: string | null) => (id === data!.me ? t("common.you") : names.current[id ?? ""]?.name ?? "?");
         if (!first) all.filter((item) => item.kind === "compliment" && item.to === data!.me).forEach((item) => setComplimentIn({ name: names.current[item.from ?? ""]?.name ?? "?", avatar: names.current[item.from ?? ""]?.avatar || NO_PHOTO, kind: Number(item.body) || 1 }));
@@ -770,7 +770,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         const fresh = all.filter((item) => item.kind !== "compliment" && (item.kind !== "admire_lost" || item.to === data!.me) && (item.kind !== "gift" || (first && item.from !== data!.me)));
         if (all.length) lastChat.current = all[all.length - 1].id;
         if (fresh.length) {
-          setLines((list) => mergeLines(list, fresh.map((item) => (item.kind === "kiss" ? { id: item.id, from: who(item.from), to: who(item.to) } : item.kind === "gift" ? { id: item.id, from: who(item.from), to: who(item.to), gift: item.body ?? "" } : item.kind === "admire" || item.kind === "admire_lost" ? { id: item.id, from: who(item.from), to: item.kind === "admire" ? who(item.to) : undefined, admire: { ...(() => { try { return JSON.parse(item.body ?? "{}") as AdmireNote; } catch { return {}; } })(), lost: item.kind === "admire_lost" } } : item.kind === "song" ? { id: item.id, from: who(item.from), to: item.to ? who(item.to) : undefined, song: item.body || "♪" } : item.kind === "kick" || item.kind === "saved" || item.kind === "kicked" ? { id: item.id, from: who(item.from), event: { kind: item.kind, a: nameOf(item.from), b: nameOf(item.to) } } : item.kind === "gesture" ? { id: item.id, from: who(item.from), gesture: item.body ?? "" } : item.kind === "booster" ? { id: item.id, from: who(item.from), boost: { kind: item.body === "refuse_slap" ? "refuse_slap" : "kiss_fire", a: nameOf(item.from), b: nameOf(item.to) } } : item.kind === "bottle" ? { id: item.id, from: who(item.from), bottle: { a: Number((item.body ?? "0:0").split(":")[0]) || 0, b: Number((item.body ?? "0:0").split(":")[1]) || 0 } } : { id: item.id, from: who(item.from), text: item.body ?? "" }))).slice(-80));
+          setLines((list) => mergeLines(list.slice(-80), fresh.map((item) => (item.kind === "kiss" ? { id: item.id, from: who(item.from), to: who(item.to) } : item.kind === "gift" ? { id: item.id, from: who(item.from), to: who(item.to), gift: item.body ?? "" } : item.kind === "admire" || item.kind === "admire_lost" ? { id: item.id, from: who(item.from), to: item.kind === "admire" ? who(item.to) : undefined, admire: { ...(() => { try { return JSON.parse(item.body ?? "{}") as AdmireNote; } catch { return {}; } })(), lost: item.kind === "admire_lost" } } : item.kind === "song" ? { id: item.id, from: who(item.from), to: item.to ? who(item.to) : undefined, song: item.body || "♪" } : item.kind === "kick" || item.kind === "saved" || item.kind === "kicked" ? { id: item.id, from: who(item.from), event: { kind: item.kind, a: nameOf(item.from), b: nameOf(item.to) } } : item.kind === "gesture" ? { id: item.id, from: who(item.from), gesture: item.body ?? "" } : item.kind === "booster" ? { id: item.id, from: who(item.from), boost: { kind: item.body === "refuse_slap" ? "refuse_slap" : "kiss_fire", a: nameOf(item.from), b: nameOf(item.to) } } : item.kind === "bottle" ? { id: item.id, from: who(item.from), bottle: { a: Number((item.body ?? "0:0").split(":")[0]) || 0, b: Number((item.body ?? "0:0").split(":")[1]) || 0 } } : { id: item.id, from: who(item.from), text: item.body ?? "" }))).slice(-80));
         }
         setNet(data);
       } finally {
@@ -1690,7 +1690,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     const pour = isDrink(gift) && index !== meIndex;
     const plan = planLanding(gift, [...(kissMarks[player.id] ?? []), ...(spots[player.id] ? [spots[player.id]] : [])]);
     {
-      setFlying((list) => [...list, { key, gift, from: meIndex, to: index, moved: false, ms, ...flightTo(plan, gift) }]);
+      setFlying((list) => [...list, { key, gift, from: meIndex, to: index, moved: false, ms, ...flightTo(plan, gift) }].slice(-14));
       window.setTimeout(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))), 40);
     }
     window.setTimeout(() => {
@@ -1719,7 +1719,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     playGiftSound(gift, "send");
     const plan = planLanding(gift, [...(kissMarks[toId] ?? []), ...(spots[toId] ? [spots[toId]] : [])]);
     {
-      setFlying((list) => [...list, { key, gift, from: fromAt >= 0 ? fromAt : toAt, to: toAt, moved: false, ms, ...flightTo(plan, gift) }]);
+      setFlying((list) => [...list, { key, gift, from: fromAt >= 0 ? fromAt : toAt, to: toAt, moved: false, ms, ...flightTo(plan, gift) }].slice(-14));
       window.setTimeout(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))), 40);
     }
     window.setTimeout(() => {
