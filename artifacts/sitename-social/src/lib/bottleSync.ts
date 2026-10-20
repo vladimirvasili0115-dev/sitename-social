@@ -2,7 +2,7 @@ import { supabase } from "./supabase";
 
 // Live tables of the bottle game. The database owns the game: seats, turns, where the bottle stops, answers and kisses.
 export type BottleSeat = { seat: number; id: string; name: string | null; avatar: string | null; gender: string | null; kisses: number; total?: number; smiles?: number; songs?: number; zodiac?: number | null; age: number | null; status?: string | null; frame?: number; pass?: boolean; top?: boolean; vip_badge?: boolean; kicked?: { by: string; at: number } | null; admirer?: { id: string; name: string | null; avatar: string | null; amount: number } | null };
-export type BottleChat = { id: number; from: string | null; to: string | null; kind: "text" | "kiss" | "wheel" | "song" | "gift" | "admire" | "admire_lost" | "kick" | "saved" | "kicked" | "compliment" | "bottle" | "gesture" | "booster"; body: string | null };
+export type BottleChat = { id: number; from: string | null; to: string | null; kind: "text" | "kiss" | "wheel" | "song" | "gift" | "admire" | "admire_lost" | "kick" | "saved" | "kicked" | "compliment" | "bottle" | "gesture" | "booster"; body: string | null; seed?: number | null };
 export type BottleState = {
   session?: string | null;
   table: number; me: string; now: number; hearts: number; chances?: number; winner?: { name: string | null; amount: number } | null;
@@ -40,7 +40,7 @@ export const bottlePlay = (to: string | null, kind: "youtube" | "mp3", ref: stri
 export type BottleTopRow = { id: string; name: string | null; avatar: string | null; count: number; place: number };
 export type BottleTop = { list: BottleTopRow[]; me: { place: number; count: number } | null };
 export const bottleTop = (kind: "kisses" | "songs" | "cocktails" | "smiles" | "dear" | "influence", period: "all" | "month" | "week" | "day") => call<BottleTop>("bottle_top", { p_kind: kind, p_period: period });
-export const bottleGift = (to: string, gift: string, price: number) => call<number>("bottle_gift", { p_to: to, p_gift: gift, p_price: price });
+export const bottleGift = (to: string, gift: string, price: number, seed?: number) => call<number>("bottle_gift", seed ? { p_to: to, p_gift: gift, p_price: price, p_seed: seed } : { p_to: to, p_gift: gift, p_price: price });
 export const bottleGiftShare = () => call<{ min: number; pct: number }>("bottle_gift_share");
 export const bottleDaily = (take: boolean) => call<{ day: number; hearts: number; premium?: boolean; total?: number } | null>("bottle_daily", { p_take: take });
 export type BottleProfile = { price: number; price_rank: number | null; harem: number; harem_rank: number | null; kisses: number; kisses_rank: number | null; songs: number; songs_rank: number | null; smiles: number; smiles_rank: number | null; league: number | null;
