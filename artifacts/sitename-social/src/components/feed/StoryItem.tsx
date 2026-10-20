@@ -22,7 +22,7 @@ export function StoryItem({ story, onOpen, onAdd }: { story?: Story; onOpen?: ()
         <span className="absolute bottom-0 right-0 flex h-5 w-5 items-center justify-center rounded-full border-2 border-bg bg-accent text-bg"><Plus size={12} strokeWidth={3} /></span>
       </span>
       <span className={label}>{t("feed.addStory")}</span>
-      <input type="file" accept="image/*" className="sr-only" aria-label={t("feed.addStory")} onChange={handle} />
+      <input type="file" accept="image/*,video/*" className="sr-only" aria-label={t("feed.addStory")} onChange={handle} />
     </label>;
   }
   return <button onClick={onOpen} className={wrap}>

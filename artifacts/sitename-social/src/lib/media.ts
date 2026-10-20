@@ -19,7 +19,7 @@ export async function uploadImage(dataUrl: string, folder: "posts" | "avatars" |
 }
 
 // Uploads any file (voice message, video, music) into the signed-in user's folder.
-export async function uploadBlob(blob: Blob, folder: "voice" | "videos" | "music", extension: string): Promise<string | null> {
+export async function uploadBlob(blob: Blob, folder: "voice" | "videos" | "music" | "stories", extension: string): Promise<string | null> {
   if (!supabase) return null;
   const userId = (await supabase.auth.getSession()).data.session?.user.id;
   if (!userId) return null;
