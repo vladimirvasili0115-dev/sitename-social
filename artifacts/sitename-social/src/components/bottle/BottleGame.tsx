@@ -294,8 +294,8 @@ function SkinArt({ set, n, className }: { set: Set<string>; n: number; className
 function LipsBadge({ count }: { count: number }) {
   // Like the original (TableUserView): red lips on the right edge of the photo, 15% from the top, the number of kisses at this table inside.
   return (
-    <span className="absolute -right-[2.9cqmin] top-[15%] z-[6] flex h-[4.2cqmin] w-[5.8cqmin] -translate-y-1/2 items-center justify-center bg-contain bg-center bg-no-repeat drop-shadow-[0_1px_1px_rgba(0,0,0,0.35)]" style={{ backgroundImage: "url(/custom/orig/chat_icon_kiss.svg)" }}>
-      <span className="relative mt-[0.2cqmin] text-[2.2cqmin] font-bold tabular-nums leading-none text-white [text-shadow:0_1px_1px_rgba(0,0,0,0.45)]">{count >= 10000 ? `${Math.floor(count / 1000)}k` : count >= 1000 ? `${(Math.floor(count / 100) / 10).toFixed(1)}k` : count}</span>
+    <span className="absolute -right-[2.4cqmin] top-[15%] z-[6] flex h-[3.8cqmin] w-[4.8cqmin] -translate-y-1/2 items-center justify-center bg-contain bg-center bg-no-repeat drop-shadow-[0_1px_1px_rgba(0,0,0,0.4)]" style={{ backgroundImage: "url(/custom/gifts/air_kiss1.webp)" /* the original air-kiss gift picture */ }}>
+      <span className="relative text-[2cqmin] font-bold tabular-nums leading-none text-white [text-shadow:0_1px_1px_rgba(0,0,0,0.45)]">{count >= 10000 ? `${Math.floor(count / 1000)}k` : count >= 1000 ? `${(Math.floor(count / 100) / 10).toFixed(1)}k` : count}</span>
     </span>
   );
 }
