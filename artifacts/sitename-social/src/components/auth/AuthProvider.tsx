@@ -56,12 +56,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
     const client = supabase;
+    // A password-reset link may land on any page (e.g. the home page): send it to the "new password" form first.
+    const goReset = () => { if (window.location.pathname.replace(/\/$/, "") !== "/reset-password") window.location.replace(`/reset-password${window.location.search}${window.location.hash}`); };
+    if (/type=recovery/.test(window.location.hash + window.location.search)) goReset();
     // "Remember me" off: the session ends when the browser tab is closed.
     if (window.localStorage.getItem(EPHEMERAL) && !window.sessionStorage.getItem(TAB_ALIVE)) {
       window.localStorage.removeItem(EPHEMERAL);
       void client.auth.signOut();
     }
-    const { data } = client.auth.onAuthStateChange((_event, session) => {
+    const { data } = client.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY") goReset();
       const account = session?.user;
       setUser(account ? { id: account.id, email: account.email ?? "", name: String(account.user_metadata?.name ?? "") } : null);
       setReady(true);
