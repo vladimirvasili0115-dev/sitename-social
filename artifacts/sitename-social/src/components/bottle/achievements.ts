@@ -57,7 +57,25 @@ export function bumpStat(metric: string, by = 1, max = false) {
     window.localStorage.setItem(KEY, JSON.stringify(stats));
   } catch { /* storage is blocked */ }
   // The server keeps the same counters, so every device shows the same medals (does nothing without a server).
-  void bottleStatBump(metric, Math.min(50, Math.max(1, by)), max);
+  // Counts are collected for a few seconds and sent together: a stream of gifts is a couple of requests, not hundreds.
+  const cur = pending.get(metric);
+  pending.set(metric, max ? { by: Math.max(cur?.by ?? 0, by), max: true } : { by: (cur?.by ?? 0) + by, max: false });
+  if (!flushTimer) {
+    flushTimer = window.setTimeout(flushStats, 4000);
+    if (!flushHooked) { flushHooked = true; window.addEventListener("pagehide", flushStats); }
+  }
+}
+const pending = new Map<string, { by: number; max: boolean }>();
+let flushTimer = 0;
+let flushHooked = false;
+function flushStats() {
+  window.clearTimeout(flushTimer);
+  flushTimer = 0;
+  for (const [metric, { by, max }] of pending) {
+    if (max) { void bottleStatBump(metric, Math.min(50, Math.max(1, by)), true); continue; }
+    for (let left = by; left > 0; left -= 50) void bottleStatBump(metric, Math.min(50, left), false);
+  }
+  pending.clear();
 }
 // Joins this device's counters with the server's: the bigger number of each stays everywhere.
 export async function syncStats() {

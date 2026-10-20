@@ -42,6 +42,7 @@ export type BottleTopRow = { id: string; name: string | null; avatar: string | n
 export type BottleTop = { list: BottleTopRow[]; me: { place: number; count: number } | null };
 export const bottleTop = (kind: "kisses" | "songs" | "cocktails" | "smiles" | "dear" | "influence", period: "all" | "month" | "week" | "day") => call<BottleTop>("bottle_top", { p_kind: kind, p_period: period });
 export const bottleGift = (to: string, gift: string, price: number, seed?: number) => call<number>("bottle_gift", seed ? { p_to: to, p_gift: gift, p_price: price, p_seed: seed } : { p_to: to, p_gift: gift, p_price: price });
+export const bottleGiftMany = (items: { to: string; gift: string; price: number; seed: number }[]) => call<number>("bottle_gift_many", { p_items: items });
 export const bottleGiftShare = () => call<{ min: number; pct: number }>("bottle_gift_share");
 export const bottleDaily = (take: boolean) => call<{ day: number; hearts: number; premium?: boolean; total?: number } | null>("bottle_daily", { p_take: take });
 export type BottleProfile = { price: number; price_rank: number | null; harem: number; harem_rank: number | null; kisses: number; kisses_rank: number | null; songs: number; songs_rank: number | null; smiles: number; smiles_rank: number | null; league: number | null;
