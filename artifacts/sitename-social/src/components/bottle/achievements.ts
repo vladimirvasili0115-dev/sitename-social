@@ -47,14 +47,20 @@ export const starsOf = (item: Achievement, have: number) => item.steps.filter((n
 
 const KEY = "bottle-stats";
 export type Stats = Record<string, number>;
+let statsCache: Stats | null = null;
+let saveTimer = 0;
 export function readStats(): Stats {
-  try { return JSON.parse(window.localStorage.getItem(KEY) ?? "{}") as Stats; } catch { return {}; }
+  if (statsCache) return { ...statsCache };
+  try { statsCache = JSON.parse(window.localStorage.getItem(KEY) ?? "{}") as Stats; } catch { statsCache = {}; }
+  return { ...statsCache };
 }
 export function bumpStat(metric: string, by = 1, max = false) {
   try {
     const stats = readStats();
     stats[metric] = max ? Math.max(stats[metric] ?? 0, by) : (stats[metric] ?? 0) + by;
-    window.localStorage.setItem(KEY, JSON.stringify(stats));
+    statsCache = stats;
+    // Saved to the device at most every 2 seconds (an auto-clicker no longer writes storage hundreds of times a second).
+    if (!saveTimer) saveTimer = window.setTimeout(() => { saveTimer = 0; try { window.localStorage.setItem(KEY, JSON.stringify(statsCache ?? {})); } catch { /* storage is blocked */ } }, 2000);
   } catch { /* storage is blocked */ }
   // The server keeps the same counters, so every device shows the same medals (does nothing without a server).
   // Counts are collected for a few seconds and sent together: a stream of gifts is a couple of requests, not hundreds.
@@ -84,6 +90,7 @@ export async function syncStats() {
   try {
     const stats = readStats();
     for (const [key, value] of Object.entries(server)) stats[key] = Math.max(stats[key] ?? 0, value);
+    statsCache = stats;
     window.localStorage.setItem(KEY, JSON.stringify(stats));
   } catch { /* storage is blocked */ }
   return true;
@@ -97,6 +104,7 @@ export function markVisit() {
     const stamp = Number(day.replace(/-/g, ""));
     if (stats.lastDay !== stamp) { stats.days = (stats.days ?? 0) + 1; stats.lastDay = stamp; }
     if (now.getHours() < 5 && stats.lastNight !== stamp) { stats.night = (stats.night ?? 0) + 1; stats.lastNight = stamp; }
+    statsCache = stats;
     window.localStorage.setItem(KEY, JSON.stringify(stats));
   } catch { /* storage is blocked */ }
 }

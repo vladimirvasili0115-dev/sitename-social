@@ -136,8 +136,12 @@ function planLanding(gift: string, seed: number = Math.random() * 1e9) {
   else if (wornGift(land)) spot = null;
     else {
     // Like the original: a small gift sitting on the bottom-right corner, a quarter of it over the edge.
-    const size = /^(redbull\w*|catdress|donkey|flagaz|eiffeltower|amurchik)$/.test(name) ? 92 : /^baloon\d$/.test(name) ? 64 : 76;
+    // Red Bull: a can standing inside the photo frame, in its bottom-right corner (not over the edge).
+    if (/^redbull/.test(name)) spot = at(60, 40, 40, "corner");
+    else {
+    const size = /^(catdress|donkey|flagaz|eiffeltower|amurchik)$/.test(name) ? 92 : /^baloon\d$/.test(name) ? 64 : 76;
     spot = at(size, 100 - size * 0.72, 100 - size * 0.76, /^baloon\d$/.test(name) ? "balloon" : "corner");
+    }
   }
   return { land, spot, scatter };
 }
@@ -1810,7 +1814,20 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       if (batch.length) void bottleGiftMany(batch);
     }, 300);
   }
+  // Auto-clicker guard: at most 40 gifts a second from this device (a hold-to-send stream to 10 people fits in it).
+  // Extra clicks are simply ignored (no hearts taken), so the page never drowns in its own gifts.
+  const giftBucket = useRef({ tokens: 40, at: 0 });
+  const soundAt = useRef(0);
+  const giftSound = (gift: string, moment: "send" | "land") => { const now = performance.now(); if (now - soundAt.current < 70) return; soundAt.current = now; playGiftSound(gift, moment); };
   function sendGift(index: number, gift: string, price: number, ms = 5200) {
+    {
+      const now = performance.now();
+      const bucket = giftBucket.current;
+      bucket.tokens = Math.min(40, bucket.tokens + ((now - bucket.at) / 1000) * 40);
+      bucket.at = now;
+      if (bucket.tokens < 1) return true; // too fast: skipped without stopping a hold-to-send stream
+      bucket.tokens -= 1;
+    }
     const seed = 1 + Math.floor(Math.random() * 2e9); // goes to the server with the gift, so every screen puts it in the same spot
     ms = ms <= 1800 ? 4000 : 7000; // medium speed: a single gift flies 7 s, a press-and-hold stream 4 s
     if (gift.startsWith("c:") && colorSteps.has(gift.slice(2))) gift = `c:${nextColor(gift.slice(2))}`; // one colour per tap, in order
@@ -1824,7 +1841,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       liveSend({ from: net?.me ?? "", to: player.me ? net?.me ?? "" : player.id, gift, seed });
     }
     const key = flyId.current++;
-    playGiftSound(gift, "send");
+    giftSound(gift, "send");
     // Drinks fly like every other gift (one by one); on landing the receiver gets the "+1 heart" burst.
     const pour = isDrink(gift) && index !== meIndex;
     const plan = planLanding(gift, seed);
@@ -1839,7 +1856,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     window.setTimeout(() => {
       setFlying((list) => list.filter((item) => item.key !== key));
       if (gen !== tableGen.current || playersRef.current[index]?.id !== player.id) return;
-      playGiftSound(gift, "land");
+      giftSound(gift, "land");
       if (pour) heartBurst(key, index);
       if (gift === "c:heart1000") heartBurst(key + 0.5, index, 1000);
       fireworks(key, index, price, meIndex, gift);
@@ -1864,7 +1881,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     // so nothing is heard without being seen.
     const busy = false; // no limit: every gift from other players flies too
     if (busy) ms = 500;
-    else playGiftSound(gift, "send");
+    else giftSound(gift, "send");
     const plan = planLanding(gift, seed);
     {
       if (!busy) setFlying((list) => ([...list, { key, gift, look: plan.land, t0: performance.now(), from: fromAt >= 0 ? fromAt : toAt, to: toAt, toId, moved: false, ms, still: list.length >= 12, rot: plan.spot?.r ?? 0, ...flightTo(plan, gift) }]));
@@ -1874,7 +1891,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     window.setTimeout(() => {
       setFlying((list) => list.filter((item) => item.key !== key));
       if (gen !== tableGen.current || playersRef.current[toAt]?.id !== toId) return;
-      playGiftSound(gift, "land");
+      giftSound(gift, "land");
       if (pour) heartBurst(key, toAt);
       if (gift === "c:heart1000") heartBurst(key + 0.5, toAt, 1000);
       fireworks(key, toAt, priceOf(gift), fromAt, gift);
