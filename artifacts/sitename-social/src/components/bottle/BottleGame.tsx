@@ -1714,7 +1714,10 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     const base = SMALL_FLIGHT.has(gift) ? 7 : 11;
     if (!plan.spot) return { tx: -0.38 * w, ty: -0.38 * w, end: (0.56 * w) / base, base };
     const { x, y, s: size } = plan.spot;
-    return { tx: ((x + size / 2 - 50) / 100) * w, ty: ((y + size / 2 - 50) / 100) * w, end: ((size / 100) * w) / base, base };
+    const tx = ((x + size / 2 - 50) / 100) * w, ty = ((y + size / 2 - 50) / 100) * w;
+    // Gifts that land anywhere on the photo (not the corner ones) fly at the size they will sit at.
+    if (plan.spot.kind === "rand") return { tx, ty, end: 1, base: (size / 100) * w };
+    return { tx, ty, end: ((size / 100) * w) / base, base };
   };
   // Where a seat really is right now: the two players kissing stand in the middle of the table.
   const seatLeft = (index: number) => (staged && (index === turn || index === target) ? `calc(${CENTER_X}% ${index === turn ? "-" : "+"} 12.5cqmin)` : `${seats[index][0]}%`);
