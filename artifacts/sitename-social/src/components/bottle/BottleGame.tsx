@@ -825,6 +825,13 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const songClock = useRef({ pos: 0, at: 0 });
   const songNow = () => songClock.current.pos + (Date.now() - songClock.current.at) / 1000;
   const track = net?.track ?? null;
+  // The round photo in the music player shows whoever put the current song on (not the viewer).
+  const songByAvatar = (() => {
+    const by = track?.by;
+    if (!by || by === net?.me) return players[meIndex]?.avatar || NO_PHOTO;
+    const seat = net?.seats.find((item) => item.id === by);
+    return seat?.avatar || players.find((player) => player.id === by)?.avatar || NO_PHOTO;
+  })();
   useEffect(() => {
     if (!track || !net || track.at === trackAt.current) return;
     const first = trackAt.current === 0;
@@ -2922,7 +2929,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         {video && !wide && !musicMode ? (
           <div ref={miniRef} style={mini.x === null ? { right: 0, top: mini.y, width: musicMode ? Math.max(mini.w, 262) : mini.w } : { left: mini.x, top: mini.y, width: musicMode ? Math.max(mini.w, 262) : mini.w }} className={cn("absolute z-20 overflow-hidden border shadow-lg", musicMode ? "border-[#4C1D95] bg-[linear-gradient(160deg,#1E1B3A,#4C1D95_65%,#BE185D)] text-white" : "border-border bg-surface", mini.x === null ? "rounded-l-2xl border-r-0" : "rounded-2xl")}>
             <div className="flex items-center">
-              <img src={players[meIndex].avatar} alt="" title={t("bottle.miniMove")} onPointerDown={(event) => startMini(event, "move")} className="mx-2 h-10 w-10 shrink-0 cursor-move touch-none select-none rounded-full border-2 border-border object-cover" draggable={false} />
+              <img src={songByAvatar} alt="" title={t("bottle.miniMove")} onPointerDown={(event) => startMini(event, "move")} className="mx-2 h-10 w-10 shrink-0 cursor-move touch-none select-none rounded-full border-2 border-border object-cover" draggable={false} />
               <div className={cn(musicMode ? "my-1 mr-1 h-[200px] w-[200px] shrink-0 overflow-hidden rounded-xl" : "aspect-video min-w-0 flex-1", "bg-black", miniBusy && "pointer-events-none")}><iframe ref={frameRef} onLoad={() => { window.setTimeout(pushMusic, 800); frameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: "listening", id: 1 }), "*"); }} src={ytSrc(video)} title="YouTube" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen className="h-full w-full" /></div>
             </div>
             {musicMode ? <div className="flex items-center gap-2 px-2 pt-0.5"><Equalizer className="h-4 shrink-0" /><p className="min-w-0 flex-1 truncate text-xs font-bold">{videoTitle}</p></div> : null}
