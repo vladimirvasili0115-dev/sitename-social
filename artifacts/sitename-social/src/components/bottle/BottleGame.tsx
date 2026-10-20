@@ -324,9 +324,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const players = useMemo<Player[]>(() => {
     const me: Player = { id: "me", name: user.name.split(" ")[0], age: 25, female: details.gender === "female", avatar: user.avatar || NO_PHOTO, me: true, zodiac: zodiacOf(details.birthday) };
     if (online) {
-      const mine = net?.seats.find((seat) => seat.id === net.me)?.seat ?? 0;
+      // Every player sees the table the same way: seat N is always at the same place on every screen.
       return Array.from({ length: 12 }, (_, place): Player => {
-        const row = net?.seats.find((seat) => seat.seat === (place - 7 + mine + 12) % 12);
+        const row = net?.seats.find((seat) => seat.seat === place);
         if (!row) return place === 7 && !net ? me : { id: `empty-${place}`, name: "", age: 0, female: false, avatar: "", empty: true };
         const female = row.gender === "female";
         if (row.id === net?.me) return { ...me, age: row.age ?? me.age, female, zodiac: row.zodiac ?? me.zodiac };
@@ -337,7 +337,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     return [...others.slice(0, 7), me, ...others.slice(7)];
   }, [user.name, user.avatar, details.gender, details.birthday, online, net]);
   const seated = players.filter((player) => !player.empty);
-  const meIndex = 7;
+  const meIndex = Math.max(0, players.findIndex((player) => player.me));
   const { seats, cx: CENTER_X, cy: STAGE_Y } = layouts[wide ? "wide" : "tall"];
   const angleTo = useCallback((index: number) => (Math.atan2(seats[index][1] - STAGE_Y, seats[index][0] - CENTER_X) * 180) / Math.PI + 90, [seats, CENTER_X, STAGE_Y]);
 
@@ -869,7 +869,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     return () => window.clearTimeout(timer);
   }, [dmToast]);
   const dmLines = dm ? (online ? (chats.find((chat) => chat.userId === dm.id)?.messages ?? []).map((item) => ({ mine: item.from === "me", text: item.text })) : dms[dm.id] ?? []) : [];
-  const myTurnLive = online && phase === "waiting" && turn === 7;
+  const myTurnLive = online && phase === "waiting" && turn === meIndex;
   useEffect(() => {
     if (!online) return;
     if (phase === "choice") playSound("chosen");
@@ -980,10 +980,11 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (result.gone || result.banned) { setWaitFor(null); setRoomNote(true); return void bottleTables().then(setRooms); }
     if (result.full && result.table) return setWaitFor({ table: result.table, position: result.position ?? 1 });
     setWaitFor(null);
-    bumpStat("tables");
+    const same = result.table === net?.table; // the same table again: only the seat changes, the chat stays
+    if (!same) bumpStat("tables");
     setPicked(null);
     setCard(false);
-    setLines([]);
+    if (!same) setLines([]);
     setPanel(null);
     pullRef.current();
   }
@@ -2458,7 +2459,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                     {rooms && !rooms.friends.length ? <p className="py-1 text-xs text-[#6B7280]">{t("bottle.roomNoFriends")}</p> : null}
                     <ul>
                       {(rooms?.friends ?? []).map((friend) => (
-                        <li key={friend.id}><button onClick={() => void moveTo(friend.table)} disabled={friend.table === net?.table} className="flex min-h-11 w-full items-center gap-2 rounded-lg px-1 text-left text-sm hover:bg-black/5 disabled:opacity-50">
+                        <li key={friend.id}><button onClick={() => void moveTo(friend.table)} className="flex min-h-11 w-full items-center gap-2 rounded-lg px-1 text-left text-sm hover:bg-black/5 disabled:opacity-50">
                           <img src={friend.avatar || NO_PHOTO} alt="" className="h-9 w-9 shrink-0 rounded-md object-cover" /><span className="min-w-0 flex-1 truncate font-semibold">{(friend.name ?? "").split(" ")[0]}</span>{friend.friend === false ? <span title={t("bottle.roomKnown")} className="shrink-0 text-sm">🎁</span> : null}<span className="shrink-0 text-xs text-[#9CA3AF]">#{friend.table}</span>{counts(friend.table)}
                         </button></li>
                       ))}
@@ -2467,7 +2468,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                     {!rooms ? <p className="py-2 text-center text-xs text-[#6B7280]">{t("bottle.songLoading")}</p> : null}
                     <ul>
                       {ordered.map((room) => (
-                        <li key={room.id}><button onClick={() => void moveTo(room.id)} disabled={room.id === net?.table} className="flex min-h-11 w-full items-center gap-2 rounded-lg px-1 text-left text-sm hover:bg-black/5 disabled:opacity-50">
+                        <li key={room.id}><button onClick={() => void moveTo(room.id)} className="flex min-h-11 w-full items-center gap-2 rounded-lg px-1 text-left text-sm hover:bg-black/5 disabled:opacity-50">
                           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-[#E9A957]"><BottleSvg className="h-7 rotate-[28deg]" /></span><span className="min-w-0 flex-1 font-semibold tabular-nums">#{room.id}{room.id === net?.table ? ` · ${t("bottle.roomHere")}` : room.boys + room.girls >= 12 ? ` · ${t("bottle.roomFullTag")}` : ""}</span>{counts(room.id)}
                         </button></li>
                       ))}
