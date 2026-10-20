@@ -705,16 +705,27 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const session = useRef({ token: Math.random().toString(36).slice(2) + Date.now().toString(36), claimed: false });
   const stopGame = useRef<(why: "idle" | "tab") => void>(() => {});
   const [gone, setGone] = useState<null | "idle" | "tab">(null);
+  const lastTouch = useRef(0);
+  const announce = useRef<() => void>(() => {});
+  // "Reconnect" brings this page back into the game in place (no reload): it takes the session over and the other page stops.
+  function resumeGame() {
+    session.current = { token: Math.random().toString(36).slice(2) + Date.now().toString(36), claimed: false };
+    lastTouch.current = Date.now();
+    stopped.current = false;
+    setGone(null);
+    announce.current();
+    void bottleClaim(session.current.token).then(() => { session.current.claimed = true; pullRef.current(); });
+  }
   const [mentionToast, setMentionToast] = useState<string | null>(null);
   useEffect(() => { if (!mentionToast) return; const timer = window.setTimeout(() => setMentionToast(null), 5000); return () => window.clearTimeout(timer); }, [mentionToast]);
   useEffect(() => {
     if (!online) return;
-    let last = Date.now();
-    const touch = () => { last = Date.now(); };
+    lastTouch.current = Date.now();
+    const touch = () => { lastTouch.current = Date.now(); };
     const stop = (why: "idle" | "tab") => { if (stopped.current) return; stopped.current = true; setGone(why); if (why === "idle") void bottleLeave(); };
     stopGame.current = stop;
     void bottleClaim(session.current.token).then(() => { session.current.claimed = true; });
-    const timer = window.setInterval(() => { if (Date.now() - last > 10 * 60 * 1000) stop("idle"); }, 20000);
+    const timer = window.setInterval(() => { if (!stopped.current && Date.now() - lastTouch.current > 10 * 60 * 1000) stop("idle"); }, 20000);
     const events = ["pointerdown", "keydown", "wheel", "touchstart"] as const;
     events.forEach((name) => window.addEventListener(name, touch, { passive: true }));
     let channel: BroadcastChannel | null = null;
@@ -723,6 +734,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       channel = new BroadcastChannel("bottle-game");
       channel.onmessage = (event) => { if (event.data?.open && event.data.open !== me) stop("tab"); };
       channel.postMessage({ open: me });
+      announce.current = () => { try { channel?.postMessage({ open: me }); } catch { /* closed */ } };
     } catch { /* old browser */ }
     return () => { window.clearInterval(timer); events.forEach((name) => window.removeEventListener(name, touch)); channel?.close(); };
   }, [online]);
@@ -3257,7 +3269,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             <p className="text-3xl">{gone === "idle" ? "😴" : "🔌"}</p>
             <p className="mt-2 text-base font-bold">{t("bottle.serverStopped")}</p>
             <p className="mt-1 text-sm text-[#6B7280]">{t(gone === "idle" ? "bottle.goneIdle" : "bottle.goneTab")}</p>
-            <button onClick={() => window.location.reload()} className="mt-4 h-11 w-full rounded-xl bg-[#EE8A2B] text-sm font-bold text-white hover:brightness-110">{t("bottle.goneBack")}</button>
+            <button onClick={resumeGame} className="mt-4 h-11 w-full rounded-xl bg-[#EE8A2B] text-sm font-bold text-white hover:brightness-110">{t("bottle.goneBack")}</button>
           </div>
         </div>
       ) : null}
