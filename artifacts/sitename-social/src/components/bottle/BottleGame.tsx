@@ -20,6 +20,7 @@ import { customGiftNames, customPlace, customPrice, giftGroups, landedName, isDr
 const landed = (gift: string, rand?: () => number) => (gift.startsWith("c:") ? `c:${landedName(gift.slice(2), rand)}` : gift);
 import { AchievementsPanel } from "./AchievementsPanel";
 import { nameColorClass, useNameColors } from "./nameColors";
+import { FlightCanvas, type CanvasFlight, type FlightGeometry } from "./FlightCanvas";
 import { FIRST_ORIGINAL, FRAME_PRICE, FrameArt, ORIGINAL_FRAMES, frameLooks, frameStone } from "./FrameArt";
 import { PassPanel, type PassData } from "./PassPanel";
 import { ActivePanel, ComplimentPill, ComplimentsPanel, InvitePanel, ShopPanel, emojiSrc } from "./ShopPanels";
@@ -434,7 +435,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [chosen, setChosen] = useState<string[]>([]);
   const [songMany, setSongMany] = useState<number[]>([]);
   const nameColors = useNameColors();
-  const [flying, setFlying] = useState<{ key: number; gift: string; from: number; to: number; moved: boolean; ms: number; rot?: number; mine?: boolean; still?: boolean; toId?: string; look?: string; tx: number; ty: number; end: number; base: number }[]>([]);
+  const [flying, setFlying] = useState<{ key: number; gift: string; from: number; to: number; moved: boolean; ms: number; rot?: number; mine?: boolean; still?: boolean; toId?: string; look?: string; t0?: number; tx: number; ty: number; end: number; base: number }[]>([]);
   // When a receiver leaves the table (or moves to another one), the gifts flying to them stop; they never land on an empty seat.
   const playersRef = useRef(players);
   playersRef.current = players;
@@ -1143,6 +1144,17 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   if (online) { topIds.clear(); for (const player of seated) if (net?.seats.find((seat) => seat.id === (player.me ? net.me : player.id))?.top) topIds.add(player.id); }
   const skinFilter = (n: number) => (n % 15 ? `hue-rotate(${(n % 15) * 24}deg) saturate(${n % 3 === 0 ? 1.4 : 1.1})` : undefined);
   const art = useCustomArt();
+  // Picture of a flying gift for the canvas (null: drawn as before, e.g. the few vector gifts).
+  const flightUrl = (id: string): string | null => {
+    if (id.startsWith("song:")) return `/custom/orig/${id === "song:video" ? "audio_video_icon" : "audio_music_icon"}.svg`;
+    const name = id.startsWith("c:") ? id.slice(2) : giftFileName(id);
+    const custom = customFile(art, `gifts/${name}`) || customFile(art, `anim/${name}`);
+    if (custom) return custom;
+    const emoji = giftEmoji[id] ? giftEmoji[id] : id.startsWith("e:") ? id.slice(2) : null;
+    return emoji ? giftSrc(emoji) : null;
+  };
+  const canvasFlights = useRef<CanvasFlight[]>([]);
+  const flightGeometry = useRef<FlightGeometry>({ seats: [], cx: 50, cy: 50, staged: false, turn: null, target: null });
   function chooseSkin(n: number) {
     if (!online && n !== skin) say({ from: "me", bottle: { a: skin, b: n } });
     setSkin(n);
@@ -1740,6 +1752,14 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // The same seat positions in container units, for moving a flying gift with transform (cqw/cqh = % of the table box).
   const seatXq = (index: number) => (staged && (index === turn || index === target) ? `(${CENTER_X}cqw ${index === turn ? "-" : "+"} 12.5cqmin)` : `${seats[index][0]}cqw`);
   const seatYq = (index: number) => (staged && (index === turn || index === target) ? `${STAGE_Y}cqh` : `${seats[index][1]}cqh`);
+  flightGeometry.current = { seats, cx: CENTER_X, cy: STAGE_Y, staged, turn, target };
+  // The canvas draws every flight that has a picture; it reads this list on each frame.
+  useEffect(() => {
+    canvasFlights.current = flying.flatMap((item) => {
+      const url = flightUrl(item.gift === "c:wholeegg" ? item.gift : item.look ?? item.gift);
+      return url ? [{ key: item.key, url, from: item.from, to: item.to, t0: item.t0 ?? performance.now(), ms: item.ms, tx: item.tx, ty: item.ty, base: item.base, end: item.end, rot: item.rot ?? 0, spin: SPIN_FLIGHT.test(item.gift) }] : [];
+    });
+  }, [flying, art]); // eslint-disable-line react-hooks/exhaustive-deps
   // Realtime: every gift is also announced on the table's live channel at once, so everybody at the table sees it fly
   // within a fraction of a second (the database is not asked for it). The 1-second sync stays as the backup; a gift that
   // already came over the live channel (same seed) is not flown a second time.
@@ -1812,7 +1832,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       // My own gifts always fly on my screen: when the sky is full, the oldest gift from someone else makes room.
       // A gift already in the air is never removed before it arrives. When the sky is full, someone else's oldest gift makes room;
       // if all of them are mine, the new one simply lands without a flight.
-      setFlying((list) => [...list, { key, gift, look: plan.land, from: meIndex, to: index, toId: player.id, moved: false, ms, mine: true, still: list.length >= 12, rot: plan.spot?.r ?? 0, ...flightTo(plan, gift) }]); // no limit: every gift flies
+      setFlying((list) => [...list, { key, gift, look: plan.land, t0: performance.now(), from: meIndex, to: index, toId: player.id, moved: false, ms, mine: true, still: list.length >= 12, rot: plan.spot?.r ?? 0, ...flightTo(plan, gift) }]); // no limit: every gift flies
       window.setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))))), 20);
     }
     const gen = tableGen.current;
@@ -1847,7 +1867,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     else playGiftSound(gift, "send");
     const plan = planLanding(gift, seed);
     {
-      if (!busy) setFlying((list) => ([...list, { key, gift, look: plan.land, from: fromAt >= 0 ? fromAt : toAt, to: toAt, toId, moved: false, ms, still: list.length >= 12, rot: plan.spot?.r ?? 0, ...flightTo(plan, gift) }]));
+      if (!busy) setFlying((list) => ([...list, { key, gift, look: plan.land, t0: performance.now(), from: fromAt >= 0 ? fromAt : toAt, to: toAt, toId, moved: false, ms, still: list.length >= 12, rot: plan.spot?.r ?? 0, ...flightTo(plan, gift) }]));
       window.setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))))), 20);
     }
     const gen = tableGen.current;
@@ -2369,7 +2389,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         {shows.map((item) => <Fireworks key={`fw-${item.key}`} at={seats[item.to]} level={item.level} seed={item.key} />)}
         {tableVfx ? <TableShower key={tableVfx.key} emoji={tableVfx.emoji} seed={tableVfx.key % 1000} /> : null}
         {boostFx ? <BoostFx key={boostFx.key} kind={boostFx.kind} fromLeft={boostFx.fromLeft} x={CENTER_X} y={STAGE_Y} /> : null}
-        {flying.map((item) => <div key={item.key} className="pointer-events-none absolute z-40 -translate-x-1/2 -translate-y-1/2" style={{ width: `${item.base}cqmin`, height: `${item.base}cqmin`, left: seatLeft(item.from), top: seatTop(item.from) }}><span className="block h-full w-full" style={{ /* moved with transform only (GPU): smooth like butter, no layout work while flying */ transform: item.moved ? `translate(calc(${seatXq(item.to)} - ${seatXq(item.from)} + ${item.tx}cqmin), calc(${seatYq(item.to)} - ${seatYq(item.from)} + ${item.ty}cqmin))` : "translate(0, 0)", transition: `transform ${item.ms}ms cubic-bezier(0.25, 0.7, 0.4, 1)` }}><span className="block h-full w-full" style={{ animation: `gift-fly-to ${item.ms}ms ease-in-out both`, ["--end" as string]: item.end }}><span className="block h-full w-full" style={SPIN_FLIGHT.test(item.gift) ? { animation: `gift-turn ${item.ms}ms linear both` } : { transform: `rotate(${item.moved ? item.rot ?? 0 : 0}deg)`, transition: `transform ${item.ms}ms cubic-bezier(0.25, 0.7, 0.4, 1)` }}>{/* one look the whole way: the flower/colour that will land, no colour changes in flight */}<Gift anim={!item.still} id={item.gift === "c:wholeegg" ? item.gift : item.look ?? item.gift} className="h-full w-full" /></span></span></span></div>)}
+        <FlightCanvas flights={canvasFlights} geometry={flightGeometry} />
+        {flying.filter((item) => !flightUrl(item.gift === "c:wholeegg" ? item.gift : item.look ?? item.gift)).map((item) => <div key={item.key} className="pointer-events-none absolute z-40 -translate-x-1/2 -translate-y-1/2" style={{ width: `${item.base}cqmin`, height: `${item.base}cqmin`, left: seatLeft(item.from), top: seatTop(item.from) }}><span className="block h-full w-full" style={{ /* moved with transform only (GPU): smooth like butter, no layout work while flying */ transform: item.moved ? `translate(calc(${seatXq(item.to)} - ${seatXq(item.from)} + ${item.tx}cqmin), calc(${seatYq(item.to)} - ${seatYq(item.from)} + ${item.ty}cqmin))` : "translate(0, 0)", transition: `transform ${item.ms}ms cubic-bezier(0.25, 0.7, 0.4, 1)` }}><span className="block h-full w-full" style={{ animation: `gift-fly-to ${item.ms}ms ease-in-out both`, ["--end" as string]: item.end }}><span className="block h-full w-full" style={SPIN_FLIGHT.test(item.gift) ? { animation: `gift-turn ${item.ms}ms linear both` } : { transform: `rotate(${item.moved ? item.rot ?? 0 : 0}deg)`, transition: `transform ${item.ms}ms cubic-bezier(0.25, 0.7, 0.4, 1)` }}>{/* one look the whole way: the flower/colour that will land, no colour changes in flight */}<Gift anim={!item.still} id={item.gift === "c:wholeegg" ? item.gift : item.look ?? item.gift} className="h-full w-full" /></span></span></span></div>)}
 
         {staged && target !== null ? (
           <>
