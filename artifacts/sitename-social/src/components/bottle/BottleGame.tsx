@@ -29,7 +29,7 @@ import { supabase } from "@/lib/supabase";
 import { refreshFriends } from "@/lib/friendsSync";
 import { ensureMessagesLoaded, openRemoteChat, remoteChats, sendRemoteMessage } from "@/lib/messagesSync";
 import { uploadBlob } from "@/lib/media";
-import { bottleAnswer, bottleAchSync, bottleAchView, bottleGesture, bottleProgress, bottleGesturesOpen, bottleSkin, bottleBuyChances, bottleJoin, bottleMove, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleProfile, type BottleProfile, bottleDaily, bottleItems, bottleItemBuy, bottleBooster, bottleTutorial, bottleAdminIds, type BottleItems, bottleLeagueInfo, bottleLeagueClaim, type BottleLeague, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleKickPrice, bottleGift, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, type BottleState, type BottleSeat } from "@/lib/bottleSync";
+import { bottleAnswer, bottleAchSync, bottleAchView, bottleGesture, bottleProgress, bottleGesturesOpen, bottleSkin, bottleBuyChances, bottleJoin, bottleMove, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleProfile, type BottleProfile, bottleDaily, bottleItems, bottleItemBuy, bottleBooster, bottleTutorial, bottleAdminIds, type BottleItems, bottleLeagueInfo, bottleLeagueClaim, type BottleLeague, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleKickPrice, bottleGift, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, bottleClaim, type BottleState, type BottleSeat } from "@/lib/bottleSync";
 
 type Player = { id: string; name: string; age: number; female: boolean; avatar: string; me?: boolean; empty?: boolean; zodiac?: number | null };
 type Phase = "waiting" | "spinning" | "choice" | "kissed" | "declined";
@@ -700,6 +700,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const primed = useRef(false);
   // The game stops talking to the server after 10 minutes without a touch, or when the same game opens in another tab.
   const stopped = useRef(false);
+  // One game per account: this page's key; when the server holds another page's key, this page stops.
+  const session = useRef({ token: Math.random().toString(36).slice(2) + Date.now().toString(36), claimed: false });
+  const stopGame = useRef<(why: "idle" | "tab") => void>(() => {});
   const [gone, setGone] = useState<null | "idle" | "tab">(null);
   const [mentionToast, setMentionToast] = useState<string | null>(null);
   useEffect(() => { if (!mentionToast) return; const timer = window.setTimeout(() => setMentionToast(null), 5000); return () => window.clearTimeout(timer); }, [mentionToast]);
@@ -707,7 +710,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (!online) return;
     let last = Date.now();
     const touch = () => { last = Date.now(); };
-    const stop = (why: "idle" | "tab") => { if (stopped.current) return; stopped.current = true; setGone(why); void bottleLeave(); };
+    const stop = (why: "idle" | "tab") => { if (stopped.current) return; stopped.current = true; setGone(why); if (why === "idle") void bottleLeave(); };
+    stopGame.current = stop;
+    void bottleClaim(session.current.token).then(() => { session.current.claimed = true; });
     const timer = window.setInterval(() => { if (Date.now() - last > 10 * 60 * 1000) stop("idle"); }, 20000);
     const events = ["pointerdown", "keydown", "wheel", "touchstart"] as const;
     events.forEach((name) => window.addEventListener(name, touch, { passive: true }));
@@ -740,6 +745,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           data = await bottleSync(lastChat.current);
         }
         if (!alive || !data) return;
+        if (session.current.claimed && data.session && data.session !== session.current.token) { stopGame.current("tab"); return; }
         const first = !primed.current;
         primed.current = true;
         const all = data.chat.filter((item) => item.id > lastChat.current && item.kind !== "wheel");

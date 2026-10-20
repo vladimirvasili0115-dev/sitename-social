@@ -4,6 +4,7 @@ import { supabase } from "./supabase";
 export type BottleSeat = { seat: number; id: string; name: string | null; avatar: string | null; gender: string | null; kisses: number; total?: number; smiles?: number; songs?: number; zodiac?: number | null; age: number | null; status?: string | null; frame?: number; pass?: boolean; top?: boolean; vip_badge?: boolean; kicked?: { by: string; at: number } | null; admirer?: { id: string; name: string | null; avatar: string | null; amount: number } | null };
 export type BottleChat = { id: number; from: string | null; to: string | null; kind: "text" | "kiss" | "wheel" | "song" | "gift" | "admire" | "admire_lost" | "kick" | "saved" | "kicked" | "compliment" | "bottle" | "gesture" | "booster"; body: string | null };
 export type BottleState = {
+  session?: string | null;
   table: number; me: string; now: number; hearts: number; chances?: number; winner?: { name: string | null; amount: number } | null;
   phase: "waiting" | "spinning" | "choice" | "result"; phase_at: number;
   turn: string | null; target: string | null; spinner_answer: boolean | null; target_answer: boolean | null; round: number;
@@ -18,6 +19,7 @@ async function call<T>(name: string, args?: Record<string, unknown>): Promise<T 
 }
 export const bottleJoin = () => call<number>("bottle_join");
 export const bottleLeave = () => call<null>("bottle_leave");
+export const bottleClaim = (token: string) => call<boolean>("bottle_claim", { p_token: token });
 export const bottleSync = (after: number) => call<BottleState>("bottle_sync", { p_after: after });
 export const bottleSpin = () => call<boolean>("bottle_spin");
 export const bottleAnswer = (kiss: boolean) => call<null>("bottle_answer", { p_kiss: kiss });
