@@ -794,7 +794,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         const who = (id: string | null) => (id === data!.me ? "me" : id ?? "");
         // Gifts from other players fly across the table on every screen; my own gifts were already shown when I sent them.
         const gifts = all.filter((item) => item.kind === "gift" && item.from !== data!.me);
-        if (!first) gifts.slice(-12).forEach((item, order) => window.setTimeout(() => remoteGift.current(who(item.from), who(item.to), item.body ?? "", gifts.length > 1 ? 1800 : 3600, item.seed ?? item.id), order * 150));
+        if (!first) gifts.forEach((item, order) => window.setTimeout(() => remoteGift.current(who(item.from), who(item.to), item.body ?? "", gifts.length > 1 ? 1800 : 3600, item.seed ?? item.id), order * 150));
         for (const seat of data.seats) names.current[seat.id] = { name: (seat.name ?? "").split(" ")[0] || "?", avatar: seat.avatar ?? "" };
         const nameOf = (id: string | null) => (id === data!.me ? t("common.you") : names.current[id ?? ""]?.name ?? "?");
         if (!first) all.filter((item) => item.kind === "compliment" && item.to === data!.me).forEach((item) => setComplimentIn({ name: names.current[item.from ?? ""]?.name ?? "?", avatar: names.current[item.from ?? ""]?.avatar || NO_PHOTO, kind: Number(item.body) || 1 }));
@@ -1762,7 +1762,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       // My own gifts always fly on my screen: when the sky is full, the oldest gift from someone else makes room.
       // A gift already in the air is never removed before it arrives. When the sky is full, someone else's oldest gift makes room;
       // if all of them are mine, the new one simply lands without a flight.
-      setFlying((list) => { if (list.length < 80) return [...list, { key, gift, look: plan.land, from: meIndex, to: index, toId: player.id, moved: false, ms, mine: true, still: list.length >= 12, rot: plan.spot?.r ?? 0, ...flightTo(plan, gift) }]; const other = list.findIndex((item) => !item.mine); if (other < 0) return list; const next = [...list]; next.splice(other, 1); return [...next, { key, gift, look: plan.land, from: meIndex, to: index, toId: player.id, moved: false, ms, mine: true, still: list.length >= 12, rot: plan.spot?.r ?? 0, ...flightTo(plan, gift) }]; });
+      setFlying((list) => [...list, { key, gift, look: plan.land, from: meIndex, to: index, toId: player.id, moved: false, ms, mine: true, still: list.length >= 12, rot: plan.spot?.r ?? 0, ...flightTo(plan, gift) }]); // no limit: every gift flies
       window.setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))))), 20);
     }
     const gen = tableGen.current;
@@ -1792,12 +1792,12 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     const pour = isDrink(gift) && fromAt >= 0 && fromAt !== toAt;
     // A flood of gifts from other players: past 70 in the air, a new one lands straight away (no flight and no "sent" sound),
     // so nothing is heard without being seen.
-    const busy = airborne.current >= 70;
+    const busy = false; // no limit: every gift from other players flies too
     if (busy) ms = 500;
     else playGiftSound(gift, "send");
     const plan = planLanding(gift, seed);
     {
-      if (!busy) setFlying((list) => (list.length >= 80 ? list : [...list, { key, gift, look: plan.land, from: fromAt >= 0 ? fromAt : toAt, to: toAt, toId, moved: false, ms, still: list.length >= 12, rot: plan.spot?.r ?? 0, ...flightTo(plan, gift) }]));
+      if (!busy) setFlying((list) => ([...list, { key, gift, look: plan.land, from: fromAt >= 0 ? fromAt : toAt, to: toAt, toId, moved: false, ms, still: list.length >= 12, rot: plan.spot?.r ?? 0, ...flightTo(plan, gift) }]));
       window.setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))))), 20);
     }
     const gen = tableGen.current;
@@ -1929,7 +1929,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         const now = ids.map((id) => playersRef.current.findIndex((item) => item.id === id && !item.empty)).filter((index) => index >= 0);
         if (!now.length) return stopHold();
         for (const index of now) if (!sendGift(index, gift, price, 1800)) return stopHold();
-      }, Math.max(300, targets.length * 160)); // with many receivers the stream is a little sparser, so it stays smooth
+      }, 300); // full speed: no thinning of the stream
     }, 380) };
     pressed.current = state;
   }
