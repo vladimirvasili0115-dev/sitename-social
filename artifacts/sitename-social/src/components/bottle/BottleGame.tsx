@@ -1747,8 +1747,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     const pour = isDrink(gift) && index !== meIndex;
     const plan = planLanding(gift, seed);
     {
-      setFlying((list) => [...list, { key, gift, from: meIndex, to: index, moved: false, ms, rot: plan.spot?.r ?? 0, ...flightTo(plan, gift) }].slice(-14));
-      window.setTimeout(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))), 40);
+      setFlying((list) => (list.length >= 40 ? list : [...list, { key, gift, from: meIndex, to: index, moved: false, ms, rot: plan.spot?.r ?? 0, ...flightTo(plan, gift) }])); // a flight already in the air is never cut off; past 40 at once a new gift just lands
+      window.setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))))), 20);
     }
     window.setTimeout(() => {
       setFlying((list) => list.filter((item) => item.key !== key));
@@ -1776,8 +1776,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     playGiftSound(gift, "send");
     const plan = planLanding(gift, seed);
     {
-      setFlying((list) => [...list, { key, gift, from: fromAt >= 0 ? fromAt : toAt, to: toAt, moved: false, ms, rot: plan.spot?.r ?? 0, ...flightTo(plan, gift) }].slice(-14));
-      window.setTimeout(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))), 40);
+      setFlying((list) => (list.length >= 40 ? list : [...list, { key, gift, from: fromAt >= 0 ? fromAt : toAt, to: toAt, moved: false, ms, rot: plan.spot?.r ?? 0, ...flightTo(plan, gift) }])); // a flight already in the air is never cut off; past 40 at once a new gift just lands
+      window.setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))))), 20);
     }
     window.setTimeout(() => {
       setFlying((list) => list.filter((item) => item.key !== key));
