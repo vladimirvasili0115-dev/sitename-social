@@ -292,14 +292,10 @@ function SkinArt({ set, n, className }: { set: Set<string>; n: number; className
 }
 // The kiss counter on a photo is a pair of red lips with the number on it.
 function LipsBadge({ count }: { count: number }) {
-  // Like the original: a red round seal with a jagged edge on the right side of the photo, the number of kisses at this table in white.
+  // Like the original (TableUserView): red lips on the right edge of the photo, 15% from the top, the number of kisses at this table inside.
   return (
-    <span className="absolute -right-[3.2cqmin] top-[4%] z-[6] flex h-[6.4cqmin] w-[6.4cqmin] items-center justify-center">
-      <svg viewBox="0 0 60 60" aria-hidden="true" className="absolute inset-0 h-full w-full drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]">
-        <defs><radialGradient id="kiss-seal" cx="0.4" cy="0.35" r="0.75"><stop offset="0" stopColor="#FF5A4E" /><stop offset="1" stopColor="#D3122B" /></radialGradient></defs>
-        <polygon points="30.0,0.0 34.5,4.4 40.3,1.8 43.0,7.5 49.3,7.0 49.9,13.3 56.0,15.0 54.4,21.1 59.5,24.8 56.0,30.0 59.5,35.2 54.4,38.9 56.0,45.0 49.9,46.7 49.3,53.0 43.0,52.5 40.3,58.2 34.5,55.6 30.0,60.0 25.5,55.6 19.7,58.2 17.0,52.5 10.7,53.0 10.1,46.7 4.0,45.0 5.6,38.9 0.5,35.2 4.0,30.0 0.5,24.8 5.6,21.1 4.0,15.0 10.1,13.3 10.7,7.0 17.0,7.5 19.7,1.8 25.5,4.4" fill="url(#kiss-seal)" />
-      </svg>
-      <span className="relative text-[2.7cqmin] font-black tabular-nums leading-none text-white [text-shadow:0_1px_1px_rgba(0,0,0,0.45)]">{count >= 10000 ? `${Math.floor(count / 1000)}k` : count >= 1000 ? `${(Math.floor(count / 100) / 10).toFixed(1)}k` : count}</span>
+    <span className="absolute -right-[2.9cqmin] top-[15%] z-[6] flex h-[4.2cqmin] w-[5.8cqmin] -translate-y-1/2 items-center justify-center bg-contain bg-center bg-no-repeat drop-shadow-[0_1px_1px_rgba(0,0,0,0.35)]" style={{ backgroundImage: "url(/custom/orig/chat_icon_kiss.svg)" }}>
+      <span className="relative mt-[0.2cqmin] text-[2.2cqmin] font-bold tabular-nums leading-none text-white [text-shadow:0_1px_1px_rgba(0,0,0,0.45)]">{count >= 10000 ? `${Math.floor(count / 1000)}k` : count >= 1000 ? `${(Math.floor(count / 100) / 10).toFixed(1)}k` : count}</span>
     </span>
   );
 }
