@@ -1743,7 +1743,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const seatYq = (index: number) => (staged && (index === turn || index === target) ? `${STAGE_Y}cqh` : `${seats[index][1]}cqh`);
   function sendGift(index: number, gift: string, price: number, ms = 5200) {
     const seed = 1 + Math.floor(Math.random() * 2e9); // goes to the server with the gift, so every screen puts it in the same spot
-    ms = Math.round(ms / 0.756); // flight speed: slowed down, then made 35% faster again
+    ms = Math.round(ms / 0.378); // flight speed (latest: half as fast as before)
     if (gift.startsWith("c:") && colorSteps.has(gift.slice(2))) gift = `c:${nextColor(gift.slice(2))}`; // one colour per tap, in order
     if (gift === "c:air_kiss1") ms = Math.round(ms * 1.3); // the air kiss flies 30% slower
     const player = players[index];
@@ -1761,7 +1761,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       // My own gifts always fly on my screen: when the sky is full, the oldest gift from someone else makes room.
       // A gift already in the air is never removed before it arrives. When the sky is full, someone else's oldest gift makes room;
       // if all of them are mine, the new one simply lands without a flight.
-      setFlying((list) => { if (list.length < 40) return [...list, { key, gift, look: plan.land, from: meIndex, to: index, toId: player.id, moved: false, ms, mine: true, still: list.length >= 12, rot: plan.spot?.r ?? 0, ...flightTo(plan, gift) }]; const other = list.findIndex((item) => !item.mine); if (other < 0) return list; const next = [...list]; next.splice(other, 1); return [...next, { key, gift, look: plan.land, from: meIndex, to: index, toId: player.id, moved: false, ms, mine: true, still: list.length >= 12, rot: plan.spot?.r ?? 0, ...flightTo(plan, gift) }]; });
+      setFlying((list) => { if (list.length < 70) return [...list, { key, gift, look: plan.land, from: meIndex, to: index, toId: player.id, moved: false, ms, mine: true, still: list.length >= 12, rot: plan.spot?.r ?? 0, ...flightTo(plan, gift) }]; const other = list.findIndex((item) => !item.mine); if (other < 0) return list; const next = [...list]; next.splice(other, 1); return [...next, { key, gift, look: plan.land, from: meIndex, to: index, toId: player.id, moved: false, ms, mine: true, still: list.length >= 12, rot: plan.spot?.r ?? 0, ...flightTo(plan, gift) }]; });
       window.setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))))), 20);
     }
     const gen = tableGen.current;
@@ -1783,21 +1783,21 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // A gift another player sent: it flies from their seat to the receiver, then sits on the photo and goes into the chat.
   const remoteGift = useRef<(from: string, to: string, gift: string, ms: number, seed: number) => void>(() => {});
   remoteGift.current = (fromId, toId, gift, ms, seed) => {
-    ms = Math.round(ms / 0.756); // flight speed: slowed down, then made 35% faster again
+    ms = Math.round(ms / 0.378); // flight speed (latest: half as fast as before)
     if (gift === "c:air_kiss1") ms = Math.round(ms * 1.3); // the air kiss flies 30% slower
     const fromAt = players.findIndex((player) => player.id === fromId);
     const toAt = players.findIndex((player) => player.id === toId);
     if (!gift || toAt < 0) return;
     const key = flyId.current++;
     const pour = isDrink(gift) && fromAt >= 0 && fromAt !== toAt;
-    // A flood of gifts from other players: past 30 in the air, a new one lands straight away (no flight and no "sent" sound),
+    // A flood of gifts from other players: past 60 in the air, a new one lands straight away (no flight and no "sent" sound),
     // so nothing is heard without being seen.
-    const busy = airborne.current >= 30;
+    const busy = airborne.current >= 60;
     if (busy) ms = 500;
     else playGiftSound(gift, "send");
     const plan = planLanding(gift, seed);
     {
-      if (!busy) setFlying((list) => (list.length >= 40 ? list : [...list, { key, gift, look: plan.land, from: fromAt >= 0 ? fromAt : toAt, to: toAt, toId, moved: false, ms, still: list.length >= 12, rot: plan.spot?.r ?? 0, ...flightTo(plan, gift) }]));
+      if (!busy) setFlying((list) => (list.length >= 70 ? list : [...list, { key, gift, look: plan.land, from: fromAt >= 0 ? fromAt : toAt, to: toAt, toId, moved: false, ms, still: list.length >= 12, rot: plan.spot?.r ?? 0, ...flightTo(plan, gift) }]));
       window.setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))))), 20);
     }
     const gen = tableGen.current;
