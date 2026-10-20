@@ -2,10 +2,10 @@
 import { VerifiedMark } from "@/components/ui/VerifiedMark";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { Eye, EyeOff, KeyRound, Award, HeartOff, BadgeCheck, Ban, ChevronDown, Coins, Crown, Gamepad2, Heart, ShieldCheck, ShieldOff, Trash2, Undo2 } from "lucide-react";
+import { Palette, Eye, EyeOff, KeyRound, Award, HeartOff, BadgeCheck, Ban, ChevronDown, Coins, Crown, Gamepad2, Heart, ShieldCheck, ShieldOff, Trash2, Undo2 } from "lucide-react";
 import { useSyncExternalStore } from "react";
 import { refreshVerified, verifiedStore } from "@/lib/verifiedSync";
-import { banUser, deleteUser, fetchAdminUsers, fetchUserDetail, grantCoins, grantHearts, setModerator, setVerified, vipAll, vipCount, gesturesOpenGet, gesturesOpenSet, gameState, gameGrant, gameFlags, type GameFlags, type GameState, type AdminUser, type UserDetail } from "@/lib/adminSync";
+import { banUser, deleteUser, fetchAdminUsers, fetchUserDetail, grantCoins, grantHearts, setModerator, setVerified, vipAll, vipCount, gesturesOpenGet, gesturesOpenSet, setNameColor, gameState, gameGrant, gameFlags, type GameFlags, type GameState, type AdminUser, type UserDetail } from "@/lib/adminSync";
 import type { TranslationKey } from "@/i18n/LanguageProvider";
 import { initialsAvatar } from "@/lib/avatar";
 import { formatDay } from "@/lib/datetime";
@@ -15,6 +15,7 @@ import { Card } from "@/components/ui/Card";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
+import { NAME_COLORS, nameColorClass, refreshNameColors, useNameColors } from "@/components/bottle/nameColors";
 
 // E-mail is hidden until the eye is pressed (a@b.com → a•••@b.com).
 const maskEmail = (email: string) => { const [name, domain = ""] = email.split("@"); return `${name.slice(0, 1)}•••@${domain}`; };
@@ -37,6 +38,8 @@ export function AdminUsers({ owner }: { owner: boolean }) {
   const [confirm, setConfirm] = useState<string | null>(null);
   const [coinsFor, setCoinsFor] = useState<string | null>(null);
   const [gameFor, setGameFor] = useState<string | null>(null);
+  const [colorFor, setColorFor] = useState<string | null>(null);
+  const nameColors = useNameColors();
   const [grantKind, setGrantKind] = useState<"coins" | "hearts">("coins");
   const [amount, setAmount] = useState("100");
   const [banFor, setBanFor] = useState<string | null>(null);
@@ -146,6 +149,7 @@ export function AdminUsers({ owner }: { owner: boolean }) {
                     <button disabled={locked} onClick={() => void toggleGame(user.id, "top", Boolean(flags[user.id]?.top))} className={cn(action, flags[user.id]?.top ? "border-[#CA8A04] text-[#CA8A04]" : "")}><Award size={14} />{t(flags[user.id]?.top ? "admin.topOff" : "admin.topOn")}</button>
                     <button disabled={locked} onClick={() => void run(user.id, async () => (await gameGrant(user.id, "admire_block", flags[user.id]?.block ? 0 : 1)) !== null)} className={cn(action, flags[user.id]?.block ? "border-danger text-danger" : "")}><HeartOff size={14} />{t(flags[user.id]?.block ? "admin.admireUnblock" : "admin.admireBlock")}</button>
                     <button disabled={locked} onClick={() => setGameFor(gameFor === user.id ? null : user.id)} aria-expanded={gameFor === user.id} className={action}><Gamepad2 size={14} />{t("admin.game")}</button>
+                    <button disabled={locked} onClick={() => setColorFor(colorFor === user.id ? null : user.id)} aria-expanded={colorFor === user.id} className={action}><Palette size={14} /><span className={nameColorClass(nameColors[user.id])}>{t("admin.nameColor")}</span></button>
                     {user.email && supabase ? <button disabled={locked || resetSent[user.id]} onClick={() => { if (!supabase || !user.email) return; void supabase.auth.resetPasswordForEmail(user.email, { redirectTo: `${window.location.origin}/reset-password` }).then(({ error }) => setResetSent((value) => ({ ...value, [user.id]: !error }))); }} title={t("admin.resetHint")} className={action}><KeyRound size={14} />{t(resetSent[user.id] ? "admin.resetSent" : "admin.resetPass")}</button> : null}
                     {user.moderator ? null : user.banned
                       ? <button disabled={locked} onClick={() => void run(user.id, () => banUser(user.id, -1, ""))} className={action}><Undo2 size={14} />{t("settings.blkUnblock")}</button>
@@ -206,6 +210,15 @@ export function AdminUsers({ owner }: { owner: boolean }) {
                     <button type="submit" disabled={locked} className="h-8 rounded-lg bg-accent px-3 text-[11px] font-semibold text-bg disabled:opacity-50">{t("admin.bonusGive")}</button>
                     {bonusNote?.id === user.id ? <span role="status" className={cn("text-[11px] font-semibold", bonusNote.ok ? "text-accent" : "text-danger")}>{t(bonusNote.ok ? "admin.gameSaved" : bonusNote.max ? "admin.bonusMax" : "admin.vipFail")}</span> : null}
                   </form>
+                  {colorFor === user.id ? (
+                    <div className="mt-3 rounded-xl border border-border bg-surface-2/40 p-3">
+                      <p className="text-xs font-semibold">{t("admin.nameColor")}: <span className={cn("text-sm", nameColorClass(nameColors[user.id]))}>{user.name || "—"}</span></p>
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        {NAME_COLORS.map((item) => <button key={item.id} type="button" disabled={locked} title={item.id} aria-label={item.id} aria-pressed={nameColors[user.id] === item.id} onClick={() => void run(user.id, async () => { const done = (await setNameColor(user.id, item.id)) !== null; refreshNameColors(); return done; })} className={cn("h-8 w-8 rounded-full border-2 disabled:opacity-50", nameColors[user.id] === item.id ? "border-accent ring-2 ring-accent" : "border-border")} style={{ background: item.swatch }} />)}
+                        <button type="button" disabled={locked} onClick={() => void run(user.id, async () => { const done = (await setNameColor(user.id, "")) !== null; refreshNameColors(); return done; })} className="h-8 rounded-full border border-border px-3 text-[11px] font-semibold text-muted hover:text-text disabled:opacity-50">{t("admin.nameColorNone")}</button>
+                      </div>
+                    </div>
+                  ) : null}
                   {gameFor === user.id ? <GamePanel id={user.id} /> : null}
                   {coinsFor === user.id ? (
                     <form onSubmit={(event) => handleCoins(event, user.id)} className="mt-3 flex flex-wrap items-center gap-2">

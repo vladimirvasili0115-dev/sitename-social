@@ -270,3 +270,9 @@ button { cursor: pointer; }
 /* Top-3 places in the ratings: real gold, shining */
 .gold-name { background: linear-gradient(100deg, #8A6200 0%, #F5C400 25%, #FFF4B0 45%, #F5C400 60%, #B8860B 100%); background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: gold-shine 2.4s linear infinite; }
 @keyframes gold-shine { from { background-position: 100% 0; } to { background-position: -120% 0; } }
+
+/* Name colours from the admin panel: chameleon (colours flowing), champagne, rainbow. */
+@keyframes name-flow { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
+.name-chameleon { background: linear-gradient(90deg, #FF3EA5, #FFD60A, #22C55E, #3B82F6, #A855F7, #FF3EA5); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: name-flow 3s linear infinite; }
+.name-champagne { background: linear-gradient(100deg, #B8925A 0%, #F7E7CE 35%, #FFFFFF 50%, #E8C27A 70%, #B8925A 100%); background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: gold-shine 3s linear infinite; }
+.name-rainbow { background: linear-gradient(90deg, #EF4444, #F59E0B, #22C55E, #3B82F6, #8B5CF6); -webkit-background-clip: text; background-clip: text; color: transparent; }

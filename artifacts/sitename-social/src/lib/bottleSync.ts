@@ -18,6 +18,7 @@ async function call<T>(name: string, args?: Record<string, unknown>): Promise<T 
   return error ? null : (data as T);
 }
 export const bottleJoin = () => call<number>("bottle_join");
+export const bottleNameColors = () => call<Record<string, string>>("bottle_name_colors");
 export const bottleLeave = () => call<null>("bottle_leave");
 export const bottleClaim = (token: string) => call<boolean>("bottle_claim", { p_token: token });
 export const bottleSync = (after: number) => call<BottleState>("bottle_sync", { p_after: after });
