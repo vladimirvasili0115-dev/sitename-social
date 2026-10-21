@@ -1,5 +1,5 @@
 "use client";
-import { useState, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import Link from "next/link";
 import { ArrowLeft, Briefcase, Cake, Camera, GraduationCap, ImageIcon, Info, MapPin, Quote, Settings, UserRound } from "lucide-react";
 import type { Gender, Relationship } from "@/types";
@@ -30,7 +30,13 @@ export default function EditProfilePage() {
     name: user.name, status: details.status, bio: details.bio, city: details.city, birthday: details.birthday,
     relationship: details.relationship, work: details.work, education: details.education, gender: details.gender ?? "",
   });
-  const set = (field: keyof typeof form) => (event: { target: { value: string } }) => { setSaved(false); setForm((current) => ({ ...current, [field]: event.target.value })); };
+  // The profile arrives a moment after the page opens: fill the form with it (until you start typing).
+  const touched = useRef(false);
+  useEffect(() => {
+    if (touched.current) return;
+    setForm({ name: user.name, status: details.status, bio: details.bio, city: details.city, birthday: details.birthday, relationship: details.relationship, work: details.work, education: details.education, gender: details.gender ?? "" });
+  }, [user.name, details.status, details.bio, details.city, details.birthday, details.relationship, details.work, details.education, details.gender]);
+  const set = (field: keyof typeof form) => (event: { target: { value: string } }) => { touched.current = true; setSaved(false); setForm((current) => ({ ...current, [field]: event.target.value })); };
   const wait = nextNameChange(details.nameChanges, details.nameChangedAt);
   const freeLeft = Math.max(0, 2 - (details.nameChanges ?? 0));
   const sections: [Section, string, typeof UserRound][] = [["main", t("edit.main"), UserRound], ["about", t("profile.tabAbout"), Info], ["career", t("edit.career"), Briefcase], ["photos", t("edit.photos"), ImageIcon]];
@@ -59,11 +65,11 @@ export default function EditProfilePage() {
       <Link href="/profile" className="mb-4 inline-flex items-center gap-2 text-sm text-muted hover:text-text"><ArrowLeft size={16} />{t("edit.back")}</Link>
       <div className="flex flex-col gap-4 md:flex-row md:items-start">
         <Card className="p-2 md:w-[230px] md:shrink-0">
-          <nav className="flex gap-1 overflow-x-auto md:flex-col">
+          <nav className="flex flex-col gap-0.5">
             {sections.map(([id, label, Icon]) => (
-              <button key={id} type="button" onClick={() => setSection(id)} aria-current={section === id ? "page" : undefined} className={cn("flex shrink-0 items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm", section === id ? "bg-surface-2 font-semibold text-text" : "text-muted hover:bg-surface-2 hover:text-text")}><Icon size={17} />{label}</button>
+              <button key={id} type="button" onClick={() => setSection(id)} aria-current={section === id ? "page" : undefined} className={cn("flex items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm md:py-2.5", section === id ? "bg-surface-2 font-semibold text-text" : "text-muted hover:bg-surface-2 hover:text-text")}><Icon size={17} />{label}</button>
             ))}
-            <Link href="/settings" className="flex shrink-0 items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm text-muted hover:bg-surface-2 hover:text-text"><Settings size={17} />{t("nav.settings")}</Link>
+            <Link href="/settings" className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm md:py-2.5 text-muted hover:bg-surface-2 hover:text-text"><Settings size={17} />{t("nav.settings")}</Link>
           </nav>
         </Card>
         <Card className="min-w-0 flex-1 p-5">

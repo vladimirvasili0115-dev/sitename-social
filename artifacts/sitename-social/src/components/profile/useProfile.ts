@@ -22,8 +22,11 @@ export function useProfile() {
   }, []);
   return useMemo(() => {
     const { name, avatar, handle, ...rest } = edits;
-    const user: User = { ...currentUser, name: name || currentUser.name, avatar: avatar || (supabase ? initialsAvatar(name || currentUser.name) : currentUser.avatar), handle: handle || currentUser.handle };
-    const details: ProfileDetails = { ...profileDetails, ...rest, cover: rest.cover || (supabase ? "" : profileDetails.cover) };
+    // With a real account, empty fields stay empty: the demo person (sample name, status, bio …) is only for the offline demo.
+    const base = supabase ? { ...currentUser, name: "", handle: "", avatar: "" } : currentUser;
+    const baseDetails: ProfileDetails = supabase ? { cover: "", status: "", bio: "", city: "", birthday: "", relationship: "single", work: "", education: "", languages: [], interests: [], joined: "", followers: 0 } : profileDetails;
+    const user: User = { ...base, name: name || base.name, avatar: avatar || (supabase ? initialsAvatar(name || "?") : currentUser.avatar), handle: handle || base.handle };
+    const details: ProfileDetails = { ...baseDetails, ...rest, cover: rest.cover || (supabase ? "" : profileDetails.cover) };
     return { user, details, update };
   }, [edits, update]);
 }
