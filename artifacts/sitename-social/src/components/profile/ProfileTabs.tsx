@@ -3,10 +3,10 @@ import { useTranslation } from "@/i18n/useTranslation";
 import type { TranslationKey } from "@/i18n/LanguageProvider";
 import { cn } from "@/lib/utils";
 
-export const profileTabs = ["wall", "about", "friends", "photos", "gifts"] as const;
+export const profileTabs = ["wall", "about", "friends", "photos", "videos", "gifts"] as const;
 export type ProfileTab = (typeof profileTabs)[number];
 const labels: Record<ProfileTab, TranslationKey> = {
-  wall: "profile.tabWall", about: "profile.tabAbout", friends: "nav.friends", photos: "nav.photos", gifts: "nav.gifts",
+  wall: "profile.tabWall", about: "profile.tabAbout", friends: "nav.friends", photos: "nav.photos", videos: "nav.videos", gifts: "nav.gifts",
 };
 
 export function ProfileTabs({ active, onChange }: { active: ProfileTab; onChange: (tab: ProfileTab) => void }) {

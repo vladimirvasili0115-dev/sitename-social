@@ -15,6 +15,7 @@ import { ProfileAbout } from "@/components/profile/ProfileAbout";
 import { ProfileFriends } from "@/components/profile/ProfileFriends";
 import { ProfilePhotos } from "@/components/profile/ProfilePhotos";
 import { ProfileGifts } from "@/components/profile/ProfileGifts";
+import { ProfileVideos } from "@/components/profile/ProfileVideos";
 import { EditProfileModal } from "@/components/profile/EditProfileModal";
 
 export default function ProfilePage() {
@@ -44,6 +45,7 @@ export default function ProfilePage() {
             <ProfileAbout details={details} />
             <ProfileFriends friends={friends} onSeeAll={() => setTab("friends")} />
             <ProfilePhotos photos={photos} onSeeAll={() => setTab("photos")} onDelete={(photo) => removePhoto(photo.id)} onSetAvatar={(photo) => update({ avatar: photo.src })} />
+            <ProfileVideos videos={posts.filter((post) => post.video)} onSeeAll={() => setTab("videos")} />
             <ProfileGifts gifts={profileGifts} onSeeAll={() => setTab("gifts")} />
           </div>
           <div className="min-w-0 flex-1">
@@ -55,6 +57,7 @@ export default function ProfilePage() {
       {tab === "about" ? <ProfileAbout details={details} full /> : null}
       {tab === "friends" ? <ProfileFriends friends={friends} full /> : null}
       {tab === "photos" ? <ProfilePhotos photos={photos} full onDelete={(photo) => removePhoto(photo.id)} onSetAvatar={(photo) => update({ avatar: photo.src })} /> : null}
+      {tab === "videos" ? <ProfileVideos videos={posts.filter((post) => post.video)} full /> : null}
       {tab === "gifts" ? <ProfileGifts gifts={profileGifts} full /> : null}
       {editing ? <EditProfileModal user={user} details={details} onSave={update} onClose={() => setEditing(false)} /> : null}
     </div>

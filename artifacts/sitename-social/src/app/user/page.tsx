@@ -11,6 +11,7 @@ import { Tabs } from "@/components/ui/Tabs";
 import { usePosts } from "@/components/feed/usePosts";
 import { PostCard } from "@/components/feed/PostCard";
 import { ProfilePhotos } from "@/components/profile/ProfilePhotos";
+import { ProfileVideos } from "@/components/profile/ProfileVideos";
 import { SectionCard } from "@/components/profile/SectionCard";
 import { useSettings } from "@/components/settings/useSettings";
 import { UserActions } from "@/components/user/UserActions";
@@ -19,7 +20,7 @@ import { fetchUserPhotos } from "@/lib/photosSync";
 import { recordVisit } from "@/lib/guestsSync";
 import { fetchAccess, fullAccess, type Access } from "@/lib/access";
 
-type UserTab = "wall" | "photos" | "about";
+type UserTab = "wall" | "photos" | "videos" | "about";
 
 function UserProfile() {
   const { t } = useTranslation();
@@ -87,9 +88,10 @@ function UserProfile() {
       </Card>
       {blocked || !access.profile ? <Card className="mt-4 p-8 text-center text-sm text-muted">{t(blocked ? "user.blocked" : "user.private")}</Card> : (
         <>
-          <div className="mt-4"><Tabs<UserTab> active={tab} onChange={setTab} tabs={[{ id: "wall", label: t("profile.tabWall"), count: posts.length }, { id: "photos", label: t("nav.photos"), count: photos.length }, { id: "about", label: t("profile.tabAbout") }]} /></div>
+          <div className="mt-4"><Tabs<UserTab> active={tab} onChange={setTab} tabs={[{ id: "wall", label: t("profile.tabWall"), count: posts.length }, { id: "photos", label: t("nav.photos"), count: photos.length }, { id: "videos", label: t("nav.videos"), count: posts.filter((post) => post.video).length }, { id: "about", label: t("profile.tabAbout") }]} /></div>
           {tab === "wall" ? <div className="mx-auto max-w-[620px]">{posts.length ? posts.map((post) => <PostCard key={post.id} post={post} />) : <Card className="p-8 text-center text-sm text-muted">{t("profile.noPosts")}</Card>}</div> : null}
           {tab === "photos" ? <ProfilePhotos photos={photos} full /> : null}
+          {tab === "videos" ? <ProfileVideos videos={posts.filter((post) => post.video)} full /> : null}
           {tab === "about" ? (
             <SectionCard title={t("profile.tabAbout")}>
               <dl className="grid gap-3 sm:grid-cols-2">
