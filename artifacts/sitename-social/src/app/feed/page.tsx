@@ -1,6 +1,5 @@
 "use client";
 import { useState } from "react";
-import { ChevronDown } from "lucide-react";
 import { usePosts } from "@/components/feed/usePosts";
 import { useProfile } from "@/components/profile/useProfile";
 import { useFriends } from "@/components/friends/useFriends";
@@ -21,13 +20,7 @@ export default function FeedPage() {
   const posts = tab === "following" ? feed.filter((post) => post.mine || friends.some((item) => item.user.id === post.author.id)) : feed;
   const tabClass = (active: boolean) => cn("relative px-3 py-3 text-xs", active ? "font-semibold text-accent" : "font-medium text-muted hover:text-text");
   return <div className="mx-auto max-w-[620px]">
-    <div className="mb-5 flex items-end justify-between px-1">
-      <div>
-        <p className="mb-1 text-xs font-medium tracking-wide text-accent">{t("feed.hello")}, {user.name.split(" ")[0]}</p>
-        <h1 className="text-[23px] font-semibold tracking-[-0.035em]">{t("feed.subtitle")}</h1>
-      </div>
-      <button aria-label={t("feed.latest")} className="mb-1 flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-muted hover:bg-surface-2"><span>{t("feed.latest")}</span><ChevronDown size={14} /></button>
-    </div>
+    {user.name ? <p className="mb-3 px-1 text-xs font-medium tracking-wide text-accent">{t("feed.hello")}, {user.name.split(" ")[0]}</p> : null}
     <StoriesBar />
     <GamePromo />
     <PostComposer />
