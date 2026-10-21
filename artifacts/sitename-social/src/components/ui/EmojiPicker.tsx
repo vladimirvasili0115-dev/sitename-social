@@ -1,12 +1,8 @@
 "use client";
 import type { ReactNode } from "react";
-import { emojis } from "@/lib/emojis";
-import { Dropdown } from "./Dropdown";
+import { ExpressionPicker } from "./ExpressionPicker";
 
-export function EmojiPicker({ label, trigger, triggerClassName, onPick, up = false }: { label: string; trigger: ReactNode; triggerClassName?: string; onPick: (emoji: string) => void; up?: boolean }) {
-  return (
-    <Dropdown label={label} trigger={trigger} triggerClassName={triggerClassName} align="left" up={up} className="min-w-[212px]">
-      {(close) => <div className="grid grid-cols-5 gap-1">{emojis.map((emoji) => <button key={emoji} type="button" onClick={() => { onPick(emoji); close(); }} className="flex h-9 w-9 items-center justify-center rounded-lg text-lg hover:bg-surface-2">{emoji}</button>)}</div>}
-    </Dropdown>
-  );
+// The emoji button used across the site: the full emoji set by category (stickers and GIFs where onMedia is given).
+export function EmojiPicker({ label, trigger, triggerClassName, onPick, onMedia, up = false }: { label: string; trigger: ReactNode; triggerClassName?: string; onPick: (emoji: string) => void; onMedia?: (url: string) => void; up?: boolean }) {
+  return <ExpressionPicker label={label} trigger={trigger} triggerClassName={triggerClassName} onEmoji={onPick} onMedia={onMedia} up={up} />;
 }

@@ -104,7 +104,8 @@ export { isRemoteId };
 // Returns "" when the post was saved, otherwise why not (shown under the composer).
 export async function createRemotePost(input: { text: string; image?: string; groupId?: string; videoFile?: File }): Promise<string> {
   if (!supabase) return "offline";
-  const image_url = isDataUrl(input.image) ? await uploadImage(input.image, "posts") : null;
+  // A picture from the device is uploaded; a sticker or GIF (already on the web) is kept by its address.
+  const image_url = isDataUrl(input.image) ? await uploadImage(input.image, "posts") : input.image && /^(https:\/\/|\/custom\/)/.test(input.image) ? input.image : null;
   // A video post: the file goes to storage (videos folder), the post keeps its address.
   let video_url: string | null = null;
   if (input.videoFile) {

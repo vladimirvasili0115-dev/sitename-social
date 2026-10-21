@@ -63,7 +63,7 @@ export function PostComposer({ groupId }: { groupId?: string }) {
     </div>
     {image ? (
       <div className="relative mt-3 overflow-hidden rounded-xl border border-border">
-        <img src={image} alt="" className="max-h-[280px] w-full object-cover" />
+        <img src={image} alt="" className={image.startsWith("data:") ? "max-h-[280px] w-full object-cover" : "mx-auto max-h-[180px] w-auto object-contain py-2" /* a sticker or GIF keeps its own size */} />
         <button onClick={() => setImage(null)} aria-label={t("feed.removeImage")} title={t("feed.removeImage")} className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full border border-border bg-surface text-text"><X size={15} /></button>
       </div>
     ) : null}
@@ -79,7 +79,7 @@ export function PostComposer({ groupId }: { groupId?: string }) {
       <div className="flex gap-1">
         <label className={tool}><Camera size={16} className="text-accent" />{t("feed.photo")}<input type="file" accept="image/*" className="sr-only" onChange={handleImage} /></label>
         <label className={tool}><Clapperboard size={16} className="text-[#E53935]" />{t("feed.video")}<input type="file" accept="video/*" className="sr-only" onChange={handleVideo} /></label>
-        <EmojiPicker label={t("feed.feeling")} trigger={<><Smile size={16} className="text-accent-2" />{t("feed.feeling")}</>} triggerClassName={tool} onPick={(emoji) => setText((value) => `${value}${value && !value.endsWith(" ") ? " " : ""}${emoji}`)} />
+        <EmojiPicker label={t("feed.feeling")} trigger={<><Smile size={16} className="text-accent-2" />{t("feed.feeling")}</>} triggerClassName={tool} onPick={(emoji) => setText((value) => `${value}${value && !value.endsWith(" ") ? " " : ""}${emoji}`)} onMedia={(url) => { setVideo(null); setImage(url); }} />
       </div>
       <Button className="px-4 py-2 text-xs disabled:opacity-40" disabled={!ready} onClick={publish}>{t("feed.publish")}</Button>
     </div>

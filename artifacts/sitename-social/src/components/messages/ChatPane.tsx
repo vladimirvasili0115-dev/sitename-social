@@ -154,7 +154,7 @@ export function ChatPane({ chat, onBack, onSend, onDelete, className }: Props) {
       ) : null}
       <form onSubmit={handleSubmit} className={cn("flex items-center gap-1 p-3", image ? "" : "border-t border-border")}>
         {recording ? null : <><label className={tool} title={t("messages.attach")}><ImagePlus size={19} /><input type="file" accept="image/*" className="sr-only" aria-label={t("messages.attach")} onChange={handleImage} /></label>
-        <EmojiPicker up label={t("messages.emoji")} trigger={<Smile size={19} />} triggerClassName={tool} onPick={(emoji) => setText((value) => value + emoji)} /></>}
+        <EmojiPicker up label={t("messages.emoji")} trigger={<Smile size={19} />} triggerClassName={tool} onPick={(emoji) => setText((value) => value + emoji)} onMedia={(url) => onSend({ text: "", image: url })} /></>}
         <VoiceRecorder onActiveChange={setRecording} onRecorded={(audio) => onSend({ text: "", audio })} />
         {recording ? null : <><input value={text} onChange={(event) => { setText(event.target.value); if (event.target.value) noteTyping(); }} aria-label={t("messages.placeholder")} placeholder={t("messages.placeholder")} autoComplete="off" className="ml-1 h-11 min-w-0 flex-1 rounded-xl border border-border bg-surface-2 px-4 text-sm text-text outline-none placeholder:text-muted focus:border-accent" />
         <button type="submit" disabled={!ready} aria-label={t("messages.send")} className="ml-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent text-bg disabled:opacity-40"><SendHorizontal size={18} /></button></>}

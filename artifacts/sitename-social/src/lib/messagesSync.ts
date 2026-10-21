@@ -75,7 +75,7 @@ export async function openRemoteChat(otherId: string) {
 }
 export async function sendRemoteMessage(otherId: string, input: { text: string; image?: string; audio?: Blob }) {
   if (!supabase) return;
-  const image_url = isDataUrl(input.image) ? await uploadImage(input.image, "messages") : null;
+  const image_url = isDataUrl(input.image) ? await uploadImage(input.image, "messages") : input.image && /^(https:\/\/|\/custom\/)/.test(input.image) ? input.image : null;
   const audio_url = input.audio ? await uploadBlob(input.audio, "voice", input.audio.type.includes("mp4") ? "m4a" : "webm") : null;
   if (input.audio && !audio_url) return;
   const { error } = await supabase.from("messages").insert({ recipient_id: otherId, text: input.text, image_url, ...(audio_url ? { audio_url } : {}) });
