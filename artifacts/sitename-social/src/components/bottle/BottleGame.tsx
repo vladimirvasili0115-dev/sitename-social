@@ -1071,6 +1071,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       const dropMe = <T,>(value: Record<string, T[]>) => (value.me?.length ? { ...value, me: [] } : value);
       setSpots(dropMe);
       setStickers(dropMe);
+      announceFresh();
     }
     setPanel(null);
     pullRef.current();
@@ -1825,6 +1826,12 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // When a player comes (back) to the table or leaves it, they announce "fresh" and every screen wipes the gifts on their photo.
   // A gift that was already flying to them when this happened never lands (it started before the wipe).
   const freshAt = useRef<Record<string, number>>({});
+  // Tell the others at the table that I just sat down (again) or left: they clear my old gifts.
+  function announceFresh() {
+    if (!liveChannel.current || !meId.current) return;
+    console.info("[bottle] fresh sent");
+    void liveChannel.current.send({ type: "broadcast", event: "fresh", payload: { id: meId.current } }).catch(() => {});
+  }
   const clearPlayer = (id: string) => {
     freshAt.current[id] = performance.now();
     const drop = <T,>(value: Record<string, T[]>) => (value[id]?.length ? { ...value, [id]: [] } : value);
@@ -1866,19 +1873,23 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     channel.on("broadcast", { event: "fresh" }, (message: { payload?: { id?: string } }) => {
       const id = message.payload?.id;
       if (!id || id === meId.current) return;
+      console.info("[bottle] fresh received", id);
       clearPlayer(id);
     });
-    const announce = () => { if (meId.current) void channel.send({ type: "broadcast", event: "fresh", payload: { id: meId.current } }).catch(() => {}); };
+    const myId = meId.current;
+    const announce = () => announceFresh();
     let announced = false; // only the real entry announces; a short connection drop that re-subscribes does not wipe the gifts
     channel.subscribe((status: string) => { if (status === "SUBSCRIBED" && !announced) { announced = true; announce(); } });
     liveChannel.current = channel;
     window.addEventListener("pagehide", announce);
     return () => {
       window.removeEventListener("pagehide", announce);
+      // Leaving the table: tell the others to remove my gifts, then close the channel at once
+      // (the message is already queued; closing later could clash with a quick re-entry on the same channel name).
+      // meId may already be empty when the table is gone, so the id from when I sat down is used.
+      if (myId) void channel.send({ type: "broadcast", event: "fresh", payload: { id: myId } }).catch(() => {});
       liveChannel.current = null;
-      // Leaving the table: tell the others to remove my gifts, then close the channel.
-      const sent = meId.current ? channel.send({ type: "broadcast", event: "fresh", payload: { id: meId.current } }).catch(() => {}) : Promise.resolve();
-      void Promise.race([sent, new Promise((done) => window.setTimeout(done, 1500))]).then(() => client.removeChannel(channel));
+      void client.removeChannel(channel);
     };
   }, [online, liveTableId]); // eslint-disable-line react-hooks/exhaustive-deps
   // Gifts go to the server in small batches (one request every 0.3 s), so a long stream is a handful of requests, not hundreds.
