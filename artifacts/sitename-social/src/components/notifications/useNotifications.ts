@@ -8,7 +8,7 @@ import { useStore } from "@/lib/useStore";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useSettings } from "@/components/settings/useSettings";
 
-const settingFor: Record<NoticeType, NotificationKey> = { message: "messages", request: "requests", like: "likes", comment: "likes", gift: "gifts", guest: "guests" };
+const settingFor: Record<NoticeType, NotificationKey> = { message: "messages", request: "requests", like: "likes", comment: "likes", gift: "gifts", guest: "guests", mention: "likes", reply: "likes", wall: "likes", repost: "likes", photo_like: "likes", photo_comment: "likes" };
 const online = Boolean(supabase);
 
 export function useNotifications() {

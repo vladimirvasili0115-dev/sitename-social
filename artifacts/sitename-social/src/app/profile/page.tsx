@@ -1,5 +1,6 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "@/i18n/useTranslation";
 import { PostComposer } from "@/components/feed/PostComposer";
@@ -30,7 +31,11 @@ export default function ProfilePage() {
   const { received: profileGifts } = useGifts();
   const profilePhotos = useMemo(() => photos.map((photo) => photo.src), [photos]);
   const friends = useMemo(() => friendList.map((item) => item.user), [friendList]);
-  const { mine: posts } = usePosts();
+  const { mine: posts, loadWall } = usePosts();
+  const accountId = useAuth().user?.id;
+  // Your wall also shows what friends wrote on it.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { if (accountId) loadWall(accountId); }, [accountId]);
   const stats = [
     { label: "nav.friends" as const, value: friends.length },
     { label: "saved.tabPosts" as const, value: posts.length },

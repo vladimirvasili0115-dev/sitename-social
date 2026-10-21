@@ -10,6 +10,7 @@ import { PostComposer } from "@/components/feed/PostComposer";
 import { PostCard } from "@/components/feed/PostCard";
 import { Card } from "@/components/ui/Card";
 import { GamePromo } from "@/components/feed/GamePromo";
+import { BirthdayReminder } from "@/components/feed/BirthdayReminder";
 
 export default function FeedPage() {
   const { t } = useTranslation();
@@ -22,6 +23,7 @@ export default function FeedPage() {
   return <div className="mx-auto max-w-[620px]">
     {user.name ? <p className="mb-3 px-1 text-xs font-medium tracking-wide text-accent">{t("feed.hello")}, {user.name.split(" ")[0]}</p> : null}
     <StoriesBar />
+    <BirthdayReminder />
     <GamePromo />
     <PostComposer />
     <div className="mb-3 flex items-center gap-1 border-b border-border px-1">

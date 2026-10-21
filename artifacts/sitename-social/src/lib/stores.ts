@@ -10,7 +10,7 @@ export const savedPostsStore = createStore<string[]>("sitename-posts-saved", [])
 export const invisibleStore = createStore<InvisibleState>("sitename-invisible", { enabled: false, hideOnline: true, hideVisits: true, hideRead: false });
 export const settingsStore = createStore<SettingsState>("sitename-settings", {
   theme: "dark",
-  privacy: { profile: "everyone", messages: "everyone", requests: "everyone", friendsList: "friends", gifts: "everyone" },
+  privacy: { profile: "everyone", messages: "everyone", requests: "everyone", friendsList: "friends", gifts: "everyone", wall: "friends", comments: "everyone" },
   notifications: { messages: true, requests: true, likes: true, gifts: true, guests: true, groups: false, sound: true, email: false },
   autoplay: true,
   reelsMuted: true,

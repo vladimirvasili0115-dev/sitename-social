@@ -14,3 +14,13 @@ export async function fetchPerson(id: string): Promise<RemotePerson | null> {
   const row = data as ProfileRow | null;
   return row ? { user: toUser(row), city: row.city ?? "", mutual: 0, status: row.status ?? "", bio: row.bio ?? "", cover: row.cover_url ?? null } : null;
 }
+
+// The account behind an @name ("me" for your own), or null.
+export async function findByHandle(handle: string): Promise<string | null> {
+  if (!supabase) return null;
+  const clean = handle.replace(/[^A-Za-z0-9_.]/g, "");
+  if (!clean) return null;
+  const [{ data }, session] = await Promise.all([supabase.from("profiles").select("id").ilike("handle", clean.replace(/_/g, "\\_")).limit(1), supabase.auth.getSession()]);
+  const id = (data as { id: string }[] | null)?.[0]?.id ?? null;
+  return id && id === session.data.session?.user.id ? "me" : id;
+}

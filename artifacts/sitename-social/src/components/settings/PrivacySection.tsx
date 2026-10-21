@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { ChevronRight, EyeOff, Gift, Mail, UserPlus, UserRound, Users, type LucideIcon } from "lucide-react";
+import { ChevronRight, EyeOff, Gift, Mail, MessageCircle, PenLine, UserPlus, UserRound, Users, type LucideIcon } from "lucide-react";
 import type { Audience, PrivacyKey } from "@/types";
 import { useTranslation } from "@/i18n/useTranslation";
 import type { TranslationKey } from "@/i18n/LanguageProvider";
@@ -15,7 +15,10 @@ const rows: { key: PrivacyKey; icon: LucideIcon; title: TranslationKey }[] = [
   { key: "requests", icon: UserPlus, title: "settings.privRequests" },
   { key: "friendsList", icon: Users, title: "settings.privFriends" },
   { key: "gifts", icon: Gift, title: "settings.privGifts" },
+  { key: "wall", icon: PenLine, title: "settings.privWall" },
+  { key: "comments", icon: MessageCircle, title: "settings.privComments" },
 ];
+const fallback: Partial<Record<PrivacyKey, Audience>> = { wall: "friends", comments: "everyone" };
 const audiences: { value: Audience; label: TranslationKey }[] = [
   { value: "everyone", label: "settings.optEveryone" }, { value: "friends", label: "settings.optFriends" }, { value: "nobody", label: "settings.optNobody" },
 ];
@@ -29,7 +32,7 @@ export function PrivacySection() {
       <SettingsSection>
         {rows.map(({ key, icon, title }) => (
           <SettingRow key={key} icon={icon} title={t(title)}>
-            <Select<Audience> value={settings.privacy[key]} label={t(title)} options={key === "requests" ? options.map((item) => (item.value === "friends" ? { ...item, label: t("settings.optFriendsOfFriends") } : item)) : options} onChange={(value) => update((current) => ({ ...current, privacy: { ...current.privacy, [key]: value } }))} />
+            <Select<Audience> value={settings.privacy[key] ?? fallback[key] ?? "everyone"} label={t(title)} options={key === "requests" ? options.map((item) => (item.value === "friends" ? { ...item, label: t("settings.optFriendsOfFriends") } : item)) : options} onChange={(value) => update((current) => ({ ...current, privacy: { ...current.privacy, [key]: value } }))} />
           </SettingRow>
         ))}
       </SettingsSection>

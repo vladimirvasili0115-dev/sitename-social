@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { Footprints, Gift, Heart, Mail, MessageCircle, UserPlus, X, type LucideIcon } from "lucide-react";
+import { AtSign, Footprints, Gift, Heart, ImageIcon, Mail, MessageCircle, PenLine, Repeat2, Reply, UserPlus, X, type LucideIcon } from "lucide-react";
 import type { Notice, NoticeType } from "@/types";
 import { people } from "@/data/friends";
 import { dayDiff, formatClock, formatDay } from "@/lib/datetime";
@@ -12,13 +12,20 @@ import { cn } from "@/lib/utils";
 import { GiftArt, giftNames } from "@/components/gifts/GiftArt";
 import type { FriendActions } from "@/components/friends/useFriends";
 
-const meta: Record<NoticeType, { icon: LucideIcon; text: TranslationKey; href: (userId: string) => string }> = {
-  message: { icon: Mail, text: "notif.message", href: (id) => `/messages?u=${id}` },
+const toPost = (notice: Notice) => (notice.postId ? `/post?id=${notice.postId}` : "/profile");
+const meta: Record<NoticeType, { icon: LucideIcon; text: TranslationKey; href: (notice: Notice) => string }> = {
+  message: { icon: Mail, text: "notif.message", href: (notice) => `/messages?u=${notice.userId}` },
   request: { icon: UserPlus, text: "notif.request", href: () => "/friends" },
-  like: { icon: Heart, text: "notif.like", href: () => "/profile" },
-  comment: { icon: MessageCircle, text: "notif.comment", href: () => "/profile" },
+  like: { icon: Heart, text: "notif.like", href: toPost },
+  comment: { icon: MessageCircle, text: "notif.comment", href: toPost },
   gift: { icon: Gift, text: "notif.gift", href: () => "/gifts" },
   guest: { icon: Footprints, text: "notif.guest", href: () => "/guests" },
+  mention: { icon: AtSign, text: "notif.mention", href: toPost },
+  reply: { icon: Reply, text: "notif.reply", href: toPost },
+  wall: { icon: PenLine, text: "notif.wall", href: toPost },
+  repost: { icon: Repeat2, text: "notif.repost", href: toPost },
+  photo_like: { icon: Heart, text: "notif.photoLike", href: () => "/photos" },
+  photo_comment: { icon: ImageIcon, text: "notif.photoComment", href: () => "/photos" },
 };
 type Props = { notice: Notice; pendingRequest: boolean; actions: FriendActions; onRead: () => void; onRemove?: () => void; onNavigate?: () => void };
 
@@ -26,12 +33,14 @@ export function NotificationItem({ notice, pendingRequest, actions, onRead, onRe
   const { t } = useTranslation();
   const person = notice.user ? { user: notice.user } : people.find((item) => item.user.id === notice.userId);
   if (!person) return null;
-  const { icon: Icon, text, href } = meta[notice.type];
+  const kind = meta[notice.type];
+  if (!kind) return null;
+  const { icon: Icon, text, href } = kind;
   const diff = dayDiff(notice.at);
   const when = diff === 0 ? formatClock(notice.at) : diff === 1 ? `${t("messages.yesterday")}, ${formatClock(notice.at)}` : formatDay(notice.at);
   return (
     <div className={cn("relative flex gap-3 rounded-xl p-3", notice.read ? "hover:bg-surface-2" : "bg-surface-2")}>
-      <Link href={href(notice.userId)} onClick={() => { onRead(); onNavigate?.(); }} aria-label={`${person.user.name} ${t(text)}`} className="absolute inset-0 rounded-xl" />
+      <Link href={href(notice)} onClick={() => { onRead(); onNavigate?.(); }} aria-label={`${person.user.name} ${t(text)}`} className="absolute inset-0 rounded-xl" />
       <span className="relative h-11 w-11 shrink-0">
         <Avatar user={person.user} className="h-11 w-11" />
         <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-surface bg-accent text-bg"><Icon size={11} strokeWidth={2.5} /></span>
