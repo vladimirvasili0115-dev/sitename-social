@@ -82,7 +82,7 @@ export function SiteMusicHost() {
   const frameRef = useRef<HTMLIFrameElement | null>(null);
   if (!now) return null;
   return now.kind === "yt"
-    ? <iframe key={now.song.id} ref={(node) => { frameRef.current = node; frame = node; }} onLoad={() => { frame?.contentWindow?.postMessage(JSON.stringify({ event: "listening", id: 1 }), "*"); ytCall("unMute"); ytCall("playVideo"); }} src={`https://www.youtube-nocookie.com/embed/${now.song.id}?autoplay=1&playsinline=1&rel=0&iv_load_policy=3&enablejsapi=1`} title="YouTube" allow="autoplay; encrypted-media" tabIndex={-1} aria-hidden="true" className="pointer-events-none fixed left-0 top-0 h-[200px] w-[200px] opacity-0" />
+    ? <iframe key={now.song.id} ref={(node) => { frameRef.current = node; frame = node; }} onLoad={() => { frame?.contentWindow?.postMessage(JSON.stringify({ event: "listening", id: 1 }), "*"); ytCall("unMute"); ytCall("playVideo"); }} src={`https://www.youtube.com/embed/${now.song.id}?autoplay=1&playsinline=1&rel=0&iv_load_policy=3&enablejsapi=1`} title="YouTube" referrerPolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media" tabIndex={-1} aria-hidden="true" className="pointer-events-none fixed left-0 top-0 h-[200px] w-[200px] opacity-0" />
     : <audio key={now.track.id} ref={(node) => { audio = node; }} src={now.track.src} autoPlay onPlay={() => set({ playing: true })} onPause={() => set({ playing: false })} onEnded={() => siteMusic.step(1)} onLoadedMetadata={(event) => set({ dur: event.currentTarget.duration || 0 })} onTimeUpdate={(event) => set({ cur: event.currentTarget.currentTime })} className="hidden" />;
 }
 
