@@ -1665,7 +1665,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   function sendDm(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!dm || !dmDraft.trim()) return;
-    if (!players[meIndex].female && !vip) return setDmNote(true);
+    // Free private messages are for players registered as girls (a gender changed later does not count).
+    const regFemale = details.regGender ? details.regGender === "female" : players[meIndex].female;
+    if (!regFemale && !vip) return setDmNote(true);
     const text = dmDraft.trim().slice(0, 300);
     setDmDraft("");
     bumpStat("dm");

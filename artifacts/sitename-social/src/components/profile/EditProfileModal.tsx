@@ -53,7 +53,8 @@ export function EditProfileModal({ user, details, onSave, onClose }: Props) {
             <AuthField label={t("profile.work")} icon={Briefcase} value={form.work} onChange={set("work")} />
             <AuthField label={t("profile.education")} icon={GraduationCap} value={form.education} onChange={set("education")} />
             <label className="block text-xs font-medium text-muted sm:col-span-2">{t("auth.gender")}
-              <select value={form.gender} onChange={(event) => setForm((current) => ({ ...current, gender: event.target.value }))} className={`${inputClass} mt-1.5 h-12`}>
+              {/* Gender is chosen once at registration; afterwards only an admin can change it. */}
+              <select value={form.gender} onChange={(event) => setForm((current) => ({ ...current, gender: event.target.value }))} className={`${inputClass} mt-1.5 h-12 disabled:opacity-60`}>
                 <option value="" disabled>—</option>
                 <option value="male">{t("auth.male")}</option>
                 <option value="female">{t("auth.female")}</option>

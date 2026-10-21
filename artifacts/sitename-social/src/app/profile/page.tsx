@@ -1,5 +1,6 @@
 "use client";
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useTranslation } from "@/i18n/useTranslation";
 import { PostComposer } from "@/components/feed/PostComposer";
 import { PostCard } from "@/components/feed/PostCard";
@@ -23,6 +24,7 @@ export default function ProfilePage() {
   const { user, details, update } = useProfile();
   const [tab, setTab] = useState<ProfileTab>("wall");
   const [editing, setEditing] = useState(false);
+  const router = useRouter();
   const { friends: friendList } = useFriends();
   const { photos, remove: removePhoto } = usePhotos();
   const { received: profileGifts } = useGifts();
@@ -37,7 +39,7 @@ export default function ProfilePage() {
   ];
   return (
     <div className="mx-auto max-w-[780px]">
-      <ProfileHeader user={user} details={details} stats={stats} onUpdate={update} onEdit={() => setEditing(true)} />
+      <ProfileHeader user={user} details={details} stats={stats} onUpdate={update} onEdit={() => router.push("/profile/edit")} />
       <ProfileTabs active={tab} onChange={setTab} />
       {tab === "wall" ? (
         <div className="flex flex-col gap-4 md:flex-row md:items-start">

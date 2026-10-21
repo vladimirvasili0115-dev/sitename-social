@@ -39,6 +39,7 @@ export async function loadProfile(userId: string) {
     name: data.name, handle: data.handle, gender: data.gender ?? undefined, birthday: data.birthday ?? "", city: data.city ?? "",
     status: data.status ?? "", bio: data.bio ?? "", work: data.work ?? "", education: data.education ?? "", relationship: data.relationship ?? "single",
     joined: String(data.created_at).slice(0, 10), languages: [], interests: [], followers: 0,
+    regGender: data.reg_gender ?? undefined, nameChanges: data.name_changes ?? 0, nameChangedAt: data.name_changed_at ?? undefined,
   });
 }
 
