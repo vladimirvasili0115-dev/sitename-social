@@ -1046,6 +1046,10 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     setPicked(null);
     setCard(false);
     if (!same) setLines([]);
+    // Moving (also to the same table again) starts clean: nobody keeps the gifts from before, including you.
+    tableGen.current += 1;
+    primed.current = false;
+    setFlying([]); setSpots({}); setStickers({}); setScatters([]);
     setPanel(null);
     pullRef.current();
   }
