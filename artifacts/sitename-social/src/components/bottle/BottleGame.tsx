@@ -108,6 +108,7 @@ const wornGift = (gift: string) => (gift.startsWith("c:") ? customPlace(gift.sli
 // balloons grow a little in the corner, the flag, the Eiffel tower and cupid are a bit bigger; the rest stand in the corner.
 // Which place of the photo a landed gift takes: a corner (left or right) or the middle.
 const spotPlace = (spot: Pick<Spot, "kind" | "x" | "s">) => (spot.kind === "hatL" ? "left" : spot.kind === "hatR" ? "right" : spot.kind === "corner" || spot.kind === "balloon" ? (spot.x + spot.s / 2 < 45 ? "left" : "right") : "middle");
+const stickerPlace = (gift: string) => { const at = gift.startsWith("c:") ? customPlace(gift.slice(2)) : headGifts.has(gift) ? "head" : "body"; return at === "head" || at === "ears" ? "left" : at === "body" ? "right" : "middle"; };
 type Spot = { key: number; gift: string; x: number; y: number; s: number; r?: number; fade?: boolean; kind: "rand" | "corner" | "behind" | "balloon" | "hatL" | "hatR" };
 // Like the original (GiftAnimations.ts): a gift's random spot comes from a seed every screen knows, so all players see it in the same place.
 function seeded(seed: number) {
@@ -366,16 +367,20 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const landGift = (key: number, toId: string, plan: ReturnType<typeof planLanding>) => {
     // Three places on a photo: the left corner, the right corner and the middle. A new gift replaces only the gift
     // in its own place; the others stay until a new gift comes to their place.
+    // Gifts worn without a spot (stickers) sit in the same places: head/ears on the left, body bottom-right, face in the middle.
+    const keepStickers = (value: Record<string, string[]>, place: string) => (value[toId]?.some((gift) => stickerPlace(gift) === place) ? { ...value, [toId]: value[toId].filter((gift) => stickerPlace(gift) !== place) } : value);
+    const keepSpots = (value: Record<string, Spot[]>, place: string) => (value[toId]?.some((item) => spotPlace(item) === place) ? { ...value, [toId]: value[toId].filter((item) => spotPlace(item) !== place) } : value);
     if (plan.spot) {
       const spot: Spot = { ...plan.spot, key };
       const place = spotPlace(spot);
-      setSpots((value) => ({ ...value, [toId]: [...(value[toId] ?? []).filter((item) => spotPlace(item) !== place), spot] }));
-      if (place === "middle") setStickers((value) => (value[toId]?.length ? { ...value, [toId]: [] } : value));
+      setSpots((value) => { const rest = keepSpots(value, place); return { ...rest, [toId]: [...(rest[toId] ?? []), spot] }; });
+      setStickers((value) => keepStickers(value, place));
       // Pacifiers only stay on the photo for about twenty seconds.
       if (/^c:nipple/.test(plan.land)) window.setTimeout(() => setSpots((value) => ({ ...value, [toId]: (value[toId] ?? []).filter((item) => item.key !== key) })), 20000);
     } else {
-      setStickers((value) => ({ ...value, [toId]: [plan.land] }));
-      setSpots((value) => (value[toId]?.some((item) => spotPlace(item) === "middle") ? { ...value, [toId]: value[toId].filter((item) => spotPlace(item) !== "middle") } : value));
+      const place = stickerPlace(plan.land);
+      setStickers((value) => { const rest = keepStickers(value, place); return { ...rest, [toId]: [...(rest[toId] ?? []), plan.land] }; });
+      setSpots((value) => keepSpots(value, place));
     }
     if (plan.scatter) {
       const dirs = plan.scatter.map((_, n) => { const angle = (n / plan.scatter!.length) * Math.PI * 2 + Math.random() * 0.8; return [Math.cos(angle) * (30 + Math.random() * 14), Math.sin(angle) * (30 + Math.random() * 14)] as [number, number]; });
