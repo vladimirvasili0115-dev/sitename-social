@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type FormEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import Link from "next/link";
-import { AtSign, ChevronDown, ChevronLeft, LifeBuoy, Pause, Play, Clock, Flame, Search, Star, Ban, Flag, Mail, Gift as GiftIcon, Heart, Home, Maximize, ArrowUpRight, BadgeCheck, Crown, DoorOpen, Eye, EyeOff, KeyRound, Lock, Mars, Trash2, Venus, BookOpen, MessageSquare, Check, Menu, UserRound, Minimize, Music, Plus, UserCheck, Music2, RefreshCw, SendHorizontal, Settings, Trophy, UserPlus, UserRoundCog, Users, Volume2, VolumeX, X } from "lucide-react";
+import { Phone, AtSign, ChevronDown, ChevronLeft, LifeBuoy, Pause, Play, Clock, Flame, Search, Star, Ban, Flag, Mail, Gift as GiftIcon, Heart, Home, Maximize, ArrowUpRight, BadgeCheck, Crown, DoorOpen, Eye, EyeOff, KeyRound, Lock, Mars, Trash2, Venus, BookOpen, MessageSquare, Check, Menu, UserRound, Minimize, Music, Plus, UserCheck, Music2, RefreshCw, SendHorizontal, Settings, Trophy, UserPlus, UserRoundCog, Users, Volume2, VolumeX, X } from "lucide-react";
 import type { GiftId } from "@/types";
 import { cartoonAvatar } from "./avatarArt";
 import { useTranslation } from "@/i18n/useTranslation";
@@ -20,6 +20,8 @@ import { customGiftNames, customPlace, customPrice, giftGroups, landedName, isDr
 const landed = (gift: string, rand?: () => number) => (gift.startsWith("c:") ? `c:${landedName(gift.slice(2), rand)}` : gift);
 import { AchievementsPanel } from "./AchievementsPanel";
 import { nameColorClass, useNameColors } from "./nameColors";
+import { startCall } from "@/lib/callSync";
+import { clock as callClock, parseCallLog } from "@/lib/callLog";
 import { FlightCanvas, type CanvasFlight, type FlightGeometry } from "./FlightCanvas";
 import { FIRST_ORIGINAL, FRAME_PRICE, FrameArt, ORIGINAL_FRAMES, frameLooks, frameStone } from "./FrameArt";
 import { PassPanel, type PassData } from "./PassPanel";
@@ -3505,10 +3507,11 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             </button>
             <img src={dm.avatar} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover" />
             <span className="min-w-0 flex-1 truncate text-sm font-bold">{dm.name}</span>
+            {online ? <button onClick={() => void startCall({ id: dm.id, name: dm.name, avatar: dm.avatar }, false)} aria-label={t("call.voice")} title={t("call.voice")} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full hover:bg-white/20"><Phone size={16} /></button> : null}
             <button onClick={() => setDm(null)} aria-label={t("photos.close")} title={t("photos.close")} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full hover:bg-white/20"><X size={17} /></button>
           </div>
           <div className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto p-2">
-            {dmLines.map((item, index) => <p key={index} className={cn("max-w-[80%] break-words rounded-2xl px-3 py-1.5 text-sm", item.mine ? "self-end bg-[#3B9EDD] text-white" : "self-start bg-surface-2 text-text")}>{item.text}</p>)}
+            {dmLines.map((item, index) => { const call = parseCallLog(item.text); return <p key={index} className={cn("max-w-[80%] break-words rounded-2xl px-3 py-1.5 text-sm", item.mine ? "self-end bg-[#3B9EDD] text-white" : "self-start bg-surface-2 text-text")}>{call ? `📞 ${t(`call.log_${call.kind === "missed" && item.mine ? "noanswer" : call.kind}` as "call.log_done")}${call.kind === "done" ? ` · ${callClock(call.secs)}` : ""}` : item.text}</p>; })}
           </div>
           {dmNote ? <button onClick={() => { setPayNote(false); setPanel("vip"); }} className="border-t border-border bg-[#FEF3C7] px-2 py-1.5 text-left text-xs font-semibold text-[#92400E]">👑 {t("bottle.dmVipWrite")}</button> : null}
           <form onSubmit={sendDm} className="flex items-center gap-1.5 border-t border-border p-1.5">

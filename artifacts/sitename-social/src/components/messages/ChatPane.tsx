@@ -2,7 +2,7 @@
 import { VerifiedMark } from "@/components/ui/VerifiedMark";
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import Link from "next/link";
-import { ArrowLeft, Check, CheckCheck, ImagePlus, Phone, PhoneIncoming, PhoneMissed, PhoneOutgoing, SendHorizontal, Smile, Trash2, X } from "lucide-react";
+import { ArrowLeft, Check, CheckCheck, ImagePlus, Phone, PhoneIncoming, PhoneMissed, PhoneOutgoing, SendHorizontal, Smile, Trash2, Video, X } from "lucide-react";
 import { startCall } from "@/lib/callSync";
 import { clock, parseCallLog } from "@/lib/callLog";
 import { supabase } from "@/lib/supabase";
@@ -99,6 +99,7 @@ export function ChatPane({ chat, onBack, onSend, onDelete, className }: Props) {
         {supabase ? (
           <div className="ml-auto flex shrink-0 items-center gap-1">
             <IconButton aria-label={t("call.voice")} title={t("call.voice")} onClick={() => void startCall({ id: user.id, name: user.name, avatar: user.avatar }, false)}><Phone size={18} /></IconButton>
+            <IconButton aria-label={t("call.video")} title={t("call.video")} onClick={() => void startCall({ id: user.id, name: user.name, avatar: user.avatar }, true)}><Video size={19} /></IconButton>
           </div>
         ) : null}
       </div>
