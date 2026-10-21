@@ -61,7 +61,8 @@ button { cursor: pointer; }
 }
 
 @keyframes gift-drop {
-  from { scale: 1.6; opacity: 0; }
+  /* The gift is solid from the first frame (no see-through ghost); it only settles from slightly bigger. */
+  from { scale: 1.12; opacity: 1; }
   to { scale: 1; opacity: 1; }
 }
 
