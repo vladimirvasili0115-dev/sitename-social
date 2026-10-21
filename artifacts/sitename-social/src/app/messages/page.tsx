@@ -24,6 +24,10 @@ export default function MessagesPage() {
   useEffect(() => {
     const userId = new URLSearchParams(window.location.search).get("u");
     if (userId) openChat(userId);
+    // The envelope in the header opens the newest unread chat, also when this page is already open.
+    const onOpen = (event: Event) => { const id = (event as CustomEvent<string>).detail; if (id) openChat(id); };
+    window.addEventListener("open-chat", onOpen);
+    return () => window.removeEventListener("open-chat", onOpen);
     // Runs once on mount to honour a ?u= link from the friends page.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

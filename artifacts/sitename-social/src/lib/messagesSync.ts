@@ -87,3 +87,20 @@ export async function removeRemoteMessage(id: string) {
   await supabase.from("messages").delete().eq("id", id);
   await refreshMessages();
 }
+
+// The chat a click on the envelope should open: the newest one with unread messages (null when nothing is unread).
+export function newestUnreadChat() {
+  let best: { id: string; at: number } | null = null;
+  for (const chat of state) {
+    if (!chat.unread) continue;
+    const at = chat.messages[chat.messages.length - 1]?.at ?? 0;
+    if (!best || at > best.at) best = { id: chat.userId, at };
+  }
+  return best?.id ?? null;
+}
+// Opens that chat even when the Messages page is already open.
+export function openChatFromBadge() {
+  const id = newestUnreadChat();
+  if (id) window.dispatchEvent(new CustomEvent("open-chat", { detail: id }));
+  return id;
+}

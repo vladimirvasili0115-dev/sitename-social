@@ -6,6 +6,7 @@ import { navigation } from "@/config/navigation";
 import { useTranslation } from "@/i18n/useTranslation";
 import { cn } from "@/lib/utils";
 import { useNavBadges } from "./useNavBadges";
+import { newestUnreadChat, openChatFromBadge } from "@/lib/messagesSync";
 
 const mobileHrefs = ["/feed", "/friends", "/messages", "/profile"];
 export function MobileNav() {
@@ -17,7 +18,8 @@ export function MobileNav() {
     <nav aria-label={t("nav.mainNavigation")} className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-border bg-surface/95 px-1 pb-[env(safe-area-inset-bottom)] pt-1 backdrop-blur lg:hidden">
       {items.map(({ key, href, icon: Icon }) => {
         const active = pathname === href;
-        return <Link key={href} href={href} className={cn("relative flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-medium", active ? "text-accent" : "text-muted")}>
+        const unreadChat = href === "/messages" && badges[href] ? newestUnreadChat() : null;
+        return <Link key={href} href={unreadChat ? `/messages?u=${unreadChat}` : href} onClick={href === "/messages" ? () => { openChatFromBadge(); } : undefined} className={cn("relative flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-medium", active ? "text-accent" : "text-muted")}>
           <Icon size={19} strokeWidth={active ? 2.4 : 1.8} />{badges[href] ? <span className="absolute left-1/2 top-1.5 ml-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[9px] font-bold text-white">{badges[href]}</span> : null}<span>{t(key as Parameters<typeof t>[0])}</span>
         </Link>;
       })}

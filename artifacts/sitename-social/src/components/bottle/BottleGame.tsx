@@ -922,7 +922,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   }, [chats, online, dm]);
   useEffect(() => {
     if (!dmToast) return;
-    const timer = window.setTimeout(() => setDmToast(null), 10000);
+    const timer = window.setTimeout(() => setDmToast(null), 15000); // the "new message" card stays 15 seconds
     return () => window.clearTimeout(timer);
   }, [dmToast]);
   const dmLines = dm ? (online ? (chats.find((chat) => chat.userId === dm.id)?.messages ?? []).map((item) => ({ mine: item.from === "me", text: item.text })) : dms[dm.id] ?? []) : [];

@@ -13,6 +13,7 @@ import { useProfile } from "@/components/profile/useProfile";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { useNavBadges } from "./useNavBadges";
+import { newestUnreadChat, openChatFromBadge } from "@/lib/messagesSync";
 import { SiteMusicPill, useSiteMusic } from "@/components/music/siteMusic";
 
 export function Header() {
@@ -41,7 +42,7 @@ export function Header() {
         <div className="ml-auto flex items-center gap-1 sm:gap-2">
           <SiteMusicPill />
           <Link href="/feed" className="hidden rounded-lg px-3 py-2 text-sm font-medium text-accent hover:bg-surface-2 lg:block">{t("nav.feed")}</Link>
-          <Link href="/messages" aria-label={t("header.messages")} className="relative hidden rounded-full p-2.5 text-muted hover:bg-surface-2 hover:text-text sm:flex"><Mail size={18} />{unreadMessages ? <span className="absolute right-0.5 top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold tabular-nums text-white">{unreadMessages}</span> : null}</Link>
+          <Link href={unreadMessages && newestUnreadChat() ? `/messages?u=${newestUnreadChat()}` : "/messages"} onClick={() => { openChatFromBadge(); }} aria-label={t("header.messages")} className="relative hidden rounded-full p-2.5 text-muted hover:bg-surface-2 hover:text-text sm:flex"><Mail size={18} />{unreadMessages ? <span className="absolute right-0.5 top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold tabular-nums text-white">{unreadMessages}</span> : null}</Link>
           <NotificationBell />
           <Link href="/profile" aria-label={t("header.profile")} className="flex items-center gap-2 rounded-xl py-1 hover:bg-surface-2 md:border-l md:border-border md:pl-3 md:pr-2">
             <Avatar user={user} size="sm" />
