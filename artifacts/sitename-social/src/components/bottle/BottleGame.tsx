@@ -57,10 +57,11 @@ function mergeLines(list: Line[], fresh: Line[]) {
   return out;
 }
 
-// Seat centres in percent of the table. Wide: a tool column on the left, seats in a rectangle. Tall (phone, window): a tool row on top, seats in an oval.
+// Seat centres in percent of the table. The top row of the wide table is kept low enough that a crown or hat (sticking out about 40% above the photo) is not cut off by the frame.
+// Wide: a tool column on the left, seats in a rectangle. Tall (phone, window): a tool row on top, seats in an oval.
 type Seats = readonly (readonly [number, number])[];
 const layouts: Record<"wide" | "tall", { seats: Seats; cx: number; cy: number }> = {
-  wide: { seats: [[24, 17.8], [44, 12.6], [64.2, 12.6], [84.3, 17.8], [88, 39.8], [88, 61.3], [84.3, 83.2], [64.2, 88.5], [44, 88.5], [24, 83.2], [20.2, 61.3], [20.2, 39.8]], cx: 54.1, cy: 48.7 },
+  wide: { seats: [[24, 17.8], [44, 17.8], [64.2, 17.8], [84.3, 17.8], [88, 39.8], [88, 61.3], [84.3, 83.2], [64.2, 88.5], [44, 88.5], [24, 83.2], [20.2, 61.3], [20.2, 39.8]], cx: 54.1, cy: 48.7 },
   tall: { seats: [[17, 26], [39, 21], [61, 21], [83, 26], [87, 46], [87, 65.5], [83, 85], [61, 89.5], [39, 89.5], [17, 85], [13, 65.5], [13, 46]], cx: 50, cy: 55 },
 };
 const bots: Omit<Player, "avatar">[] = [
