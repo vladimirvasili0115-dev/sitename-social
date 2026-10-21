@@ -1822,6 +1822,18 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // already came over the live channel (same seed) is not flown a second time.
   const liveChannel = useRef<ReturnType<NonNullable<typeof supabase>["channel"]> | null>(null);
   const seenSeeds = useRef(new Set<number>());
+  // When a player comes (back) to the table or leaves it, they announce "fresh" and every screen wipes the gifts on their photo.
+  // A gift that was already flying to them when this happened never lands (it started before the wipe).
+  const freshAt = useRef<Record<string, number>>({});
+  const clearPlayer = (id: string) => {
+    freshAt.current[id] = performance.now();
+    const drop = <T,>(value: Record<string, T[]>) => (value[id]?.length ? { ...value, [id]: [] } : value);
+    setStickers(drop);
+    setSpots(drop);
+    setPiles(drop);
+    setScatters((list) => list.filter((item) => item.to !== id));
+    setFlying((list) => list.filter((item) => item.toId !== id));
+  };
   const liveOut = useRef<{ from: string; to: string; gift: string; seed: number }[]>([]);
   const liveTimer = useRef(0);
   const meId = useRef("");
@@ -1851,9 +1863,23 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         window.setTimeout(() => remoteGift.current(who(item.from), who(item.to), item.gift, items.length > 1 ? 1800 : 3600, item.seed), order * Math.min(120, 600 / items.length));
       });
     });
-    channel.subscribe();
+    channel.on("broadcast", { event: "fresh" }, (message: { payload?: { id?: string } }) => {
+      const id = message.payload?.id;
+      if (!id || id === meId.current) return;
+      clearPlayer(id);
+    });
+    const announce = () => { if (meId.current) void channel.send({ type: "broadcast", event: "fresh", payload: { id: meId.current } }).catch(() => {}); };
+    let announced = false; // only the real entry announces; a short connection drop that re-subscribes does not wipe the gifts
+    channel.subscribe((status: string) => { if (status === "SUBSCRIBED" && !announced) { announced = true; announce(); } });
     liveChannel.current = channel;
-    return () => { liveChannel.current = null; void client.removeChannel(channel); };
+    window.addEventListener("pagehide", announce);
+    return () => {
+      window.removeEventListener("pagehide", announce);
+      liveChannel.current = null;
+      // Leaving the table: tell the others to remove my gifts, then close the channel.
+      const sent = meId.current ? channel.send({ type: "broadcast", event: "fresh", payload: { id: meId.current } }).catch(() => {}) : Promise.resolve();
+      void Promise.race([sent, new Promise((done) => window.setTimeout(done, 1500))]).then(() => client.removeChannel(channel));
+    };
   }, [online, liveTableId]); // eslint-disable-line react-hooks/exhaustive-deps
   // Gifts go to the server in small batches (one request every 0.3 s), so a long stream is a handful of requests, not hundreds.
   const giftQueue = useRef<{ to: string; gift: string; price: number; seed: number }[]>([]);
@@ -1906,9 +1932,10 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       window.setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))))), 20);
     }
     const gen = tableGen.current;
+    const startedAt = performance.now();
     window.setTimeout(() => {
       setFlying((list) => list.filter((item) => item.key !== key));
-      if (gen !== tableGen.current || playersRef.current[index]?.id !== player.id) return;
+      if (gen !== tableGen.current || playersRef.current[index]?.id !== player.id || (freshAt.current[player.id] ?? 0) > startedAt) return;
       giftSound(gift, "land");
       if (pour) heartBurst(key, index);
       if (gift === "c:heart1000") heartBurst(key + 0.5, index, 1000);
@@ -1941,9 +1968,10 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       window.setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))))), 20);
     }
     const gen = tableGen.current;
+    const startedAt = performance.now();
     window.setTimeout(() => {
       setFlying((list) => list.filter((item) => item.key !== key));
-      if (gen !== tableGen.current || playersRef.current[toAt]?.id !== toId) return;
+      if (gen !== tableGen.current || playersRef.current[toAt]?.id !== toId || (freshAt.current[toId] ?? 0) > startedAt) return;
       giftSound(gift, "land");
       if (pour) heartBurst(key, toAt);
       if (gift === "c:heart1000") heartBurst(key + 0.5, toAt, 1000);
