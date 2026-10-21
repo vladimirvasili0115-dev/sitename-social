@@ -1,5 +1,6 @@
 "use client";
 import { VerifiedMark } from "@/components/ui/VerifiedMark";
+import { FeedVideo } from "@/components/reels/FeedVideo";
 import { useState } from "react";
 import Link from "next/link";
 import { Bookmark, EyeOff, Flag, MoreHorizontal, Pencil, Trash2, UserRound } from "lucide-react";
@@ -61,7 +62,7 @@ export function PostCard({ post }: { post: Post }) {
       </div>
     ) : post.text ? <p className="whitespace-pre-wrap break-words px-4 pb-3 text-[13px] leading-6 text-text/90">{post.text}</p> : null}
     {post.image ? <button type="button" onClick={() => setViewing(true)} aria-label={t("photos.view")} className="block w-full cursor-zoom-in"><span className="relative flex w-full justify-center overflow-hidden bg-surface-2"><img src={post.image} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full scale-110 object-cover opacity-40 blur-2xl" /><img src={post.image} alt="" className={cn("relative w-auto max-w-full object-contain", post.image.startsWith("/custom/") ? "max-h-[200px] py-3" : "max-h-[600px]")} /></span></button> : null}
-    {post.video ? <video src={post.video} controls playsInline preload="metadata" className="max-h-[600px] w-full bg-black" /> : null}
+    {post.video ? <FeedVideo id={post.id} src={post.video} /> : null}
     {viewing && post.image ? <ImageViewer src={post.image} onClose={() => setViewing(false)} /> : null}
     <div className="flex items-center justify-between px-4 py-3 text-xs text-muted">
       <div className="flex items-center gap-1.5">{post.reactions.length ? <span className="text-sm tracking-[-5px]">{post.reactions.join(" ")}</span> : null}<span className={post.reactions.length ? "ml-1" : ""}>{likes} {t("post.likesCount")}</span></div>

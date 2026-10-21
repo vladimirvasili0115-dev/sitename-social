@@ -15,6 +15,7 @@ import { banStore } from "@/lib/banSync";
 import { ReportHost } from "@/components/report/ReportHost";
 import { SiteMusicHost } from "@/components/music/siteMusic";
 import { CallHost } from "@/components/calls/CallHost";
+import { ReelsHost } from "@/components/reels/ReelsHost";
 import { startCallService, updateCallSelf } from "@/lib/callSync";
 import { useProfile } from "@/components/profile/useProfile";
 
@@ -67,5 +68,6 @@ export function AppShell({ children }: { children: ReactNode }) {
     <ReportHost />
     <SiteMusicHost />
     <CallHost />
+    <ReelsHost />
   </div>;
 }
