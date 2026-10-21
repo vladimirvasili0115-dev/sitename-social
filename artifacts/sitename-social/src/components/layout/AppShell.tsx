@@ -14,6 +14,9 @@ import { BannedScreen } from "./BannedScreen";
 import { banStore } from "@/lib/banSync";
 import { ReportHost } from "@/components/report/ReportHost";
 import { SiteMusicHost } from "@/components/music/siteMusic";
+import { CallHost } from "@/components/calls/CallHost";
+import { startCallService, updateCallSelf } from "@/lib/callSync";
+import { useProfile } from "@/components/profile/useProfile";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -24,6 +27,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   const publicRoute = isPublicRoute(pathname);
   const { settings } = useSettings();
   const ban = useSyncExternalStore(banStore.subscribe, banStore.get, banStore.getServer);
+  // Calls: listen for incoming calls on every page while signed in.
+  const profile = useProfile().user;
+  const accountId = user?.id;
+  useEffect(() => { if (!accountId) return; return startCallService({ id: accountId, name: profile.name, avatar: profile.avatar }); }, [accountId]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (accountId) updateCallSelf({ id: accountId, name: profile.name, avatar: profile.avatar }); }, [accountId, profile.name, profile.avatar]);
 
   useEffect(() => {
     document.documentElement.dataset.theme = settings.theme;
@@ -58,5 +66,6 @@ export function AppShell({ children }: { children: ReactNode }) {
     <FlashNotice />
     <ReportHost />
     <SiteMusicHost />
+    <CallHost />
   </div>;
 }

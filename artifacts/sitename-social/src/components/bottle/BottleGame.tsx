@@ -579,6 +579,25 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [video, setVideo] = useState<string | null>(null);
   // The site's own music player pauses while the game is open, so two songs do not play at once.
   useEffect(() => siteMusic.pause(), []);
+  // A call (private chat) silences the game: the table's song pauses and plays on when the call ends.
+  useEffect(() => {
+    let paused = false;
+    const onCall = (event: Event) => {
+      const active = Boolean((event as CustomEvent<{ active: boolean }>).detail?.active);
+      const node = audioRef.current;
+      if (active) {
+        paused = true;
+        if (node && !node.paused) node.pause();
+        ytCall("pauseVideo");
+      } else if (paused) {
+        paused = false;
+        if (node) void node.play().catch(() => {});
+        ytCall("playVideo");
+      }
+    };
+    window.addEventListener("nudepart-call", onCall);
+    return () => window.removeEventListener("nudepart-call", onCall);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   // iOS: iki dəfə tez toxunanda Safari ekranı yaxınlaşdırır. İkinci toxunuşda yaxınlaşmanı dayandırıb kliki özümüz veririk.
   useEffect(() => {
     let last = 0;

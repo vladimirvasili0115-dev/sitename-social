@@ -5,7 +5,7 @@ import { flashRefusal } from "./flash";
 import { fetchUsers } from "./usersCache";
 
 export type RemoteChat = Conversation & { person: Person };
-type Row = { id: string; sender_id: string; recipient_id: string; text: string; image_url: string | null; audio_url?: string | null; read_at: string | null; created_at: string };
+type Row = { id: string; sender_id: string; recipient_id: string; text: string; image_url: string | null; audio_url?: string | null; read_at: string | null; delivered_at?: string | null; created_at: string };
 
 const none: RemoteChat[] = [];
 let state = none;
@@ -41,10 +41,14 @@ export async function refreshMessages() {
     const mine = row.sender_id === userId;
     const other = mine ? row.recipient_id : row.sender_id;
     const chat = byUser.get(other) ?? { userId: other, unread: 0, messages: [] };
-    chat.messages.push({ id: row.id, from: mine ? "me" : "them", text: row.text, image: row.image_url ?? undefined, audio: row.audio_url ?? undefined, at: Date.parse(row.created_at), read: mine ? Boolean(row.read_at) : undefined });
+    chat.messages.push({ id: row.id, from: mine ? "me" : "them", text: row.text, image: row.image_url ?? undefined, audio: row.audio_url ?? undefined, at: Date.parse(row.created_at), read: mine ? Boolean(row.read_at) : undefined, delivered: mine ? Boolean(row.delivered_at || row.read_at) : undefined });
     if (!mine && !row.read_at) chat.unread += 1;
     byUser.set(other, chat);
   });
+  // Messages that reached me get the "delivered" mark (the sender sees two grey ticks, blue once read).
+  if ((data as Row[]).some((row) => row.recipient_id === userId && !row.delivered_at && !row.read_at && "delivered_at" in row)) {
+    void supabase.from("messages").update({ delivered_at: new Date().toISOString() }).eq("recipient_id", userId).is("delivered_at", null).then(() => undefined);
+  }
   const users = await fetchUsers([...byUser.keys()]);
   set([...byUser.values()].flatMap((chat) => {
     const person = users.get(chat.userId);

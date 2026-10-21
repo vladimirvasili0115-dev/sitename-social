@@ -56,6 +56,7 @@ export const siteMusic = {
     siteMusic.play(queue[(index + dir + queue.length) % queue.length], queue);
   },
   stop() { set({ now: null, playing: false, cur: 0, dur: 0 }); },
+  isPlaying: () => Boolean(state.now && state.playing),
 };
 
 // The hidden players. Mounted once in the page frame.

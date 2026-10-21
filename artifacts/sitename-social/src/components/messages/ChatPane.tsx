@@ -2,7 +2,11 @@
 import { VerifiedMark } from "@/components/ui/VerifiedMark";
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import Link from "next/link";
-import { ArrowLeft, Check, CheckCheck, ImagePlus, SendHorizontal, Smile, Trash2, X } from "lucide-react";
+import { ArrowLeft, Check, CheckCheck, ImagePlus, Phone, SendHorizontal, Smile, Trash2, Video, X } from "lucide-react";
+import { startCall } from "@/lib/callSync";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/components/auth/AuthProvider";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 import { userHref } from "@/lib/links";
 import { dayDiff, formatClock, formatDay } from "@/lib/datetime";
 import { resizeImage } from "@/lib/profile";
@@ -29,6 +33,32 @@ export function ChatPane({ chat, onBack, onSend, onDelete, className }: Props) {
   const { user } = chat.person;
   const count = chat.messages.length;
   const ready = Boolean(text.trim() || image);
+  // "typing…": both sides of this chat share a small live channel; a note goes out at most every 2 seconds while typing.
+  const myId = useAuth().user?.id;
+  const [typing, setTyping] = useState(false);
+  const typingChannel = useRef<RealtimeChannel | null>(null);
+  const lastTyped = useRef(0);
+  useEffect(() => {
+    if (!supabase || !myId || !user.id) return;
+    const client = supabase;
+    const channel = client.channel(`dm-${[myId, user.id].sort().join("-")}`, { config: { broadcast: { self: false } } });
+    let timer = 0;
+    channel.on("broadcast", { event: "typing" }, (message: { payload?: { from?: string } }) => {
+      if (message.payload?.from !== user.id) return;
+      setTyping(true);
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => setTyping(false), 3500);
+    }).subscribe();
+    typingChannel.current = channel;
+    return () => { window.clearTimeout(timer); typingChannel.current = null; setTyping(false); void client.removeChannel(channel); };
+  }, [myId, user.id]);
+  useEffect(() => { setTyping(false); }, [count]);
+  const noteTyping = () => {
+    const now = Date.now();
+    if (!typingChannel.current || now - lastTyped.current < 2000) return;
+    lastTyped.current = now;
+    void typingChannel.current.send({ type: "broadcast", event: "typing", payload: { from: myId } });
+  };
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
@@ -63,8 +93,14 @@ export function ChatPane({ chat, onBack, onSend, onDelete, className }: Props) {
         <Link href={userHref(user.id)} className="shrink-0"><Avatar user={user} /></Link>
         <div className="min-w-0">
           <Link href={userHref(user.id)} className="block truncate text-sm font-semibold hover:underline">{user.name}<VerifiedMark userId={user.id} size={14} /></Link>
-          <div className={cn("text-xs", user.online ? "text-accent" : "text-muted")}>{t(user.online ? "common.onlineNow" : "messages.offline")}</div>
+          <div className={cn("text-xs", typing || user.online ? "text-accent" : "text-muted")}>{typing ? t("messages.typing") : t(user.online ? "common.onlineNow" : "messages.offline")}</div>
         </div>
+        {supabase ? (
+          <div className="ml-auto flex shrink-0 items-center gap-1">
+            <IconButton aria-label={t("call.voice")} title={t("call.voice")} onClick={() => void startCall({ id: user.id, name: user.name, avatar: user.avatar }, false)}><Phone size={18} /></IconButton>
+            <IconButton aria-label={t("call.video")} title={t("call.video")} onClick={() => void startCall({ id: user.id, name: user.name, avatar: user.avatar }, true)}><Video size={19} /></IconButton>
+          </div>
+        ) : null}
       </div>
       <div ref={listRef} className="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 py-4 sm:px-5">
         {count ? chat.messages.map((message, index) => {
@@ -82,7 +118,7 @@ export function ChatPane({ chat, onBack, onSend, onDelete, className }: Props) {
                   {message.audio ? <audio src={message.audio} controls preload="metadata" onClick={(event) => event.stopPropagation()} className="mx-2 mt-2 h-10 w-[230px] max-w-full" /> : null}
                   <div className="px-3.5 py-2">
                     {message.text ? <p className="whitespace-pre-wrap break-words text-sm leading-5">{message.text}</p> : null}
-                    <p className={cn("mt-0.5 flex items-center justify-end gap-1 text-[10px]", mine ? "text-bg" : "text-muted")}>{formatClock(message.at)}{mine && message.read !== undefined ? (message.read ? <CheckCheck size={15} strokeWidth={2.4} aria-label={t("messages.read")} className="text-[#34B7F1]" /> : <Check size={15} strokeWidth={2.4} aria-label={t("messages.sent")} className="opacity-80" />) : null}</p>
+                    <p className={cn("mt-0.5 flex items-center justify-end gap-1 text-[10px]", mine ? "text-bg" : "text-muted")}>{formatClock(message.at)}{mine && message.read !== undefined ? (message.read ? <CheckCheck size={15} strokeWidth={2.4} aria-label={t("messages.read")} className="text-[#34B7F1]" /> : message.delivered ? <CheckCheck size={15} strokeWidth={2.4} aria-label={t("messages.delivered")} className="opacity-80" /> : <Check size={15} strokeWidth={2.4} aria-label={t("messages.sent")} className="opacity-80" />) : null}</p>
                   </div>
                 </div>
               </div>
@@ -100,7 +136,7 @@ export function ChatPane({ chat, onBack, onSend, onDelete, className }: Props) {
         {recording ? null : <><label className={tool} title={t("messages.attach")}><ImagePlus size={19} /><input type="file" accept="image/*" className="sr-only" aria-label={t("messages.attach")} onChange={handleImage} /></label>
         <EmojiPicker up label={t("messages.emoji")} trigger={<Smile size={19} />} triggerClassName={tool} onPick={(emoji) => setText((value) => value + emoji)} /></>}
         <VoiceRecorder onActiveChange={setRecording} onRecorded={(audio) => onSend({ text: "", audio })} />
-        {recording ? null : <><input value={text} onChange={(event) => setText(event.target.value)} aria-label={t("messages.placeholder")} placeholder={t("messages.placeholder")} autoComplete="off" className="ml-1 h-11 min-w-0 flex-1 rounded-xl border border-border bg-surface-2 px-4 text-sm text-text outline-none placeholder:text-muted focus:border-accent" />
+        {recording ? null : <><input value={text} onChange={(event) => { setText(event.target.value); if (event.target.value) noteTyping(); }} aria-label={t("messages.placeholder")} placeholder={t("messages.placeholder")} autoComplete="off" className="ml-1 h-11 min-w-0 flex-1 rounded-xl border border-border bg-surface-2 px-4 text-sm text-text outline-none placeholder:text-muted focus:border-accent" />
         <button type="submit" disabled={!ready} aria-label={t("messages.send")} className="ml-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent text-bg disabled:opacity-40"><SendHorizontal size={18} /></button></>}
       </form>
       {viewing ? <ImageViewer src={viewing} onClose={() => setViewing(null)} /> : null}
