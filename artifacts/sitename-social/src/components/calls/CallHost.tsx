@@ -50,6 +50,25 @@ export function CallHost() {
       </div>
     );
   }
+  // A voice call is a compact bar at the top of the screen; the site stays usable underneath (like WhatsApp Web).
+  if (!call.video) {
+    return (
+      <div role="dialog" aria-label={peer.name} className="fixed inset-x-3 top-3 z-[200] mx-auto flex max-w-md items-center gap-3 rounded-2xl bg-[#0B1220] px-3 py-2.5 text-white shadow-2xl ring-1 ring-white/10">
+        <Stream stream={call.remote} className="hidden" />
+        <img src={photo} alt="" className={cn("h-11 w-11 shrink-0 rounded-full object-cover", call.phase === "outgoing" && "animate-pulse")} />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold">{peer.name}</p>
+          <p className="text-xs text-white/70">{call.phase === "active" ? <><span className="mr-1 inline-block h-2 w-2 rounded-full bg-[#22C55E] align-middle" /><Clock from={call.startedAt} /></> : status}</p>
+        </div>
+        {call.phase !== "ended" ? (
+          <>
+            <button onClick={toggleMute} aria-label={t(call.muted ? "call.unmute" : "call.mute")} className={cn("flex h-10 w-10 items-center justify-center rounded-full", call.muted ? "bg-white text-[#0B1220]" : "bg-white/15")}>{call.muted ? <MicOff size={18} /> : <Mic size={18} />}</button>
+            <button onClick={hangUp} aria-label={t("call.hangup")} className="flex h-10 w-10 items-center justify-center rounded-full bg-[#E53935]"><PhoneOff size={18} /></button>
+          </>
+        ) : null}
+      </div>
+    );
+  }
   return (
     <div role="dialog" aria-label={peer.name} className="fixed inset-0 z-[200] flex flex-col bg-[#0B1220] text-white">
       {remoteVideo ? <Stream stream={call.remote} className="absolute inset-0 h-full w-full bg-black object-cover" /> : (

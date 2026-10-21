@@ -2,6 +2,8 @@
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { siteMusic } from "@/components/music/siteMusic";
 import { supabase } from "./supabase";
+import { callLogText } from "./callLog";
+import { sendRemoteMessage } from "./messagesSync";
 
 // Voice and video calls between two people (WebRTC). The two browsers talk directly; Supabase Realtime only
 // carries the short "signalling" notes (offer, answer, network candidates, hang-up) on each user's own channel.
@@ -46,6 +48,7 @@ let waitingIce: RTCIceCandidateInit[] = [];
 let ringTimer = 0;
 let endTimer = 0;
 let musicWasOn = false;
+let iAmCaller = false;
 
 // ---- music: everything that plays stops during a call and comes back afterwards ----
 function quietMusic(on: boolean) {
@@ -122,6 +125,7 @@ async function handle(signal: Signal) {
     callId = signal.callId;
     offer = signal.sdp;
     waitingIce = [];
+    iAmCaller = false;
     set({ ...idle, phase: "incoming", peer: signal.from, video: signal.video });
     ring("in");
     window.clearTimeout(ringTimer);
@@ -171,6 +175,7 @@ export async function startCall(peer: CallPeer, video: boolean) {
   window.clearTimeout(endTimer);
   callId = `${me.id.slice(0, 8)}-${Date.now().toString(36)}`;
   waitingIce = [];
+  iAmCaller = true;
   set({ ...idle, phase: "outgoing", peer, video });
   quietMusic(true);
   const local = await media(video);
@@ -230,6 +235,13 @@ function finish(reason: CallEnd, tell: boolean) {
   ring(null);
   if (tell && state.peer) send(state.peer.id, { type: "hangup", callId });
   const hadMusic = state.phase !== "incoming";
+  // The caller writes one line about the call into the private chat (both sides see it).
+  if (iAmCaller && state.peer && reason !== "nomic") {
+    const talked = state.startedAt ? (Date.now() - state.startedAt) / 1000 : 0;
+    const kind = talked ? "done" : reason === "declined" ? "declined" : reason === "busy" ? "busy" : reason === "missed" ? "missed" : reason === "failed" ? "failed" : "cancelled";
+    void sendRemoteMessage(state.peer.id, { text: callLogText(kind, talked) });
+  }
+  iAmCaller = false;
   pc?.close();
   pc = null;
   offer = null;

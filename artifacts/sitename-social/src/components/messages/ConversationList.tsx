@@ -1,5 +1,6 @@
 "use client";
 import { VerifiedMark } from "@/components/ui/VerifiedMark";
+import { parseCallLog } from "@/lib/callLog";
 import { useState } from "react";
 import { Search, SquarePen } from "lucide-react";
 import { dayDiff, formatClock, formatDay } from "@/lib/datetime";
@@ -39,7 +40,7 @@ export function ConversationList({ chats, activeId, onOpen, onNew, className }: 
                     {last ? <span className="shrink-0 text-[11px] text-muted">{dayDiff(last.at) === 0 ? formatClock(last.at) : formatDay(last.at).slice(0, 5)}</span> : null}
                   </span>
                   <span className="mt-0.5 flex items-center justify-between gap-2">
-                    <span className={cn("truncate text-xs", chat.unread ? "font-medium text-text" : "text-muted")}>{last ? `${last.from === "me" ? `${t("common.you")}: ` : ""}${last.text || (last.audio ? `🎤 ${t("messages.voice")}` : `📷 ${t("messages.photo")}`)}` : t("messages.noMessages")}</span>
+                    <span className={cn("truncate text-xs", chat.unread ? "font-medium text-text" : "text-muted")}>{last ? `${last.from === "me" ? `${t("common.you")}: ` : ""}${parseCallLog(last.text) ? `📞 ${t(`call.log_${parseCallLog(last.text)!.kind === "missed" && last.from === "me" ? "noanswer" : parseCallLog(last.text)!.kind}` as "call.log_done")}` : last.text || (last.audio ? `🎤 ${t("messages.voice")}` : `📷 ${t("messages.photo")}`)}` : t("messages.noMessages")}</span>
                     {chat.unread ? <span className="shrink-0 rounded-full bg-accent px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-bg">{chat.unread}</span> : null}
                   </span>
                 </span>

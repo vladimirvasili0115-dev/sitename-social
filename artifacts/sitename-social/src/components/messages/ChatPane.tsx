@@ -2,8 +2,9 @@
 import { VerifiedMark } from "@/components/ui/VerifiedMark";
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import Link from "next/link";
-import { ArrowLeft, Check, CheckCheck, ImagePlus, Phone, SendHorizontal, Smile, Trash2, Video, X } from "lucide-react";
+import { ArrowLeft, Check, CheckCheck, ImagePlus, Phone, PhoneIncoming, PhoneMissed, PhoneOutgoing, SendHorizontal, Smile, Trash2, X } from "lucide-react";
 import { startCall } from "@/lib/callSync";
+import { clock, parseCallLog } from "@/lib/callLog";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/components/auth/AuthProvider";
 import type { RealtimeChannel } from "@supabase/supabase-js";
@@ -98,7 +99,6 @@ export function ChatPane({ chat, onBack, onSend, onDelete, className }: Props) {
         {supabase ? (
           <div className="ml-auto flex shrink-0 items-center gap-1">
             <IconButton aria-label={t("call.voice")} title={t("call.voice")} onClick={() => void startCall({ id: user.id, name: user.name, avatar: user.avatar }, false)}><Phone size={18} /></IconButton>
-            <IconButton aria-label={t("call.video")} title={t("call.video")} onClick={() => void startCall({ id: user.id, name: user.name, avatar: user.avatar }, true)}><Video size={19} /></IconButton>
           </div>
         ) : null}
       </div>
@@ -108,6 +108,25 @@ export function ChatPane({ chat, onBack, onSend, onDelete, className }: Props) {
           const newDay = !previous || dayDiff(previous.at, message.at) !== 0;
           const mine = message.from === "me";
           const active = selected === message.id;
+          const call = parseCallLog(message.text);
+          if (call) {
+            const missed = call.kind !== "done";
+            const Icon = call.kind === "missed" && !mine ? PhoneMissed : mine ? PhoneOutgoing : PhoneIncoming;
+            return (
+              <div key={message.id}>
+                {newDay ? <div className="my-3 text-center text-[11px] text-muted">{dayLabel(message.at)}</div> : null}
+                <div className={cn("flex", mine ? "justify-end" : "justify-start")}>
+                  <div className={cn("flex items-center gap-2.5 rounded-2xl bg-surface-2 px-3.5 py-2.5 text-sm", mine ? "rounded-br-md" : "rounded-bl-md")}>
+                    <span className={cn("flex h-8 w-8 items-center justify-center rounded-full", missed ? "bg-[#E53935]/15 text-[#E53935]" : "bg-[#22C55E]/15 text-[#22C55E]")}><Icon size={16} /></span>
+                    <span className="flex flex-col">
+                      <span className="font-semibold text-text">{t(`call.log_${call.kind === "missed" && mine ? "noanswer" : call.kind}` as "call.log_done")}</span>
+                      <span className="text-[11px] text-muted">{formatClock(message.at)}{call.kind === "done" ? ` · ${clock(call.secs)}` : ""}</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            );
+          }
           return (
             <div key={message.id}>
               {newDay ? <div className="my-3 text-center text-[11px] text-muted">{dayLabel(message.at)}</div> : null}
