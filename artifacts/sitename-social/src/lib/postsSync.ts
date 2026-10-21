@@ -1,6 +1,6 @@
 import type { Post, PostComment } from "@/types";
 import { currentUser } from "@/data/users";
-import { isDataUrl, uploadImage } from "./media";
+import { isDataUrl, uploadBlob, uploadImage } from "./media";
 import { isRemoteId, toUser, type ProfileRow } from "./remoteProfiles";
 import { supabase } from "./supabase";
 import { flashRefusal } from "./flash";
@@ -9,7 +9,7 @@ import { agoLabel } from "./utils";
 type RemoteState = { posts: Post[]; groups: Record<string, Post[]>; comments: Record<string, PostComment[]>; liked: string[] };
 type One<T> = T | T[] | null;
 type CommentRow = { id: string; text: string; created_at: string; author: One<ProfileRow> };
-type PostRow = { id: string; text: string; kind?: string | null; group_id?: string | null; image_url: string | null; created_at: string; edited_at: string | null; author: One<ProfileRow>; post_likes: { user_id: string }[]; comments: CommentRow[] };
+type PostRow = { id: string; text: string; kind?: string | null; group_id?: string | null; image_url: string | null; video_url?: string | null; created_at: string; edited_at: string | null; author: One<ProfileRow>; post_likes: { user_id: string }[]; comments: CommentRow[] };
 type Loaded = { posts: Post[]; comments: Record<string, PostComment[]>; liked: string[] };
 
 const SELECT = "*,author:profiles!posts_author_id_fkey(id,name,handle,avatar_url),post_likes(user_id),comments(id,text,created_at,author:profiles!comments_author_id_fkey(id,name,handle,avatar_url))";
@@ -62,7 +62,7 @@ async function load(groupId: string | null, userId: string): Promise<Loaded | nu
       return [{ id: item.id, userId: own ? currentUser.id : writer.id, text: item.text, at: Date.parse(item.created_at), author: own ? undefined : toUser(writer) }];
     });
     return [{
-      id: row.id, author: toUser(author), time: agoLabel(Date.parse(row.created_at)), text: row.text, image: row.image_url ?? undefined, groupId: row.group_id ?? undefined,
+      id: row.id, author: toUser(author), time: agoLabel(Date.parse(row.created_at)), text: row.text, image: row.image_url ?? undefined, video: row.video_url ?? undefined, groupId: row.group_id ?? undefined,
       likes: row.post_likes.length - (mine ? 1 : 0), comments: 0, reactions: [], mine: author.id === userId, edited: Boolean(row.edited_at), kind: row.kind === "avatar" ? "avatar" : undefined,
     }];
   });
@@ -101,10 +101,17 @@ export function resetRemotePosts() {
 }
 
 export { isRemoteId };
-export async function createRemotePost(input: { text: string; image?: string; groupId?: string }) {
+export async function createRemotePost(input: { text: string; image?: string; groupId?: string; videoFile?: File }) {
   if (!supabase) return;
   const image_url = isDataUrl(input.image) ? await uploadImage(input.image, "posts") : null;
-  const { error } = await supabase.from("posts").insert({ text: input.text, image_url, ...(input.groupId ? { group_id: input.groupId } : {}) });
+  // A video post: the file goes to storage (videos folder), the post keeps its address.
+  let video_url: string | null = null;
+  if (input.videoFile) {
+    const extension = (input.videoFile.name.split(".").pop() ?? "").toLowerCase().replace(/[^a-z0-9]/g, "") || "mp4";
+    video_url = await uploadBlob(input.videoFile, "videos", extension);
+    if (!video_url) return;
+  }
+  const { error } = await supabase.from("posts").insert({ text: input.text, image_url, ...(video_url ? { video_url } : {}), ...(input.groupId ? { group_id: input.groupId } : {}) });
   if (error && !flashRefusal(error.message)) console.error("Post could not be saved:", error.message);
   await refreshPosts();
 }

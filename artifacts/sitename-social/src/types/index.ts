@@ -2,7 +2,7 @@ import type { LucideIcon } from "lucide-react";
 
 export type Locale = "az" | "tr" | "ru" | "en" | "ka";
 export type User = { id: string; name: string; handle: string; avatar: string; online?: boolean };
-export type Post = { id: string; author: User; time: string; text: string; image?: string; likes: number; comments: number; reactions: string[]; mine?: boolean; groupId?: string; edited?: boolean; kind?: "avatar" };
+export type Post = { id: string; author: User; time: string; text: string; image?: string; video?: string; likes: number; comments: number; reactions: string[]; mine?: boolean; groupId?: string; edited?: boolean; kind?: "avatar" };
 export type StorySlide = { id: string; image: string; video?: string; at: number };
 export type Story = { id: string; user: User; seen?: boolean; slides: StorySlide[]; mine?: boolean };
 export type NavItem = { key: string; href: string; icon: LucideIcon; disabled?: boolean };
@@ -52,6 +52,6 @@ export type SettingsState = {
 export type NoticeType = "message" | "request" | "like" | "comment" | "gift" | "guest";
 export type Notice = { id: string; type: NoticeType; userId: string; at: number; read: boolean; giftId?: GiftId; user?: User };
 export type PostComment = { id: string; userId: string; text: string; at: number; author?: User };
-export type StoredPost = { id: string; text: string; image?: string; at: number; groupId?: string };
+export type StoredPost = { id: string; text: string; image?: string; video?: string; at: number; groupId?: string };
 export type PostsState = { created: StoredPost[]; removed: string[]; liked: string[]; comments: Record<string, PostComment[]>; edits?: Record<string, string> };
 export type StoriesState = { mine: StorySlide[]; seen: string[] };

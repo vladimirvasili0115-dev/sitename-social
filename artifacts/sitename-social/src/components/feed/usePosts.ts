@@ -28,7 +28,7 @@ export function usePosts() {
   useEffect(() => ensurePostsLoaded(accountId), [accountId]);
 
   return useMemo(() => {
-    const toPost = (item: StoredPost): Post => ({ id: item.id, author: user, time: agoLabel(item.at), text: item.text, image: item.image, groupId: item.groupId, likes: 0, comments: 0, reactions: [], mine: true });
+    const toPost = (item: StoredPost): Post => ({ id: item.id, author: user, time: agoLabel(item.at), text: item.text, image: item.image, video: item.video, groupId: item.groupId, likes: 0, comments: 0, reactions: [], mine: true });
     const edits = state.edits ?? {};
     const visible = (list: Post[]) => list.filter((post) => !state.removed.includes(post.id) && !blocked.includes(post.author.id)).map((post) => (edits[post.id] === undefined ? post : { ...post, text: edits[post.id], edited: true }));
     const asMine = (post: Post) => (post.mine ? { ...post, author: user } : post);
@@ -49,9 +49,9 @@ export function usePosts() {
       isLiked: (id: string) => (isRemoteId(id) ? remote.liked.includes(id) : state.liked.includes(id)),
       commentsFor: (id: string): PostComment[] => (isRemoteId(id) ? remote.comments[id] ?? [] : [...(mockComments[id] ?? []), ...(state.comments[id] ?? [])]),
       toggleLike: (id: string) => (isRemoteId(id) ? void toggleRemoteLike(id) : patch((current) => ({ ...current, liked: toggle(current.liked, id) }))),
-      create: (input: Pick<StoredPost, "text" | "image" | "groupId">) => (online && (!input.groupId || isRemoteId(input.groupId))
-        ? void createRemotePost(input)
-        : patch((current) => ({ ...current, created: [{ ...input, id: `p-${Date.now()}`, at: Date.now() }, ...current.created] }))),
+      create: (input: Pick<StoredPost, "text" | "image" | "groupId"> & { videoFile?: File }) => (online && (!input.groupId || isRemoteId(input.groupId))
+        ? createRemotePost(input)
+        : Promise.resolve(patch((current) => ({ ...current, created: [{ text: input.text, image: input.image, groupId: input.groupId, video: input.videoFile ? URL.createObjectURL(input.videoFile) : undefined, id: `p-${Date.now()}`, at: Date.now() }, ...current.created] })))),
       edit: (id: string, text: string) => (isRemoteId(id) ? void editRemotePost(id, text) : patch((current) => ({ ...current, edits: { ...(current.edits ?? {}), [id]: text } }))),
       remove: (id: string, mine = false) => {
         if (isRemoteId(id) && mine) return void deleteRemotePost(id);
