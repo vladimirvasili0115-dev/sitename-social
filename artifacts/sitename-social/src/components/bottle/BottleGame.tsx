@@ -745,6 +745,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const backWait = useRef(false);
   // The first answer from the server only fills the chat; later ones also play the events (gifts, compliments, kicks).
   const primed = useRef(false);
+  const syncTable = useRef<number | null>(null);
+  const lastPullAt = useRef(0);
   // The game stops talking to the server after 10 minutes without a touch, or when the same game opens in another tab.
   const stopped = useRef(false);
   // One game per account: this page's key; when the server holds another page's key, this page stops.
@@ -794,7 +796,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       busy = true;
       try {
         let data = await bottleSync(lastChat.current);
+        let rejoined = false;
         if (!data) {
+          rejoined = true;
           // Lost the seat (weak internet, reload): first try the same table again, waiting in its queue when it is full.
           const back = Date.now() - backCancel.current < 8000 ? null : await bottleRejoin();
           if (!alive) return;
@@ -805,8 +809,13 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         }
         if (!alive || !data) return;
         if (session.current.claimed && data.session && data.session !== session.current.token) { stopGame.current("tab"); return; }
-        const first = !primed.current;
+        // Coming (back) into a room — first load, another table, a re-join or a long pause — starts clean:
+        // gifts sent before you came in do not fly in and do not sit on the photos.
+        const first = !primed.current || rejoined || syncTable.current !== data.table || Date.now() - lastPullAt.current > 15000;
         primed.current = true;
+        syncTable.current = data.table;
+        lastPullAt.current = Date.now();
+        if (first) { setSpots({}); setStickers({}); }
         const all = data.chat.filter((item) => item.id > lastChat.current && item.kind !== "wheel");
         const who = (id: string | null) => (id === data!.me ? "me" : id ?? "");
         // Gifts from other players fly across the table on every screen; my own gifts were already shown when I sent them.
