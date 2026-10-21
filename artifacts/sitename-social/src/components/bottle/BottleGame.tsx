@@ -113,7 +113,6 @@ function seeded(seed: number) {
   return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 }
 // Three places on the photo, as in the original: "ava" (anywhere, any angle), "drink" (bottom-right corner), "hat" (top-left corner).
-const spotLayer = (kind: Spot["kind"]) => (kind === "rand" ? "ava" : kind === "hatL" || kind === "hatR" ? "hat" : "drink");
 const RANDOM_SPOT = /^(air_kiss\d|gem\d|flower\d+|loveis\d|iloveyou|bear\d+|egg\d|strawberry\d|valentine\d)$/;
 // Caps and hats sit on the top-left or the top-right corner of the photo, tilted towards it.
 const HAT_SPOT = /^(\w*cap|cappy|cowboy|cylinderw?|indianhat|napoleon|musketeer|nurse|bezkoz|monomachhat|noteshat\w|partyhat\d|clown|carnivalmask\d|horseheadhat2|baseballa\w)$/;
@@ -363,21 +362,17 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [scatters, setScatters] = useState<{ key: number; to: string; names: string[]; dirs: [number, number][] }[]>([]);
   // A gift lands: worn ones go on the head, the rest take their spot; family gifts first burst over the whole photo.
   const landGift = (key: number, toId: string, plan: ReturnType<typeof planLanding>) => {
+    // Only the newest gift stays on the photo: it replaces whatever was there and stays until the next one arrives.
     if (plan.spot) {
       const spot: Spot = { ...plan.spot, key };
-      const layer = spotLayer(spot.kind);
-      // A new corner gift (drink or hat) takes the place of the old one; random-spot gifts pile up.
-      setSpots((value) => ({ ...value, [toId]: [...(value[toId] ?? []).filter((item) => layer === "ava" || spotLayer(item.kind) !== layer), spot].slice(-12) }));
-      if (layer === "ava") {
-        // As in the original: 8 seconds after a new one lands, the older random-spot gifts fade out over 2 seconds.
-        const older = (item: Spot) => spotLayer(item.kind) === "ava" && item.key < key;
-        window.setTimeout(() => setSpots((value) => ({ ...value, [toId]: (value[toId] ?? []).map((item) => (older(item) ? { ...item, fade: true } : item)) })), 8000);
-        window.setTimeout(() => setSpots((value) => ({ ...value, [toId]: (value[toId] ?? []).filter((item) => !older(item)) })), 10000);
-      }
+      setSpots((value) => ({ ...value, [toId]: [spot] }));
+      setStickers((value) => (value[toId]?.length ? { ...value, [toId]: [] } : value));
       // Pacifiers only stay on the photo for about twenty seconds.
       if (/^c:nipple/.test(plan.land)) window.setTimeout(() => setSpots((value) => ({ ...value, [toId]: (value[toId] ?? []).filter((item) => item.key !== key) })), 20000);
+    } else {
+      setStickers((value) => ({ ...value, [toId]: [plan.land] }));
+      setSpots((value) => (value[toId]?.length ? { ...value, [toId]: [] } : value));
     }
-    else setStickers((value) => ({ ...value, [toId]: [...(value[toId] ?? []), plan.land].slice(-6) }));
     if (plan.scatter) {
       const dirs = plan.scatter.map((_, n) => { const angle = (n / plan.scatter!.length) * Math.PI * 2 + Math.random() * 0.8; return [Math.cos(angle) * (30 + Math.random() * 14), Math.sin(angle) * (30 + Math.random() * 14)] as [number, number]; });
       setScatters((list) => [...list, { key, to: toId, names: plan.scatter!, dirs }]);
