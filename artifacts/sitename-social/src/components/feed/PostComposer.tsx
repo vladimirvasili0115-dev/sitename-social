@@ -21,6 +21,7 @@ export function PostComposer({ groupId }: { groupId?: string }) {
   // A video post: the file stays on the device until "Publish" (shown as a preview), then it is uploaded.
   const [video, setVideo] = useState<{ file: File; url: string } | null>(null);
   const [note, setNote] = useState<"" | "uploading" | "tooBig">("");
+  const [failed, setFailed] = useState("");
   const ready = Boolean(text.trim() || image || video) && note !== "uploading";
   function handleVideo(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -48,7 +49,11 @@ export function PostComposer({ groupId }: { groupId?: string }) {
     const sending = create({ text: text.trim(), image: image ?? undefined, groupId, videoFile: video?.file });
     setText("");
     setImage(null);
-    if (video) { setNote("uploading"); void Promise.resolve(sending).finally(() => { setNote(""); setVideo(null); }); }
+    if (video) {
+      setNote("uploading");
+      setFailed("");
+      void Promise.resolve(sending).then((result) => { setNote(""); if (typeof result === "string" && result) setFailed(result); else setVideo(null); }).catch(() => setNote(""));
+    }
   }
 
   return <Card className="mb-5 p-4">
@@ -68,6 +73,7 @@ export function PostComposer({ groupId }: { groupId?: string }) {
         {note === "uploading" ? null : <button onClick={() => setVideo(null)} aria-label={t("feed.removeImage")} title={t("feed.removeImage")} className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full border border-border bg-surface text-text"><X size={15} /></button>}
       </div>
     ) : null}
+    {failed ? <p role="alert" className="mt-2 break-words text-xs font-semibold text-danger">{t("story.failed")}: {failed}</p> : null}
     {note ? <p role="status" className={note === "uploading" ? "mt-2 text-xs text-muted" : "mt-2 text-xs font-semibold text-danger"}>{t(note === "uploading" ? "story.uploading" : "feed.videoTooBig")}</p> : null}
     <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
       <div className="flex gap-1">

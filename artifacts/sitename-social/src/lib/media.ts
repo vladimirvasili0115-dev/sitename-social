@@ -19,7 +19,10 @@ export async function uploadImage(dataUrl: string, folder: "posts" | "avatars" |
 }
 
 // Uploads any file (voice message, video, music) into the signed-in user's folder.
+// The reason of the last failed upload (shown to the user, e.g. "The object exceeded the maximum allowed size").
+export let lastUploadError = "";
 export async function uploadBlob(blob: Blob, folder: "voice" | "videos" | "music" | "stories", extension: string): Promise<string | null> {
+  lastUploadError = "";
   if (!supabase) return null;
   const userId = (await supabase.auth.getSession()).data.session?.user.id;
   if (!userId) return null;
@@ -27,6 +30,7 @@ export async function uploadBlob(blob: Blob, folder: "voice" | "videos" | "music
   const { error } = await supabase.storage.from(BUCKET).upload(path, blob, { contentType: blob.type || "application/octet-stream", cacheControl: "31536000" });
   if (error) {
     console.error("File could not be uploaded:", error.message);
+    lastUploadError = error.message;
     return null;
   }
   return supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;

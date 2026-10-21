@@ -1,6 +1,6 @@
 import type { Post, PostComment } from "@/types";
 import { currentUser } from "@/data/users";
-import { isDataUrl, uploadBlob, uploadImage } from "./media";
+import { isDataUrl, lastUploadError, uploadBlob, uploadImage } from "./media";
 import { isRemoteId, toUser, type ProfileRow } from "./remoteProfiles";
 import { supabase } from "./supabase";
 import { flashRefusal } from "./flash";
@@ -101,19 +101,21 @@ export function resetRemotePosts() {
 }
 
 export { isRemoteId };
-export async function createRemotePost(input: { text: string; image?: string; groupId?: string; videoFile?: File }) {
-  if (!supabase) return;
+// Returns "" when the post was saved, otherwise why not (shown under the composer).
+export async function createRemotePost(input: { text: string; image?: string; groupId?: string; videoFile?: File }): Promise<string> {
+  if (!supabase) return "offline";
   const image_url = isDataUrl(input.image) ? await uploadImage(input.image, "posts") : null;
   // A video post: the file goes to storage (videos folder), the post keeps its address.
   let video_url: string | null = null;
   if (input.videoFile) {
     const extension = (input.videoFile.name.split(".").pop() ?? "").toLowerCase().replace(/[^a-z0-9]/g, "") || "mp4";
     video_url = await uploadBlob(input.videoFile, "videos", extension);
-    if (!video_url) return;
+    if (!video_url) return `upload: ${lastUploadError || "?"}`;
   }
   const { error } = await supabase.from("posts").insert({ text: input.text, image_url, ...(video_url ? { video_url } : {}), ...(input.groupId ? { group_id: input.groupId } : {}) });
   if (error && !flashRefusal(error.message)) console.error("Post could not be saved:", error.message);
   await refreshPosts();
+  return error ? `save: ${error.message}` : "";
 }
 // A new profile photo also appears on the wall. Falls back to a plain photo post if the "kind" column is missing.
 export async function createAvatarPost(imageUrl: string) {
