@@ -451,6 +451,14 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   playersRef.current = players;
   useEffect(() => { setFlying((list) => { const next = list.filter((item) => !item.toId || players[item.to]?.id === item.toId); return next.length === list.length ? list : next; }); }, [players]);
   useEffect(() => { airborne.current = flying.length; }, [flying.length]);
+  // Somebody left the table: their gifts go with them (if they come back they start clean); everybody else keeps theirs.
+  const seatedIds = players.map((player) => player.id).join(",");
+  useEffect(() => {
+    const here = new Set(seatedIds.split(","));
+    const prune = <T,>(value: Record<string, T[]>) => (Object.keys(value).some((id) => !here.has(id)) ? Object.fromEntries(Object.entries(value).filter(([id]) => here.has(id))) : value);
+    setSpots(prune);
+    setStickers(prune);
+  }, [seatedIds]);
   // A drink landed: the receiver gets a "+1 heart" burst.
   const [bursts, setBursts] = useState<{ key: number; to: number; amount?: number }[]>([]);
   // Expensive gifts give the receiver a share of the price (the server keeps the numbers in bottle_config).
@@ -1057,10 +1065,13 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     setPicked(null);
     setCard(false);
     if (!same) setLines([]);
-    // Moving (also to the same table again) starts clean: nobody keeps the gifts from before, including you.
-    tableGen.current += 1;
-    primed.current = false;
-    setFlying([]); setSpots({}); setStickers({}); setScatters([]);
+    // Moving again to the same table: only your own gifts go; the others at the table keep theirs.
+    // (Another table starts clean anyway.)
+    if (same) {
+      const dropMe = <T,>(value: Record<string, T[]>) => (value.me?.length ? { ...value, me: [] } : value);
+      setSpots(dropMe);
+      setStickers(dropMe);
+    }
     setPanel(null);
     pullRef.current();
   }
