@@ -106,6 +106,8 @@ const wornGift = (gift: string) => (gift.startsWith("c:") ? customPlace(gift.sli
 // Where a landed gift sits on the photo (in % of the photo). Kisses, gems, flowers, gum, eggs, plush toys, bows, ears and caps
 // land on a random spot (a new one every time); the cactus sits exactly in the corner, the ice cream peeks out from behind,
 // balloons grow a little in the corner, the flag, the Eiffel tower and cupid are a bit bigger; the rest stand in the corner.
+// Which place of the photo a landed gift takes: a corner (left or right) or the middle.
+const spotPlace = (spot: Pick<Spot, "kind" | "x" | "s">) => (spot.kind === "hatL" ? "left" : spot.kind === "hatR" ? "right" : spot.kind === "corner" || spot.kind === "balloon" ? (spot.x + spot.s / 2 < 45 ? "left" : "right") : "middle");
 type Spot = { key: number; gift: string; x: number; y: number; s: number; r?: number; fade?: boolean; kind: "rand" | "corner" | "behind" | "balloon" | "hatL" | "hatR" };
 // Like the original (GiftAnimations.ts): a gift's random spot comes from a seed every screen knows, so all players see it in the same place.
 function seeded(seed: number) {
@@ -362,16 +364,18 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [scatters, setScatters] = useState<{ key: number; to: string; names: string[]; dirs: [number, number][] }[]>([]);
   // A gift lands: worn ones go on the head, the rest take their spot; family gifts first burst over the whole photo.
   const landGift = (key: number, toId: string, plan: ReturnType<typeof planLanding>) => {
-    // Only the newest gift stays on the photo: it replaces whatever was there and stays until the next one arrives.
+    // Three places on a photo: the left corner, the right corner and the middle. A new gift replaces only the gift
+    // in its own place; the others stay until a new gift comes to their place.
     if (plan.spot) {
       const spot: Spot = { ...plan.spot, key };
-      setSpots((value) => ({ ...value, [toId]: [spot] }));
-      setStickers((value) => (value[toId]?.length ? { ...value, [toId]: [] } : value));
+      const place = spotPlace(spot);
+      setSpots((value) => ({ ...value, [toId]: [...(value[toId] ?? []).filter((item) => spotPlace(item) !== place), spot] }));
+      if (place === "middle") setStickers((value) => (value[toId]?.length ? { ...value, [toId]: [] } : value));
       // Pacifiers only stay on the photo for about twenty seconds.
       if (/^c:nipple/.test(plan.land)) window.setTimeout(() => setSpots((value) => ({ ...value, [toId]: (value[toId] ?? []).filter((item) => item.key !== key) })), 20000);
     } else {
       setStickers((value) => ({ ...value, [toId]: [plan.land] }));
-      setSpots((value) => (value[toId]?.length ? { ...value, [toId]: [] } : value));
+      setSpots((value) => (value[toId]?.some((item) => spotPlace(item) === "middle") ? { ...value, [toId]: value[toId].filter((item) => spotPlace(item) !== "middle") } : value));
     }
     if (plan.scatter) {
       const dirs = plan.scatter.map((_, n) => { const angle = (n / plan.scatter!.length) * Math.PI * 2 + Math.random() * 0.8; return [Math.cos(angle) * (30 + Math.random() * 14), Math.sin(angle) * (30 + Math.random() * 14)] as [number, number]; });
@@ -811,11 +815,13 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         if (session.current.claimed && data.session && data.session !== session.current.token) { stopGame.current("tab"); return; }
         // Coming (back) into a room — first load, another table, a re-join or a long pause — starts clean:
         // gifts sent before you came in do not fly in and do not sit on the photos.
-        const first = !primed.current || rejoined || syncTable.current !== data.table || Date.now() - lastPullAt.current > 15000;
+        const entered = !primed.current || syncTable.current !== data.table;
+        const first = entered || rejoined || Date.now() - lastPullAt.current > 15000;
         primed.current = true;
         syncTable.current = data.table;
         lastPullAt.current = Date.now();
-        if (first) { setSpots({}); setStickers({}); }
+        // Only a real entry clears the photos; a short connection drop or pause keeps the gifts until a new one comes.
+        if (entered) { setSpots({}); setStickers({}); }
         const all = data.chat.filter((item) => item.id > lastChat.current && item.kind !== "wheel");
         const who = (id: string | null) => (id === data!.me ? "me" : id ?? "");
         // Gifts from other players fly across the table on every screen; my own gifts were already shown when I sent them.
