@@ -44,12 +44,19 @@ type Track = { id: string; title: string; duration?: string };
 const stored = (key: string): Track[] => { try { return JSON.parse(window.localStorage.getItem(key) ?? "[]") as Track[]; } catch { return []; } };
 const keep = (key: string, list: Track[]) => { try { window.localStorage.setItem(key, JSON.stringify(list.slice(0, 40))); } catch { /* storage is full or blocked */ } };
 type Line = { id: number; from: string; to?: string; tos?: string[]; gesture?: string; count?: number; bottle?: { a: number; b: number }; text?: string; gift?: string; song?: string; admire?: { amount?: number; by?: string; avatar?: string; target?: string; old?: string | null; self?: boolean; lost?: boolean }; event?: { kind: "kick" | "saved" | "kicked"; a: string; b: string }; boost?: { kind: "kiss_fire" | "refuse_slap"; a: string; b: string } };
+// A gift tile stands for a whole family (e.g. the five kinds of kiss lips): in the chat they all count as the same gift.
+let familyOf: Map<string, string> | null = null;
+function giftFamily(gift: string) {
+  if (!gift.startsWith("c:")) return gift;
+  if (!familyOf) { familyOf = new Map(); for (const [tile, list] of Object.entries(giftGroups)) for (const member of list) familyOf.set(member, tile); }
+  return `c:${familyOf.get(gift.slice(2)) ?? gift.slice(2)}`;
+}
 // The same gift sent again and again by the same person makes one chat line "🌹 ×5 » receivers" instead of many lines.
 function mergeLines(list: Line[], fresh: Line[]) {
   const out = [...list];
   for (const line of fresh) {
     const last = out[out.length - 1];
-    if (line.gift && line.to && last && last.gift === line.gift && last.from === line.from && !last.text) {
+    if (line.gift && line.to && last && last.gift && giftFamily(last.gift) === giftFamily(line.gift) && last.from === line.from && !last.text) {
       const tos = [...(last.tos ?? (last.to ? [last.to] : []))];
       if (!tos.includes(line.to)) tos.push(line.to);
       out[out.length - 1] = { ...last, tos, count: (last.count ?? 1) + 1 };
