@@ -10,6 +10,7 @@ import { useProfile } from "@/components/profile/useProfile";
 import { cn } from "@/lib/utils";
 import { useIsAdmin } from "@/components/report/useIsAdmin";
 import { customFile, useCustomArt } from "@/lib/customArt";
+import { giftBounds } from "./giftBounds";
 import { durationSeconds, rankSongs, songScore } from "@/lib/songSearch";
 import { HeartBurst } from "./PourTube";
 import { Fireworks, fireworksLevel } from "./Fireworks";
@@ -61,8 +62,8 @@ function mergeLines(list: Line[], fresh: Line[]) {
 // Wide: a tool column on the left, seats in a rectangle. Tall (phone, window): a tool row on top, seats in an oval.
 type Seats = readonly (readonly [number, number])[];
 const layouts: Record<"wide" | "tall", { seats: Seats; cx: number; cy: number }> = {
-  wide: { seats: [[24, 17.8], [44, 17.8], [64.2, 17.8], [84.3, 17.8], [88, 39.8], [88, 61.3], [84.3, 83.2], [64.2, 88.5], [44, 88.5], [24, 83.2], [20.2, 61.3], [20.2, 39.8]], cx: 54.1, cy: 48.7 },
-  tall: { seats: [[17, 26], [39, 21], [61, 21], [83, 26], [87, 46], [87, 65.5], [83, 85], [61, 89.5], [39, 89.5], [17, 85], [13, 65.5], [13, 46]], cx: 50, cy: 55 },
+  wide: { seats: [[24, 17.8], [44, 17.8], [64.2, 17.8], [84.3, 17.8], [85.5, 39.8], [85.5, 61.3], [84.3, 83.2], [64.2, 88.5], [44, 88.5], [24, 83.2], [20.2, 61.3], [20.2, 39.8]], cx: 54.1, cy: 48.7 },
+  tall: { seats: [[17, 26], [39, 21], [61, 21], [83, 26], [85, 46], [85, 65.5], [83, 85], [61, 89.5], [39, 89.5], [17, 85], [13, 65.5], [13, 46]], cx: 50, cy: 55 },
 };
 const bots: Omit<Player, "avatar">[] = [
   { id: "b1", name: "Leyla", age: 24, female: true }, { id: "b2", name: "Rəşad", age: 27, female: false }, { id: "b3", name: "Nigar", age: 22, female: true },
@@ -127,6 +128,32 @@ const HAT_SPOT = /^(\w*cap|cappy|cowboy|cylinderw?|indianhat|napoleon|musketeer|
 const SPIN_FLIGHT = /^c:(bear\d+|labubu1|wholeegg)$/;
 const SMALL_FLIGHT = new Set(["c:air_kiss1", "c:gem1"]);
 const SCATTER = new Set(["c:wholeegg"]);
+// The visible part of a gift picture as fractions of its square box on the photo (the picture is centred, or pinned bottom-right for corner gifts).
+function artBox(name: string, pinned: boolean) {
+  const e = giftBounds[name];
+  if (!e) return null;
+  const [l, t, r, b, w, h] = e;
+  const m = Math.max(w, h);
+  const ox = pinned ? m - w : (m - w) / 2, oy = pinned ? m - h : (m - h) / 2;
+  return { l: (ox + l) / m, t: (oy + t) / m, r: (ox + r) / m, b: (oy + b) / m };
+}
+// Hats sit on the top-left corner of the frame: the middle of the hat is on the corner itself, the hat turned -45°.
+const HAT_SIZE = 33;
+function hatSpot(name: string): { x: number; y: number; s: number } {
+  const box = artBox(name, false);
+  const dx = box ? ((box.l + box.r) / 2 - 0.5) * HAT_SIZE : 0, dy = box ? ((box.t + box.b) / 2 - 0.5) * HAT_SIZE : 0;
+  const rx = Math.SQRT1_2 * (dx + dy), ry = Math.SQRT1_2 * (dy - dx); // where that middle ends up after the -45° turn
+  return { x: -rx - HAT_SIZE / 2, y: -ry - HAT_SIZE / 2, s: HAT_SIZE };
+}
+// Drinks and other corner gifts stand on the bottom-right edge of the frame: the picture's left edge is 10% inside the frame, its bottom just below it.
+const CORNER_SIZE = 80;
+function cornerSpot(name: string): { x: number; y: number; s: number } | null {
+  const box = artBox(name, true);
+  if (!box) return null;
+  const width = CORNER_SIZE * (box.r - box.l);
+  const left = Math.max(45, Math.min(90, 140 - width)); // wide pictures slide back in so they do not hang too far out
+  return { x: left - CORNER_SIZE * box.l, y: 102 - CORNER_SIZE * box.b, s: CORNER_SIZE };
+}
 function planLanding(gift: string, seed: number = Math.random() * 1e9) {
   const land = landed(gift, seeded(seed + 7)); // which flower/colour lands is the same on every screen too
   const name = land.startsWith("c:") ? land.slice(2) : "";
@@ -134,7 +161,7 @@ function planLanding(gift: string, seed: number = Math.random() * 1e9) {
   const at = (s: number, x: number, y: number, kind: Spot["kind"]): Omit<Spot, "key"> => ({ gift: land, s, x, y, kind });
   let spot: Omit<Spot, "key"> | null;
   const rnd = seeded(seed);
-  if (name && (HAT_SPOT.test(name) || /^(ears|bow_)/.test(name))) spot = at(50, -30, -30, "hatL"); // the original "hat": a bigger hat sitting right on the top-left (90°) corner, turned -45°
+  if (name && (HAT_SPOT.test(name) || /^(ears|bow_)/.test(name))) { const hat = hatSpot(name); spot = at(hat.s, hat.x, hat.y, "hatL"); } // the original "hat": sitting right on the top-left (90°) corner, turned -45°
   else if (name && (RANDOM_SPOT.test(name) || onPhoto(name) || name === "fairy")) {
     // The original "ava": a random point anywhere on the photo and a random angle (0–360°), the same on every screen.
     const size = 40;
@@ -148,7 +175,8 @@ function planLanding(gift: string, seed: number = Math.random() * 1e9) {
     if (/^redbull/.test(name)) spot = at(60, 40, 40, "corner");
     else {
     const size = /^(catdress|donkey|flagaz|eiffeltower|amurchik)$/.test(name) ? 92 : /^baloon\d$/.test(name) ? 64 : 76;
-    spot = at(size, 100 - size * 0.72, 100 - size * 0.76, /^baloon\d$/.test(name) ? "balloon" : "corner");
+    const edge = size === 76 && name ? cornerSpot(name) : null;
+    spot = edge ? at(edge.s, edge.x, edge.y, "corner") : at(size, 100 - size * 0.72, 100 - size * 0.76, /^baloon\d$/.test(name) ? "balloon" : "corner");
     }
   }
   return { land, spot, scatter };
