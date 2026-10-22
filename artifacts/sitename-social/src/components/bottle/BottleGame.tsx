@@ -152,10 +152,10 @@ function hatSpot(name: string): { x: number; y: number; s: number } {
 const CORNER_SIZE = 80;
 const CORNER_ART_H = 38;
 const CORNER_ART_W = 32;
-function cornerSpot(name: string): { x: number; y: number; s: number } | null {
+function cornerSpot(name: string, maxH: number = CORNER_ART_H, maxW: number = CORNER_ART_W): { x: number; y: number; s: number } | null {
   const box = artBox(name, true);
   if (!box) return null;
-  const size = Math.max(28, Math.min(CORNER_SIZE, CORNER_ART_H / Math.max(0.05, box.b - box.t), CORNER_ART_W / Math.max(0.05, box.r - box.l)));
+  const size = Math.max(28, Math.min(CORNER_SIZE, maxH / Math.max(0.05, box.b - box.t), maxW / Math.max(0.05, box.r - box.l)));
   const width = size * (box.r - box.l);
   const left = Math.max(45, Math.min(90, 140 - width));
   return { x: left - size * box.l, y: 102 - size * box.b, s: size };
@@ -181,7 +181,8 @@ function planLanding(gift: string, seed: number = Math.random() * 1e9) {
     if (/^redbull/.test(name)) spot = at(60, 40, 40, "corner");
     else {
     const size = /^(catdress|donkey|flagaz|eiffeltower|amurchik)$/.test(name) ? 92 : /^baloon\d$/.test(name) ? 64 : 76;
-    const edge = size === 76 && name ? cornerSpot(name) : null;
+    // The cat in the dress used to fill almost the whole photo (89% high): now its visible art is at most 55% high.
+    const edge = size === 76 && name ? cornerSpot(name) : name === "catdress" ? cornerSpot(name, 55, 40) : null;
     spot = edge ? at(edge.s, edge.x, edge.y, "corner") : at(size, 100 - size * 0.72, 100 - size * 0.76, /^baloon\d$/.test(name) ? "balloon" : "corner");
     }
   }
