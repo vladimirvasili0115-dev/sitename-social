@@ -21,6 +21,10 @@ export const enigmaLabel = (locale: string) => wordsFor(locale).label;
 
 // The entrance effect itself: dark smoke, flashes of lightning, rings of light and a glitching title, about 3.6 seconds, over a seat photo.
 export function EnigmaEffect({ label }: { label: string }) {
+  // The effect lasts about 3.6 s; after 4 s it is taken away for good, so no dark layer can stay on a photo.
+  const [over, setOver] = useState(false);
+  useEffect(() => { const timer = window.setTimeout(() => setOver(true), 4000); return () => window.clearTimeout(timer); }, []);
+  if (over) return null;
   const smoke = [
     { x: "-30%", y: "-26%", d: "0s", c: "rgba(76,29,149,0.9)" }, { x: "32%", y: "-22%", d: "0.15s", c: "rgba(15,5,30,0.95)" },
     { x: "-36%", y: "20%", d: "0.3s", c: "rgba(15,5,30,0.95)" }, { x: "34%", y: "26%", d: "0.1s", c: "rgba(109,40,217,0.85)" },

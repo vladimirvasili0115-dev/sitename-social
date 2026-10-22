@@ -545,12 +545,21 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // Bonus market effect: when somebody sits down, everybody at the table asks the database whether they own the Enigma effect, and plays it over their photo.
   const [seatFx, setSeatFx] = useState<Record<string, number>>({});
   const fxCache = useRef<Record<string, { effect: string | null; at: number }>>({});
+  const fxPlayed = useRef<Record<string, number>>({});
   const playEntrance = (ids: string[]) => {
     if (!online) return;
     for (const id of ids) {
       if (!/^[0-9a-f-]{36}$/i.test(id)) continue;
       const known = fxCache.current[id];
-      const show = (effect: string | null) => { if (effect === "enigma") setSeatFx((value) => ({ ...value, [id]: Date.now() })); };
+      // The entrance effect plays once per arrival (not again within 30 s when the seats are shuffled) and is removed from the seat when it is over, so a dark layer never stays on a photo.
+      const show = (effect: string | null) => {
+        if (effect !== "enigma") return;
+        const now = Date.now();
+        if (now - (fxPlayed.current[id] ?? 0) < 30000) return;
+        fxPlayed.current[id] = now;
+        setSeatFx((value) => ({ ...value, [id]: now }));
+        window.setTimeout(() => setSeatFx((value) => { if (value[id] !== now) return value; const rest = { ...value }; delete rest[id]; return rest; }), 4200);
+      };
       if (known && Date.now() - known.at < 60000) { show(known.effect); continue; }
       void bottleEffectOf(id).then((effect) => { fxCache.current[id] = { effect: effect ?? null, at: Date.now() }; show(effect ?? null); });
     }
