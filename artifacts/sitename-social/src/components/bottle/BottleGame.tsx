@@ -34,7 +34,7 @@ import { supabase } from "@/lib/supabase";
 import { refreshFriends } from "@/lib/friendsSync";
 import { ensureMessagesLoaded, openRemoteChat, remoteChats, sendRemoteMessage } from "@/lib/messagesSync";
 import { uploadBlob } from "@/lib/media";
-import { bottleAnswer, bottleAchSync, bottleAchView, bottleGesture, bottleProgress, bottleGesturesOpen, bottleSkin, bottleBuyChances, bottleJoin, bottleMove, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleProfile, type BottleProfile, bottleDaily, bottleItems, bottleItemBuy, bottleBooster, bottleTutorial, bottleAdminIds, type BottleItems, bottleLeagueInfo, bottleLeagueClaim, type BottleLeague, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleKickPrice, bottleGift, bottleGiftMany, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, bottleClaim, type BottleState, type BottleSeat, bottleEffectOf, bottleYtGet, bottleYtPut } from "@/lib/bottleSync";
+import { bottleLogIp, bottleAnswer, bottleAchSync, bottleAchView, bottleGesture, bottleProgress, bottleGesturesOpen, bottleSkin, bottleBuyChances, bottleJoin, bottleMove, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleProfile, type BottleProfile, bottleDaily, bottleItems, bottleItemBuy, bottleBooster, bottleTutorial, bottleAdminIds, type BottleItems, bottleLeagueInfo, bottleLeagueClaim, type BottleLeague, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleKickPrice, bottleGift, bottleGiftMany, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, bottleClaim, type BottleState, type BottleSeat, bottleEffectOf, bottleYtGet, bottleYtPut } from "@/lib/bottleSync";
 import { ytHint, ytReason } from "./ytHints";
 import { BonusMarket, EnigmaEffect, enigmaLabel, marketLabel } from "./BonusMarket";
 
@@ -1065,6 +1065,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const chats = useSyncExternalStore(remoteChats.subscribe, remoteChats.get, remoteChats.getServer);
   const unreadRef = useRef<Map<string, number> | null>(null);
   const myId = net?.me;
+  // Once per page load (and the server skips the same IP written again within 6 hours) the server writes down the IP of this player for security.
+  const ipLogged = useRef(false);
+  useEffect(() => { if (online && myId && !ipLogged.current) { ipLogged.current = true; void bottleLogIp("join"); } }, [online, myId]);
   useEffect(() => { if (online) ensureMessagesLoaded(myId); }, [online, myId]);
   useEffect(() => {
     if (!online) return;

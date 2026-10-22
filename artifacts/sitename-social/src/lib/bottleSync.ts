@@ -18,6 +18,8 @@ async function call<T>(name: string, args?: Record<string, unknown>): Promise<T 
   return error ? null : (data as T);
 }
 export const bottleJoin = () => call<number>("bottle_join");
+// Security log: the server writes down the IP it sees for this request (never an IP sent by the browser). Only admins can read the log.
+export const bottleLogIp = (event: "visit" | "login" | "register" | "join" = "visit") => call<null>("bottle_log_ip", { p_event: event });
 export const bottleNameColors = () => call<Record<string, string>>("bottle_name_colors");
 export const bottleLeave = () => call<null>("bottle_leave");
 export const bottleClaim = (token: string) => call<boolean>("bottle_claim", { p_token: token });
