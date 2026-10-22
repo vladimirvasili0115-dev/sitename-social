@@ -2,6 +2,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { AuthUser, Gender } from "@/types";
 import { clearSession, readSession, writeSession } from "@/lib/auth";
+import { looksLikePhone, normalizePhone, phoneEmail } from "@/lib/phoneAuth";
 import { writeProfileEdits } from "@/lib/profile";
 import { loadProfile } from "@/lib/profileSync";
 import { supabase } from "@/lib/supabase";
@@ -21,7 +22,7 @@ import { checkBan, clearBan } from "@/lib/banSync";
 import type { TranslationKey } from "@/i18n/LanguageProvider";
 
 export type AuthResult = TranslationKey | null;
-export type RegisterInput = { name: string; email: string; password: string; gender: Gender; birthday: string; city: string };
+export type RegisterInput = { name: string; email: string; phone?: string; password: string; gender: Gender; birthday: string; city: string };
 type AuthContextValue = {
   user: AuthUser | null;
   ready: boolean;
@@ -100,7 +101,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(account);
       return null;
     }
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    // A phone number is accepted in place of the e-mail: it is turned into the address the account was made under.
+    let identity = email.trim();
+    if (looksLikePhone(identity)) {
+      const digits = normalizePhone(identity);
+      if (!digits) return "auth.errCredentials";
+      identity = await phoneEmail(digits);
+    }
+    const { error } = await supabase.auth.signInWithPassword({ email: identity, password });
     if (error) return toKey(error.message);
     window.sessionStorage.setItem(TAB_ALIVE, "1");
     if (remember) window.localStorage.removeItem(EPHEMERAL);
@@ -116,6 +124,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return null;
     }
     const { name, gender, birthday, city, email } = input;
+    if (input.phone) {
+      // Phone sign-up: the account is made by a small function on Supabase (no SMS code yet), then the person is logged in.
+      const digits = normalizePhone(input.phone);
+      if (!digits) return "auth.errGeneric";
+      const made = await supabase.functions.invoke("register-phone", { body: { phone: digits, password, name, gender, birthday, city } });
+      if (made.error) return "auth.errGeneric";
+      if (made.data?.error === "exists") return "auth.errExists";
+      if (!made.data?.ok) return "auth.errGeneric";
+      const entered = await supabase.auth.signInWithPassword({ email: await phoneEmail(digits), password });
+      if (entered.error) return toKey(entered.error.message);
+      window.sessionStorage.setItem(TAB_ALIVE, "1");
+      window.localStorage.removeItem(EPHEMERAL);
+      return null;
+    }
     const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { name, gender, birthday, city } } });
     if (error) return toKey(error.message);
     return data.session ? null : "auth.confirmEmail";

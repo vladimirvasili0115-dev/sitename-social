@@ -3,6 +3,7 @@ import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Lock, Mail } from "lucide-react";
+import { looksLikePhone, normalizePhone, phoneWords } from "@/lib/phoneAuth";
 import { isEmail, MIN_PASSWORD_LENGTH } from "@/lib/auth";
 import { useTranslation } from "@/i18n/useTranslation";
 import type { TranslationKey } from "@/i18n/LanguageProvider";
@@ -14,7 +15,7 @@ import { useAuth, type AuthResult } from "./AuthProvider";
 type Errors = Partial<Record<"email" | "password", TranslationKey>>;
 
 export function LoginForm() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const { login } = useAuth();
   const [failure, setFailure] = useState<AuthResult>(null);
   const [pending, setPending] = useState(false);
@@ -27,7 +28,7 @@ export function LoginForm() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const next: Errors = {};
-    if (!isEmail(email)) next.email = "auth.errEmail";
+    if (!isEmail(email) && !(looksLikePhone(email) && normalizePhone(email))) next.email = "auth.errEmail";
     if (password.length < MIN_PASSWORD_LENGTH) next.password = "auth.errPassword";
     setErrors(next);
     if (Object.keys(next).length) return;
@@ -40,7 +41,7 @@ export function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit} noValidate className="space-y-4">
-      <AuthField label={t("auth.email")} icon={Mail} type="email" name="email" autoComplete="username email" value={email} onChange={(event) => setEmail(event.target.value)} error={errors.email && t(errors.email)} />
+      <AuthField label={phoneWords(locale).loginLabel} icon={Mail} type="text" name="email" autoComplete="username" inputMode="email" value={email} onChange={(event) => setEmail(event.target.value)} error={errors.email && t(errors.email)} />
       <AuthField label={t("auth.password")} icon={Lock} type="password" name="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} error={errors.password && t(errors.password)} />
       <div className="flex items-center justify-between gap-3 text-xs">
         <label className="flex cursor-pointer items-center gap-2 text-muted">

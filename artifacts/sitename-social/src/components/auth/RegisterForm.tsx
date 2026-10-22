@@ -2,10 +2,11 @@
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Cake, Lock, Mail, MapPin, UserRound } from "lucide-react";
+import { ArrowRight, Cake, Lock, Mail, MapPin, Phone, UserRound } from "lucide-react";
 import type { Gender } from "@/types";
 import { MIN_AGE } from "@/config/site";
 import { isEmail, MIN_PASSWORD_LENGTH } from "@/lib/auth";
+import { normalizePhone, phoneWords } from "@/lib/phoneAuth";
 import { useTranslation } from "@/i18n/useTranslation";
 import type { TranslationKey } from "@/i18n/LanguageProvider";
 import { Button } from "@/components/ui/Button";
@@ -52,7 +53,10 @@ export function RegisterForm() {
     const valid = next.d && next.m && next.y && new Date(Number(next.y), Number(next.m) - 1, Number(next.d)).getDate() === Number(next.d);
     setForm((current) => ({ ...current, birthday: valid ? `${next.y}-${next.m.padStart(2, "0")}-${next.d.padStart(2, "0")}` : "" }));
   }
-  const [form, setForm] = useState({ name: "", email: "", birthday: "", city: "", password: "", confirm: "" });
+  const [form, setForm] = useState({ name: "", email: "", phone: "", birthday: "", city: "", password: "", confirm: "" });
+  const [mode, setMode] = useState<"email" | "phone">("email");
+  const [phoneError, setPhoneError] = useState("");
+  const words = phoneWords(locale);
   const [gender, setGender] = useState<Gender | null>(null);
   const [terms, setTerms] = useState(false);
   const [errors, setErrors] = useState<Errors>({});
@@ -63,7 +67,9 @@ export function RegisterForm() {
     const next: Errors = {};
     const age = ageOf(form.birthday);
     if (form.name.trim().length < 2) next.name = "auth.errRequired";
-    if (!isEmail(form.email)) next.email = "auth.errEmail";
+    const digits = mode === "phone" ? normalizePhone(form.phone) : null;
+    if (mode === "email" && !isEmail(form.email)) next.email = "auth.errEmail";
+    setPhoneError(mode === "phone" && !digits ? words.phoneError : "");
     if (!gender) next.gender = "auth.errGender";
     if (age < 0 || age > 120) next.birthday = "auth.errRequired";
     else if (age < MIN_AGE) next.birthday = "auth.errAge";
@@ -72,9 +78,9 @@ export function RegisterForm() {
     if (form.confirm !== form.password) next.confirm = "auth.errMatch";
     if (!terms) next.terms = "auth.errTerms";
     setErrors(next);
-    if (Object.keys(next).length || !gender) return;
+    if (Object.keys(next).length || !gender || (mode === "phone" && !digits)) return;
     setPending(true);
-    const result = await register({ name: form.name.trim(), email: form.email.trim(), password: form.password, gender, birthday: form.birthday, city: form.city.trim() });
+    const result = await register({ name: form.name.trim(), email: mode === "email" ? form.email.trim() : "", phone: mode === "phone" && digits ? digits : undefined, password: form.password, gender, birthday: form.birthday, city: form.city.trim() });
     setPending(false);
     setFailure(result);
     if (!result) router.replace("/feed");
@@ -83,7 +89,17 @@ export function RegisterForm() {
   return (
     <form onSubmit={handleSubmit} noValidate className="space-y-4">
       <AuthField label={t("auth.name")} icon={UserRound} autoComplete="name" value={form.name} onChange={update("name")} error={errors.name && t(errors.name)} />
-      <AuthField label={t("auth.email")} icon={Mail} type="email" autoComplete="email" value={form.email} onChange={update("email")} error={errors.email && t(errors.email)} />
+      <div role="group" aria-label={words.howTo} className="grid grid-cols-2 gap-1 rounded-xl border border-border bg-surface-2 p-1">
+        {(["email", "phone"] as const).map((item) => <button key={item} type="button" onClick={() => setMode(item)} aria-pressed={mode === item} className={cn("h-9 rounded-lg text-sm font-semibold", mode === item ? "bg-accent text-white" : "text-muted hover:text-text")}>{item === "email" ? words.email : words.phone}</button>)}
+      </div>
+      {mode === "email" ? (
+        <AuthField label={t("auth.email")} icon={Mail} type="email" autoComplete="email" value={form.email} onChange={update("email")} error={errors.email && t(errors.email)} />
+      ) : (
+        <div>
+          <AuthField label={words.phoneLabel} icon={Phone} type="tel" autoComplete="tel" inputMode="tel" placeholder="050 123 45 67" value={form.phone} onChange={update("phone")} error={phoneError || undefined} />
+          <p className="mt-1.5 text-xs leading-5 text-muted">{words.phoneHint}</p>
+        </div>
+      )}
       <fieldset>
         <legend className="mb-1.5 text-xs font-medium text-muted">{t("auth.gender")}</legend>
         <div className="grid grid-cols-2 gap-2">
