@@ -150,6 +150,7 @@ function hatSpot(name: string): { x: number; y: number; s: number } {
 // Drinks and other corner gifts stand on the bottom-right edge of the frame: the picture's left edge is 10% inside the frame, its bottom just below it.
 // The visible art is at most CORNER_ART_H% of the photo high and CORNER_ART_W% wide (not the empty picture box), so big pictures stay small on the corner.
 const CORNER_SIZE = 80;
+const CAT_SHIFT_LEFT = 6; // the cat in the dress sits about 3 mm (6% of the photo width) further left
 const CORNER_ART_H = 38;
 const CORNER_ART_W = 32;
 function cornerSpot(name: string, maxH: number = CORNER_ART_H, maxW: number = CORNER_ART_W): { x: number; y: number; s: number } | null {
@@ -182,7 +183,7 @@ function planLanding(gift: string, seed: number = Math.random() * 1e9) {
     else {
     const size = /^(catdress|donkey|flagaz|eiffeltower|amurchik)$/.test(name) ? 92 : /^baloon\d$/.test(name) ? 64 : 76;
     // The cat in the dress used to fill almost the whole photo (89% high): now its visible art is at most 55% high.
-    const edge = size === 76 && name ? cornerSpot(name) : name === "catdress" ? cornerSpot(name, 55, 40) : null;
+    const edge = size === 76 && name ? cornerSpot(name) : name === "catdress" ? (() => { const spot = cornerSpot(name, 55, 40); return spot ? { ...spot, x: spot.x - CAT_SHIFT_LEFT } : null; })() : null;
     spot = edge ? at(edge.s, edge.x, edge.y, "corner") : at(size, 100 - size * 0.72, 100 - size * 0.76, /^baloon\d$/.test(name) ? "balloon" : "corner");
     }
   }
