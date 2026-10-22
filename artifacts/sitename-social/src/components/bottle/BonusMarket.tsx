@@ -30,15 +30,18 @@ export function EnigmaEffect({ label }: { label: string }) {
     { x: "-36%", y: "20%", d: "0.3s", c: "rgba(15,5,30,0.95)" }, { x: "34%", y: "26%", d: "0.1s", c: "rgba(109,40,217,0.85)" },
     { x: "0%", y: "-38%", d: "0.4s", c: "rgba(30,8,60,0.95)" }, { x: "0%", y: "34%", d: "0.25s", c: "rgba(88,28,135,0.9)" },
   ];
+  // The dark layer, the flash and the rings sit exactly on the photo (inset-0); only the smoke has a bigger box around it.
   return (
-    <span aria-hidden="true" className="pointer-events-none absolute -inset-[45%] z-[8]">
-      <span className="absolute inset-[23.7%] rounded-[14%] bg-[radial-gradient(circle,rgba(30,0,60,0.35)_0%,rgba(6,0,16,0.92)_100%)] animate-[enigma-dark_3.6s_ease-in-out_forwards] motion-reduce:hidden" />
-      {smoke.map((blob, i) => (
-        <span key={i} className="absolute left-1/2 top-1/2 h-[46%] w-[46%] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-0 blur-[1.4cqmin] animate-[enigma-smoke_3.2s_ease-out_forwards] motion-reduce:hidden" style={{ background: blob.c, animationDelay: blob.d, "--sx": blob.x, "--sy": blob.y } as CSSProperties} />
-      ))}
-      <span className="absolute inset-[23.7%] rounded-[14%] bg-[#e9d5ff] mix-blend-screen opacity-0 animate-[enigma-flash_3.6s_linear_forwards] motion-reduce:hidden" />
-      <span className="absolute inset-[23.7%] rounded-[14%] border-[0.5cqmin] border-[#c084fc] opacity-0 shadow-[0_0_2.4cqmin_#a855f7] animate-[enigma-ring_1.5s_ease-out_0.2s_forwards] motion-reduce:hidden" />
-      <span className="absolute inset-[23.7%] rounded-[14%] border-[0.4cqmin] border-[#f0abfc] opacity-0 shadow-[0_0_2cqmin_#e879f9] animate-[enigma-ring_1.5s_ease-out_0.75s_forwards] motion-reduce:hidden" />
+    <span aria-hidden="true" className="pointer-events-none absolute inset-0 z-[8]">
+      <span className="absolute inset-0 rounded-[14%] bg-[radial-gradient(circle,rgba(30,0,60,0.35)_0%,rgba(6,0,16,0.92)_100%)] animate-[enigma-dark_3.6s_ease-in-out_forwards] motion-reduce:hidden" />
+      <span className="absolute -inset-[45%]">
+        {smoke.map((blob, i) => (
+          <span key={i} className="absolute left-1/2 top-1/2 h-[46%] w-[46%] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-0 blur-[1.4cqmin] animate-[enigma-smoke_3.2s_ease-out_forwards] motion-reduce:hidden" style={{ background: blob.c, animationDelay: blob.d, "--sx": blob.x, "--sy": blob.y } as CSSProperties} />
+        ))}
+      </span>
+      <span className="absolute inset-0 rounded-[14%] bg-[#e9d5ff] mix-blend-screen opacity-0 animate-[enigma-flash_3.6s_linear_forwards] motion-reduce:hidden" />
+      <span className="absolute inset-0 rounded-[14%] border-[0.5cqmin] border-[#c084fc] opacity-0 shadow-[0_0_2.4cqmin_#a855f7] animate-[enigma-ring_1.5s_ease-out_0.2s_forwards] motion-reduce:hidden" />
+      <span className="absolute inset-0 rounded-[14%] border-[0.4cqmin] border-[#f0abfc] opacity-0 shadow-[0_0_2cqmin_#e879f9] animate-[enigma-ring_1.5s_ease-out_0.75s_forwards] motion-reduce:hidden" />
       <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap text-[2.5cqmin] font-black uppercase tracking-[0.18em] text-white opacity-0 [text-shadow:-0.28cqmin_0_#ff2bd6,0.28cqmin_0_#22d3ee,0_0_1.6cqmin_#a855f7] animate-[enigma-title_3.6s_ease-out_forwards] motion-reduce:opacity-100">{label}</span>
     </span>
   );
