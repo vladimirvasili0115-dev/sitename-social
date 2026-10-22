@@ -169,12 +169,16 @@ const CORNER_SHIFT_LEFT = 7; // gifts on the bottom-right corner (hearts, drinks
 const CAT_SHIFT_LEFT = 12; // the cat in the dress sits about 6 mm (12% of the photo width) further left (3 mm, then 3 mm more)
 const CORNER_ART_H = 38;
 const CORNER_ART_W = 32;
-function cornerSpot(name: string, maxH: number = CORNER_ART_H, maxW: number = CORNER_ART_W): { x: number; y: number; s: number } | null {
+// The cherry cocktail and the Makarov pistol are shown 1.2 times bigger; they grow towards the photo (the right edge and the bottom stay where they were).
+const BIGGER_CORNER = /^(cherry|makarov)$/;
+const BIGGER_BY = 1.2;
+function cornerSpot(name: string, maxH: number = CORNER_ART_H, maxW: number = CORNER_ART_W, grow: number = 1): { x: number; y: number; s: number } | null {
   const box = artBox(name, true);
   if (!box) return null;
-  const size = Math.max(28, Math.min(CORNER_SIZE, maxH / Math.max(0.05, box.b - box.t), maxW / Math.max(0.05, box.r - box.l)));
-  const width = size * (box.r - box.l);
-  const left = Math.max(45, Math.min(90, 140 - width));
+  const base = Math.max(28, Math.min(CORNER_SIZE, maxH / Math.max(0.05, box.b - box.t), maxW / Math.max(0.05, box.r - box.l)));
+  const baseWidth = base * (box.r - box.l);
+  const size = base * grow, width = size * (box.r - box.l);
+  const left = Math.max(45, Math.min(90, 140 - baseWidth)) - (width - baseWidth);
   return { x: left - size * box.l, y: 102 - size * box.b, s: size };
 }
 function planLanding(gift: string, seed: number = Math.random() * 1e9) {
@@ -199,7 +203,7 @@ function planLanding(gift: string, seed: number = Math.random() * 1e9) {
     else {
     const size = /^(catdress|donkey|flagaz|eiffeltower|amurchik)$/.test(name) ? 92 : /^baloon\d$/.test(name) ? 64 : 76;
     // The cat in the dress used to fill almost the whole photo (89% high): now its visible art is at most 55% high.
-    const edge = size === 76 && name ? cornerSpot(name) : name === "catdress" ? (() => { const spot = cornerSpot(name, 55, 40); return spot ? { ...spot, x: spot.x - CAT_SHIFT_LEFT } : null; })() : null;
+    const edge = size === 76 && name ? cornerSpot(name, undefined, undefined, BIGGER_CORNER.test(name) ? BIGGER_BY : 1) : name === "catdress" ? (() => { const spot = cornerSpot(name, 55, 40); return spot ? { ...spot, x: spot.x - CAT_SHIFT_LEFT } : null; })() : null;
     spot = edge ? at(edge.s, edge.x, edge.y, "corner") : at(size, 100 - size * 0.72, 100 - size * 0.76, /^baloon\d$/.test(name) ? "balloon" : "corner");
     if (name !== "catdress") spot = { ...spot, x: spot.x - CORNER_SHIFT_LEFT }; // flightTo reads this same spot, so the flight ends exactly where the gift stays
     }
