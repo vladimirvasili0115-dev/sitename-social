@@ -43,7 +43,7 @@ type Phase = "waiting" | "spinning" | "choice" | "kissed" | "declined";
 type Track = { id: string; title: string; duration?: string };
 const stored = (key: string): Track[] => { try { return JSON.parse(window.localStorage.getItem(key) ?? "[]") as Track[]; } catch { return []; } };
 const keep = (key: string, list: Track[]) => { try { window.localStorage.setItem(key, JSON.stringify(list.slice(0, 40))); } catch { /* storage is full or blocked */ } };
-type Line = { id: number; from: string; to?: string; tos?: string[]; gesture?: string; count?: number; bottle?: { a: number; b: number }; text?: string; gift?: string; song?: string; admire?: { amount?: number; by?: string; avatar?: string; target?: string; old?: string | null; self?: boolean; lost?: boolean }; event?: { kind: "kick" | "saved" | "kicked"; a: string; b: string }; boost?: { kind: "kiss_fire" | "refuse_slap"; a: string; b: string } };
+type Line = { id: number; from: string; to?: string; tos?: string[]; per?: Record<string, number>; gesture?: string; count?: number; bottle?: { a: number; b: number }; text?: string; gift?: string; song?: string; admire?: { amount?: number; by?: string; avatar?: string; target?: string; old?: string | null; self?: boolean; lost?: boolean }; event?: { kind: "kick" | "saved" | "kicked"; a: string; b: string }; boost?: { kind: "kiss_fire" | "refuse_slap"; a: string; b: string } };
 // A gift tile stands for a whole family (e.g. the five kinds of kiss lips): in the chat they all count as the same gift.
 let familyOf: Map<string, string> | null = null;
 function giftFamily(gift: string) {
@@ -59,7 +59,10 @@ function mergeLines(list: Line[], fresh: Line[]) {
     if (line.gift && line.to && last && last.gift && giftFamily(last.gift) === giftFamily(line.gift) && last.from === line.from && !last.text) {
       const tos = [...(last.tos ?? (last.to ? [last.to] : []))];
       if (!tos.includes(line.to)) tos.push(line.to);
-      out[out.length - 1] = { ...last, tos, count: (last.count ?? 1) + 1 };
+      // How many of the gifts went to each receiver (the first line is one gift to its receiver).
+      const per = { ...(last.per ?? (last.to ? { [last.to]: last.count ?? 1 } : {})) };
+      per[line.to] = (per[line.to] ?? 0) + 1;
+      out[out.length - 1] = { ...last, tos, per, count: (last.count ?? 1) + 1 };
       continue;
     }
     out.push(line);
@@ -3492,7 +3495,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 <Gift id={line.gift} className="ml-2.5 h-7 w-7 shrink-0" />
                 {(line.count ?? 1) > 1 ? <span className="ml-1 mt-0.5 flex h-[18px] items-center text-[16px] font-bold text-[#72BE61]">{ic("chat_icon_count", 9, 8, "mr-0.5")}{line.count}</span> : null}
                 {arrows}
-                <span className="flex flex-row-reverse gap-[5px]">{receivers.slice(0, 6).map((player) => <span key={player.id}>{photo(player)}</span>)}</span>
+                <span className="flex flex-row-reverse gap-[5px]">{receivers.slice(0, 6).map((player) => <span key={player.id} className="relative">{photo(player)}{(line.count ?? 1) > 1 && line.per?.[player.id] ? <span className="pointer-events-none absolute -bottom-1 -right-1 min-w-[16px] rounded-full bg-[#72BE61] px-1 text-center text-[10px] font-bold leading-[16px] text-white shadow-[0_0_0_1px_#fff]">{line.per[player.id]}</span> : null}</span>)}</span>
                 {receivers.length > 6 ? <span className="ml-1 text-xs font-bold text-[#9E9E9E]">+{receivers.length - 6}</span> : null}
                 {!from.me && fromIndex >= 0 && !players[fromIndex].empty ? <button type="button" onClick={() => { const price = priceOf(line.gift ?? ""); if (price) giveGift(fromIndex, line.gift ?? "", price); }} aria-label={t("bottle.giftBack")} title={`${t("bottle.giftBack")} · ${priceOf(line.gift ?? "")} ❤`} className="ml-[9px] h-[22px] w-[30px] shrink-0 bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url(${O}chat_btn_reply.svg)` }} /> : null}
               </div>
