@@ -87,3 +87,10 @@ export const bottlePass = () => call<import("@/components/bottle/PassPanel").Pas
 export const bottlePassClaim = (level: number, premium: boolean) => call<{ hearts?: number; prize?: number; frame?: number | null; error?: string }>("bottle_pass_claim", { p_level: level, p_premium: premium });
 export const bottlePassBuy = () => call<{ hearts?: number; error?: string }>("bottle_pass_buy");
 export const bottlePassChest = () => call<{ hearts?: number; prize?: number; error?: string }>("bottle_pass_chest");
+
+// Bonus market: crystals are bought with hearts, an effect (a week) with crystals; others ask who has one when somebody sits down.
+export type BottleFxInfo = { crystals: number; rate: number; effects: { effect: string; expires_at: string }[] };
+export const bottleEffectsInfo = () => call<BottleFxInfo>("bottle_effects_info");
+export const bottleExchange = (crystals: number) => call<{ hearts?: number; crystals?: number; error?: "bad" | "hearts" }>("bottle_exchange", { p_crystals: crystals });
+export const bottleBuyEffect = (effect: string) => call<{ crystals?: number; expires_at?: string; error?: "bad" | "crystals" }>("bottle_buy_effect", { p_effect: effect });
+export const bottleEffectOf = (user: string) => call<string | null>("bottle_effect_of", { p_user: user });

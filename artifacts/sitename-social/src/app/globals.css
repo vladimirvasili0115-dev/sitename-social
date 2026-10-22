@@ -288,3 +288,44 @@ button { cursor: pointer; }
   0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.95), 0 0 0 0 rgba(255, 196, 70, 0.85); opacity: 1; }
   100% { box-shadow: 0 0 0 3.5cqmin rgba(255, 255, 255, 0), 0 0 0 7cqmin rgba(255, 196, 70, 0); opacity: 0; }
 }
+
+/* "Enigma has arrived": the entrance effect of the bonus market, about 3.6 seconds over a seat photo. */
+@keyframes enigma-dark {
+  0% { opacity: 0; }
+  10% { opacity: 1; }
+  78% { opacity: 0.92; }
+  100% { opacity: 0; }
+}
+@keyframes enigma-flash {
+  0%, 17% { opacity: 0; }
+  19% { opacity: 0.95; }
+  23% { opacity: 0.05; }
+  26% { opacity: 0.8; }
+  32% { opacity: 0; }
+  52% { opacity: 0; }
+  54% { opacity: 0.7; }
+  58% { opacity: 0; }
+  100% { opacity: 0; }
+}
+@keyframes enigma-smoke {
+  0% { opacity: 0; scale: 0.3; translate: 0 8%; }
+  25% { opacity: 0.85; }
+  100% { opacity: 0; scale: 1.6; translate: var(--sx, 0%) var(--sy, -30%); }
+}
+@keyframes enigma-ring {
+  0% { opacity: 0.95; scale: 0.8; }
+  100% { opacity: 0; scale: 1.75; }
+}
+@keyframes enigma-title {
+  0%, 20% { opacity: 0; scale: 2.2; filter: blur(8px); }
+  30% { opacity: 1; scale: 1; filter: blur(0); }
+  34% { translate: -4% 0; }
+  36% { translate: 4% 0; }
+  38% { translate: 0 0; }
+  62% { translate: 0 0; opacity: 1; }
+  64% { translate: 5% 0; opacity: 0.55; }
+  66% { translate: -5% 0; opacity: 1; }
+  68% { translate: 0 0; }
+  86% { opacity: 1; scale: 1; filter: blur(0); }
+  100% { opacity: 0; scale: 1.15; filter: blur(4px); }
+}
