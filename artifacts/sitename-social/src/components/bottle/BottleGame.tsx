@@ -110,7 +110,7 @@ const wornGift = (gift: string) => (gift.startsWith("c:") ? customPlace(gift.sli
 // Which place of the photo a landed gift takes: a corner (left or right) or the middle.
 const spotPlace = (spot: Pick<Spot, "kind" | "x" | "s">) => (spot.kind === "hatL" ? "left" : spot.kind === "hatR" ? "right" : spot.kind === "corner" || spot.kind === "balloon" ? (spot.x + spot.s / 2 < 45 ? "left" : "right") : "middle");
 const stickerPlace = (gift: string) => { const at = gift.startsWith("c:") ? customPlace(gift.slice(2)) : headGifts.has(gift) ? "head" : "body"; return at === "head" || at === "ears" ? "left" : at === "body" ? "right" : "middle"; };
-type Spot = { key: number; gift: string; x: number; y: number; s: number; r?: number; fade?: boolean; kind: "rand" | "corner" | "behind" | "balloon" | "hatL" | "hatR" };
+type Spot = { key: number; gift: string; x: number; y: number; s: number; r?: number; t?: number; fade?: boolean; kind: "rand" | "corner" | "behind" | "balloon" | "hatL" | "hatR" };
 // Like the original (GiftAnimations.ts): a gift's random spot comes from a seed every screen knows, so all players see it in the same place.
 function seeded(seed: number) {
   let a = (Math.round(seed) >>> 0) || 1;
@@ -378,14 +378,22 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       const spot: Spot = { ...plan.spot, key };
       const place = spotPlace(spot);
       if (spot.kind === "rand") {
-        // Earlier random gifts stay (the newest RAND_MAX - 1 of them); only a different kind of gift in the middle place is replaced.
+        // Earlier random gifts stay for RAND_KEEP_MS (the newest RAND_MAX - 1 of them); a different kind of gift in the middle place is replaced.
+        // The newest random gift is never removed by the timer: it stays until the next random gift comes.
+        const now = Date.now();
+        const stamped: Spot = { ...spot, t: now };
         setSpots((value) => {
           const mine = value[toId] ?? [];
           const others = mine.filter((item) => spotPlace(item) !== place);
-          const rands = mine.filter((item) => spotPlace(item) === place && item.kind === "rand").slice(-(RAND_MAX - 1));
-          return { ...value, [toId]: [...others, ...rands, spot] };
+          const rands = mine.filter((item) => spotPlace(item) === place && item.kind === "rand" && now - (item.t ?? 0) < RAND_KEEP_MS).slice(-(RAND_MAX - 1));
+          return { ...value, [toId]: [...others, ...rands, stamped] };
         });
-        window.setTimeout(() => setSpots((value) => ({ ...value, [toId]: (value[toId] ?? []).filter((item) => item.key !== key) })), RAND_KEEP_MS);
+        window.setTimeout(() => setSpots((value) => {
+          const list = value[toId] ?? [];
+          const newest = [...list].reverse().find((item) => item.kind === "rand");
+          if (newest?.key === key) return value; // the last random gift stays until a new one arrives
+          return { ...value, [toId]: list.filter((item) => item.key !== key) };
+        }), RAND_KEEP_MS);
       } else {
         setSpots((value) => { const rest = keepSpots(value, place); return { ...rest, [toId]: [...(rest[toId] ?? []), spot] }; });
       }
