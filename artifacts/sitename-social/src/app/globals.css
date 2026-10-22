@@ -308,24 +308,24 @@ button { cursor: pointer; }
   100% { opacity: 0; }
 }
 @keyframes enigma-smoke {
-  0% { opacity: 0; scale: 0.3; translate: 0 8%; }
+  0% { opacity: 0; transform: translate(0, 8%) scale(0.3); }
   25% { opacity: 0.85; }
-  100% { opacity: 0; scale: 1.6; translate: var(--sx, 0%) var(--sy, -30%); }
+  100% { opacity: 0; transform: translate(var(--sx, 0%), var(--sy, -30%)) scale(1.6); }
 }
 @keyframes enigma-ring {
-  0% { opacity: 0.95; scale: 0.8; }
-  100% { opacity: 0; scale: 1.75; }
+  0% { opacity: 0.95; transform: scale(0.8); }
+  100% { opacity: 0; transform: scale(1.75); }
 }
 @keyframes enigma-title {
-  0%, 20% { opacity: 0; scale: 2.2; filter: blur(8px); }
-  30% { opacity: 1; scale: 1; filter: blur(0); }
-  34% { translate: -4% 0; }
-  36% { translate: 4% 0; }
-  38% { translate: 0 0; }
-  62% { translate: 0 0; opacity: 1; }
-  64% { translate: 5% 0; opacity: 0.55; }
-  66% { translate: -5% 0; opacity: 1; }
-  68% { translate: 0 0; }
-  86% { opacity: 1; scale: 1; filter: blur(0); }
-  100% { opacity: 0; scale: 1.15; filter: blur(4px); }
+  0%, 20% { opacity: 0; transform: scale(2.2); }
+  30% { opacity: 1; transform: scale(1); }
+  34% { transform: translateX(-4%); }
+  36% { transform: translateX(4%); }
+  38% { transform: translateX(0); }
+  62% { transform: translateX(0); opacity: 1; }
+  64% { transform: translateX(5%); opacity: 0.55; }
+  66% { transform: translateX(-5%); opacity: 1; }
+  68% { transform: translateX(0); }
+  86% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.15); }
 }
