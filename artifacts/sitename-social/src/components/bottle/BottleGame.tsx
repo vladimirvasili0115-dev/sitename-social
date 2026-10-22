@@ -2002,6 +2002,11 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     }, 120);
   }
   const liveTableId = net?.table;
+  // What is on the photos right now, for the newcomer's "snapshot" (see the effect below).
+  const spotsNow = useRef(spots);
+  spotsNow.current = spots;
+  const stickersNow = useRef(stickers);
+  stickersNow.current = stickers;
   useEffect(() => {
     if (!online || !supabase || !liveTableId) return;
     const client = supabase;
@@ -2021,10 +2026,75 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       console.info("[bottle] fresh received", id);
       clearPlayer(id);
     });
+    // A player who comes (back) to the table asks "need"; one of the others answers with a snapshot of the gifts on every photo,
+    // so the newcomer sees what the others have (it is not on the server: gifts live on the screens).
+    type Snap = { to?: string; spots?: Record<string, Spot[]>; stickers?: Record<string, string[]> };
+    const answeredFor = new Set<string>();
+    let gotSnapshot = false;
+    channel.on("broadcast", { event: "need" }, (message: { payload?: { id?: string } }) => {
+      const asker = message.payload?.id;
+      if (!asker || asker === meId.current || !meId.current) return;
+      window.setTimeout(() => {
+        if (answeredFor.has(asker) || !liveChannel.current) return;
+        const mapKey = (id: string) => (id === "me" ? meId.current : id);
+        const now = Date.now();
+        const outSpots: Record<string, Spot[]> = {};
+        for (const [id, list] of Object.entries(spotsNow.current)) {
+          const key = mapKey(id);
+          if (key === asker || !list.length) continue;
+          const newest = [...list].reverse().find((item) => item.kind === "rand");
+          outSpots[key] = list.filter((item) => item.kind !== "rand" || item === newest || now - (item.t ?? 0) < RAND_KEEP_MS);
+        }
+        const outStickers: Record<string, string[]> = {};
+        for (const [id, list] of Object.entries(stickersNow.current)) { const key = mapKey(id); if (key !== asker && list.length) outStickers[key] = list; }
+        if (!Object.keys(outSpots).length && !Object.keys(outStickers).length) return;
+        void channel.send({ type: "broadcast", event: "snapshot", payload: { to: asker, spots: outSpots, stickers: outStickers } as Snap });
+      }, 150 + Math.random() * 450);
+    });
+    channel.on("broadcast", { event: "snapshot" }, (message: { payload?: Snap }) => {
+      const data = message.payload;
+      if (!data?.to) return;
+      answeredFor.add(data.to); // somebody already answered: the others stay quiet
+      if (data.to !== meId.current || gotSnapshot) return;
+      gotSnapshot = true;
+      const now = Date.now();
+      const keyed: Record<string, Spot[]> = {};
+      for (const [id, list] of Object.entries(data.spots ?? {})) {
+        if (id === meId.current || !Array.isArray(list)) continue;
+        keyed[id] = list.filter((item) => item && typeof item.x === "number" && typeof item.y === "number" && typeof item.s === "number" && typeof item.gift === "string").map((item) => ({ ...item, key: -1 - Math.floor(Math.random() * 1e9) }));
+      }
+      setSpots((value) => {
+        const next = { ...value };
+        for (const [id, list] of Object.entries(keyed)) {
+          const have = next[id] ?? [];
+          const add = list.filter((item) => !have.some((other) => spotPlace(other) === spotPlace(item)));
+          if (add.length) next[id] = [...have, ...add];
+        }
+        return next;
+      });
+      // The random gifts that still have time left go on their way, as they do on the other screens.
+      for (const [id, list] of Object.entries(keyed)) {
+        for (const item of list) {
+          if (item.kind !== "rand" || !item.t) continue;
+          const left = RAND_KEEP_MS - (now - item.t);
+          if (left > 0) window.setTimeout(() => setSpots((value) => {
+            const current = value[id] ?? [];
+            const newest = [...current].reverse().find((other) => other.kind === "rand");
+            if (newest?.key === item.key) return value;
+            return { ...value, [id]: current.filter((other) => other.key !== item.key) };
+          }), left);
+        }
+      }
+      setStickers((value) => {
+        const next = { ...value };
+        for (const [id, list] of Object.entries(data.stickers ?? {})) if (id !== meId.current && Array.isArray(list) && !(next[id]?.length)) next[id] = list;
+        return next;
+      });
+    });
     const myId = meId.current;
     const announce = () => announceFresh();
     let announced = false; // only the real entry announces; a short connection drop that re-subscribes does not wipe the gifts
-    channel.subscribe((status: string) => { if (status === "SUBSCRIBED" && !announced) { announced = true; announce(); } });
+    channel.subscribe((status: string) => { if (status === "SUBSCRIBED" && !announced) { announced = true; announce(); if (myId) void channel.send({ type: "broadcast", event: "need", payload: { id: myId } }).catch(() => {}); } });
     liveChannel.current = channel;
     window.addEventListener("pagehide", announce);
     return () => {
