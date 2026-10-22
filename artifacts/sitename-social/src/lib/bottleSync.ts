@@ -96,6 +96,6 @@ export const bottleBuyEffect = (effect: string) => call<{ crystals?: number; exp
 export const bottleEffectOf = (user: string) => call<string | null>("bottle_effect_of", { p_user: user });
 
 // YouTube searches are shared between all players through the database, so one search is paid from the daily YouTube limit once, not once per player.
-export type BottleYtTrack = { id: string; title: string; duration: string };
+export type BottleYtTrack = { id: string; title: string; duration?: string };
 export const bottleYtGet = (q: string) => call<BottleYtTrack[]>("bottle_yt_get", { p_q: q });
 export const bottleYtPut = (q: string, list: BottleYtTrack[]) => call<null>("bottle_yt_put", { p_q: q, p_list: list });
