@@ -34,7 +34,7 @@ import { supabase } from "@/lib/supabase";
 import { refreshFriends } from "@/lib/friendsSync";
 import { ensureMessagesLoaded, openRemoteChat, remoteChats, sendRemoteMessage } from "@/lib/messagesSync";
 import { uploadBlob } from "@/lib/media";
-import { bottleLogIp, bottleAnswer, bottleAchSync, bottleAchView, bottleGesture, bottleProgress, bottleGesturesOpen, bottleSkin, bottleBuyChances, bottleJoin, bottleMove, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleProfile, type BottleProfile, bottleDaily, bottleItems, bottleItemBuy, bottleBooster, bottleTutorial, bottleAdminIds, type BottleItems, bottleLeagueInfo, bottleLeagueClaim, type BottleLeague, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleKickPrice, bottleGift, bottleGiftMany, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, bottleClaim, type BottleState, type BottleSeat, bottleEffectOf, bottleYtGet, bottleYtPut } from "@/lib/bottleSync";
+import { bottleLogIp, bottleAdminIpLookup, type BottleIpRow, bottleAnswer, bottleAchSync, bottleAchView, bottleGesture, bottleProgress, bottleGesturesOpen, bottleSkin, bottleBuyChances, bottleJoin, bottleMove, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleProfile, type BottleProfile, bottleDaily, bottleItems, bottleItemBuy, bottleBooster, bottleTutorial, bottleAdminIds, type BottleItems, bottleLeagueInfo, bottleLeagueClaim, type BottleLeague, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleKickPrice, bottleGift, bottleGiftMany, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, bottleClaim, type BottleState, type BottleSeat, bottleEffectOf, bottleYtGet, bottleYtPut } from "@/lib/bottleSync";
 import { ytHint, ytReason } from "./ytHints";
 import { BonusMarket, EnigmaEffect, enigmaLabel, marketLabel } from "./BonusMarket";
 
@@ -1068,6 +1068,18 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // Once per page load (and the server skips the same IP written again within 6 hours) the server writes down the IP of this player for security.
   const ipLogged = useRef(false);
   useEffect(() => { if (online && myId && !ipLogged.current) { ipLogged.current = true; void bottleLogIp("join"); } }, [online, myId]);
+  // Admins only: the IPs a player came from, and which other accounts used the same IPs (the server answers only to admins).
+  const [ipView, setIpView] = useState<{ name: string; loading: boolean; rows: BottleIpRow[]; others: Record<string, string[]> } | null>(null);
+  const openIp = async (name: string, id: string) => {
+    setIpView({ name, loading: true, rows: [], others: {} });
+    const rows = (await bottleAdminIpLookup(id, null)) ?? [];
+    const others: Record<string, string[]> = {};
+    for (const ip of [...new Set(rows.map((row) => row.ip))].slice(0, 5)) {
+      const same = (await bottleAdminIpLookup(null, ip)) ?? [];
+      others[ip] = [...new Set(same.filter((row) => row.user_id !== id).map((row) => row.name ?? row.user_id.slice(0, 8)))];
+    }
+    setIpView({ name, loading: false, rows, others });
+  };
   useEffect(() => { if (online) ensureMessagesLoaded(myId); }, [online, myId]);
   useEffect(() => {
     if (!online) return;
@@ -2471,6 +2483,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                       <button role="menuitem" onClick={() => { setMutedIds((list) => (list.includes(player.id) ? list.filter((id) => id !== player.id) : [...list, player.id])); setFlagMenu(false); setCardNote(t(muted.includes(player.id) ? "bottle.unrejected" : "bottle.rejected")); }} className="block w-full px-3 py-2 text-left hover:bg-black/5">{t(muted.includes(player.id) ? "bottle.unreject" : "bottle.reject")}</button>
                       <button role="menuitem" onClick={() => { setDraft(`${player.name}, `); setFlagMenu(false); setCard(false); setPicked(null); window.setTimeout(() => chatRef.current?.focus(), 50); }} className="block w-full px-3 py-2 text-left hover:bg-black/5">{t("bottle.mention")}</button>
                       <button role="menuitem" onClick={() => { setFlagMenu(false); setCardNote(t("bottle.reportSent")); }} className="block w-full px-3 py-2 text-left hover:bg-black/5">{t("bottle.report")}</button>
+                      {iAmAdmin ? <button role="menuitem" onClick={() => { setFlagMenu(false); void openIp(player.name, player.id); }} className="block w-full px-3 py-2 text-left font-bold text-[#B45309] hover:bg-black/5">IP</button> : null}
                       <button role="menuitem" onClick={() => { setFlagMenu(false); sendFriend(player); }} className="block w-full px-3 py-2 text-left hover:bg-black/5">{t("bottle.addFriend")}</button>
                       <Link role="menuitem" href="/friends" className="block px-3 py-2 hover:bg-black/5">{t("bottle.myFriends")}</Link>
                     </div>
@@ -3759,6 +3772,24 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             <p className="mt-2 text-base font-bold">{t("bottle.serverStopped")}</p>
             <p className="mt-1 text-sm text-[#6B7280]">{t(gone === "idle" ? "bottle.goneIdle" : "bottle.goneTab")}</p>
             <button onClick={resumeGame} className="mt-4 h-11 w-full rounded-xl bg-[#EE8A2B] text-sm font-bold text-white hover:brightness-110">{t("bottle.goneBack")}</button>
+          </div>
+        </div>
+      ) : null}
+      {ipView ? (
+        <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/55 p-4" onClick={() => setIpView(null)}>
+          <div onClick={(event) => event.stopPropagation()} className="max-h-[80vh] w-full max-w-md overflow-auto rounded-2xl bg-white p-4 text-sm text-[#1F2937] shadow-2xl">
+            <div className="mb-2 flex items-center gap-2"><p className="min-w-0 flex-1 truncate text-base font-black">IP: {ipView.name}</p><button onClick={() => setIpView(null)} aria-label={t("photos.close")} className="flex h-8 w-8 items-center justify-center rounded-full bg-black/5"><X size={16} /></button></div>
+            {ipView.loading ? <p className="py-4 text-center text-[#6B7280]">…</p> : ipView.rows.length === 0 ? <p className="py-4 text-center text-[#6B7280]">—</p> : (
+              <ul className="space-y-1.5">
+                {ipView.rows.map((row, n) => (
+                  <li key={n} className="rounded-lg bg-[#F5F5F5] px-2.5 py-1.5">
+                    <p className="font-mono text-[13px] font-bold">{row.ip}</p>
+                    <p className="text-[11px] text-[#6B7280]">{row.event} · {new Date(row.at).toLocaleString()}</p>
+                    {n === ipView.rows.findIndex((other) => other.ip === row.ip) && ipView.others[row.ip]?.length ? <p className="mt-0.5 text-[11px] font-bold text-[#B91C1C]">≈ {ipView.others[row.ip].join(", ")}</p> : null}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
       ) : null}

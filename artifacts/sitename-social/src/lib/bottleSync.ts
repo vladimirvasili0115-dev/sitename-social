@@ -19,6 +19,8 @@ async function call<T>(name: string, args?: Record<string, unknown>): Promise<T 
 }
 export const bottleJoin = () => call<number>("bottle_join");
 // Security log: the server writes down the IP it sees for this request (never an IP sent by the browser). Only admins can read the log.
+export type BottleIpRow = { user_id: string; name: string | null; ip: string; event: string; at: string; ua: string | null };
+export const bottleAdminIpLookup = (user: string | null, ip: string | null) => call<BottleIpRow[]>("bottle_admin_ip_lookup", { p_user: user, p_ip: ip });
 export const bottleLogIp = (event: "visit" | "login" | "register" | "join" = "visit") => call<null>("bottle_log_ip", { p_event: event });
 export const bottleNameColors = () => call<Record<string, string>>("bottle_name_colors");
 export const bottleLeave = () => call<null>("bottle_leave");
