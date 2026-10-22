@@ -16,7 +16,7 @@ export const shopPacks: { hearts: number; price: number; bonus?: number; tag?: "
   { hearts: 30000, price: 45, bonus: 33, tag: "hit", art: "🍯" }, { hearts: 15000, price: 25, art: "👝" }, { hearts: 7500, price: 15, art: "💕" },
 ];
 // Active play rewards: minutes of play today → hearts.
-export const activeLevels: [number, number][] = [[30, 5], [60, 10], [120, 20]];
+export const activeLevels: [number, number][] = [[30, 1000], [60, 2000], [240, 5000]];
 export const formatActive = (secs: number, t: (key: TranslationKey) => string) => `${Math.floor(secs / 3600)}${t("bottle.hourShort")} ${Math.floor((secs % 3600) / 60)}${t("bottle.minShort")}`;
 
 // The original bank (bottle-html5 BankDialog + bank CSS): a pink window with the heart pattern on top and
@@ -73,7 +73,7 @@ export function ActivePanel({ secs, claimed, live, onClaim }: { secs: number; cl
   return (
     <div className="text-[#1F2937]">
       <div className="flex flex-col items-center"><Pic e="⏰" className="h-16 w-16" /><p className="mt-1 text-sm text-[#6B7280]">{t("bottle.activeToday")}</p><p className="text-2xl font-black tabular-nums text-[#7C3AED]">{formatActive(secs, t)}</p></div>
-      <div className="my-3 h-2.5 overflow-hidden rounded-full bg-[#EDE9FE]"><span className="block h-full rounded-full bg-[linear-gradient(90deg,#A16BFF,#7C3AED)]" style={{ width: `${Math.min(100, (secs / 7200) * 100)}%` }} /></div>
+      <div className="my-3 h-2.5 overflow-hidden rounded-full bg-[#EDE9FE]"><span className="block h-full rounded-full bg-[linear-gradient(90deg,#A16BFF,#7C3AED)]" style={{ width: `${Math.min(100, (secs / 14400) * 100)}%` }} /></div>
       <ul className="space-y-2">
         {activeLevels.map(([minutes, prize], n) => {
           const got = (claimed & (1 << n)) !== 0;
