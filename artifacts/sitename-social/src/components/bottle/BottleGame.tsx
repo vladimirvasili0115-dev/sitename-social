@@ -52,6 +52,7 @@ function giftFamily(gift: string) {
   return `c:${familyOf.get(gift.slice(2)) ?? gift.slice(2)}`;
 }
 // The same gift sent again and again by the same person makes one chat line "🌹 ×5 » receivers" instead of many lines.
+const CHAT_KEEP = 80;
 function mergeLines(list: Line[], fresh: Line[]) {
   const out = [...list];
   for (const line of fresh) {
@@ -72,7 +73,7 @@ function mergeLines(list: Line[], fresh: Line[]) {
     }
     out.push(line);
   }
-  return out;
+  return out.slice(-CHAT_KEEP); // the chat keeps only the newest lines
 }
 
 // Seat centres in percent of the table. The top row of the wide table is kept low enough that a crown or hat (sticking out about 40% above the photo) is not cut off by the frame.
@@ -801,7 +802,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const lineId = useRef(3);
   const listRef = useRef<HTMLDivElement>(null);
   const chatRef = useRef<HTMLInputElement>(null);
-  const say = useCallback((line: Omit<Line, "id">) => setLines((list) => mergeLines(list.slice(-40), [{ ...line, id: lineId.current++ }])), []);
+  const say = useCallback((line: Omit<Line, "id">) => setLines((list) => mergeLines(list, [{ ...line, id: lineId.current++ }])), []);
   const nextTurn = useCallback(() => {
     setTarget(null);
     setTurn((current) => {
@@ -987,7 +988,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         if (!first) all.filter((item) => item.kind === "booster" && item.from !== data!.me).forEach((item) => showBoostRef.current(item.body === "refuse_slap" ? "refuse_slap" : "kiss_fire", who(item.from)));
         if (!first) all.filter((item) => item.kind === "admire_lost" && item.to === data!.me).forEach((item) => { try { setLostToast(JSON.parse(item.body ?? "{}") as AdmireNote); } catch { /* bad body */ } });
         if (!first) all.filter((item) => item.kind === "admire" && item.to === data!.me && item.from !== data!.me).forEach((item) => { try { setBoughtToast(JSON.parse(item.body ?? "{}") as AdmireNote); } catch { /* bad body */ } });
-        const fresh = all.filter((item) => item.kind !== "compliment" && (item.kind !== "admire_lost" || item.to === data!.me) && (item.kind !== "gift" || (first && item.from !== data!.me)));
+        // Coming (back) into a table the chat starts empty: what was said before (even my own old lines) is not loaded again. Only those who stay in the room keep their chat.
+        const fresh = entered ? [] : all.filter((item) => item.kind !== "compliment" && (item.kind !== "admire_lost" || item.to === data!.me) && (item.kind !== "gift" || (first && item.from !== data!.me)));
         if (all.length) lastChat.current = all[all.length - 1].id;
         if (fresh.length) {
           setLines((list) => mergeLines(list.slice(-80), fresh.map((item) => (item.kind === "kiss" ? { id: item.id, from: who(item.from), to: who(item.to) } : item.kind === "gift" ? { id: item.id, from: who(item.from), to: who(item.to), gift: item.body ?? "" } : item.kind === "admire" || item.kind === "admire_lost" ? { id: item.id, from: who(item.from), to: item.kind === "admire" ? who(item.to) : undefined, admire: { ...(() => { try { return JSON.parse(item.body ?? "{}") as AdmireNote; } catch { return {}; } })(), lost: item.kind === "admire_lost" } } : item.kind === "song" ? { id: item.id, from: who(item.from), to: item.to ? who(item.to) : undefined, song: item.body || "♪" } : item.kind === "kick" || item.kind === "saved" || item.kind === "kicked" ? { id: item.id, from: who(item.from), event: { kind: item.kind, a: nameOf(item.from), b: nameOf(item.to) } } : item.kind === "gesture" ? { id: item.id, from: who(item.from), gesture: item.body ?? "" } : item.kind === "booster" ? { id: item.id, from: who(item.from), boost: { kind: item.body === "refuse_slap" ? "refuse_slap" : "kiss_fire", a: nameOf(item.from), b: nameOf(item.to) } } : item.kind === "bottle" ? { id: item.id, from: who(item.from), bottle: { a: Number((item.body ?? "0:0").split(":")[0]) || 0, b: Number((item.body ?? "0:0").split(":")[1]) || 0 } } : { id: item.id, from: who(item.from), text: item.body ?? "" }))).slice(-80));
