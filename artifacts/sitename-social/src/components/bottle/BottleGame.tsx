@@ -762,6 +762,14 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     window.addEventListener("message", hear);
     return () => window.removeEventListener("message", hear);
   }, [video, musicMode]);
+  // The player cannot be closed by hand any more: it closes when the song is over, on every screen, and stays shut until somebody orders a new song.
+  // Safety net: if the YouTube player never reports the end, it still closes a few seconds after the song's length.
+  useEffect(() => {
+    if (!video || !tune.dur || !tune.playing) return;
+    const wait = Math.max(0, tune.dur - tune.cur) + 4;
+    const timer = window.setTimeout(() => setVideo((current) => (current === video ? null : current)), wait * 1000);
+    return () => window.clearTimeout(timer);
+  }, [video, tune.dur, tune.cur, tune.playing]);
   const lastSongLine = lines.filter((line) => line.song).at(-1)?.id;
   const clock = (sec: number) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, "0")}`;
   const [videoTitle, setVideoTitle] = useState("");
@@ -3272,7 +3280,6 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           <div className={cn("relative w-full shrink-0 bg-black", picked !== null || dedicate ? "h-0 overflow-hidden" : "aspect-video max-h-[42%]")}>
             <iframe ref={frameRef} onLoad={() => { window.setTimeout(pushMusic, 800); frameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: "listening", id: 1 }), "*"); }} src={ytSrc(video)} title="YouTube" referrerPolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen className="h-full w-full" />
             {soundPill}
-            <button onClick={() => setVideo(null)} aria-label={t("photos.close")} title={t("photos.close")} className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80"><X size={15} /></button>
           </div>
         ) : null}
         {video && !wide && !musicMode ? (
@@ -3286,7 +3293,6 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             <div className="flex items-center gap-1.5 px-2 py-1">
               <button onClick={() => setMusic(music ? 0 : 60)} aria-label={t(music ? "videos.mute" : "videos.unmute")} title={t(music ? "videos.mute" : "videos.unmute")} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted hover:text-text">{music ? <Volume2 size={17} /> : <VolumeX size={17} />}</button>
               <input type="range" min={0} max={100} value={music} onChange={(event) => setMusic(Number(event.target.value))} aria-label={t("bottle.music")} className="min-w-0 flex-1 accent-[#8CC63F]" />
-              <button onClick={() => setVideo(null)} aria-label={t("photos.close")} title={t("photos.close")} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted hover:text-text"><X size={15} /></button>
             </div>
             <span role="separator" aria-label={t("bottle.miniSize")} title={t("bottle.miniSize")} onPointerDown={(event) => startMini(event, "size")} className="absolute bottom-0 left-0 h-5 w-5 cursor-nesw-resize touch-none bg-[linear-gradient(225deg,transparent_50%,rgba(120,130,140,0.7)_50%)]" />
           </div>
@@ -3325,7 +3331,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             </div>
             )}
             {!audio && soundPill}
-            <button onClick={() => { if (audio) setAudio(null); else setVideo(null); }} aria-label={t("photos.close")} title={t("photos.close")} className={cn("absolute flex items-center justify-center rounded-full bg-black/40 text-white hover:bg-black/70", wide ? "right-2 top-2 h-7 w-7" : "right-1.5 top-1.5 h-6 w-6")}><X size={14} /></button>
+            {audio ? <button onClick={() => setAudio(null)} aria-label={t("photos.close")} title={t("photos.close")} className={cn("absolute flex items-center justify-center rounded-full bg-black/40 text-white hover:bg-black/70", wide ? "right-2 top-2 h-7 w-7" : "right-1.5 top-1.5 h-6 w-6")}><X size={14} /></button> : null}
             {wide ? null : <span role="separator" aria-label={t("bottle.miniSize")} title={t("bottle.miniSize")} onPointerDown={(event) => startMini(event, "size")} className="absolute bottom-0 left-0 h-5 w-5 cursor-nesw-resize touch-none bg-[linear-gradient(225deg,transparent_50%,rgba(255,255,255,0.45)_50%)]" />}
           </div>
         ) : null}
