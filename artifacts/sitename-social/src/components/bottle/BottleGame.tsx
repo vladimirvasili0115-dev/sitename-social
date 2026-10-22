@@ -498,7 +498,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [picked, setPicked] = useState<number | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   // The phone video can be dragged by the avatar and resized from its lower-left corner.
-  const [mini, setMini] = useState<{ x: number | null; y: number; w: number }>({ x: null, y: 8, w: 190 });
+  const [mini, setMini] = useState<{ x: number | null; y: number; w: number }>({ x: null, y: 8, w: 127 });
   const [miniBusy, setMiniBusy] = useState(false);
   const miniRef = useRef<HTMLDivElement>(null);
   function startMini(event: ReactPointerEvent, mode: "move" | "size") {
@@ -514,7 +514,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       const dx = next.clientX - start.px;
       const dy = next.clientY - start.py;
       if (mode === "move") setMini((value) => ({ ...value, x: Math.min(Math.max(0, start.x + dx), outer.width - start.w), y: Math.min(Math.max(0, start.y + dy), outer.height - 60) }));
-      else { const w = Math.min(Math.max(150, start.w - dx), outer.width); setMini((value) => ({ ...value, w, x: Math.max(0, start.x + start.w - w) })); }
+      else { const w = Math.min(Math.max(100, start.w - dx), outer.width); setMini((value) => ({ ...value, w, x: Math.max(0, start.x + start.w - w) })); }
     };
     const stop = () => { setMiniBusy(false); window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", stop); window.removeEventListener("pointercancel", stop); };
     window.addEventListener("pointermove", move);
@@ -3296,7 +3296,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         {video && !wide && !musicMode ? (
           <div ref={miniRef} style={mini.x === null ? { right: 0, top: mini.y, width: musicMode ? Math.max(mini.w, 262) : mini.w } : { left: mini.x, top: mini.y, width: musicMode ? Math.max(mini.w, 262) : mini.w }} className={cn("absolute z-20 overflow-hidden border shadow-lg", musicMode ? "border-[#4C1D95] bg-[linear-gradient(160deg,#1E1B3A,#4C1D95_65%,#BE185D)] text-white" : "border-border bg-surface", mini.x === null ? "rounded-l-2xl border-r-0" : "rounded-2xl")}>
             <div className="flex items-center">
-              <img src={songByAvatar} alt="" title={t("bottle.miniMove")} onPointerDown={(event) => startMini(event, "move")} className="mx-2 h-10 w-10 shrink-0 cursor-move touch-none select-none rounded-full border-2 border-border object-cover" draggable={false} />
+              <img src={songByAvatar} alt="" title={t("bottle.miniMove")} onPointerDown={(event) => startMini(event, "move")} className="mx-1 h-7 w-7 shrink-0 cursor-move touch-none select-none rounded-full border-2 border-border object-cover" draggable={false} />
               <div className={cn(musicMode ? "my-1 mr-1 h-[200px] w-[200px] shrink-0 overflow-hidden rounded-xl" : "aspect-video min-w-0 flex-1", "bg-black", miniBusy && "pointer-events-none")}><iframe ref={frameRef} onLoad={() => { window.setTimeout(pushMusic, 800); frameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: "listening", id: 1 }), "*"); }} src={ytSrc(video)} title="YouTube" referrerPolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen className="h-full w-full" /></div>
             </div>
             {musicMode ? <div className="flex items-center gap-2 px-2 pt-0.5"><Equalizer className="h-4 shrink-0" /><p className="min-w-0 flex-1 truncate text-xs font-bold">{videoTitle}</p></div> : null}
@@ -3310,7 +3310,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         ) : null}
         {audio || (video && musicMode) ? (
           // PC: a bar above the chat. Phone: a small square window like the video one, which can be moved and resized.
-          <div ref={wide ? undefined : miniRef} style={wide ? undefined : mini.x === null ? { right: 4, top: mini.y, width: Math.min(mini.w, 220) } : { left: mini.x, top: mini.y, width: Math.min(mini.w, 220) }} className={cn("overflow-hidden bg-[linear-gradient(120deg,#1E1B3A,#4C1D95_60%,#BE185D)] text-white", wide ? "relative shrink-0 p-2.5" : "absolute z-20 rounded-2xl border border-white/15 p-2 pt-7 shadow-xl", miniBusy && !wide && "select-none")}>
+          <div ref={wide ? undefined : miniRef} style={wide ? undefined : mini.x === null ? { right: 4, top: mini.y, width: Math.min(Math.max(mini.w, 190), 220) } : { left: mini.x, top: mini.y, width: Math.min(Math.max(mini.w, 190), 220) }} className={cn("overflow-hidden bg-[linear-gradient(120deg,#1E1B3A,#4C1D95_60%,#BE185D)] text-white", wide ? "relative shrink-0 p-2.5" : "absolute z-20 rounded-2xl border border-white/15 p-2 pt-7 shadow-xl", miniBusy && !wide && "select-none")}>
             {audio ? <audio src={audio.url} autoPlay playsInline ref={(node) => { audioRef.current = node; if (node) node.volume = music / 100; }} onPlay={() => setTune((v) => ({ ...v, playing: true }))} onPause={() => setTune((v) => ({ ...v, playing: false }))} onEnded={() => setAudio(null)} onLoadedMetadata={(event) => { const node = event.currentTarget; const dur = node.duration || 0; const at = songNow(); if (at > 2 && at < dur) node.currentTime = at; setTune((v) => ({ ...v, dur })); }} onTimeUpdate={(event) => { const cur = event.currentTarget.currentTime; setTune((v) => ({ ...v, cur })); }} className="hidden" /> : null}
             {/* Songs from the MP3 tab: the YouTube player plays behind the card, only the music player is seen. */}
             {!audio && video ? <iframe ref={frameRef} onLoad={() => { window.setTimeout(pushMusic, 800); frameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: "listening", id: 1 }), "*"); }} src={ytSrc(video)} title="YouTube" referrerPolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media" tabIndex={-1} aria-hidden="true" className="pointer-events-none absolute left-0 top-0 h-[200px] w-[200px] opacity-0" /> : null}
