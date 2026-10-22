@@ -393,8 +393,12 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     const me: Player = { id: "me", name: user.name.split(" ")[0], age: 25, female: details.gender === "female", avatar: user.avatar || NO_PHOTO, me: true, zodiac: zodiacOf(details.birthday) };
     if (online) {
       // Every player sees the table the same way: seat N is always at the same place on every screen.
+      // A player sits in one seat only: if the list ever holds the same player twice (e.g. an old row next to the new one right after a quick leave and come back), the second one is not drawn, so a photo is never doubled.
+      const drawn = new Set<string>();
       return Array.from({ length: 12 }, (_, place): Player => {
-        const row = net?.seats.find((seat) => seat.seat === place);
+        const found = net?.seats.find((seat) => seat.seat === place);
+        const row = found && !drawn.has(found.id) ? found : undefined;
+        if (row) drawn.add(row.id);
         if (!row) return place === 7 && !net ? me : { id: `empty-${place}`, name: "", age: 0, female: false, avatar: "", empty: true };
         const female = row.gender === "female";
         if (row.id === net?.me) return { ...me, age: row.age ?? me.age, female, zodiac: row.zodiac ?? me.zodiac };
