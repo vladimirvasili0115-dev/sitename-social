@@ -277,3 +277,14 @@ button { cursor: pointer; }
 .name-chameleon { background: linear-gradient(90deg, #FF3EA5, #FFD60A, #22C55E, #3B82F6, #A855F7, #FF3EA5); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: name-flow 3s linear infinite; }
 .name-champagne { background: linear-gradient(100deg, #B8925A 0%, #F7E7CE 35%, #FFFFFF 50%, #E8C27A 70%, #B8925A 100%); background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: gold-shine 3s linear infinite; }
 .name-rainbow { background: linear-gradient(90deg, #EF4444, #F59E0B, #22C55E, #3B82F6, #8B5CF6); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+/* A player sits down at the table: the photo pops in, a ring of light spreads out from it. */
+@keyframes seat-arrive {
+  0% { scale: 0.15; opacity: 0; }
+  55% { scale: 1.14; opacity: 1; }
+  100% { scale: 1; opacity: 1; }
+}
+@keyframes seat-ring {
+  0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.95), 0 0 0 0 rgba(255, 196, 70, 0.85); opacity: 1; }
+  100% { box-shadow: 0 0 0 3.5cqmin rgba(255, 255, 255, 0), 0 0 0 7cqmin rgba(255, 196, 70, 0); opacity: 0; }
+}

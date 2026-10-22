@@ -510,6 +510,18 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     setSpots(prune);
     setStickers(prune);
   }, [seatedIds]);
+  // Somebody sits down at the table: their photo pops in with a ring of light, on their own screen and on everybody else's.
+  // When I come in myself, only my own photo does it; the people already there do not all pop again.
+  const [arrivals, setArrivals] = useState<Record<string, number>>({});
+  const seatMemory = useRef<{ table: unknown; ids: Set<string> } | null>(null);
+  useEffect(() => {
+    const ids = new Set(players.filter((player) => !player.empty).map((player) => player.id));
+    const table = net?.table ?? null;
+    const before = seatMemory.current;
+    seatMemory.current = { table, ids };
+    const fresh = !before || before.table !== table ? players.filter((player) => player.me && !player.empty).map((player) => player.id) : [...ids].filter((id) => !before.ids.has(id));
+    if (fresh.length) { const now = Date.now(); setArrivals((value) => ({ ...value, ...Object.fromEntries(fresh.map((id) => [id, now])) })); }
+  }, [seatedIds]); // eslint-disable-line react-hooks/exhaustive-deps
   // A drink landed: the receiver gets a "+1 heart" burst.
   const [bursts, setBursts] = useState<{ key: number; to: number; amount?: number }[]>([]);
   // Expensive gifts give the receiver a share of the price (the server keeps the numbers in bottle_config).
@@ -2474,11 +2486,14 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         {players.map((player, index) => {
           if (player.empty) return null;
           const active = index === turn || index === target;
+          const arrivedAt = arrivals[player.id] ?? 0;
+          const arriving = arrivedAt > 0 && Date.now() - arrivedAt < 1800;
           return (
             <div key={player.id} className={cn("absolute -translate-x-1/2 -translate-y-1/2 transition-[left,top]", wide ? "w-[18.5cqmin]" : "w-[17.5cqmin]", " duration-[1100ms] ease-in-out motion-reduce:duration-0", staged && active ? "z-30" : index === turn && "z-10")} style={staged && active ? { left: `calc(${CENTER_X}% ${index === turn ? "-" : "+"} 12.5cqmin)`, top: `${STAGE_Y}%` } : { left: `${seats[index][0]}%`, top: `${seats[index][1]}%` }}>
               <button type="button" onClick={(event) => { event.stopPropagation(); if (dedicate) { if (!player.me) setChosen((list) => (list.includes(player.id) ? list.filter((id) => id !== player.id) : [...list, player.id])); return; } setGiftNote(null); setCardNote(null); setFlagMenu(false); setSignOpen(false); if (player.me) { if (Date.now() - meTap.current > 15000 || picked !== index) { meTap.current = Date.now(); setFrameNote(null); pullProgress.current(); setCard(false); setPicked(index); return; } meTap.current = 0; setCard(true); setPicked(index); return; } setCard(picked === index); setPicked(index); }} aria-label={`${player.name}, ${player.age}`} data-seat={player.id} className={cn("group relative block aspect-square w-full rounded-[14%] bg-surface-2 shadow-[0_4px_10px_rgba(0,0,0,0.4)]", phase === "spinning" && index === turn && "motion-safe:animate-[seat-wobble_0.4s_ease-out]", tour === 3 && !player.me && !player.empty && "ring-4 ring-[#FFD84D] motion-safe:animate-pulse", !player.empty && isAdminPlayer(player) && "shadow-[0_0_0_0.6cqmin_#F5B400,0_0_14px_4px_rgba(245,180,0,0.65)]", staged && index === target ? "ring-[0.9cqmin] ring-[#FFE2A8]" : active ? "ring-4 ring-white" : picked === index ? "ring-4 ring-[#8CC63F]" : player.me ? "ring-2 ring-white/80" : "")}>
                 {player.empty ? null : <span aria-hidden="true" className="pointer-events-none absolute left-1/2 top-1/2 z-[5] hidden h-[7cqmin] w-[7cqmin] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-[4cqmin] shadow [@media(hover:hover)]:group-hover:flex">{player.me ? "😊" : "🎁"}</span>}
-                <img src={player.avatar} alt="" className="h-full w-full rounded-[14%] object-cover" />
+                <img key={arriving ? arrivedAt : "photo"} src={player.avatar} alt="" className={cn("h-full w-full rounded-[14%] object-cover", arriving && "animate-[seat-arrive_0.8s_ease-out] motion-reduce:animate-none")} />
+                {arriving ? <span key={`ring-${arrivedAt}`} aria-hidden="true" className="pointer-events-none absolute inset-0 z-[6] rounded-[14%] animate-[seat-ring_1.1s_ease-out_forwards] motion-reduce:hidden" /> : null}
                 {frameOf(player) ? <FrameArt id={frameOf(player)} className={cn("pointer-events-none absolute z-[1]", frameOf(player) >= FIRST_ORIGINAL ? "-inset-[17%] h-[134%] w-[134%]" : "-inset-[9%] h-[118%] w-[118%]")} /> : null}
                 {seatGes[player.me ? "me" : player.id] ? <img key={seatGes[player.me ? "me" : player.id].key} src={`/custom/anim/ges_${seatGes[player.me ? "me" : player.id].id}.webp`} alt="" className="pointer-events-none absolute inset-[12%] z-[4] h-[76%] w-[76%] max-w-none animate-[bottle-pop_0.25s_ease-out] object-contain drop-shadow-[0_3px_4px_rgba(0,0,0,0.4)]" /> : null}
                 {player.me || dedicate ? null : <span aria-hidden="true" className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-[14%] bg-black/35 opacity-0 transition-opacity group-hover:opacity-100"><GiftIcon className="h-[38%] w-[38%] text-white" strokeWidth={1.6} /></span>}
