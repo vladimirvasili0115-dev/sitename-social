@@ -117,6 +117,9 @@ function seeded(seed: number) {
   return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 }
 // Three places on the photo, as in the original: "ava" (anywhere, any angle), "drink" (bottom-right corner), "hat" (top-left corner).
+// Random gifts do not push each other off the photo any more: up to RAND_MAX of them stay together and each goes after RAND_KEEP_MS.
+const RAND_MAX = 5;
+const RAND_KEEP_MS = 30000;
 const RANDOM_SPOT = /^(air_kiss\d|gem\d|flower\d+|loveis\d|iloveyou|bear\d+|egg\d|strawberry\d|valentine\d)$/;
 // Caps and hats sit on the top-left or the top-right corner of the photo, tilted towards it.
 const HAT_SPOT = /^(\w*cap|cappy|cowboy|cylinderw?|indianhat|napoleon|musketeer|nurse|bezkoz|monomachhat|noteshat\w|partyhat\d|clown|carnivalmask\d|horseheadhat2|baseballa\w)$/;
@@ -374,10 +377,21 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (plan.spot) {
       const spot: Spot = { ...plan.spot, key };
       const place = spotPlace(spot);
-      setSpots((value) => { const rest = keepSpots(value, place); return { ...rest, [toId]: [...(rest[toId] ?? []), spot] }; });
+      if (spot.kind === "rand") {
+        // Earlier random gifts stay (the newest RAND_MAX - 1 of them); only a different kind of gift in the middle place is replaced.
+        setSpots((value) => {
+          const mine = value[toId] ?? [];
+          const others = mine.filter((item) => spotPlace(item) !== place);
+          const rands = mine.filter((item) => spotPlace(item) === place && item.kind === "rand").slice(-(RAND_MAX - 1));
+          return { ...value, [toId]: [...others, ...rands, spot] };
+        });
+        window.setTimeout(() => setSpots((value) => ({ ...value, [toId]: (value[toId] ?? []).filter((item) => item.key !== key) })), RAND_KEEP_MS);
+      } else {
+        setSpots((value) => { const rest = keepSpots(value, place); return { ...rest, [toId]: [...(rest[toId] ?? []), spot] }; });
+      }
       setStickers((value) => keepStickers(value, place));
-      // Pacifiers only stay on the photo for about twenty seconds.
-      if (/^c:nipple/.test(plan.land)) window.setTimeout(() => setSpots((value) => ({ ...value, [toId]: (value[toId] ?? []).filter((item) => item.key !== key) })), 20000);
+      // Pacifiers only stay on the photo for about forty seconds (twice as long as before).
+      if (/^c:nipple/.test(plan.land)) window.setTimeout(() => setSpots((value) => ({ ...value, [toId]: (value[toId] ?? []).filter((item) => item.key !== key) })), 40000);
     } else {
       const place = stickerPlace(plan.land);
       setStickers((value) => { const rest = keepStickers(value, place); return { ...rest, [toId]: [...(rest[toId] ?? []), plan.land] }; });
