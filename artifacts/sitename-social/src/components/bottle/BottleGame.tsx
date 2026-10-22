@@ -34,7 +34,8 @@ import { supabase } from "@/lib/supabase";
 import { refreshFriends } from "@/lib/friendsSync";
 import { ensureMessagesLoaded, openRemoteChat, remoteChats, sendRemoteMessage } from "@/lib/messagesSync";
 import { uploadBlob } from "@/lib/media";
-import { bottleAnswer, bottleAchSync, bottleAchView, bottleGesture, bottleProgress, bottleGesturesOpen, bottleSkin, bottleBuyChances, bottleJoin, bottleMove, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleProfile, type BottleProfile, bottleDaily, bottleItems, bottleItemBuy, bottleBooster, bottleTutorial, bottleAdminIds, type BottleItems, bottleLeagueInfo, bottleLeagueClaim, type BottleLeague, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleKickPrice, bottleGift, bottleGiftMany, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, bottleClaim, type BottleState, type BottleSeat, bottleEffectOf } from "@/lib/bottleSync";
+import { bottleAnswer, bottleAchSync, bottleAchView, bottleGesture, bottleProgress, bottleGesturesOpen, bottleSkin, bottleBuyChances, bottleJoin, bottleMove, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleProfile, type BottleProfile, bottleDaily, bottleItems, bottleItemBuy, bottleBooster, bottleTutorial, bottleAdminIds, type BottleItems, bottleLeagueInfo, bottleLeagueClaim, type BottleLeague, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleKickPrice, bottleGift, bottleGiftMany, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, bottleClaim, type BottleState, type BottleSeat, bottleEffectOf, bottleYtGet, bottleYtPut } from "@/lib/bottleSync";
+import { ytHint, ytReason } from "./ytHints";
 import { BonusMarket, EnigmaEffect, enigmaLabel, marketLabel } from "./BonusMarket";
 
 type Player = { id: string; name: string; age: number; female: boolean; avatar: string; me?: boolean; empty?: boolean; zodiac?: number | null };
@@ -147,13 +148,17 @@ function hatSpot(name: string): { x: number; y: number; s: number } {
   return { x: -rx - HAT_SIZE / 2, y: -ry - HAT_SIZE / 2, s: HAT_SIZE };
 }
 // Drinks and other corner gifts stand on the bottom-right edge of the frame: the picture's left edge is 10% inside the frame, its bottom just below it.
+// The visible art is at most CORNER_ART_H% of the photo high and CORNER_ART_W% wide (not the empty picture box), so big pictures stay small on the corner.
 const CORNER_SIZE = 80;
+const CORNER_ART_H = 38;
+const CORNER_ART_W = 32;
 function cornerSpot(name: string): { x: number; y: number; s: number } | null {
   const box = artBox(name, true);
   if (!box) return null;
-  const width = CORNER_SIZE * (box.r - box.l);
-  const left = Math.max(45, Math.min(90, 140 - width)); // wide pictures slide back in so they do not hang too far out
-  return { x: left - CORNER_SIZE * box.l, y: 102 - CORNER_SIZE * box.b, s: CORNER_SIZE };
+  const size = Math.max(28, Math.min(CORNER_SIZE, CORNER_ART_H / Math.max(0.05, box.b - box.t), CORNER_ART_W / Math.max(0.05, box.r - box.l)));
+  const width = size * (box.r - box.l);
+  const left = Math.max(45, Math.min(90, 140 - width));
+  return { x: left - size * box.l, y: 102 - size * box.b, s: size };
 }
 function planLanding(gift: string, seed: number = Math.random() * 1e9) {
   const land = landed(gift, seeded(seed + 7)); // which flower/colour lands is the same on every screen too
@@ -569,6 +574,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [songTab, setSongTab] = useState<"popular" | "fav" | "recent" | "search" | "mp3">("popular");
   const [tracks, setTracks] = useState<Track[]>([]);
   const [trackState, setTrackState] = useState<"idle" | "loading" | "nokey" | "fail">("idle");
+  const [trackWhy, setTrackWhy] = useState("");
   const [favs, setFavs] = useState<Track[]>([]);
   const [recent, setRecent] = useState<Track[]>([]);
   const [query, setQuery] = useState("");
@@ -1635,6 +1641,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   async function loadTracks(search: string) {
     const key = process.env.NEXT_PUBLIC_YOUTUBE_API_KEY;
     setTracks([]);
+    setTrackWhy("");
     if (!key) return setTrackState("nokey");
     const cacheKey = `bottle-yt:${search.toLowerCase()}`;
     try {
@@ -1643,6 +1650,16 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       if (cached?.list?.length && Date.now() - cached.at < 12 * 3600_000) { setTracks(cached.list); return setTrackState("idle"); }
     } catch { /* no cache */ }
     setTrackState("loading");
+    if (search && online) {
+      // The same search done by any player in the last days is already in the database.
+      const shared = await bottleYtGet(search);
+      if (shared?.length) {
+        setTracks(shared);
+        setTrackState("idle");
+        try { window.localStorage.setItem(cacheKey, JSON.stringify({ at: Date.now(), list: shared })); } catch { /* storage is full or blocked */ }
+        return;
+      }
+    }
     const api = "https://www.googleapis.com/youtube/v3";
     const clock = (iso: string) => {
       const part = /PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/.exec(iso);
@@ -1655,6 +1672,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       if (search) {
         const found = await fetch(`${api}/search?part=id&type=video&videoEmbeddable=true&videoCategoryId=10&maxResults=25&q=${encodeURIComponent(search)}&key=${key}`);
         if (!found.ok) {
+          setTrackWhy(await ytReason(found));
           const own = [...favs, ...recent].filter((item, index, all) => all.findIndex((other) => other.id === item.id) === index && songScore(search, item.title) >= 0.5);
           if (own.length) { setTracks(own); return setTrackState("idle"); }
           return setTrackState("fail");
@@ -1663,7 +1681,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         if (!ids) return setTrackState("idle");
       }
       const details = await fetch(search ? `${api}/videos?part=snippet,contentDetails&id=${ids}&key=${key}` : `${api}/videos?part=snippet,contentDetails&chart=mostPopular&videoCategoryId=10&regionCode=AZ&maxResults=16&key=${key}`);
-      if (!details.ok) return setTrackState("fail");
+      if (!details.ok) { setTrackWhy(await ytReason(details)); return setTrackState("fail"); }
       const list = (((await details.json()) as { items?: { id: string; snippet: { title: string }; contentDetails: { duration: string } }[] }).items ?? []).map((item) => ({ id: item.id, title: item.snippet.title, duration: clock(item.contentDetails.duration) }));
       // Own favourites and recent songs that match come first; then everything is ordered by how well it fits the query.
       const ranked = search ? rankSongs(search, [...[...favs, ...recent].filter((item) => songScore(search, item.title) >= 0.9), ...list].filter((item, index, all) => all.findIndex((other) => other.id === item.id) === index)) : list;
@@ -1671,6 +1689,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       setTracks(shown);
       setTrackState("idle");
       try { window.localStorage.setItem(cacheKey, JSON.stringify({ at: Date.now(), list: shown })); } catch { /* storage is full or blocked */ }
+      if (search && online && shown.length) void bottleYtPut(search, shown);
     } catch {
       setTrackState("fail");
     }
@@ -2649,7 +2668,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                     <div className="max-h-[38vh] min-h-[120px] overflow-y-auto rounded-xl bg-[linear-gradient(180deg,#1E1B3A,#2D1B4E)] p-1.5">
                       {trackState === "loading" ? <p role="status" className="py-8 text-center text-xs text-white/70">{t("bottle.songLoading")}</p> : null}
                       {trackState === "nokey" ? <p role="status" className="rounded-lg bg-[#FEF3C7] p-3 text-xs font-semibold text-[#92400E]">{t("bottle.songNoKey")}</p> : null}
-                      {trackState === "fail" ? <p role="status" className="rounded-lg bg-[#FEE2E2] p-3 text-xs font-semibold text-[#991B1B]">{t("bottle.songFail")}</p> : null}
+                      {trackState === "fail" ? <p role="status" className="rounded-lg bg-[#FEE2E2] p-3 text-xs font-semibold text-[#991B1B]">{t("bottle.songFail")}{trackWhy ? <span className="mt-1 block text-[11px] font-medium">{ytHint(locale, trackWhy)}</span> : null}</p> : null}
                       <ul>
                         {tracks.filter((track) => { const sec = durationSeconds(track.duration); return !sec || (sec >= 100 && sec <= 600); }).map((track) => {
                           const [artist, title] = track.title.includes(" - ") ? [track.title.split(" - ")[0], track.title.split(" - ").slice(1).join(" - ")] : ["", track.title];
@@ -2685,7 +2704,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   <div className="min-h-[120px] overflow-y-auto">
                     {remote && trackState === "loading" ? <p role="status" className="py-8 text-center text-xs text-[#6B7280]">{t("bottle.songLoading")}</p> : null}
                     {remote && trackState === "nokey" ? <p role="status" className="rounded-lg bg-[#FEF3C7] p-3 text-xs font-semibold text-[#92400E]">{t("bottle.songNoKey")}</p> : null}
-                    {remote && trackState === "fail" ? <p role="status" className="rounded-lg bg-[#FEE2E2] p-3 text-xs font-semibold text-[#991B1B]">{t("bottle.songFail")}</p> : null}
+                    {remote && trackState === "fail" ? <p role="status" className="rounded-lg bg-[#FEE2E2] p-3 text-xs font-semibold text-[#991B1B]">{t("bottle.songFail")}{trackWhy ? <span className="mt-1 block text-[11px] font-medium">{ytHint(locale, trackWhy)}</span> : null}</p> : null}
                     {!shown.length && !remote ? <p className="py-8 text-center text-xs text-[#6B7280]">{t("bottle.songEmpty")}</p> : null}
                     <ul className="grid grid-cols-2 gap-2">
                       {shown.map((track) => (
