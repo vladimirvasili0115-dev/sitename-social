@@ -43,7 +43,7 @@ type Phase = "waiting" | "spinning" | "choice" | "kissed" | "declined";
 type Track = { id: string; title: string; duration?: string };
 const stored = (key: string): Track[] => { try { return JSON.parse(window.localStorage.getItem(key) ?? "[]") as Track[]; } catch { return []; } };
 const keep = (key: string, list: Track[]) => { try { window.localStorage.setItem(key, JSON.stringify(list.slice(0, 40))); } catch { /* storage is full or blocked */ } };
-type Line = { id: number; from: string; to?: string; tos?: string[]; per?: Record<string, number>; gesture?: string; count?: number; bottle?: { a: number; b: number }; text?: string; gift?: string; song?: string; admire?: { amount?: number; by?: string; avatar?: string; target?: string; old?: string | null; self?: boolean; lost?: boolean }; event?: { kind: "kick" | "saved" | "kicked"; a: string; b: string }; boost?: { kind: "kiss_fire" | "refuse_slap"; a: string; b: string } };
+type Line = { id: number; from: string; to?: string; tos?: string[]; per?: Record<string, number>; gesture?: string; gestures?: string[]; count?: number; bottle?: { a: number; b: number }; text?: string; gift?: string; song?: string; admire?: { amount?: number; by?: string; avatar?: string; target?: string; old?: string | null; self?: boolean; lost?: boolean }; event?: { kind: "kick" | "saved" | "kicked"; a: string; b: string }; boost?: { kind: "kiss_fire" | "refuse_slap"; a: string; b: string } };
 // A gift tile stands for a whole family (e.g. the five kinds of kiss lips): in the chat they all count as the same gift.
 let familyOf: Map<string, string> | null = null;
 function giftFamily(gift: string) {
@@ -63,6 +63,11 @@ function mergeLines(list: Line[], fresh: Line[]) {
       const per = { ...(last.per ?? (last.to ? { [last.to]: last.count ?? 1 } : {})) };
       per[line.to] = (per[line.to] ?? 0) + 1;
       out[out.length - 1] = { ...last, tos, per, count: (last.count ?? 1) + 1 };
+      continue;
+    }
+    // Smileys from the same player in a row stand next to each other in one chat row (and wrap to a new row when it is full), not one under the other.
+    if (line.gesture && last && last.gesture && last.from === line.from) {
+      out[out.length - 1] = { ...last, gestures: [...(last.gestures ?? [last.gesture]), line.gesture].slice(-80) };
       continue;
     }
     out.push(line);
@@ -3456,7 +3461,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             if (line.gesture) return (
               <div key={line.id} className="flex max-w-full items-start px-[7px]">
                 {photo(from)}
-                <img src={`/custom/anim/ges_${line.gesture}.webp`} alt="" className="-mb-1.5 ml-[5px] -mt-[3px] h-10 w-10 shrink-0 object-contain" />
+                <div className="flex min-w-0 flex-1 flex-wrap items-start">
+                  {(line.gestures ?? [line.gesture]).map((id, n) => <img key={n} src={`/custom/anim/ges_${id}.webp`} alt="" className="-mb-1.5 ml-[5px] -mt-[3px] h-10 w-10 shrink-0 object-contain" />)}
+                </div>
               </div>
             );
             if (line.bottle) return (
