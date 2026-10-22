@@ -160,6 +160,7 @@ function hatSpot(name: string): { x: number; y: number; s: number } {
 // Drinks and other corner gifts stand on the bottom-right edge of the frame: the picture's left edge is 10% inside the frame, its bottom just below it.
 // The visible art is at most CORNER_ART_H% of the photo high and CORNER_ART_W% wide (not the empty picture box), so big pictures stay small on the corner.
 const CORNER_SIZE = 80;
+const CORNER_SHIFT_LEFT = 10; // everything on the bottom-right corner (hearts, drinks, balloons...) sits 5 mm (10% of the photo width) further left, so it does not reach the next photo
 const CAT_SHIFT_LEFT = 12; // the cat in the dress sits about 6 mm (12% of the photo width) further left (3 mm, then 3 mm more)
 const CORNER_ART_H = 38;
 const CORNER_ART_W = 32;
@@ -195,6 +196,7 @@ function planLanding(gift: string, seed: number = Math.random() * 1e9) {
     // The cat in the dress used to fill almost the whole photo (89% high): now its visible art is at most 55% high.
     const edge = size === 76 && name ? cornerSpot(name) : name === "catdress" ? (() => { const spot = cornerSpot(name, 55, 40); return spot ? { ...spot, x: spot.x - CAT_SHIFT_LEFT } : null; })() : null;
     spot = edge ? at(edge.s, edge.x, edge.y, "corner") : at(size, 100 - size * 0.72, 100 - size * 0.76, /^baloon\d$/.test(name) ? "balloon" : "corner");
+    if (name !== "catdress") spot = { ...spot, x: spot.x - CORNER_SHIFT_LEFT };
     }
   }
   return { land, spot, scatter };
