@@ -192,7 +192,7 @@ function planLanding(gift: string, seed: number = Math.random() * 1e9) {
   if (name && (HAT_SPOT.test(name) || /^(ears|bow_)/.test(name))) { const hat = hatSpot(name); spot = at(hat.s, hat.x, hat.y, "hatL"); } // the original "hat": sitting right on the top-left (90°) corner, turned -45°
   else if (name && (RANDOM_SPOT.test(name) || onPhoto(name) || name === "fairy")) {
     // The original "ava": a random point anywhere on the photo and a random angle (0–360°), the same on every screen.
-    const size = 40;
+    const size = name === "handcuffs" ? 80 : 40; // handcuffs: twice as big (the centre stays at the same random point)
     const x = rnd() * 100 - size / 2, y = rnd() * 100 - size / 2;
     spot = { ...at(size, x, y, "rand"), r: Math.round(rnd() * 360) }; }
   else if (land === "e:🐓") spot = at(100, 0, 0, "corner"); // the rooster covers the whole photo
@@ -204,7 +204,7 @@ function planLanding(gift: string, seed: number = Math.random() * 1e9) {
     else {
     const size = /^(catdress|donkey|flagaz|eiffeltower|amurchik)$/.test(name) ? 92 : /^baloon\d$/.test(name) ? 64 : 76;
     // The cat in the dress used to fill almost the whole photo (89% high): now its visible art is at most 55% high.
-    const edge = size === 76 && name ? cornerSpot(name, undefined, undefined, BIGGER_CORNER.test(name) ? (name === "revolver" ? 2 : name === "makarov" ? BIGGER_BY * 1.2 : BIGGER_BY) : 1) : name === "catdress" ? (() => { const spot = cornerSpot(name, 55, 40); return spot ? { ...spot, x: spot.x - CAT_SHIFT_LEFT } : null; })() : null;
+    const edge = size === 76 && name ? cornerSpot(name, undefined, undefined, BIGGER_CORNER.test(name) ? (/^(makarov|revolver)$/.test(name) ? BIGGER_BY * 1.2 : BIGGER_BY) : 1) : name === "catdress" ? (() => { const spot = cornerSpot(name, 55, 40); return spot ? { ...spot, x: spot.x - CAT_SHIFT_LEFT } : null; })() : null;
     spot = edge ? at(edge.s, edge.x, edge.y, "corner") : at(size, 100 - size * 0.72, 100 - size * 0.76, /^baloon\d$/.test(name) ? "balloon" : "corner");
     if (name !== "catdress") spot = { ...spot, x: spot.x - CORNER_SHIFT_LEFT - (/^(makarov|revolver)$/.test(name) ? 4 : 0) }; // the pistol: another 2 mm (4%) to the left // flightTo reads this same spot, so the flight ends exactly where the gift stays
     }
