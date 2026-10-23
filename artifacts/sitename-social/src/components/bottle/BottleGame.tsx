@@ -206,7 +206,7 @@ function planLanding(gift: string, seed: number = Math.random() * 1e9) {
     else {
     const size = /^(catdress|donkey|flagaz|eiffeltower|amurchik)$/.test(name) ? 92 : /^baloon\d$/.test(name) ? 64 : 76;
     // The cat in the dress used to fill almost the whole photo (89% high): now its visible art is at most 55% high.
-    const edge = size === 76 && name ? cornerSpot(name, undefined, undefined, BIGGER_CORNER.test(name) ? (/^(makarov|revolver)$/.test(name) ? BIGGER_BY * 1.2 : BIGGER_BY) : CORNER_ALL_BY) : name === "catdress" ? (() => { const spot = cornerSpot(name, 55, 40); return spot ? { ...spot, x: spot.x - CAT_SHIFT_LEFT } : null; })() : null;
+    const edge = size === 76 && name ? cornerSpot(name, undefined, undefined, BIGGER_CORNER.test(name) ? (/^(makarov|revolver)$/.test(name) ? BIGGER_BY * 1.2 : BIGGER_BY) : CORNER_ALL_BY) : name === "donkey" ? cornerSpot(name, 40, 34) : name === "catdress" ? (() => { const spot = cornerSpot(name, 55, 40); return spot ? { ...spot, x: spot.x - CAT_SHIFT_LEFT } : null; })() : null;
     spot = edge ? at(edge.s, edge.x, edge.y, "corner") : at(size, 100 - size * 0.72, 100 - size * 0.76, /^baloon\d$/.test(name) ? "balloon" : "corner");
     if (name !== "catdress") spot = { ...spot, x: spot.x - CORNER_SHIFT_LEFT - (/^(makarov|revolver)$/.test(name) ? 4 : 0) }; // the pistol: another 2 mm (4%) to the left // flightTo reads this same spot, so the flight ends exactly where the gift stays
     }
@@ -518,6 +518,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [picked, setPicked] = useState<number | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   // The phone video can be dragged by the avatar and resized from its lower-left corner.
+  // On the phone the video and music windows keep one small size (they can still be moved, not resized).
+  const MINI_VIDEO_W = 104;
+  const MINI_MUSIC_W = 190;
   const [mini, setMini] = useState<{ x: number | null; y: number; w: number }>({ x: null, y: 8, w: 127 });
   const [miniBusy, setMiniBusy] = useState(false);
   const miniRef = useRef<HTMLDivElement>(null);
@@ -3421,7 +3424,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           </div>
         ) : null}
         {video && !wide && !musicMode ? (
-          <div ref={miniRef} style={mini.x === null ? { right: 0, top: mini.y, width: musicMode ? Math.max(mini.w, 262) : mini.w } : { left: mini.x, top: mini.y, width: musicMode ? Math.max(mini.w, 262) : mini.w }} className={cn("absolute z-20 overflow-hidden border shadow-lg", musicMode ? "border-[#4C1D95] bg-[linear-gradient(160deg,#1E1B3A,#4C1D95_65%,#BE185D)] text-white" : "border-border bg-surface", mini.x === null ? "rounded-l-2xl border-r-0" : "rounded-2xl")}>
+          <div ref={miniRef} style={mini.x === null ? { right: 0, top: mini.y, width: MINI_VIDEO_W } : { left: mini.x, top: mini.y, width: MINI_VIDEO_W }} className={cn("absolute z-20 overflow-hidden border shadow-lg", musicMode ? "border-[#4C1D95] bg-[linear-gradient(160deg,#1E1B3A,#4C1D95_65%,#BE185D)] text-white" : "border-border bg-surface", mini.x === null ? "rounded-l-2xl border-r-0" : "rounded-2xl")}>
             <div className="flex items-center">
               <img src={songByAvatar} alt="" title={t("bottle.miniMove")} onPointerDown={(event) => startMini(event, "move")} className="mx-1 h-7 w-7 shrink-0 cursor-move touch-none select-none rounded-full border-2 border-border object-cover" draggable={false} />
               <div className={cn(musicMode ? "my-1 mr-1 h-[200px] w-[200px] shrink-0 overflow-hidden rounded-xl" : "aspect-video min-w-0 flex-1", "bg-black", miniBusy && "pointer-events-none")}><iframe ref={frameRef} onLoad={() => { window.setTimeout(pushMusic, 800); frameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: "listening", id: 1 }), "*"); }} src={ytSrc(video)} title="YouTube" referrerPolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen className="h-full w-full" /></div>
@@ -3432,12 +3435,12 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
               <button onClick={() => setMusic(music ? 0 : 60)} aria-label={t(music ? "videos.mute" : "videos.unmute")} title={t(music ? "videos.mute" : "videos.unmute")} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted hover:text-text">{music ? <Volume2 size={17} /> : <VolumeX size={17} />}</button>
               <input type="range" min={0} max={100} value={music} onChange={(event) => setMusic(Number(event.target.value))} aria-label={t("bottle.music")} className="min-w-0 flex-1 accent-[#8CC63F]" />
             </div>
-            <span role="separator" aria-label={t("bottle.miniSize")} title={t("bottle.miniSize")} onPointerDown={(event) => startMini(event, "size")} className="absolute bottom-0 left-0 h-5 w-5 cursor-nesw-resize touch-none bg-[linear-gradient(225deg,transparent_50%,rgba(120,130,140,0.7)_50%)]" />
+            
           </div>
         ) : null}
         {audio || (video && musicMode) ? (
           // PC: a bar above the chat. Phone: a small square window like the video one, which can be moved and resized.
-          <div ref={wide ? undefined : miniRef} style={wide ? undefined : mini.x === null ? { right: 4, top: mini.y, width: Math.min(Math.max(mini.w, 190), 220) } : { left: mini.x, top: mini.y, width: Math.min(Math.max(mini.w, 190), 220) }} className={cn("overflow-hidden bg-[linear-gradient(120deg,#1E1B3A,#4C1D95_60%,#BE185D)] text-white", wide ? "relative shrink-0 p-2.5" : "absolute z-20 rounded-2xl border border-white/15 p-2 pt-7 shadow-xl", miniBusy && !wide && "select-none")}>
+          <div ref={wide ? undefined : miniRef} style={wide ? undefined : mini.x === null ? { right: 4, top: mini.y, width: MINI_MUSIC_W } : { left: mini.x, top: mini.y, width: MINI_MUSIC_W }} className={cn("overflow-hidden bg-[linear-gradient(120deg,#1E1B3A,#4C1D95_60%,#BE185D)] text-white", wide ? "relative shrink-0 p-2.5" : "absolute z-20 rounded-2xl border border-white/15 p-2 pt-7 shadow-xl", miniBusy && !wide && "select-none")}>
             {audio ? <audio src={audio.url} autoPlay playsInline ref={(node) => { audioRef.current = node; if (node) node.volume = music / 100; }} onPlay={() => setTune((v) => ({ ...v, playing: true }))} onPause={() => setTune((v) => ({ ...v, playing: false }))} onEnded={() => setAudio(null)} onLoadedMetadata={(event) => { const node = event.currentTarget; const dur = node.duration || 0; const at = songNow(); if (at > 2 && at < dur) node.currentTime = at; setTune((v) => ({ ...v, dur })); }} onTimeUpdate={(event) => { const cur = event.currentTarget.currentTime; setTune((v) => ({ ...v, cur })); }} className="hidden" /> : null}
             {/* Songs from the MP3 tab: the YouTube player plays behind the card, only the music player is seen. */}
             {!audio && video ? <iframe ref={frameRef} onLoad={() => { window.setTimeout(pushMusic, 800); frameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: "listening", id: 1 }), "*"); }} src={ytSrc(video)} title="YouTube" referrerPolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media" tabIndex={-1} aria-hidden="true" className="pointer-events-none absolute left-0 top-0 h-[200px] w-[200px] opacity-0" /> : null}
@@ -3470,7 +3473,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             )}
             {!audio && soundPill}
             {audio ? <button onClick={() => setAudio(null)} aria-label={t("photos.close")} title={t("photos.close")} className={cn("absolute flex items-center justify-center rounded-full bg-black/40 text-white hover:bg-black/70", wide ? "right-2 top-2 h-7 w-7" : "right-1.5 top-1.5 h-6 w-6")}><X size={14} /></button> : null}
-            {wide ? null : <span role="separator" aria-label={t("bottle.miniSize")} title={t("bottle.miniSize")} onPointerDown={(event) => startMini(event, "size")} className="absolute bottom-0 left-0 h-5 w-5 cursor-nesw-resize touch-none bg-[linear-gradient(225deg,transparent_50%,rgba(255,255,255,0.45)_50%)]" />}
+            
           </div>
         ) : null}
         <div className={cn("flex items-center gap-2 border-b border-[#E8E8E8] bg-white px-3 py-1.5", (picked !== null || dedicate || !wide) && "hidden")}>
