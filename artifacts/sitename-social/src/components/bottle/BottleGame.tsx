@@ -530,7 +530,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [chosen, setChosen] = useState<string[]>([]);
   const [songMany, setSongMany] = useState<number[]>([]);
   const nameColors = useNameColors();
-  const [flying, setFlying] = useState<{ key: number; gift: string; from: number; to: number; moved: boolean; ms: number; rot?: number; mine?: boolean; still?: boolean; toId?: string; look?: string; t0?: number; tx: number; ty: number; end: number; base: number }[]>([]);
+  const [flying, setFlying] = useState<{ key: number; gift: string; from: number; to: number; moved: boolean; ms: number; rot?: number; fixed?: boolean; mine?: boolean; still?: boolean; toId?: string; look?: string; t0?: number; tx: number; ty: number; end: number; base: number }[]>([]);
   // When a receiver leaves the table (or moves to another one), the gifts flying to them stop; they never land on an empty seat.
   const playersRef = useRef(players);
   playersRef.current = players;
@@ -1993,7 +1993,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   useEffect(() => {
     canvasFlights.current = flying.flatMap((item) => {
       const url = flightUrl(item.gift === "c:wholeegg" ? item.gift : item.look ?? item.gift);
-      return url ? [{ key: item.key, url, from: item.from, to: item.to, t0: item.t0 ?? performance.now(), ms: item.ms, tx: item.tx, ty: item.ty, base: item.base, end: item.end, rot: item.rot ?? 0, spin: SPIN_FLIGHT.test(item.gift) }] : [];
+      return url ? [{ key: item.key, url, from: item.from, to: item.to, t0: item.t0 ?? performance.now(), ms: item.ms, tx: item.tx, ty: item.ty, base: item.base, end: item.end, rot: item.rot ?? 0, fixed: item.fixed, spin: SPIN_FLIGHT.test(item.gift) }] : [];
     });
   }, [flying, art]); // eslint-disable-line react-hooks/exhaustive-deps
   // Realtime: every gift is also announced on the table's live channel at once, so everybody at the table sees it fly
@@ -2187,7 +2187,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       // My own gifts always fly on my screen: when the sky is full, the oldest gift from someone else makes room.
       // A gift already in the air is never removed before it arrives. When the sky is full, someone else's oldest gift makes room;
       // if all of them are mine, the new one simply lands without a flight.
-      setFlying((list) => [...list, { key, gift, look: plan.land, t0: performance.now(), from: meIndex, to: index, toId: player.id, moved: false, ms, mine: true, still: list.length >= 12, rot: plan.spot?.r ?? 0, ...flightTo(plan, gift) }]); // no limit: every gift flies
+      setFlying((list) => [...list, { key, gift, look: plan.land, t0: performance.now(), from: meIndex, to: index, toId: player.id, moved: false, ms, mine: true, still: list.length >= 12, rot: plan.spot?.kind === "hatL" ? -45 : plan.spot?.kind === "hatR" ? 45 : plan.spot?.r ?? 0, fixed: plan.spot?.kind === "hatL" || plan.spot?.kind === "hatR", ...flightTo(plan, gift) }]); // no limit: every gift flies
       window.setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))))), 20);
     }
     const gen = tableGen.current;
@@ -2223,7 +2223,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     else giftSound(gift, "send");
     const plan = planLanding(gift, seed);
     {
-      if (!busy) setFlying((list) => ([...list, { key, gift, look: plan.land, t0: performance.now(), from: fromAt >= 0 ? fromAt : toAt, to: toAt, toId, moved: false, ms, still: list.length >= 12, rot: plan.spot?.r ?? 0, ...flightTo(plan, gift) }]));
+      if (!busy) setFlying((list) => ([...list, { key, gift, look: plan.land, t0: performance.now(), from: fromAt >= 0 ? fromAt : toAt, to: toAt, toId, moved: false, ms, still: list.length >= 12, rot: plan.spot?.kind === "hatL" ? -45 : plan.spot?.kind === "hatR" ? 45 : plan.spot?.r ?? 0, fixed: plan.spot?.kind === "hatL" || plan.spot?.kind === "hatR", ...flightTo(plan, gift) }]));
       window.setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))))), 20);
     }
     const gen = tableGen.current;
