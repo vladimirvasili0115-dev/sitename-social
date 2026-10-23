@@ -1140,7 +1140,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   useEffect(() => { if (myTurnLive) playSound("turn"); }, [myTurnLive]);
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
-  }, [lines.length]);
+  }, [lines.length, picked === null && !(dedicate && !wide)]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => setVolume(volume / 100), [volume]);
   // Songs must start by themselves on every device. Browsers only allow sound after the person has touched the page,
   // so a video starts muted until then and gets its sound on the first tap anywhere in the game (or the 🔊 button).
@@ -2203,6 +2203,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     };
     laterTimer.current = window.setTimeout(step, 50);
   }, []);
+  // Weak phones (4 cores or less, 3 GB of memory or less) get a lighter show: fewer gifts in the air at once.
+  const lowPower = useMemo(() => { try { const nav = navigator as Navigator & { deviceMemory?: number }; return (nav.hardwareConcurrency ?? 8) <= 4 || (nav.deviceMemory ?? 8) <= 3; } catch { return false; } }, []);
   const airCount = useRef(0); // gifts in the air right now (mine and others')
   const giftSound = (gift: string, moment: "send" | "land") => { const now = performance.now(); if (now - soundAt.current < 70) return; soundAt.current = now; playGiftSound(gift, moment); };
   function sendGift(index: number, gift: string, price: number, ms = 5200) {
@@ -2268,7 +2270,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     const pour = isDrink(gift) && fromAt >= 0 && fromAt !== toAt;
     // A flood of gifts from other players: past 70 in the air, a new one lands straight away (no flight and no "sent" sound),
     // so nothing is heard without being seen.
-    const busy = airCount.current >= 50; // a flood: past 50 in the air a new gift of someone else lands straight away (no flight, no sound, no fireworks)
+    const busy = airCount.current >= (lowPower ? 20 : 50); // a flood: past 50 in the air a new gift of someone else lands straight away (no flight, no sound, no fireworks)
     if (busy) ms = 0;
     else { giftSound(gift, "send"); airCount.current += 1; }
     const plan = planLanding(gift, seed);
@@ -3577,7 +3579,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         {/* The original chat (bottle-html5 ChatContent + chat CSS): light grey list, 30px photos, white bubbles with a tail,
             and one-line info rows "photo → gift/kiss/song → photo" with the original icons. */}
         <div ref={listRef} className={cn("flex min-h-0 flex-1 flex-col gap-[7px] overflow-y-auto bg-[#F5F5F5] py-[7px] text-[13px] text-black [overflow-wrap:break-word]", (picked !== null || (dedicate && !wide)) && "hidden")}>
-          {(() => {
+          {(picked !== null || (dedicate && !wide)) ? null : (() => {
             const O = "/custom/orig/";
             const ic = (name: string, w: number, h: number, extra = "") => <span aria-hidden="true" className={cn("inline-block shrink-0 bg-contain bg-center bg-no-repeat", extra)} style={{ width: w, height: h, backgroundImage: `url(${O}${name}.svg)` }} />;
             const photo = (player: Player | null | undefined, extra = "") => player ? <button type="button" onClick={() => { const index = players.findIndex((item) => item.id === player.id); if (index >= 0) { setPicked(index); setCard(true); } else showUserCard({ id: player.id, name: player.name, avatar: player.avatar }); }} title={player.name} className={cn("h-[30px] w-[30px] shrink-0 rounded-[4px] bg-cover bg-top", extra)} style={{ backgroundImage: `url(${player.avatar || NO_PHOTO})` }} /> : null;
