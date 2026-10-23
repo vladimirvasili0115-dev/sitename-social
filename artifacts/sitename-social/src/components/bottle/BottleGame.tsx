@@ -2186,7 +2186,6 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // Extra clicks are simply ignored (no hearts taken), so the page never drowns in its own gifts.
   const giftBucket = useRef({ tokens: 40, at: 0 });
   const soundAt = useRef(0);
-  const airCount = useRef(0); // gifts in the air right now (mine and others')
   const giftSound = (gift: string, moment: "send" | "land") => { const now = performance.now(); if (now - soundAt.current < 70) return; soundAt.current = now; playGiftSound(gift, moment); };
   function sendGift(index: number, gift: string, price: number, ms = 5200) {
     {
@@ -2218,14 +2217,12 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       // My own gifts always fly on my screen: when the sky is full, the oldest gift from someone else makes room.
       // A gift already in the air is never removed before it arrives. When the sky is full, someone else's oldest gift makes room;
       // if all of them are mine, the new one simply lands without a flight.
-      airCount.current += 1;
       setFlying((list) => [...list, { key, gift, look: plan.land, t0: performance.now(), from: meIndex, to: index, toId: player.id, moved: false, ms, mine: true, still: list.length >= 12, rot: plan.spot?.kind === "hatL" ? -45 : plan.spot?.kind === "hatR" ? 45 : plan.spot?.r ?? 0, fixed: plan.spot?.kind === "hatL" || plan.spot?.kind === "hatR", ...flightTo(plan, gift) }]); // no limit: every gift flies
       window.setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))))), 20);
     }
     const gen = tableGen.current;
     const startedAt = performance.now();
     window.setTimeout(() => {
-      airCount.current = Math.max(0, airCount.current - 1);
       setFlying((list) => list.filter((item) => item.key !== key));
       if (gen !== tableGen.current || playersRef.current[index]?.id !== player.id || (freshAt.current[player.id] ?? 0) > startedAt) return;
       giftSound(gift, "land");
@@ -2251,9 +2248,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     const pour = isDrink(gift) && fromAt >= 0 && fromAt !== toAt;
     // A flood of gifts from other players: past 70 in the air, a new one lands straight away (no flight and no "sent" sound),
     // so nothing is heard without being seen.
-    const busy = airCount.current >= 50; // a flood: past 50 in the air a new gift of someone else lands straight away (no flight, no sound, no fireworks)
-    if (busy) ms = 0;
-    else { giftSound(gift, "send"); airCount.current += 1; }
+    const busy = false; // no limit: every gift from other players flies too
+    if (busy) ms = 500;
+    else giftSound(gift, "send");
     const plan = planLanding(gift, seed);
     {
       if (!busy) setFlying((list) => ([...list, { key, gift, look: plan.land, t0: performance.now(), from: fromAt >= 0 ? fromAt : toAt, to: toAt, toId, moved: false, ms, still: list.length >= 12, rot: plan.spot?.kind === "hatL" ? -45 : plan.spot?.kind === "hatR" ? 45 : plan.spot?.r ?? 0, fixed: plan.spot?.kind === "hatL" || plan.spot?.kind === "hatR", ...flightTo(plan, gift) }]));
@@ -2262,12 +2259,12 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     const gen = tableGen.current;
     const startedAt = performance.now();
     window.setTimeout(() => {
-      if (!busy) { airCount.current = Math.max(0, airCount.current - 1); setFlying((list) => list.filter((item) => item.key !== key)); }
+      setFlying((list) => list.filter((item) => item.key !== key));
       if (gen !== tableGen.current || playersRef.current[toAt]?.id !== toId || (freshAt.current[toId] ?? 0) > startedAt) return;
-      if (!busy) giftSound(gift, "land");
-      if (pour && !busy) heartBurst(key, toAt);
+      giftSound(gift, "land");
+      if (pour) heartBurst(key, toAt);
       if (gift === "c:heart1000") heartBurst(key + 0.5, toAt, 1000);
-      if (!busy) fireworks(key, toAt, priceOf(gift), fromAt, gift);
+      fireworks(key, toAt, priceOf(gift), fromAt, gift);
       landGift(key, toId, plan);
       say({ from: fromId, to: toId, gift });
     }, ms + 100);
