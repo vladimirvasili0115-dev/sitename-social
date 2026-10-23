@@ -2182,9 +2182,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       if (batch.length) void bottleGiftMany(batch);
     }, 300);
   }
-  // Auto-clicker guard: at most 20 gifts a second from this device.
+  // Auto-clicker guard: at most 40 gifts a second from this device (a stream to the whole table fits: the stream below is slowed down for big groups so the last receivers are not left out).
   // Extra clicks are simply ignored (no hearts taken), so the page never drowns in its own gifts.
-  const giftBucket = useRef({ tokens: 20, at: 0 });
+  const giftBucket = useRef({ tokens: 40, at: 0 });
   const soundAt = useRef(0);
   // One shared clock for everything that happens later (gifts moving, landing, chat lines): all that is due runs in ONE callback,
   // so React draws once per 50 ms instead of once per gift. A flood of gifts no longer means hundreds of redraws a second.
@@ -2211,7 +2211,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     {
       const now = performance.now();
       const bucket = giftBucket.current;
-      bucket.tokens = Math.min(20, bucket.tokens + ((now - bucket.at) / 1000) * 20);
+      bucket.tokens = Math.min(40, bucket.tokens + ((now - bucket.at) / 1000) * 40);
       bucket.at = now;
       if (bucket.tokens < 1) return true; // too fast: skipped without stopping a hold-to-send stream
       bucket.tokens -= 1;
@@ -2408,7 +2408,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         const now = ids.map((id) => playersRef.current.findIndex((item) => item.id === id && !item.empty)).filter((index) => index >= 0);
         if (!now.length) return stopHold();
         for (const index of now) if (!sendGift(index, gift, price, 1800)) return stopHold();
-      }, 300); // full speed: no thinning of the stream
+      }, Math.max(300, ids.length * 45)); // a stream to many people is a little slower, so the limit above never cuts off the last receivers
     }, 380) };
     pressed.current = state;
   }
