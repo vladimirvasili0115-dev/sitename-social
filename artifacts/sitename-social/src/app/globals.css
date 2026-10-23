@@ -332,12 +332,3 @@ button { cursor: pointer; }
 
 /* chat: moving gradient names are painted still (a moving text gradient repaints every frame for every row) */
 [class*="overflow-wrap:break-word"] .gold-name,[class*="overflow-wrap:break-word"] .name-chameleon,[class*="overflow-wrap:break-word"] .name-champagne{animation:none;background-position:40% 50%}
-
-/* chat: moving gradient names are painted still (a moving text gradient repaints every frame for every row) */
-[class*="overflow-wrap:break-word"] .gold-name,[class*="overflow-wrap:break-word"] .name-chameleon,[class*="overflow-wrap:break-word"] .name-champagne{animation:none;background-position:40% 50%}
-
-/* chat: moving gradient names are painted still (a moving text gradient repaints every frame for every row) */
-[class*="overflow-wrap:break-word"] .gold-name,[class*="overflow-wrap:break-word"] .name-chameleon,[class*="overflow-wrap:break-word"] .name-champagne{animation:none;background-position:40% 50%}
-
-/* chat: moving gradient names are painted still (a moving text gradient repaints every frame for every row) */
-[class*="overflow-wrap:break-word"] .gold-name,[class*="overflow-wrap:break-word"] .name-chameleon,[class*="overflow-wrap:break-word"] .name-champagne{animation:none;background-position:40% 50%}
