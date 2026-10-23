@@ -2197,7 +2197,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       bucket.tokens -= 1;
     }
     const seed = 1 + Math.floor(Math.random() * 2e9); // goes to the server with the gift, so every screen puts it in the same spot
-    ms = ms <= 1800 ? 4000 : 7000; // medium speed: a single gift flies 7 s, a press-and-hold stream 4 s
+    ms = ms <= 1800 ? 8000 : 14000; // slow: a single gift flies 14 s, a press-and-hold stream 8 s
     if (gift.startsWith("c:") && colorSteps.has(gift.slice(2))) gift = `c:${nextColor(gift.slice(2))}`; // one colour per tap, in order
     const player = players[index];
     if (!player || player.empty) return false;
@@ -2240,7 +2240,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // A gift another player sent: it flies from their seat to the receiver, then sits on the photo and goes into the chat.
   const remoteGift = useRef<(from: string, to: string, gift: string, ms: number, seed: number) => void>(() => {});
   remoteGift.current = (fromId, toId, gift, ms, seed) => {
-    ms = ms <= 1800 ? 4000 : 7000; // medium speed: a single gift flies 7 s, a press-and-hold stream 4 s
+    ms = ms <= 1800 ? 8000 : 14000; // slow: a single gift flies 14 s, a press-and-hold stream 8 s
     const fromAt = players.findIndex((player) => player.id === fromId);
     const toAt = players.findIndex((player) => player.id === toId);
     if (!gift || toAt < 0) return;
