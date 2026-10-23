@@ -1,4 +1,4 @@
-// NudePart mark: a warm gradient tile with a tilted bottle whose neck points at a small heart — the spin-the-bottle game in one sign.
+// Site mark: a warm gradient tile with a tilted bottle whose neck points at a small heart — the spin-the-bottle game in one sign.
 export function LogoMark({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 64 64" className={className} aria-hidden="true">

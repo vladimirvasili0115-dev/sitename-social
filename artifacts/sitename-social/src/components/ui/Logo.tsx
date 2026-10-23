@@ -1,12 +1,12 @@
-import { SITE_NAME } from "@/config/site";
+import { SITE_NAME, SITE_NAME_TAIL } from "@/config/site";
 import { cn } from "@/lib/utils";
 import { LogoMark } from "./LogoMark";
 
-// The brand: the bottle-and-heart mark and "NudePart" with "Part" in the brand gradient.
+// The brand: the bottle-and-heart mark and the site name with its last part in the brand gradient.
 export function Wordmark({ className }: { className?: string }) {
-  const split = SITE_NAME.search(/[A-Z](?=[a-z]*$)/);
-  const head = split > 0 ? SITE_NAME.slice(0, split) : SITE_NAME;
-  const tail = split > 0 ? SITE_NAME.slice(split) : "";
+  const hasTail = SITE_NAME_TAIL.length > 0 && SITE_NAME.endsWith(SITE_NAME_TAIL) && SITE_NAME.length > SITE_NAME_TAIL.length;
+  const head = hasTail ? SITE_NAME.slice(0, SITE_NAME.length - SITE_NAME_TAIL.length) : SITE_NAME;
+  const tail = hasTail ? SITE_NAME_TAIL : "";
   return <span className={cn("text-[19px] font-extrabold tracking-[-0.04em] text-text", className)}>{head}<span className="bg-[linear-gradient(90deg,#FF4D8D,#FF8A3D)] bg-clip-text text-transparent">{tail}</span></span>;
 }
 
