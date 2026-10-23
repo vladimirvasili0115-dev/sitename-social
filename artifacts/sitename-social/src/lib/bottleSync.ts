@@ -25,6 +25,9 @@ export const bottleLogIp = (event: "visit" | "login" | "register" | "join" = "vi
 export const bottleNameColors = () => call<Record<string, string>>("bottle_name_colors");
 export const bottleLeave = () => call<null>("bottle_leave");
 export const bottleClaim = (token: string) => call<boolean>("bottle_claim", { p_token: token });
+// The gifts that sit on the photos of the people at my table (kept on the server), so a player who comes (back) to the table sees them again.
+export type BottleSeatGift = { cid: number; from: string | null; to: string; gift: string; seed: number | null; age: number };
+export const bottleTableGifts = (upto: number) => call<BottleSeatGift[]>("bottle_table_gifts", { p_upto: upto });
 export const bottleSync = (after: number) => call<BottleState>("bottle_sync", { p_after: after });
 export const bottleSpin = () => call<boolean>("bottle_spin");
 export const bottleAnswer = (kiss: boolean) => call<null>("bottle_answer", { p_kiss: kiss });
