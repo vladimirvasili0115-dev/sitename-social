@@ -16,6 +16,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { EmojiPicker } from "@/components/ui/EmojiPicker";
 import { IconButton } from "@/components/ui/IconButton";
 import { cn } from "@/lib/utils";
+import { lastSeenText } from "@/lib/lastSeen";
 import type { Chat, MessageInput } from "./useMessages";
 import { VoiceRecorder } from "./VoiceRecorder";
 import { ImageViewer } from "@/components/ui/ImageViewer";
@@ -94,7 +95,7 @@ export function ChatPane({ chat, onBack, onSend, onDelete, className }: Props) {
         <Link href={userHref(user.id)} className="shrink-0"><Avatar user={user} /></Link>
         <div className="min-w-0">
           <Link href={userHref(user.id)} className="block truncate text-sm font-semibold hover:underline">{user.name}<VerifiedMark userId={user.id} size={14} /></Link>
-          <div className={cn("text-xs", typing || user.online ? "text-accent" : "text-muted")}>{typing ? t("messages.typing") : t(user.online ? "common.onlineNow" : "messages.offline")}</div>
+          <div className={cn("text-xs", typing || user.online ? "text-accent" : "text-muted")}>{typing ? t("messages.typing") : user.online ? t("common.onlineNow") : lastSeenText(user.lastSeen, t)}</div>
         </div>
         {supabase ? (
           <div className="ml-auto flex shrink-0 items-center gap-1">

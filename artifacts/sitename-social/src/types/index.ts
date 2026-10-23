@@ -1,7 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 
 export type Locale = "az" | "tr" | "ru" | "en" | "ka";
-export type User = { id: string; name: string; handle: string; avatar: string; online?: boolean };
+export type User = { id: string; name: string; handle: string; avatar: string; online?: boolean; lastSeen?: number };
 export type Poll = { question: string; options: string[]; votes: number[]; mine?: number };
 export type Post = {
   id: string; author: User; time: string; text: string; image?: string; video?: string; likes: number; comments: number; reactions: string[]; mine?: boolean; groupId?: string; edited?: boolean; kind?: "avatar";

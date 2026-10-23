@@ -20,6 +20,7 @@ import { UserActions } from "@/components/user/UserActions";
 import { usePerson } from "@/components/user/usePerson";
 import { fetchUserPhotos } from "@/lib/photosSync";
 import type { Photo } from "@/types";
+import { lastSeenText } from "@/lib/lastSeen";
 import { recordVisit } from "@/lib/guestsSync";
 import { fetchAccess, fullAccess, type Access } from "@/lib/access";
 
@@ -97,7 +98,7 @@ function UserWall({ id }: { id: string }) {
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                 <h1 className="truncate text-2xl font-semibold tracking-[-0.03em]">{user.name}<VerifiedMark userId={user.id} size={21} /></h1>
                 {official ? <span className="rounded-full border px-2.5 py-0.5 text-[11px] font-semibold" style={{ borderColor: "#E7B93C", color: "#E7B93C" }}>{t("verified.official")}</span> : null}
-                <span className={`flex items-center gap-1.5 text-xs font-medium ${user.online ? "text-accent" : "text-muted"}`}><span className={`h-2 w-2 rounded-full ${user.online ? "bg-accent" : "bg-border"}`} />{t(user.online ? "common.onlineNow" : "messages.offline")}</span>
+                <span className={`flex items-center gap-1.5 text-xs font-medium ${user.online ? "text-accent" : "text-muted"}`}><span className={`h-2 w-2 rounded-full ${user.online ? "bg-accent" : "bg-border"}`} />{user.online ? t("common.onlineNow") : lastSeenText(user.lastSeen, t)}</span>
               </div>
               <p className="mt-0.5 text-sm text-muted">@{user.handle}</p>
               {status ? <p className="mt-2 text-sm leading-6 text-text">{status}</p> : null}

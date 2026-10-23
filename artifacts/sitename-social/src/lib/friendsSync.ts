@@ -28,7 +28,7 @@ export const remoteFriends = {
 
 const isOnline = (lastSeen: string | null) => Boolean(lastSeen) && Date.now() - Date.parse(lastSeen ?? "") < ONLINE_WINDOW;
 export type PersonRow = Row;
-export const toPerson = (row: Row): Person => ({ user: { ...toUser(row), online: isOnline(row.last_seen) }, city: row.city ?? "", mutual: 0 });
+export const toPerson = (row: Row): Person => ({ user: { ...toUser(row), online: isOnline(row.last_seen), lastSeen: row.last_seen ? Date.parse(row.last_seen) : undefined }, city: row.city ?? "", mutual: 0 });
 async function sessionUserId() {
   if (!supabase) return null;
   return (await supabase.auth.getSession()).data.session?.user.id ?? null;
