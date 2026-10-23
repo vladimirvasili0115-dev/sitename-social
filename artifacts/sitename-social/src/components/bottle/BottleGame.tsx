@@ -402,7 +402,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         if (row) drawn.add(row.id);
         if (!row) return place === 7 && !net ? me : { id: `empty-${place}`, name: "", age: 0, female: false, avatar: "", empty: true };
         const female = row.gender === "female";
-        if (row.id === net?.me) return { ...me, age: row.age ?? me.age, female, zodiac: row.zodiac ?? me.zodiac };
+        if (row.id === net?.me) return { ...me, name: me.name || (row.name ?? "").split(" ")[0], age: row.age ?? me.age, female, zodiac: row.zodiac ?? me.zodiac };
         return { id: row.id, name: (row.name ?? "").split(" ")[0] || "?", age: row.age ?? 0, female, avatar: row.avatar || NO_PHOTO, zodiac: row.zodiac };
       });
     }
