@@ -71,10 +71,12 @@ export const giftGroups: Record<string, string[]> = {
   kinder2: ["kinder2", "kinder3", "kinder4", "kinder5"],
   sweet1: ["sweet1", "sweet2", "sweet3", "sweet4"],
   valenok: ["valenok", "valenok2", "valenok3"],
+  candy1: ["candy1", "candy2", "candy3", "candy4", "candy5", "candy6"],
+  candy7: ["candy7", "candy8", "candy9", "candy10"],
 };
 const grouped = new Set(Object.entries(giftGroups).flatMap(([tile, list]) => list.filter((name) => name !== tile)));
 // Colour families that go one colour per tap, in order (1st tap colour 1, 2nd tap colour 2 ...), without changing colour in flight.
-export const colorSteps = new Set(["air_kiss1", "gem1", "loveis1", "strawberry1", "valentine2", "redbull", "nipple1", "partyhat1", "noteshatb", "maracas1", "astronaut", "baloon1", "drinkam", "bouquet", "gascan_1", "kinder2", "sweet1", "valenok"]);
+export const colorSteps = new Set(["air_kiss1", "gem1", "loveis1", "strawberry1", "valentine2", "redbull", "nipple1", "partyhat1", "noteshatb", "maracas1", "astronaut", "baloon1", "drinkam", "bouquet", "gascan_1", "kinder2", "sweet1", "valenok", "candy1", "candy7"]);
 const stepAt: Record<string, number> = {};
 export function nextColor(name: string) {
   const group = giftGroups[name];
