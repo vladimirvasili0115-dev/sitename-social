@@ -998,7 +998,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         // Gifts from other players fly across the table on every screen; my own gifts were already shown when I sent them.
         const gifts = all.filter((item) => item.kind === "gift" && item.from !== data!.me && !(item.seed && seenSeeds.current.has(item.seed)));
         for (const item of gifts) if (item.seed) seenSeeds.current.add(item.seed);
-        if (!first) gifts.forEach((item, order) => later(() => remoteGift.current(who(item.from), who(item.to), item.body ?? "", gifts.length > 1 ? 1800 : 3600, item.seed ?? item.id), order * Math.min(150, 900 / gifts.length))); // a big batch still starts within a second
+        if (!first) gifts.forEach((item, order) => window.setTimeout(() => remoteGift.current(who(item.from), who(item.to), item.body ?? "", gifts.length > 1 ? 1800 : 3600, item.seed ?? item.id), order * Math.min(150, 900 / gifts.length))); // a big batch still starts within a second
         for (const seat of data.seats) names.current[seat.id] = { name: (seat.name ?? "").split(" ")[0] || "?", avatar: seat.avatar ?? "" };
         const nameOf = (id: string | null) => names.current[id ?? ""]?.name ?? "?"; // own name too, not "you"
         if (!first) all.filter((item) => item.kind === "compliment" && item.to === data!.me).forEach((item) => setComplimentIn({ name: names.current[item.from ?? ""]?.name ?? "?", avatar: names.current[item.from ?? ""]?.avatar || NO_PHOTO, kind: Number(item.body) || 1 }));
@@ -1140,7 +1140,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   useEffect(() => { if (myTurnLive) playSound("turn"); }, [myTurnLive]);
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
-  }, [lines.length, picked === null && !(dedicate && !wide)]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [lines.length]);
   useEffect(() => setVolume(volume / 100), [volume]);
   // Songs must start by themselves on every device. Browsers only allow sound after the person has touched the page,
   // so a video starts muted until then and gets its sound on the first tap anywhere in the game (or the 🔊 button).
@@ -2080,7 +2080,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       const who = (id: string) => (id === meId.current ? "me" : id);
       items.forEach((item, order) => {
         seenSeeds.current.add(item.seed);
-        later(() => remoteGift.current(who(item.from), who(item.to), item.gift, items.length > 1 ? 1800 : 3600, item.seed), order * Math.min(120, 600 / items.length));
+        window.setTimeout(() => remoteGift.current(who(item.from), who(item.to), item.gift, items.length > 1 ? 1800 : 3600, item.seed), order * Math.min(120, 600 / items.length));
       });
     });
     channel.on("broadcast", { event: "fresh" }, (message: { payload?: { id?: string } }) => {
@@ -2182,29 +2182,10 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       if (batch.length) void bottleGiftMany(batch);
     }, 300);
   }
-  // Auto-clicker guard: at most 40 gifts a second from this device (a stream to the whole table fits: the stream below is slowed down for big groups so the last receivers are not left out).
+  // Auto-clicker guard: at most 40 gifts a second from this device (a hold-to-send stream to 10 people fits in it).
   // Extra clicks are simply ignored (no hearts taken), so the page never drowns in its own gifts.
   const giftBucket = useRef({ tokens: 40, at: 0 });
   const soundAt = useRef(0);
-  // One shared clock for everything that happens later (gifts moving, landing, chat lines): all that is due runs in ONE callback,
-  // so React draws once per 50 ms instead of once per gift. A flood of gifts no longer means hundreds of redraws a second.
-  const laterQ = useRef<{ at: number; fn: () => void }[]>([]);
-  const laterTimer = useRef(0);
-  const later = useCallback((fn: () => void, delay: number) => {
-    laterQ.current.push({ at: performance.now() + delay, fn });
-    if (laterTimer.current) return;
-    const step = () => {
-      laterTimer.current = 0;
-      const now = performance.now();
-      const due = laterQ.current.filter((task) => task.at <= now).sort((a, b) => a.at - b.at);
-      laterQ.current = laterQ.current.filter((task) => task.at > now);
-      for (const task of due) { try { task.fn(); } catch (error) { console.error(error); } }
-      if (laterQ.current.length && !laterTimer.current) laterTimer.current = window.setTimeout(step, 50);
-    };
-    laterTimer.current = window.setTimeout(step, 50);
-  }, []);
-  // Weak phones (4 cores or less, 3 GB of memory or less) get a lighter show: fewer gifts in the air at once.
-  const lowPower = useMemo(() => { try { const nav = navigator as Navigator & { deviceMemory?: number }; return (nav.hardwareConcurrency ?? 8) <= 4 || (nav.deviceMemory ?? 8) <= 3; } catch { return false; } }, []);
   const airCount = useRef(0); // gifts in the air right now (mine and others')
   const giftSound = (gift: string, moment: "send" | "land") => { const now = performance.now(); if (now - soundAt.current < 70) return; soundAt.current = now; playGiftSound(gift, moment); };
   function sendGift(index: number, gift: string, price: number, ms = 5200) {
@@ -2239,11 +2220,11 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       // if all of them are mine, the new one simply lands without a flight.
       airCount.current += 1;
       setFlying((list) => [...list, { key, gift, look: plan.land, t0: performance.now(), from: meIndex, to: index, toId: player.id, moved: false, ms, mine: true, still: list.length >= 12, rot: plan.spot?.kind === "hatL" ? -45 : plan.spot?.kind === "hatR" ? 45 : plan.spot?.r ?? 0, fixed: plan.spot?.kind === "hatL" || plan.spot?.kind === "hatR", ...flightTo(plan, gift) }]); // no limit: every gift flies
-      later(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))), 60);
+      window.setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))))), 20);
     }
     const gen = tableGen.current;
     const startedAt = performance.now();
-    later(() => {
+    window.setTimeout(() => {
       airCount.current = Math.max(0, airCount.current - 1);
       setFlying((list) => list.filter((item) => item.key !== key));
       if (gen !== tableGen.current || playersRef.current[index]?.id !== player.id || (freshAt.current[player.id] ?? 0) > startedAt) return;
@@ -2270,17 +2251,17 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     const pour = isDrink(gift) && fromAt >= 0 && fromAt !== toAt;
     // A flood of gifts from other players: past 70 in the air, a new one lands straight away (no flight and no "sent" sound),
     // so nothing is heard without being seen.
-    const busy = airCount.current >= (lowPower ? 20 : 50); // a flood: past 50 in the air a new gift of someone else lands straight away (no flight, no sound, no fireworks)
+    const busy = airCount.current >= 50; // a flood: past 50 in the air a new gift of someone else lands straight away (no flight, no sound, no fireworks)
     if (busy) ms = 0;
     else { giftSound(gift, "send"); airCount.current += 1; }
     const plan = planLanding(gift, seed);
     {
       if (!busy) setFlying((list) => ([...list, { key, gift, look: plan.land, t0: performance.now(), from: fromAt >= 0 ? fromAt : toAt, to: toAt, toId, moved: false, ms, still: list.length >= 12, rot: plan.spot?.kind === "hatL" ? -45 : plan.spot?.kind === "hatR" ? 45 : plan.spot?.r ?? 0, fixed: plan.spot?.kind === "hatL" || plan.spot?.kind === "hatR", ...flightTo(plan, gift) }]));
-      later(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))), 60);
+      window.setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))))), 20);
     }
     const gen = tableGen.current;
     const startedAt = performance.now();
-    later(() => {
+    window.setTimeout(() => {
       if (!busy) { airCount.current = Math.max(0, airCount.current - 1); setFlying((list) => list.filter((item) => item.key !== key)); }
       if (gen !== tableGen.current || playersRef.current[toAt]?.id !== toId || (freshAt.current[toId] ?? 0) > startedAt) return;
       if (!busy) giftSound(gift, "land");
@@ -2408,7 +2389,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         const now = ids.map((id) => playersRef.current.findIndex((item) => item.id === id && !item.empty)).filter((index) => index >= 0);
         if (!now.length) return stopHold();
         for (const index of now) if (!sendGift(index, gift, price, 1800)) return stopHold();
-      }, Math.max(300, ids.length * 45)); // a stream to many people is a little slower, so the limit above never cuts off the last receivers
+      }, 300); // full speed: no thinning of the stream
     }, 380) };
     pressed.current = state;
   }
@@ -3579,7 +3560,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         {/* The original chat (bottle-html5 ChatContent + chat CSS): light grey list, 30px photos, white bubbles with a tail,
             and one-line info rows "photo → gift/kiss/song → photo" with the original icons. */}
         <div ref={listRef} className={cn("flex min-h-0 flex-1 flex-col gap-[7px] overflow-y-auto bg-[#F5F5F5] py-[7px] text-[13px] text-black [overflow-wrap:break-word]", (picked !== null || (dedicate && !wide)) && "hidden")}>
-          {(picked !== null || (dedicate && !wide)) ? null : (() => {
+          {(() => {
             const O = "/custom/orig/";
             const ic = (name: string, w: number, h: number, extra = "") => <span aria-hidden="true" className={cn("inline-block shrink-0 bg-contain bg-center bg-no-repeat", extra)} style={{ width: w, height: h, backgroundImage: `url(${O}${name}.svg)` }} />;
             const photo = (player: Player | null | undefined, extra = "") => player ? <button type="button" onClick={() => { const index = players.findIndex((item) => item.id === player.id); if (index >= 0) { setPicked(index); setCard(true); } else showUserCard({ id: player.id, name: player.name, avatar: player.avatar }); }} title={player.name} className={cn("h-[30px] w-[30px] shrink-0 rounded-[4px] bg-cover bg-top", extra)} style={{ backgroundImage: `url(${player.avatar || NO_PHOTO})` }} /> : null;
