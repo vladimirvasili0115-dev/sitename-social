@@ -7,6 +7,7 @@ import { useTranslation } from "@/i18n/useTranslation";
 import { useProfile } from "@/components/profile/useProfile";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { relationshipLabels } from "@/components/profile/ProfileAbout";
+import { HandleField } from "@/components/profile/HandleField";
 import { AuthField } from "@/components/auth/AuthField";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
@@ -81,6 +82,7 @@ export default function EditProfilePage() {
                   <AuthField label={t("auth.name")} icon={UserRound} value={form.name} onChange={set("name")} disabled={Boolean(wait)} />
                   <p className="mt-1 text-[11px] text-muted">{wait ? t("edit.nameWait").replace("{d}", wait.toLocaleDateString()) : freeLeft ? t("edit.nameFree").replace("{n}", String(freeLeft)) : t("edit.nameRule")}</p>
                 </div>
+                <HandleField />
                 <label className="block text-xs font-medium text-muted">{t("auth.gender")}
                   <select value={form.gender} onChange={set("gender")} className={input}>
                     <option value="" disabled>—</option>
