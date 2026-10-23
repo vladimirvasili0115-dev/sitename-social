@@ -20,6 +20,13 @@ export const marketLabel = (locale: string) => wordsFor(locale).title;
 export const enigmaLabel = (locale: string) => wordsFor(locale).label;
 
 // The entrance effect itself: dark smoke, flashes of lightning, rings of light and a glitching title, about 3.6 seconds, over a seat photo.
+// "ENİGMA GƏLDİ" -> "<NAME> GƏLDİ": the player's own name replaces the first word of the sentence.
+export const arrivalLabel = (locale: string, name: string) => {
+  const rest = wordsFor(locale).label.split(" ").slice(1).join(" ");
+  const who = (name || "").trim().split(/\s+/)[0].slice(0, 14);
+  return who ? `${who} ${rest}` : wordsFor(locale).label;
+};
+
 export function EnigmaEffect({ label }: { label: string }) {
   // The effect lasts about 3.6 s; after 4 s it is taken away for good, so no dark layer can stay on a photo.
   const [over, setOver] = useState(false);
@@ -42,7 +49,7 @@ export function EnigmaEffect({ label }: { label: string }) {
       <span className="absolute inset-0 rounded-[14%] bg-[#e9d5ff] opacity-0 animate-[enigma-flash_3.6s_linear_forwards] motion-reduce:hidden" />
       <span className="absolute inset-0 rounded-[14%] border-[0.5cqmin] border-[#c084fc] opacity-0 shadow-[0_0_2.4cqmin_#a855f7] animate-[enigma-ring_1.5s_ease-out_0.2s_forwards] motion-reduce:hidden" />
       <span className="absolute inset-0 rounded-[14%] border-[0.4cqmin] border-[#f0abfc] opacity-0 shadow-[0_0_2cqmin_#e879f9] animate-[enigma-ring_1.5s_ease-out_0.75s_forwards] motion-reduce:hidden" />
-      <span className="absolute inset-0 flex items-center justify-center"><span className="whitespace-nowrap text-[2.5cqmin] font-black uppercase tracking-[0.18em] text-white opacity-0 [text-shadow:-0.28cqmin_0_#ff2bd6,0.28cqmin_0_#22d3ee,0_0_1.6cqmin_#a855f7] animate-[enigma-title_3.6s_ease-out_forwards] motion-reduce:opacity-100">{label}</span></span>
+      <span className="absolute inset-0 flex items-center justify-center"><span style={{ fontSize: `${Math.min(2.5, 30 / Math.max(label.length, 1))}cqmin` }} className="whitespace-nowrap font-black uppercase tracking-[0.18em] text-white opacity-0 [text-shadow:-0.28cqmin_0_#ff2bd6,0.28cqmin_0_#22d3ee,0_0_1.6cqmin_#a855f7] animate-[enigma-title_3.6s_ease-out_forwards] motion-reduce:opacity-100">{label}</span></span>
     </span>
   );
 }
