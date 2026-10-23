@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, Eye, Trash2, X } from "lucide-react";
-import { fetchStoryViewers, type StoryViewer as Viewer } from "@/lib/storiesSync";
+import { ChevronLeft, ChevronRight, Eye, Heart, Trash2, X } from "lucide-react";
+import { fetchStoryLike, fetchStoryViewers, toggleStoryLike, type StoryViewer as Viewer } from "@/lib/storiesSync";
 import { initialsAvatar } from "@/lib/avatar";
 import type { Story } from "@/types";
 import { agoLabel, relativeTime } from "@/lib/utils";
@@ -26,7 +26,20 @@ export function StoryViewer({ stories, startIndex, onSeen, onView, onDeleteSlide
   const [viewers, setViewers] = useState<Viewer[] | null | "open">(null);
   const isVideo = Boolean(current?.video);
   const slideId = current?.id;
-  useEffect(() => { setLength(DURATION); setViewers(null); }, [slideId]);
+  const [like, setLike] = useState<{ liked: boolean; count: number }>({ liked: false, count: 0 });
+  useEffect(() => {
+    setLength(DURATION); setViewers(null); setLike({ liked: false, count: 0 });
+    if (!slideId) return;
+    let alive = true;
+    void fetchStoryLike(slideId).then((info) => { if (alive && info) setLike(info); });
+    return () => { alive = false; };
+  }, [slideId]);
+  async function pressLike() {
+    if (!slideId) return;
+    setLike((old) => ({ ...old, liked: !old.liked })); // instant feedback, then the server's answer
+    const info = await toggleStoryLike(slideId);
+    if (info) setLike(info);
+  }
   // Someone else's story: this slide is recorded as watched (the author sees who).
   useEffect(() => { if (slideId && story && !story.mine) onView?.(slideId); }, [slideId]); // eslint-disable-line react-hooks/exhaustive-deps
   async function openViewers() {
@@ -96,6 +109,8 @@ export function StoryViewer({ stories, startIndex, onSeen, onView, onDeleteSlide
               <p className="truncate text-sm font-semibold text-text">{story.mine ? t("story.yours") : story.user.name}</p>
               <p className="text-[11px] text-muted">{label === "0m" ? t("post.justNow") : relativeTime(label, t)}</p>
             </div>
+            {!story.mine ? <button onClick={() => void pressLike()} aria-label="Like" title="Like" aria-pressed={like.liked} className={control}><Heart size={16} className={like.liked ? "fill-red-500 text-red-500" : ""} /></button> : null}
+            {story.mine && like.count > 0 ? <span className="flex items-center gap-1 text-xs font-semibold text-text"><Heart size={14} className="fill-red-500 text-red-500" />{like.count}</span> : null}
             {story.mine ? <button onClick={() => void openViewers()} aria-label={t("story.viewers")} title={t("story.viewers")} className={control}><Eye size={16} /></button> : null}
             {story.mine ? <button onClick={() => { onDeleteSlide(current.id); setElapsed(0); if (story.slides.length <= 1) onClose(); }} aria-label={t("story.delete")} title={t("story.delete")} className={control}><Trash2 size={16} /></button> : null}
             <button onClick={onClose} aria-label={t("photos.close")} title={t("photos.close")} className={control}><X size={18} /></button>
@@ -115,6 +130,7 @@ export function StoryViewer({ stories, startIndex, onSeen, onView, onDeleteSlide
                 <li key={item.id} className="flex items-center gap-2.5">
                   <img src={item.avatar || initialsAvatar(item.name || "?")} alt="" className="h-9 w-9 rounded-full bg-surface-2 object-cover" />
                   <span className="min-w-0 flex-1 truncate text-sm">{item.name || "—"}</span>
+                  {item.liked ? <Heart size={14} className="fill-red-500 text-red-500" /> : null}
                   <span className="text-[11px] text-muted">{relativeTime(agoLabel(item.at), t)}</span>
                 </li>
               ))}

@@ -74,7 +74,19 @@ export async function markStoryViewed(id: string) {
   if (!supabase) return;
   await supabase.rpc("story_view", { p_story: id });
 }
-export type StoryViewer = { id: string; name: string | null; avatar: string | null; at: number };
+export type StoryViewer = { id: string; name: string | null; avatar: string | null; at: number; liked?: boolean };
+// Likes: a viewer taps the heart once to like and again to undo; only the author sees the total.
+export type StoryLike = { liked: boolean; count: number };
+export async function fetchStoryLike(id: string): Promise<StoryLike | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.rpc("story_like_info", { p_story: id });
+  return error || !data ? null : (data as StoryLike);
+}
+export async function toggleStoryLike(id: string): Promise<StoryLike | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.rpc("story_like_toggle", { p_story: id });
+  return error || !data ? null : (data as StoryLike);
+}
 export async function fetchStoryViewers(id: string): Promise<StoryViewer[] | null> {
   if (!supabase) return null;
   const { data, error } = await supabase.rpc("story_viewers", { p_story: id });
