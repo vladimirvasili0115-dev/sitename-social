@@ -3646,10 +3646,10 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
               <div key={line.id} className={info}>
                 {photo(from)}
                 <Gift id={line.gift} className="ml-2.5 h-7 w-7 shrink-0" />
-                {(line.count ?? 1) > 1 ? <span className="ml-1 mt-0.5 flex h-[18px] items-center text-[16px] font-bold text-[#72BE61]">{ic("chat_icon_count", 9, 8, "mr-0.5")}{line.count}</span> : null}
+                {(line.count ?? 1) > 1 ? <span className="ml-1 mt-0.5 flex h-[18px] items-center text-[16px] font-bold text-[#72BE61]">{ic("chat_icon_count", 9, 8, "mr-0.5")}{line.per ? Math.max(1, ...Object.values(line.per)) : line.count}</span> : null}
                 {arrows}
-                <span className="flex flex-row-reverse gap-[5px]">{receivers.slice(0, 6).map((player) => <span key={player.id} className="relative">{photo(player)}{(line.count ?? 1) > 1 && line.per?.[player.id] ? <span className="pointer-events-none absolute -bottom-1 -right-1 min-w-[16px] rounded-full bg-[#72BE61] px-1 text-center text-[10px] font-bold leading-[16px] text-white shadow-[0_0_0_1px_#fff]">{line.per[player.id]}</span> : null}</span>)}</span>
-                {receivers.length > 6 ? <span className="ml-1 text-xs font-bold text-[#9E9E9E]">+{receivers.length - 6}</span> : null}
+                <span className="flex flex-row-reverse gap-[5px]">{receivers.slice(0, 12).map((player) => <span key={player.id} className="relative">{photo(player)}</span>)}</span>
+                {receivers.length > 12 ? <span className="ml-1 text-xs font-bold text-[#9E9E9E]">+{receivers.length - 12}</span> : null}
                 {!from.me && fromIndex >= 0 && !players[fromIndex].empty ? <button type="button" onClick={() => { const price = priceOf(line.gift ?? ""); if (price) giveGift(fromIndex, line.gift ?? "", price); }} aria-label={t("bottle.giftBack")} title={`${t("bottle.giftBack")} · ${priceOf(line.gift ?? "")} ❤`} className="ml-[9px] h-[22px] w-[30px] shrink-0 bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url(${O}chat_btn_reply.svg)` }} /> : null}
               </div>
             );
