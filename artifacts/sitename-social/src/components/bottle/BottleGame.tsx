@@ -8,6 +8,7 @@ import { useTranslation } from "@/i18n/useTranslation";
 import { GiftArt } from "@/components/gifts/GiftArt";
 import { useProfile } from "@/components/profile/useProfile";
 import { cn } from "@/lib/utils";
+import { emojiSets } from "@/lib/emojiSets";
 import { useIsAdmin } from "@/components/report/useIsAdmin";
 import { customFile, useCustomArt } from "@/lib/customArt";
 import { giftBounds } from "./giftBounds";
@@ -806,6 +807,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const lineId = useRef(3);
   const listRef = useRef<HTMLDivElement>(null);
   const chatRef = useRef<HTMLInputElement>(null);
+  // The smiley button next to the chat line puts ordinary emojis into the message (the game smileys open from your own photo).
+  const [emojiOpen, setEmojiOpen] = useState(false);
+  const [emojiCat, setEmojiCat] = useState(0);
   const say = useCallback((line: Omit<Line, "id">) => setLines((list) => mergeLines(list, [{ ...line, id: lineId.current++ }])), []);
   const nextTurn = useCallback(() => {
     setTarget(null);
@@ -1696,6 +1700,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   function handleChat(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!draft.trim()) return;
+    setEmojiOpen(false);
     bumpStat("chat");
     if (online) void bottleSay(draft.trim().slice(0, 200)).then(pullRef.current);
     else say({ from: "me", text: draft.trim().slice(0, 200) });
@@ -3636,9 +3641,22 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           });
           })()}
         </div>
-        <form onSubmit={handleChat} className={cn("flex h-[39px] shrink-0 items-center bg-white shadow-[0_0_4px_rgba(0,0,0,0.07)]", picked !== null && "hidden")}>
+        <form onSubmit={handleChat} className={cn("relative flex h-[39px] shrink-0 items-center bg-white shadow-[0_0_4px_rgba(0,0,0,0.07)]", picked !== null && "hidden")}>
           <input ref={chatRef} data-hint="chat-input" value={draft} onChange={(event) => setDraft(event.target.value)} maxLength={200} aria-label={t("messages.placeholder")} placeholder={t("messages.placeholder")} autoComplete="off" className={cn(tour === 5 && "ring-4 ring-[#FFD84D]", "ml-[13px] h-full min-w-[100px] flex-1 border-0 bg-transparent text-[14px] text-black outline-none placeholder:text-[#CFCFCF]")} />
-          <button type="button" onClick={() => { setFrameNote(null); pullProgress.current(); if (dedicate) chooseMode(false); setCard(false); meTap.current = Date.now(); setPicked(meIndex); }} aria-label={t("bottle.gestures")} title={t("bottle.gestures")} className="ml-1 mr-1.5 h-[26px] w-[26px] shrink-0 rounded-full bg-contain bg-center bg-no-repeat active:brightness-75" style={{ backgroundImage: "url(/custom/orig/chat_btn_emoji.svg)" }} />
+          <button type="button" onClick={() => setEmojiOpen((value) => !value)} aria-expanded={emojiOpen} aria-label={t("messages.placeholder")} title="😊" className="ml-1 mr-1.5 h-[26px] w-[26px] shrink-0 rounded-full bg-contain bg-center bg-no-repeat active:brightness-75" style={{ backgroundImage: "url(/custom/orig/chat_btn_emoji.svg)" }} />
+          {emojiOpen ? (
+            <>
+              <button type="button" aria-label="close" onClick={() => setEmojiOpen(false)} className="fixed inset-0 z-[48] cursor-default" />
+              <div className="absolute bottom-full right-0 z-[49] mb-1 w-[min(300px,100%)] rounded-xl bg-white p-1.5 text-[#1F2937] shadow-[0_6px_24px_rgba(0,0,0,0.3)]">
+                <div className="mb-1 flex gap-0.5 overflow-x-auto border-b border-[#E5E7EB] pb-1 [scrollbar-width:none]">
+                  {emojiSets.map((set, at) => <button key={set.id} type="button" onClick={() => setEmojiCat(at)} aria-pressed={emojiCat === at} className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-lg", emojiCat === at ? "bg-[#E5F2FA]" : "hover:bg-[#F3F4F6]")}>{set.icon}</button>)}
+                </div>
+                <div className="grid h-44 grid-cols-7 content-start gap-0.5 overflow-y-auto">
+                  {(emojiSets[emojiCat]?.list ?? []).map((emoji) => <button key={emoji} type="button" onClick={() => setDraft((value) => (value + emoji).slice(0, 200))} className="flex h-9 w-9 items-center justify-center rounded-lg text-[22px] hover:bg-[#F3F4F6]">{emoji}</button>)}
+                </div>
+              </div>
+            </>
+          ) : null}
           <button type="submit" data-hint="chat-send" disabled={!draft.trim()} aria-label={t("messages.send")} className="mr-2 h-[26px] w-[26px] shrink-0 rounded-full bg-contain bg-center bg-no-repeat active:brightness-75 disabled:opacity-40" style={{ backgroundImage: "url(/custom/orig/chat_btn_send.svg)" }} />
         </form>
       </div>
