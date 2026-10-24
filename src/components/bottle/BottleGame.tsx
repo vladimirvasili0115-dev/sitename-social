@@ -1391,15 +1391,15 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     const emoji = giftEmoji[id] ? giftEmoji[id] : id.startsWith("e:") ? id.slice(2) : null;
     return emoji ? giftSrc(emoji) : null;
   };
-  // Test switch: open the game with ?pixi=1 (remembered) to paint the gifts lying on the photos on one canvas; ?pixi=0 turns it off.
-  const [canvasSeats, setCanvasSeats] = useState(false);
+  // Gifts lying on the photos are painted on one canvas. Open the game with ?pixi=0 (remembered) to go back to the old table, ?pixi=1 to turn it on again.
+  const [canvasSeats, setCanvasSeats] = useState(true);
   useEffect(() => {
     try {
       const q = new URLSearchParams(window.location.search).get("pixi");
-      if (q === "1") window.localStorage.setItem("pixi", "1");
-      if (q === "0") window.localStorage.removeItem("pixi");
-      setCanvasSeats(window.localStorage.getItem("pixi") === "1");
-    } catch { /* storage blocked: stays off */ }
+      if (q === "0") window.localStorage.setItem("pixi", "0");
+      if (q === "1") window.localStorage.removeItem("pixi");
+      setCanvasSeats(window.localStorage.getItem("pixi") !== "0");
+    } catch { /* storage blocked: stays on */ }
   }, []);
   const seatGiftData = useRef<SeatGiftData>({ piles: {}, spots: {}, ids: [], seats: [], box: 17.5, cx: 50, cy: 50, staged: false, turn: null, target: null, url: () => null, pileMs: PILE_MS, version: 0 });
   const canvasUrl = (gift: string) => (canvasSeats ? flightUrl(gift) : null);
