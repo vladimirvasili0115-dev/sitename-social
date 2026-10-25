@@ -54,7 +54,7 @@ function giftFamily(gift: string) {
   return `c:${familyOf.get(gift.slice(2)) ?? gift.slice(2)}`;
 }
 // The same gift sent again and again by the same person makes one chat line "🌹 ×5 » receivers" instead of many lines.
-const CHAT_KEEP = 80;
+const CHAT_KEEP = 40;
 function mergeLines(list: Line[], fresh: Line[]) {
   const out = [...list];
   for (const line of fresh) {
@@ -1038,7 +1038,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         const fresh = entered ? [] : all.filter((item) => item.kind !== "compliment" && (item.kind !== "admire_lost" || item.to === data!.me) && (item.kind !== "gift" || (first && item.from !== data!.me)));
         if (all.length) lastChat.current = all[all.length - 1].id;
         if (fresh.length) {
-          setLines((list) => mergeLines(list.slice(-80), fresh.map((item) => (item.kind === "kiss" ? { id: item.id, from: who(item.from), to: who(item.to) } : item.kind === "gift" ? { id: item.id, from: who(item.from), to: who(item.to), gift: item.body ?? "" } : item.kind === "admire" || item.kind === "admire_lost" ? { id: item.id, from: who(item.from), to: item.kind === "admire" ? who(item.to) : undefined, admire: { ...(() => { try { return JSON.parse(item.body ?? "{}") as AdmireNote; } catch { return {}; } })(), lost: item.kind === "admire_lost" } } : item.kind === "song" ? { id: item.id, from: who(item.from), to: item.to ? who(item.to) : undefined, song: item.body || "♪" } : item.kind === "kick" || item.kind === "saved" || item.kind === "kicked" ? { id: item.id, from: who(item.from), event: { kind: item.kind, a: nameOf(item.from), b: nameOf(item.to) } } : item.kind === "gesture" ? { id: item.id, from: who(item.from), gesture: item.body ?? "" } : item.kind === "booster" ? { id: item.id, from: who(item.from), boost: { kind: item.body === "refuse_slap" ? "refuse_slap" : "kiss_fire", a: nameOf(item.from), b: nameOf(item.to) } } : item.kind === "bottle" ? { id: item.id, from: who(item.from), bottle: { a: Number((item.body ?? "0:0").split(":")[0]) || 0, b: Number((item.body ?? "0:0").split(":")[1]) || 0 } } : { id: item.id, from: who(item.from), text: item.body ?? "" }))).slice(-80));
+          setLines((list) => mergeLines(list.slice(-CHAT_KEEP), fresh.map((item) => (item.kind === "kiss" ? { id: item.id, from: who(item.from), to: who(item.to) } : item.kind === "gift" ? { id: item.id, from: who(item.from), to: who(item.to), gift: item.body ?? "" } : item.kind === "admire" || item.kind === "admire_lost" ? { id: item.id, from: who(item.from), to: item.kind === "admire" ? who(item.to) : undefined, admire: { ...(() => { try { return JSON.parse(item.body ?? "{}") as AdmireNote; } catch { return {}; } })(), lost: item.kind === "admire_lost" } } : item.kind === "song" ? { id: item.id, from: who(item.from), to: item.to ? who(item.to) : undefined, song: item.body || "♪" } : item.kind === "kick" || item.kind === "saved" || item.kind === "kicked" ? { id: item.id, from: who(item.from), event: { kind: item.kind, a: nameOf(item.from), b: nameOf(item.to) } } : item.kind === "gesture" ? { id: item.id, from: who(item.from), gesture: item.body ?? "" } : item.kind === "booster" ? { id: item.id, from: who(item.from), boost: { kind: item.body === "refuse_slap" ? "refuse_slap" : "kiss_fire", a: nameOf(item.from), b: nameOf(item.to) } } : item.kind === "bottle" ? { id: item.id, from: who(item.from), bottle: { a: Number((item.body ?? "0:0").split(":")[0]) || 0, b: Number((item.body ?? "0:0").split(":")[1]) || 0 } } : { id: item.id, from: who(item.from), text: item.body ?? "" }))).slice(-80));
         }
         // Nothing changed and nothing counts down: skip the full re-render (the clock is refreshed at least every 4 seconds).
         const sig = JSON.stringify({ ...data, now: 0 });
@@ -1047,6 +1047,17 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         if (entered) {
           const tableAtEntry = data.table;
           void bottleTableGifts(lastChat.current).then((list) => { if (list && alive && syncTable.current === tableAtEntry) restoreGifts.current(list, data!.me); });
+          // Coming (back) into a table: the last 20 chat rows (messages, songs, who gave whom a gift) are shown; a gift storm counts as one row.
+          const meAtEntry = data.me;
+          void Promise.resolve(supabase?.rpc("bottle_chat_history", { p_limit: 300 })).then((res) => {
+            const rows = (res?.data ?? []) as { id: number; from: string | null; to: string | null; kind: string; body: string | null }[];
+            if (!alive || syncTable.current !== tableAtEntry || !Array.isArray(rows) || !rows.length) return;
+            const asMe = (id: string | null) => (id === meAtEntry ? "me" : id ?? "");
+            const raw: Line[] = rows.map((item) => (item.kind === "song" ? { id: item.id, from: asMe(item.from), to: item.to ? asMe(item.to) : undefined, song: item.body || "♪" } : item.kind === "gift" && item.to ? { id: item.id, from: asMe(item.from), to: asMe(item.to), gift: item.body ?? "" } : item.kind === "kiss" && item.to ? { id: item.id, from: asMe(item.from), to: asMe(item.to) } : { id: item.id, from: asMe(item.from), text: item.body ?? "" }));
+            // A gift storm is one row with a count, so the last 20 rows after merging still reach back to the earlier talk.
+            const older = mergeLines([], raw).slice(-20);
+            setLines((list) => { const have = new Set(list.map((line) => line.id)); const fresh = older.filter((line) => !have.has(line.id)); return fresh.length ? mergeLines(fresh, list) : list; });
+          }).catch(() => undefined);
         }
       } finally {
         busy = false;
@@ -3668,7 +3679,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         ) : null}
         {/* The original chat (bottle-html5 ChatContent + chat CSS): light grey list, 30px photos, white bubbles with a tail,
             and one-line info rows "photo → gift/kiss/song → photo" with the original icons. */}
-        <div ref={listRef} className={cn("flex min-h-0 flex-1 flex-col gap-[7px] overflow-y-auto bg-[#F5F5F5] py-[7px] text-[13px] text-black [overflow-wrap:break-word]", (picked !== null || (dedicate && !wide)) && "hidden")}>
+        <div ref={listRef} className={cn("flex min-h-0 flex-1 flex-col gap-[7px] overflow-y-auto bg-[#F5F5F5] py-[7px] text-[13px] text-black [overflow-wrap:break-word] [&>:first-child]:mt-auto [&>*]:[content-visibility:auto] [&>*]:[contain-intrinsic-size:auto_34px]", (picked !== null || (dedicate && !wide)) && "hidden")}>
           {(() => {
             const O = "/custom/orig/";
             const ic = (name: string, w: number, h: number, extra = "") => <span aria-hidden="true" className={cn("inline-block shrink-0 bg-contain bg-center bg-no-repeat", extra)} style={{ width: w, height: h, backgroundImage: `url(${O}${name}.svg)` }} />;
