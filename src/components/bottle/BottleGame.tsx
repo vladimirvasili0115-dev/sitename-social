@@ -1749,7 +1749,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // The site is a static export (no server), so YouTube is asked straight from the browser.
   // The key is public by design: in Google Cloud it must be restricted to this site's address and to "YouTube Data API v3".
   async function loadTracks(search: string) {
-    const key = process.env.NEXT_PUBLIC_YOUTUBE_API_KEY;
+    // Several keys (from different Google Cloud projects) can be given separated by commas: when one runs out of its daily quota the next one is used.
+    const keys = (process.env.NEXT_PUBLIC_YOUTUBE_API_KEY ?? "").split(",").map((item) => item.trim()).filter(Boolean);
+    const key = keys[0];
     setTracks([]);
     setTrackWhy("");
     if (!key) return setTrackState("nokey");
@@ -1771,6 +1773,25 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       }
     }
     const api = "https://www.googleapis.com/youtube/v3";
+    // The quota resets at midnight Pacific time (about 07:00-08:00 UTC): a key that ran out is skipped until 08:00 UTC.
+    const deadUntil = () => { const d = new Date(); d.setUTCHours(8, 0, 0, 0); if (d.getTime() <= Date.now()) d.setUTCDate(d.getUTCDate() + 1); return d.getTime(); };
+    const isDead = (k: string) => { try { return Number(window.localStorage.getItem(`bottle-yt-dead:${k.slice(-8)}`) ?? 0) > Date.now(); } catch { return false; } };
+    const call = async (path: string): Promise<Response> => {
+      const alive = keys.filter((k) => !isDead(k));
+      const order = alive.length ? alive : keys;
+      const start = Math.floor(Math.random() * order.length);
+      let last: Response | null = null;
+      for (let n = 0; n < order.length; n++) {
+        const k = order[(start + n) % order.length];
+        const res = await fetch(`${api}/${path}&key=${k}`);
+        if (res.ok) return res;
+        last = res;
+        const reason = await ytReason(res.clone());
+        if (/quota|dailyLimit|rateLimit/i.test(reason)) { try { window.localStorage.setItem(`bottle-yt-dead:${k.slice(-8)}`, String(deadUntil())); } catch { /* storage blocked */ } continue; }
+        break;
+      }
+      return last as Response;
+    };
     const clock = (iso: string) => {
       const part = /PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/.exec(iso);
       if (!part) return "";
@@ -1780,7 +1801,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     try {
       let ids = "";
       if (search) {
-        const found = await fetch(`${api}/search?part=id&type=video&videoEmbeddable=true&videoCategoryId=10&maxResults=25&q=${encodeURIComponent(search)}&key=${key}`);
+        const found = await call(`search?part=id&type=video&videoEmbeddable=true&videoCategoryId=10&maxResults=25&q=${encodeURIComponent(search)}`);
         if (!found.ok) {
           setTrackWhy(await ytReason(found));
           const own = [...favs, ...recent].filter((item, index, all) => all.findIndex((other) => other.id === item.id) === index && songScore(search, item.title) >= 0.5);
@@ -1790,7 +1811,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         ids = (((await found.json()) as { items?: { id: { videoId: string } }[] }).items ?? []).map((item) => item.id.videoId).join(",");
         if (!ids) return setTrackState("idle");
       }
-      const details = await fetch(search ? `${api}/videos?part=snippet,contentDetails&id=${ids}&key=${key}` : `${api}/videos?part=snippet,contentDetails&chart=mostPopular&videoCategoryId=10&regionCode=AZ&maxResults=16&key=${key}`);
+      const details = await call(search ? `videos?part=snippet,contentDetails&id=${ids}` : `videos?part=snippet,contentDetails&chart=mostPopular&videoCategoryId=10&regionCode=AZ&maxResults=16`);
       if (!details.ok) { setTrackWhy(await ytReason(details)); return setTrackState("fail"); }
       const list = (((await details.json()) as { items?: { id: string; snippet: { title: string }; contentDetails: { duration: string } }[] }).items ?? []).map((item) => ({ id: item.id, title: item.snippet.title, duration: clock(item.contentDetails.duration) }));
       // Own favourites and recent songs that match come first; then everything is ordered by how well it fits the query.
@@ -1836,7 +1857,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     return true;
   }
   // Live table: the server takes the hearts, puts the song on for the whole table and writes "X put on a song" in the chat.
-  function playLive(kind: "youtube" | "mp3", ref: string, title: string) {
+  function playLive(kind: "youtube" | "mp3", ref: string, title: string, secs = 0) {
     const targets = songTo().map((index) => players[index]);
     void (async () => {
       for (const target of targets.length ? targets : [null]) {
@@ -1845,6 +1866,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         heartsRef.current = left;
         setHearts(left);
       }
+      // The server counts gifts for the DJ only while the song is playing: tell it how long the song is.
+      if (secs > 0) void Promise.resolve(supabase.rpc("bottle_track_secs", { p_secs: Math.round(secs) })).catch(() => undefined);
       pullRef.current();
     })();
   }
@@ -1860,7 +1883,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (songBusy()) return;
     const count = Math.max(1, songTo().length);
     if (heartsRef.current < SONG_PRICE.video * count) return setGiftNote(t("bottle.noHearts"));
-    if (online) playLive("youtube", track.id, music ? `♫ ${cleanSong(track.title)}` : cleanSong(track.title));
+    if (online) playLive("youtube", track.id, music ? `♫ ${cleanSong(track.title)}` : cleanSong(track.title), durationSeconds(track.duration) || 0);
     else for (let n = 0; n < count; n++) paySong("video");
     songClock.current = { pos: 0, at: Date.now() };
     setAudio(null);
