@@ -25,7 +25,7 @@ export function playPing() {
   try {
     context ??= new (window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
     if (context.state === "suspended") void context.resume();
-    playClip("sfx/mention", () => { tone(1319, 0, 0.12, 0.2); tone(1760, 0.065, 0.16, 0.2); });
+    playClip("sfx/mention", () => { glide(700, 3300, 0, 0.16, 0.22); });
   } catch {
     // Audio is unavailable or blocked: stays silent.
   }
