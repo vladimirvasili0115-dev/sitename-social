@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type FormEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import Link from "next/link";
-import { Phone, AtSign, ChevronDown, ChevronLeft, LifeBuoy, Pause, Play, Clock, Flame, Search, Star, Ban, Flag, Mail, Gift as GiftIcon, Heart, Home, Maximize, ArrowUpRight, BadgeCheck, Crown, DoorOpen, Eye, EyeOff, KeyRound, Lock, Mars, Trash2, Venus, BookOpen, MessageSquare, Check, Menu, UserRound, Minimize, Music, Plus, UserCheck, Music2, RefreshCw, SendHorizontal, Settings, Trophy, UserPlus, UserRoundCog, Users, Volume2, VolumeX, X } from "lucide-react";
+import { Phone, AtSign, ChevronDown, ChevronLeft, LifeBuoy, Pause, Play, Clock, Flame, Search, Star, Ban, Flag, Mail, Gift as GiftIcon, Heart, Home, Maximize, ArrowUpRight, BadgeCheck, Crown, DoorOpen, Eye, EyeOff, KeyRound, Lock, Mars, Trash2, Venus, BookOpen, MessageSquare, Check, Menu, UserRound, Minimize, Music, Plus, UserCheck, Music2, RefreshCw, SendHorizontal, Settings, Trophy, UserPlus, UserRoundCog, Users, Volume2, X } from "lucide-react";
 import type { GiftId } from "@/types";
 import { cartoonAvatar } from "./avatarArt";
 import { useTranslation } from "@/i18n/useTranslation";
@@ -3568,10 +3568,6 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             </div>
             {musicMode ? <div className="flex items-center gap-2 px-2 pt-0.5"><Equalizer className="h-4 shrink-0" /><p className="min-w-0 flex-1 truncate text-xs font-bold">{videoTitle}</p></div> : null}
             {soundPill}
-            <div className="flex items-center gap-1.5 px-2 py-1">
-              <button onClick={() => setMusic(music ? 0 : 60)} aria-label={t(music ? "videos.mute" : "videos.unmute")} title={t(music ? "videos.mute" : "videos.unmute")} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted hover:text-text">{music ? <Volume2 size={17} /> : <VolumeX size={17} />}</button>
-              <input type="range" min={0} max={100} value={music} onChange={(event) => setMusic(Number(event.target.value))} aria-label={t("bottle.music")} className="min-w-0 flex-1 accent-[#8CC63F]" />
-            </div>
             
           </div>
         ) : null}
