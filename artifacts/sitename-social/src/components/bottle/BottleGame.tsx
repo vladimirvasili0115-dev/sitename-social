@@ -735,6 +735,10 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     void bottleSmiles().then((value) => { if (alive && typeof value === "number") setSmiles(value); });
     return () => { alive = false; };
   }, [online, net?.me, panel]); // eslint-disable-line react-hooks/exhaustive-deps
+  // The balance sign: tapping it opens the smiley shop (the shop never opens by itself).
+  const smileChip = (
+    <button type="button" onClick={(event) => { event.stopPropagation(); setPayNote(false); setPanel("smiles"); }} aria-label={`${smileText.balance}: ${smiles}`} title={smileText.title} className="flex h-7 shrink-0 items-center gap-1 rounded-full bg-[#FFF4E5] pl-2 pr-1 text-sm font-bold tabular-nums text-[#3F3F46] hover:brightness-95">😀 {smiles}<span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#8CC63F] text-white">+</span></button>
+  );
   async function buySmiles(pack: number, price: number) {
     if (heartsRef.current < price) return setPayNote(true);
     if (online) {
@@ -749,6 +753,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       setSmiles((value) => value + pack);
     }
     setPayNote(false);
+    setFrameNote(null);
     setPanel("gestures");
   }
   const [wheelTurn, setWheelTurn] = useState(0);
@@ -1811,7 +1816,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   function sendGesture(id: string, price: number, rule: [RuleKind, number]) {
     const left = missing(rule, gesProgress);
     if (left) return openLock(left < 0 ? "vip" : rule[0], rule[1], { gesture: id });
-    if (online && smiles < 1) { setFrameNote(smileText.none); setPayNote(false); setPanel("smiles"); return; }
+    if (online && smiles < 1) { setFrameNote(smileText.none); return; }
     if (!online && heartsRef.current < price) return setFrameNote(t("bottle.noHearts"));
     setFrameNote(null);
     closePanel();
@@ -1822,7 +1827,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       setSmiles((value) => Math.max(0, value - 1));
       void bottleGesture(id).then((left) => {
         if (typeof left === "number" && left >= 0) { heartsRef.current = left; setHearts(left); pullProgress.current(); pullRef.current(); }
-        else if (left === -2) { setSmiles(0); setFrameNote(smileText.none); setPayNote(false); setPanel("smiles"); }
+        else if (left === -2) { setSmiles(0); setFrameNote(smileText.none); }
         void bottleSmiles().then((value) => { if (typeof value === "number") setSmiles(value); });
       });
       return;
@@ -3515,9 +3520,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 <AchievementsPanel values={achOther ?? achValue} heading={achOf ? t("bottle.achOf").replace("{name}", achOf.name) : undefined} />
               ) : panel === "gestures" ? (
                 <div className="-mx-3 -mb-3 bg-white">
-                  <div className="flex items-center justify-end gap-2 px-3 pt-2">
+                  <div className="flex items-center justify-center gap-2 px-3 pt-2">
                     <span className="text-[11px] font-semibold text-[#9CA3AF]">{smileText.balance}</span>
-                    <button onClick={() => { setPayNote(false); setPanel("smiles"); }} aria-label={smileText.title} title={smileText.title} className="flex h-7 items-center gap-1 rounded-full bg-[#FFF4E5] pl-2 pr-1 text-sm font-bold tabular-nums text-[#3F3F46] hover:brightness-95">😀 {smiles}<span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#8CC63F] text-white">+</span></button>
+                    {smileChip}
                   </div>
                   <ul className="grid max-h-[min(60vh,420px)] grid-cols-4 gap-1.5 overflow-y-auto p-3 [scrollbar-width:thin] sm:grid-cols-5">
                     {GESTURES.map(([id, price, kind, amount]) => {
@@ -3709,6 +3714,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             <div className="flex items-center gap-2 bg-white px-3 py-1.5">
               <button onClick={() => setCard(true)} aria-label={`${players[picked].name}, ${players[picked].age}`} className="shrink-0"><img src={players[picked].avatar} alt="" className="h-7 w-7 rounded-full object-cover" /></button>
               {players[picked].me ? <p className="min-w-0 flex-1 truncate text-[14px] font-bold text-[#9AA3AE]">{t("bottle.gestures")}</p> : <p className="min-w-0 flex-1 text-[12px] leading-[1.15] text-[#B4B9C2]">{t("bottle.giftFor")}<span className="block truncate text-[13px] font-bold text-[#9AA3AE]">{players[picked].name}</span></p>}
+              {players[picked].me ? smileChip : null}
               {players[picked].me ? null : <button onClick={() => chooseMode(true)} aria-label={t("bottle.dedicate")} title={t("bottle.dedicate")} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#5CC93B] text-white hover:bg-[#4DB52E]"><Plus size={17} strokeWidth={3} /></button>}
               <button onClick={() => setPicked(null)} aria-label={t("photos.close")} title={t("photos.close")} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#B4B9C2] text-white hover:bg-[#9AA3AE]"><X size={15} strokeWidth={3} /></button>
             </div>
