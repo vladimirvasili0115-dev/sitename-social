@@ -1049,11 +1049,20 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           void bottleTableGifts(lastChat.current).then((list) => { if (list && alive && syncTable.current === tableAtEntry) restoreGifts.current(list, data!.me); });
           // Coming (back) into a table: the last 20 chat rows (messages, songs, who gave whom a gift) are shown; a gift storm counts as one row.
           const meAtEntry = data.me;
-          void Promise.resolve(supabase?.rpc("bottle_chat_history", { p_limit: 300 })).then((res) => {
+          void Promise.resolve(supabase?.rpc("bottle_chat_history", { p_limit: 300 })).then(async (res) => {
             const rows = (res?.data ?? []) as { id: number; from: string | null; to: string | null; kind: string; body: string | null }[];
             if (!alive || syncTable.current !== tableAtEntry || !Array.isArray(rows) || !rows.length) return;
+            // People who already left: their name and photo are read so their lines can be shown.
+            const unknown = Array.from(new Set(rows.flatMap((item) => [item.from, item.to]).filter((id): id is string => Boolean(id) && id !== meAtEntry && !names.current[id])));
+            if (unknown.length) {
+              try {
+                const found = await supabase?.from("profiles").select("id,name,avatar_url").in("id", unknown);
+                for (const row of (found?.data ?? []) as { id: string; name: string | null; avatar_url: string | null }[]) if (!names.current[row.id]) names.current[row.id] = { name: (row.name ?? "").split(" ")[0] || "?", avatar: row.avatar_url ?? "" };
+              } catch { /* names stay unknown */ }
+              if (!alive || syncTable.current !== tableAtEntry) return;
+            }
             const asMe = (id: string | null) => (id === meAtEntry ? "me" : id ?? "");
-            const raw: Line[] = rows.map((item) => (item.kind === "song" ? { id: item.id, from: asMe(item.from), to: item.to ? asMe(item.to) : undefined, song: item.body || "♪" } : item.kind === "gift" && item.to ? { id: item.id, from: asMe(item.from), to: asMe(item.to), gift: item.body ?? "" } : item.kind === "kiss" && item.to ? { id: item.id, from: asMe(item.from), to: asMe(item.to) } : { id: item.id, from: asMe(item.from), text: item.body ?? "" }));
+            const raw: Line[] = rows.filter((item) => item.from !== meAtEntry).map((item) => (item.kind === "song" ? { id: item.id, from: asMe(item.from), to: item.to ? asMe(item.to) : undefined, song: item.body || "♪" } : item.kind === "gift" && item.to ? { id: item.id, from: asMe(item.from), to: asMe(item.to), gift: item.body ?? "" } : item.kind === "kiss" && item.to ? { id: item.id, from: asMe(item.from), to: asMe(item.to) } : { id: item.id, from: asMe(item.from), text: item.body ?? "" }));
             // A gift storm is one row with a count, so the last 20 rows after merging still reach back to the earlier talk.
             const older = mergeLines([], raw).slice(-20);
             setLines((list) => { const have = new Set(list.map((line) => line.id)); const fresh = older.filter((line) => !have.has(line.id)); return fresh.length ? mergeLines(fresh, list) : list; });
@@ -1239,6 +1248,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     </button>
   ) : null;
   const byId = (id: string) => players.find((player) => player.id === id);
+  // Somebody who left the table: his lines stay in the chat for everyone (name and photo are remembered).
+  const lineWho = (id: string) => byId(id) ?? (names.current[id] ? { id, name: names.current[id].name, age: 0, female: false, avatar: names.current[id].avatar } as Player : undefined);
   const staged = phase !== "waiting" && phase !== "spinning" && target !== null;
   const myRole: "spinner" | "target" | null = staged ? (turn === meIndex ? "spinner" : target === meIndex ? "target" : null) : null;
   const canAnswer = deciding && myRole !== null && answers[myRole] === null;
@@ -3688,8 +3699,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             const nameColor = (player: Player) => (player.female ? "#D6336C" : "#2F6FD6");
             const info = "flex min-h-[30px] max-w-full items-center px-[7px]";
             return lines.filter((line) => !line.text || !muted.includes(line.from)).map((line) => {
-            const from = byId(line.from);
-            const to = line.to ? byId(line.to) : null;
+            const from = lineWho(line.from);
+            const to = line.to ? lineWho(line.to) : null;
             if (line.boost) return (
               <div key={line.id} className={info}>
                 {photo(from)}
@@ -3735,7 +3746,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 <span className="ml-1 flex h-[42px] w-[30px] shrink-0 rotate-45 items-center justify-center"><SkinArt set={art} n={line.bottle.b + 1} className="h-[38px]" /></span>
               </div>
             );
-            const receivers = (line.tos ?? (line.to ? [line.to] : [])).map((id) => byId(id)).filter((player): player is Player => Boolean(player));
+            const receivers = (line.tos ?? (line.to ? [line.to] : [])).map((id) => lineWho(id)).filter((player): player is Player => Boolean(player));
             const fromIndex = players.findIndex((player) => player.id === line.from);
             if (line.text) return (
               <div key={line.id} className="relative flex max-w-full items-start gap-[9px] px-[7px]">
