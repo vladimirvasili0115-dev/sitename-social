@@ -31,7 +31,7 @@ import { PassPanel, type PassData } from "./PassPanel";
 import { ActivePanel, ComplimentPill, ComplimentsPanel, InvitePanel, ShopPanel, emojiSrc } from "./ShopPanels";
 import { bumpStat, markVisit, readStats, syncStats } from "./achievements";
 import { BottleSvg, WaterBottleSvg, WoodTable } from "./BottleArt";
-import { playGiftSound, playPing, playSfx, playSound, setVolume } from "./sound";
+import { playGiftSound, playPing, playSfx, playSound, setVolume, warmPing } from "./sound";
 import { supabase } from "@/lib/supabase";
 import { refreshFriends } from "@/lib/friendsSync";
 import { ensureMessagesLoaded, openRemoteChat, remoteChats, sendRemoteMessage } from "@/lib/messagesSync";
@@ -1256,11 +1256,17 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   useEffect(() => { if (myTurnLive) playSound("turn"); }, [myTurnLive]);
   // New lines keep the chat at the bottom, unless the person has scrolled up to read (then it is left alone).
   const stickRef = useRef(true);
+  const userScrollAt = useRef(0);
+  useEffect(() => warmPing(), []);
   useEffect(() => {
     const list = listRef.current;
     if (!list) return;
     if (lines[lines.length - 1]?.from === "me") stickRef.current = true;
-    if (stickRef.current) window.requestAnimationFrame(() => list.scrollTo({ top: list.scrollHeight }));
+    if (!stickRef.current) return;
+    const down = () => list.scrollTo({ top: list.scrollHeight });
+    const frame = window.requestAnimationFrame(down);
+    const later = window.setTimeout(down, 150); // rows that were not drawn yet (off screen) change the height a moment later
+    return () => { window.cancelAnimationFrame(frame); window.clearTimeout(later); };
   }, [lines, picked]);
   useEffect(() => setVolume(volume / 100), [volume]);
   // Songs must start by themselves on every device. Browsers only allow sound after the person has touched the page,
@@ -3803,7 +3809,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         ) : null}
         {/* The original chat (bottle-html5 ChatContent + chat CSS): light grey list, 30px photos, white bubbles with a tail,
             and one-line info rows "photo → gift/kiss/song → photo" with the original icons. */}
-        <div ref={listRef} onScroll={(event) => { const el = event.currentTarget; stickRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 240; }} className={cn("flex min-h-0 flex-1 flex-col gap-[7px] overflow-y-auto bg-[#F5F5F5] py-[7px] text-[15px] text-black [overflow-wrap:break-word] [&>:first-child]:mt-auto [&>*]:[content-visibility:auto] [&>*]:[contain-intrinsic-size:auto_34px]", (picked !== null || (dedicate && !wide)) && "hidden")}>
+        <div ref={listRef} onWheel={() => { userScrollAt.current = Date.now(); }} onTouchMove={() => { userScrollAt.current = Date.now(); }} onPointerDown={() => { userScrollAt.current = Date.now(); }} onScroll={(event) => { const el = event.currentTarget; const gap = el.scrollHeight - el.scrollTop - el.clientHeight; if (gap < 80) stickRef.current = true; else if (Date.now() - userScrollAt.current < 1000) stickRef.current = false; }} className={cn("flex min-h-0 flex-1 flex-col gap-[7px] overflow-y-auto bg-[#F5F5F5] py-[7px] text-[15px] text-black [overflow-wrap:break-word] [&>:first-child]:mt-auto [&>*]:[content-visibility:auto] [&>*]:[contain-intrinsic-size:auto_34px]", (picked !== null || (dedicate && !wide)) && "hidden")}>
           {noChat ? null : (() => {
             const O = "/custom/orig/";
             const ic = (name: string, w: number, h: number, extra = "") => <span aria-hidden="true" className={cn("inline-block shrink-0 bg-contain bg-center bg-no-repeat", extra)} style={{ width: w, height: h, backgroundImage: `url(${O}${name}.svg)` }} />;
