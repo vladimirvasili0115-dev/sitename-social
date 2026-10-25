@@ -17,6 +17,18 @@ function tone(frequency: number, start: number, length: number, volume = 0.16, t
   oscillator.start(context.currentTime + start);
   oscillator.stop(context.currentTime + start + length + 0.05);
 }
+// A very short two-note "ping" (about a tenth of a second) for a message written to me by name.
+export function playPing() {
+  if (level === 0 || typeof window === "undefined") return;
+  try {
+    context ??= new (window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+    if (context.state === "suspended") void context.resume();
+    tone(1568, 0, 0.05, 0.16);
+    tone(2349, 0.045, 0.06, 0.13);
+  } catch {
+    // Audio is unavailable or blocked: stays silent.
+  }
+}
 export function playSound(kind: "turn" | "chosen" | "kiss" | "decline") {
   if (level === 0 || typeof window === "undefined") return;
   try {

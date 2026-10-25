@@ -31,7 +31,7 @@ import { PassPanel, type PassData } from "./PassPanel";
 import { ActivePanel, ComplimentPill, ComplimentsPanel, InvitePanel, ShopPanel, emojiSrc } from "./ShopPanels";
 import { bumpStat, markVisit, readStats, syncStats } from "./achievements";
 import { BottleSvg, WaterBottleSvg, WoodTable } from "./BottleArt";
-import { playGiftSound, playSfx, playSound, setVolume } from "./sound";
+import { playGiftSound, playPing, playSfx, playSound, setVolume } from "./sound";
 import { supabase } from "@/lib/supabase";
 import { refreshFriends } from "@/lib/friendsSync";
 import { ensureMessagesLoaded, openRemoteChat, remoteChats, sendRemoteMessage } from "@/lib/messagesSync";
@@ -1079,7 +1079,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         if (!first) {
           const mine = (names.current[data.me]?.name ?? "").toLowerCase();
           const mention = mine ? all.find((item) => item.kind === "text" && item.from !== data!.me && (item.body ?? "").toLowerCase().startsWith(mine)) : undefined;
-          if (mention) { playSfx("ding"); setMentionToast(names.current[mention.from ?? ""]?.name ?? "?"); }
+          if (mention) { playPing(); setMentionToast(names.current[mention.from ?? ""]?.name ?? "?"); }
         }
         if (!first) all.filter((item) => item.kind === "gesture" && item.from !== data!.me).forEach((item) => showSeatGesture(who(item.from), item.body ?? ""));
         if (!first) all.filter((item) => item.kind === "booster" && item.from !== data!.me).forEach((item) => showBoostRef.current(item.body === "refuse_slap" ? "refuse_slap" : "kiss_fire", who(item.from)));
@@ -1254,9 +1254,14 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (phase === "declined") playSound("decline");
   }, [online, phase]);
   useEffect(() => { if (myTurnLive) playSound("turn"); }, [myTurnLive]);
+  // New lines keep the chat at the bottom, unless the person has scrolled up to read (then it is left alone).
+  const stickRef = useRef(true);
   useEffect(() => {
-    listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
-  }, [lines.length]);
+    const list = listRef.current;
+    if (!list) return;
+    if (lines[lines.length - 1]?.from === "me") stickRef.current = true;
+    if (stickRef.current) window.requestAnimationFrame(() => list.scrollTo({ top: list.scrollHeight }));
+  }, [lines, picked]);
   useEffect(() => setVolume(volume / 100), [volume]);
   // Songs must start by themselves on every device. Browsers only allow sound after the person has touched the page,
   // so a video starts muted until then and gets its sound on the first tap anywhere in the game (or the 🔊 button).
@@ -3798,12 +3803,13 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         ) : null}
         {/* The original chat (bottle-html5 ChatContent + chat CSS): light grey list, 30px photos, white bubbles with a tail,
             and one-line info rows "photo → gift/kiss/song → photo" with the original icons. */}
-        <div ref={listRef} className={cn("flex min-h-0 flex-1 flex-col gap-[7px] overflow-y-auto bg-[#F5F5F5] py-[7px] text-[15px] text-black [overflow-wrap:break-word] [&>:first-child]:mt-auto [&>*]:[content-visibility:auto] [&>*]:[contain-intrinsic-size:auto_34px]", (picked !== null || (dedicate && !wide)) && "hidden")}>
+        <div ref={listRef} onScroll={(event) => { const el = event.currentTarget; stickRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 240; }} className={cn("flex min-h-0 flex-1 flex-col gap-[7px] overflow-y-auto bg-[#F5F5F5] py-[7px] text-[15px] text-black [overflow-wrap:break-word] [&>:first-child]:mt-auto [&>*]:[content-visibility:auto] [&>*]:[contain-intrinsic-size:auto_34px]", (picked !== null || (dedicate && !wide)) && "hidden")}>
           {noChat ? null : (() => {
             const O = "/custom/orig/";
             const ic = (name: string, w: number, h: number, extra = "") => <span aria-hidden="true" className={cn("inline-block shrink-0 bg-contain bg-center bg-no-repeat", extra)} style={{ width: w, height: h, backgroundImage: `url(${O}${name}.svg)` }} />;
             const photo = (player: Player | null | undefined, extra = "") => player ? <button type="button" onClick={() => { const index = players.findIndex((item) => item.id === player.id); if (index >= 0) { setPicked(index); setCard(true); } else showUserCard({ id: player.id, name: player.name, avatar: player.avatar }); }} title={player.name} className={cn("h-[30px] w-[30px] shrink-0 rounded-[4px] bg-cover bg-top", extra)} style={{ backgroundImage: `url(${player.avatar || NO_PHOTO})` }} /> : null;
             const arrows = ic("chat_icon_arrows", 11, 11, "mx-[5px]");
+            const myNameLower = (names.current[net?.me ?? ""]?.name ?? "").toLowerCase(); // a message that starts with my name is written to me: darker bubble
             const nameColor = (player: Player) => (player.female ? "#D6336C" : "#2F6FD6");
             const info = "flex min-h-[30px] max-w-full items-center px-[7px]";
             return lines.filter((line) => !line.text || !muted.includes(line.from)).map((line) => {
@@ -3860,7 +3866,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
               <div key={line.id} className="relative flex max-w-full items-start gap-[9px] px-[7px]">
                 {photo(from)}
                 <div onDoubleClick={() => !from.me && setLineMenu(line.id)} onContextMenu={(event) => { if (from.me) return; event.preventDefault(); setLineMenu(line.id); }} onTouchStart={() => { if (from.me) return; window.clearTimeout(pressTimer.current); pressTimer.current = window.setTimeout(() => setLineMenu(line.id), 500); }} onTouchEnd={() => window.clearTimeout(pressTimer.current)} onTouchMove={() => window.clearTimeout(pressTimer.current)}
-                  className={cn("group relative min-h-[17px] min-w-[100px] rounded-[5px] px-2 pb-1.5 pt-[7px] before:absolute before:-left-1.5 before:top-[9px] before:border-y-[6px] before:border-r-[6px] before:border-y-transparent before:content-['']", lineMenu === line.id ? "bg-[#498FE1] text-white before:border-r-[#498FE1]" : "bg-white before:border-r-white")}>
+                  className={cn("group relative min-h-[17px] min-w-[100px] rounded-[5px] px-2 pb-1.5 pt-[7px] before:absolute before:-left-1.5 before:top-[9px] before:border-y-[6px] before:border-r-[6px] before:border-y-transparent before:content-['']", lineMenu === line.id ? "bg-[#498FE1] text-white before:border-r-[#498FE1]" : !from.me && myNameLower && (line.text ?? "").toLowerCase().startsWith(myNameLower) ? "bg-[#A9C9F2] before:border-r-[#A9C9F2]" : "bg-white before:border-r-white")}>
                   <button type="button" onClick={(event) => { event.stopPropagation(); if (from.me) return; window.clearTimeout(pressTimer.current); setDraft((value) => (value.startsWith(`${from.name}, `) ? value : `${from.name}, ${value}`)); window.setTimeout(() => { chatRef.current?.focus(); const end = chatRef.current?.value.length ?? 0; chatRef.current?.setSelectionRange(end, end); }, 30); }} onTouchStart={(event) => event.stopPropagation()} className={cn("font-bold", nameColorClass(nameColors[from.me ? net?.me ?? "" : from.id]) || (isAdminPlayer(from) && "bg-[linear-gradient(rgb(240,208,51),rgb(217,131,0))] bg-clip-text text-transparent"))} style={lineMenu === line.id || isAdminPlayer(from) || nameColors[from.me ? net?.me ?? "" : from.id] ? undefined : { color: nameColor(from) }}>{from.name}</button>{(() => { const decor = decorOf(line.from); return decor ? decor.startsWith("/") ? <img src={decor} alt="" className="ml-0.5 inline h-3.5 w-3.5 align-[-2px]" /> : <span title="VIP" className="ml-0.5 text-[11px]">💎</span> : null; })()}<span className="font-bold">: </span><span className="[word-break:break-word]">{line.text}</span>
                   {!from.me && /[а-яёА-ЯЁ]|[؀-ۿ]|[Ⴀ-ჿ]/.test(line.text) ? <a href={`https://translate.google.com/?sl=auto&tl=${lang}&text=${encodeURIComponent(line.text)}`} target="_blank" rel="noreferrer" className={cn("block text-[12px]", lineMenu === line.id ? "text-white" : "text-[#808080]")}>{t("bottle.translate")}</a> : null}
                   {from.me ? null : <button type="button" onClick={() => setLineMenu(line.id)} aria-label={t("bottle.report")} className="absolute -right-[11px] -top-[11px] z-[1] hidden h-[25px] w-[25px] items-center justify-center group-hover:flex"><span className="h-3.5 w-3.5 rounded-full bg-[#498FE1] bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url(${O}chat_message_action.svg)` }} /></button>}
