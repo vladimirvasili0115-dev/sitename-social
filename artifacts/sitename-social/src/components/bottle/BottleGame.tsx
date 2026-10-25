@@ -1053,7 +1053,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             const rows = (res?.data ?? []) as { id: number; from: string | null; to: string | null; kind: string; body: string | null }[];
             if (!alive || syncTable.current !== tableAtEntry || !Array.isArray(rows) || !rows.length) return;
             // People who already left: their name and photo are read so their lines can be shown.
-            const unknown = Array.from(new Set(rows.flatMap((item) => [item.from, item.to]).filter((id): id is string => Boolean(id) && id !== meAtEntry && !names.current[id])));
+            const unknown = Array.from(new Set(rows.flatMap((item) => [item.from, item.to]).filter((id): id is string => typeof id === "string" && id !== "" && id !== meAtEntry && !names.current[id])));
             if (unknown.length) {
               try {
                 const found = await supabase?.from("profiles").select("id,name,avatar_url").in("id", unknown);
