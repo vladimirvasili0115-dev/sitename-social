@@ -13,11 +13,12 @@ type Props = { user: User; details: ProfileDetails; onSave: (patch: ProfileEdits
 const inputClass = "w-full rounded-xl border border-border bg-surface-2 px-3.5 text-sm text-text outline-none focus:border-accent";
 
 export function EditProfileModal({ user, details, onSave, onClose }: Props) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const [form, setForm] = useState({
     name: user.name, status: details.status, bio: details.bio, city: details.city, birthday: details.birthday,
     relationship: details.relationship, work: details.work, education: details.education, gender: details.gender ?? "",
   });
+  const [hideAge, setHideAge] = useState(Boolean(details.hideAge));
   const [nameError, setNameError] = useState(false);
   const set = (field: keyof typeof form) => (event: { target: { value: string } }) => setForm((current) => ({ ...current, [field]: event.target.value }));
 
@@ -33,7 +34,7 @@ export function EditProfileModal({ user, details, onSave, onClose }: Props) {
     event.preventDefault();
     if (form.name.trim().length < 2) return setNameError(true);
     const { gender, ...rest } = form;
-    onSave({ ...rest, name: form.name.trim(), ...(gender ? { gender: gender as "male" | "female" } : {}) });
+    onSave({ ...rest, hideAge, name: form.name.trim(), ...(gender ? { gender: gender as "male" | "female" } : {}) });
     onClose();
   }
 
@@ -50,6 +51,10 @@ export function EditProfileModal({ user, details, onSave, onClose }: Props) {
             <AuthField className="sm:col-span-2" label={t("profile.status")} icon={Quote} value={form.status} maxLength={80} onChange={set("status")} />
             <AuthField label={t("profile.city")} icon={MapPin} value={form.city} onChange={set("city")} />
             <AuthField label={t("profile.birthday")} icon={Cake} type="date" value={form.birthday} onChange={set("birthday")}  />
+            <label className="flex items-center gap-2 text-xs font-medium text-muted sm:col-span-2">
+              <input type="checkbox" checked={hideAge} onChange={(event) => setHideAge(event.target.checked)} className="h-4 w-4 accent-[#8CC63F]" />
+              {({ az: "Yaşımı gizlət (oyunda və doğum günü xatırlatmalarında göstərilməsin)", tr: "Yaşımı gizle (oyunda ve doğum günü hatırlatmalarında gösterilmesin)", ru: "Скрыть мой возраст (в игре и в напоминаниях о днях рождения)", en: "Hide my age (in the game and in birthday reminders)" } as Record<string, string>)[locale] ?? "Hide my age (in the game and in birthday reminders)"}
+            </label>
             <AuthField label={t("profile.work")} icon={Briefcase} value={form.work} onChange={set("work")} />
             <AuthField label={t("profile.education")} icon={GraduationCap} value={form.education} onChange={set("education")} />
             <label className="block text-xs font-medium text-muted sm:col-span-2">{t("auth.gender")}

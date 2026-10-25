@@ -24,6 +24,7 @@ import { AchievementsPanel } from "./AchievementsPanel";
 import { nameColorClass, useNameColors } from "./nameColors";
 import { startCall } from "@/lib/callSync";
 import { clock as callClock, parseCallLog } from "@/lib/callLog";
+import { SeatGiftCanvas, type SeatGiftData } from "./SeatGiftCanvas";
 import { FlightCanvas, type CanvasFlight, type FlightGeometry } from "./FlightCanvas";
 import { FIRST_ORIGINAL, FRAME_PRICE, FrameArt, ORIGINAL_FRAMES, frameLooks, frameStone } from "./FrameArt";
 import { PassPanel, type PassData } from "./PassPanel";
@@ -393,6 +394,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const online = Boolean(supabase);
   const [net, setNet] = useState<BottleState | null>(null);
   const netSig = useRef({ sig: "", at: 0 });
+  // Players who chose to hide their age (profile setting): their age is not shown at the table.
+  const [hideAges, setHideAges] = useState<Record<string, boolean>>({});
+  const hideAskedRef = useRef<Set<string>>(new Set());
   const players = useMemo<Player[]>(() => {
     const me: Player = { id: "me", name: user.name.split(" ")[0], age: 25, female: details.gender === "female", avatar: user.avatar || NO_PHOTO, me: true, zodiac: zodiacOf(details.birthday) };
     if (online) {
@@ -406,12 +410,23 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         if (!row) return place === 7 && !net ? me : { id: `empty-${place}`, name: "", age: 0, female: false, avatar: "", empty: true };
         const female = row.gender === "female";
         if (row.id === net?.me) return { ...me, name: me.name || (row.name ?? "").split(" ")[0], age: row.age ?? me.age, female, zodiac: row.zodiac ?? me.zodiac };
-        return { id: row.id, name: (row.name ?? "").split(" ")[0] || "?", age: row.age ?? 0, female, avatar: row.avatar || NO_PHOTO, zodiac: row.zodiac };
+        return { id: row.id, name: (row.name ?? "").split(" ")[0] || "?", age: hideAges[row.id] ? 0 : row.age ?? 0, female, avatar: row.avatar || NO_PHOTO, zodiac: row.zodiac };
       });
     }
     const others = bots.map((bot, index) => ({ ...bot, avatar: cartoonAvatar(index + 1, bot.female), zodiac: (index * 5) % 12 }));
     return [...others.slice(0, 7), me, ...others.slice(7)];
-  }, [user.name, user.avatar, details.gender, details.birthday, online, net]);
+  }, [user.name, user.avatar, details.gender, details.birthday, online, net, hideAges]);
+  useEffect(() => {
+    if (!online || !net || !supabase) return;
+    const ids = net.seats.map((seat) => seat.id).filter((id) => id !== net.me && !hideAskedRef.current.has(id));
+    if (!ids.length) return;
+    ids.forEach((id) => hideAskedRef.current.add(id));
+    void Promise.resolve(supabase.from("profiles").select("id,hide_age").in("id", ids)).then((res) => {
+      const rows = (res?.data ?? []) as { id: string; hide_age?: boolean | null }[];
+      const hidden = rows.filter((row) => row.hide_age).map((row) => row.id);
+      if (hidden.length) setHideAges((value) => ({ ...value, ...Object.fromEntries(hidden.map((id) => [id, true])) }));
+    }).catch(() => ids.forEach((id) => hideAskedRef.current.delete(id)));
+  }, [online, net]);
   const seated = players.filter((player) => !player.empty);
   const meIndex = Math.max(0, players.findIndex((player) => player.me));
   const { seats, cx: CENTER_X, cy: STAGE_Y } = layouts[wide ? "wide" : "tall"];
@@ -520,8 +535,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [menuOpen, setMenuOpen] = useState(false);
   // The phone video can be dragged by the avatar and resized from its lower-left corner.
   // On the phone the video and music windows keep one small size (they can still be moved, not resized).
-  const MINI_VIDEO_W = 104;
-  const MINI_MUSIC_W = 190;
+  const MINI_VIDEO_W = 160;
+  const MINI_MUSIC_W = 95;
   const [mini, setMini] = useState<{ x: number | null; y: number; w: number }>({ x: null, y: 8, w: 127 });
   const [miniBusy, setMiniBusy] = useState(false);
   const miniRef = useRef<HTMLDivElement>(null);
@@ -1046,14 +1061,31 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // Everybody hears the same moment of the song: a newcomer starts where the song is now, not from the beginning.
   const songClock = useRef({ pos: 0, at: 0 });
   const songNow = () => songClock.current.pos + (Date.now() - songClock.current.at) / 1000;
+  const [djPics, setDjPics] = useState<Record<string, string>>({});
   const track = net?.track ?? null;
   // The round photo in the music player shows whoever put the current song on (not the viewer).
   const songByAvatar = (() => {
     const by = track?.by;
     if (!by || by === net?.me) return players[meIndex]?.avatar || NO_PHOTO;
     const seat = net?.seats.find((item) => item.id === by);
-    return seat?.avatar || players.find((player) => player.id === by)?.avatar || NO_PHOTO;
+    // Still shown when the one who put the song on has left the table: the picture comes from the profile.
+    return seat?.avatar || players.find((player) => player.id === by)?.avatar || names.current[by]?.avatar || djPics[by] || NO_PHOTO;
   })();
+  useEffect(() => {
+    const by = track?.by;
+    if (!by || by === net?.me || djPics[by] || net?.seats.some((item) => item.id === by) || names.current[by]?.avatar) return;
+    void Promise.resolve(supabase?.from("profiles").select("avatar_url").eq("id", by).maybeSingle()).then((res) => {
+      const url = (res?.data as { avatar_url?: string | null } | null)?.avatar_url;
+      if (url) setDjPics((value) => ({ ...value, [by]: url }));
+    }).catch(() => undefined);
+  }, [track?.by, net, djPics]);
+  // Nobody left at the table: the server clears the song, here the player closes too.
+  useEffect(() => {
+    if (!online || !net || net.track || trackAt.current === 0) return;
+    trackAt.current = 0;
+    setVideo(null);
+    setAudio(null);
+  }, [online, net]);
   useEffect(() => {
     if (!track || !net || track.at === trackAt.current || (track.by !== net.me && !net.seats.some((seat) => seat.id === net.me))) return;
     const first = trackAt.current === 0;
@@ -1390,6 +1422,21 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     const emoji = giftEmoji[id] ? giftEmoji[id] : id.startsWith("e:") ? id.slice(2) : null;
     return emoji ? giftSrc(emoji) : null;
   };
+  // Gifts lying on the photos are painted on one canvas. Open the game with ?pixi=0 (remembered) to go back to the old table, ?pixi=1 to turn it on again.
+  const [canvasSeats, setCanvasSeats] = useState(true);
+  useEffect(() => {
+    try {
+      const q = new URLSearchParams(window.location.search).get("pixi");
+      if (q === "0") window.localStorage.setItem("pixi", "0");
+      if (q === "1") window.localStorage.removeItem("pixi");
+      setCanvasSeats(window.localStorage.getItem("pixi") !== "0");
+    } catch { /* storage blocked: stays on */ }
+  }, []);
+  const seatGiftData = useRef<SeatGiftData>({ piles: {}, spots: {}, ids: [], seats: [], box: 17.5, cx: 50, cy: 50, staged: false, turn: null, target: null, url: () => null, pileMs: PILE_MS, version: 0 });
+  const canvasUrl = (gift: string) => (canvasSeats ? flightUrl(gift) : null);
+  const canvasCorners = (spot: Spot) => spot.kind !== "behind" && Boolean(canvasUrl(spot.gift));
+  const canvasCount = useRef(0);
+  const canvasLast = useRef<unknown[]>([]);
   const canvasFlights = useRef<CanvasFlight[]>([]);
   const flightGeometry = useRef<FlightGeometry>({ seats: [], cx: 50, cy: 50, staged: false, turn: null, target: null });
   function chooseSkin(n: number) {
@@ -1733,7 +1780,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // The site is a static export (no server), so YouTube is asked straight from the browser.
   // The key is public by design: in Google Cloud it must be restricted to this site's address and to "YouTube Data API v3".
   async function loadTracks(search: string) {
-    const key = process.env.NEXT_PUBLIC_YOUTUBE_API_KEY;
+    // Several keys (from different Google Cloud projects) can be given separated by commas: when one runs out of its daily quota the next one is used.
+    const keys = (process.env.NEXT_PUBLIC_YOUTUBE_API_KEY ?? "").split(",").map((item) => item.trim()).filter(Boolean);
+    const key = keys[0];
     setTracks([]);
     setTrackWhy("");
     if (!key) return setTrackState("nokey");
@@ -1755,6 +1804,25 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       }
     }
     const api = "https://www.googleapis.com/youtube/v3";
+    // The quota resets at midnight Pacific time (about 07:00-08:00 UTC): a key that ran out is skipped until 08:00 UTC.
+    const deadUntil = () => { const d = new Date(); d.setUTCHours(8, 0, 0, 0); if (d.getTime() <= Date.now()) d.setUTCDate(d.getUTCDate() + 1); return d.getTime(); };
+    const isDead = (k: string) => { try { return Number(window.localStorage.getItem(`bottle-yt-dead:${k.slice(-8)}`) ?? 0) > Date.now(); } catch { return false; } };
+    const call = async (path: string): Promise<Response> => {
+      const alive = keys.filter((k) => !isDead(k));
+      const order = alive.length ? alive : keys;
+      const start = Math.floor(Math.random() * order.length);
+      let last: Response | null = null;
+      for (let n = 0; n < order.length; n++) {
+        const k = order[(start + n) % order.length];
+        const res = await fetch(`${api}/${path}&key=${k}`);
+        if (res.ok) return res;
+        last = res;
+        const reason = await ytReason(res.clone());
+        if (/quota|dailyLimit|rateLimit/i.test(reason)) { try { window.localStorage.setItem(`bottle-yt-dead:${k.slice(-8)}`, String(deadUntil())); } catch { /* storage blocked */ } continue; }
+        break;
+      }
+      return last as Response;
+    };
     const clock = (iso: string) => {
       const part = /PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/.exec(iso);
       if (!part) return "";
@@ -1764,7 +1832,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     try {
       let ids = "";
       if (search) {
-        const found = await fetch(`${api}/search?part=id&type=video&videoEmbeddable=true&videoCategoryId=10&maxResults=25&q=${encodeURIComponent(search)}&key=${key}`);
+        const found = await call(`search?part=id&type=video&videoEmbeddable=true&videoCategoryId=10&maxResults=25&q=${encodeURIComponent(search)}`);
         if (!found.ok) {
           setTrackWhy(await ytReason(found));
           const own = [...favs, ...recent].filter((item, index, all) => all.findIndex((other) => other.id === item.id) === index && songScore(search, item.title) >= 0.5);
@@ -1774,7 +1842,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         ids = (((await found.json()) as { items?: { id: { videoId: string } }[] }).items ?? []).map((item) => item.id.videoId).join(",");
         if (!ids) return setTrackState("idle");
       }
-      const details = await fetch(search ? `${api}/videos?part=snippet,contentDetails&id=${ids}&key=${key}` : `${api}/videos?part=snippet,contentDetails&chart=mostPopular&videoCategoryId=10&regionCode=AZ&maxResults=16&key=${key}`);
+      const details = await call(search ? `videos?part=snippet,contentDetails&id=${ids}` : `videos?part=snippet,contentDetails&chart=mostPopular&videoCategoryId=10&regionCode=AZ&maxResults=16`);
       if (!details.ok) { setTrackWhy(await ytReason(details)); return setTrackState("fail"); }
       const list = (((await details.json()) as { items?: { id: string; snippet: { title: string }; contentDetails: { duration: string } }[] }).items ?? []).map((item) => ({ id: item.id, title: item.snippet.title, duration: clock(item.contentDetails.duration) }));
       // Own favourites and recent songs that match come first; then everything is ordered by how well it fits the query.
@@ -1820,7 +1888,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     return true;
   }
   // Live table: the server takes the hearts, puts the song on for the whole table and writes "X put on a song" in the chat.
-  function playLive(kind: "youtube" | "mp3", ref: string, title: string) {
+  function playLive(kind: "youtube" | "mp3", ref: string, title: string, secs = 0) {
     const targets = songTo().map((index) => players[index]);
     void (async () => {
       for (const target of targets.length ? targets : [null]) {
@@ -1829,6 +1897,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         heartsRef.current = left;
         setHearts(left);
       }
+      // The server counts gifts for the DJ only while the song is playing: tell it how long the song is.
+      if (secs > 0) void Promise.resolve(supabase.rpc("bottle_track_secs", { p_secs: Math.round(secs) })).catch(() => undefined);
       pullRef.current();
     })();
   }
@@ -1844,7 +1914,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (songBusy()) return;
     const count = Math.max(1, songTo().length);
     if (heartsRef.current < SONG_PRICE.video * count) return setGiftNote(t("bottle.noHearts"));
-    if (online) playLive("youtube", track.id, music ? `♫ ${cleanSong(track.title)}` : cleanSong(track.title));
+    if (online) playLive("youtube", track.id, music ? `♫ ${cleanSong(track.title)}` : cleanSong(track.title), durationSeconds(track.duration) || 0);
     else for (let n = 0; n < count; n++) paySong("video");
     songClock.current = { pos: 0, at: Date.now() };
     setAudio(null);
@@ -2019,6 +2089,11 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const seatXq = (index: number) => (staged && (index === turn || index === target) ? `(${CENTER_X}cqw ${index === turn ? "-" : "+"} 12.5cqmin)` : `${seats[index][0]}cqw`);
   const seatYq = (index: number) => (staged && (index === turn || index === target) ? `${STAGE_Y}cqh` : `${seats[index][1]}cqh`);
   flightGeometry.current = { seats, cx: CENTER_X, cy: STAGE_Y, staged, turn, target };
+  if (canvasSeats) {
+    const last = canvasLast.current;
+    if (last[0] !== piles || last[1] !== spots || last[2] !== staged || last[3] !== turn || last[4] !== target || last[5] !== wide) { canvasLast.current = [piles, spots, staged, turn, target, wide]; canvasCount.current += 1; }
+    seatGiftData.current = { piles, spots, ids: players.map((player) => player.id), seats, box: wide ? 18.5 : 17.5, cx: CENTER_X, cy: STAGE_Y, staged, turn, target, url: canvasUrl, pileMs: PILE_MS, version: canvasCount.current };
+  }
   // The canvas draws every flight that has a picture; it reads this list on each frame.
   useEffect(() => {
     canvasFlights.current = flying.flatMap((item) => {
@@ -2455,7 +2530,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const cardView = card && cardPlayer ? (() => {
           const loaded = prof && prof.id === cardPlayer.id ? prof.data : null;
           const outside = Boolean(cardOut);
-          const player: Player = cardOut && loaded?.user ? { ...cardOut, name: loaded.user.name ?? cardOut.name, avatar: loaded.user.avatar || cardOut.avatar, age: loaded.user.age ?? 0, female: loaded.user.gender === "female", zodiac: loaded.user.zodiac } : cardPlayer;
+          const player: Player = cardOut && loaded?.user ? { ...cardOut, name: loaded.user.name ?? cardOut.name, avatar: loaded.user.avatar || cardOut.avatar, age: hideAges[cardPlayer.id] ? 0 : loaded.user.age ?? 0, female: loaded.user.gender === "female", zodiac: loaded.user.zodiac } : cardPlayer;
           const seed = picked ?? 0;
           const suitor = admirerOf(player);
           const by = suitor;
@@ -2729,11 +2804,11 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   const rest = mine.filter((gift) => placeOf(gift) === "body").slice(-1);
                   const hat = head ? hatSpot(head.startsWith("c:") ? head.slice(2) : giftFileName(head)) : null;
                   return <>
-                    {(piles[player.id] ?? []).map((item) => <span key={item.key} className="pointer-events-none absolute z-[2] animate-[gift-drop_0.35s_ease-out] transition-opacity duration-[2000ms]" style={{ left: `${item.x}%`, top: `${item.y}%`, width: `${item.s}%`, height: `${item.s}%`, transform: `rotate(${item.r}deg)`, opacity: pileNow - item.at > PILE_MS - 3000 ? 0 : 1 }}><Gift anim id={item.gift} className="h-full w-full drop-shadow-[0_2px_2px_rgba(0,0,0,0.35)]" /></span>)}
+                    {(piles[player.id] ?? []).filter((item) => !canvasUrl(item.gift)).map((item) => <span key={item.key} className="pointer-events-none absolute z-[2] animate-[gift-drop_0.35s_ease-out] transition-opacity duration-[2000ms]" style={{ left: `${item.x}%`, top: `${item.y}%`, width: `${item.s}%`, height: `${item.s}%`, transform: `rotate(${item.r}deg)`, opacity: pileNow - item.at > PILE_MS - 3000 ? 0 : 1 }}><Gift anim id={item.gift} className="h-full w-full drop-shadow-[0_2px_2px_rgba(0,0,0,0.35)]" /></span>)}
                     {face ? <Gift id={face} className="absolute left-[8%] top-[10%] z-[2] h-[84%] w-[84%] animate-[gift-drop_0.35s_ease-out]" /> : null}
                     {ears ? <Gift anim id={ears} className="pointer-events-none absolute -left-[34%] -top-[22%] z-[2] h-[58%] w-[104%] -rotate-45 animate-[gift-drop_0.35s_ease-out] drop-shadow" /> : null}
                     {head && hat ? <span key={head} className="pointer-events-none absolute z-[5]" style={{ left: `${hat.x}%`, top: `${hat.y}%`, width: `${hat.s}%`, height: `${hat.s}%`, transform: "rotate(-45deg)" }}><Gift anim id={head} className="h-full w-full animate-[gift-drop_0.35s_ease-out] drop-shadow" /></span> : null}
-                    {spots[player.id]?.length ? spots[player.id].map((spot) => <span key={spot.key} className={cn("pointer-events-none absolute", spot.kind === "behind" ? "-z-[1]" : spot.kind === "hatL" || spot.kind === "hatR" ? "z-[5]" : "z-[2]")} style={{ left: `${spot.x}%`, top: `${spot.y}%`, width: `${spot.s}%`, height: `${spot.s}%`, transform: spot.kind === "hatL" ? "rotate(-45deg)" : spot.kind === "hatR" ? "rotate(45deg)" : spot.r ? `rotate(${spot.r}deg)` : undefined }}><Gift anim id={spot.gift} className={cn("h-full w-full drop-shadow", spot.x + spot.s / 2 < 45 ? "origin-bottom-left" : "origin-bottom-right", (spot.kind === "corner" || spot.kind === "balloon") && (spot.x + spot.s / 2 < 45 ? "object-left-bottom" : "object-right-bottom"), spot.kind === "balloon" ? "animate-[gift-grow_0.7s_ease-out_forwards]" : "animate-[gift-drop_0.35s_ease-out]")} /></span>)
+                    {spots[player.id]?.length ? spots[player.id].filter((spot) => !canvasCorners(spot)).map((spot) => <span key={spot.key} className={cn("pointer-events-none absolute", spot.kind === "behind" ? "-z-[1]" : spot.kind === "hatL" || spot.kind === "hatR" ? "z-[5]" : "z-[2]")} style={{ left: `${spot.x}%`, top: `${spot.y}%`, width: `${spot.s}%`, height: `${spot.s}%`, transform: spot.kind === "hatL" ? "rotate(-45deg)" : spot.kind === "hatR" ? "rotate(45deg)" : spot.r ? `rotate(${spot.r}deg)` : undefined }}><Gift anim id={spot.gift} className={cn("h-full w-full drop-shadow", spot.x + spot.s / 2 < 45 ? "origin-bottom-left" : "origin-bottom-right", (spot.kind === "corner" || spot.kind === "balloon") && (spot.x + spot.s / 2 < 45 ? "object-left-bottom" : "object-right-bottom"), spot.kind === "balloon" ? "animate-[gift-grow_0.7s_ease-out_forwards]" : "animate-[gift-drop_0.35s_ease-out]")} /></span>)
                       : rest.map((gift) => <Gift anim key={`${gift}-${mine.length}`} id={gift} className="absolute bottom-0 right-0 z-[2] h-[58%] w-[58%] animate-[gift-drop_0.35s_ease-out] drop-shadow" />)}
                     {scatters.filter((item) => item.to === player.id).flatMap((item) => item.names.map((name, n) => <span key={`${item.key}-${n}`} className="pointer-events-none absolute left-1/2 top-1/2 z-[3] h-[26%] w-[26%]" style={{ animation: "gift-scatter 1s ease-out forwards", ["--dx" as string]: `${item.dirs[n][0]}cqmin`, ["--dy" as string]: `${item.dirs[n][1]}cqmin` }}><Gift anim id={name} className="h-full w-full drop-shadow" /></span>))}
                   </>;
@@ -2783,6 +2858,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         {shows.map((item) => <Fireworks key={`fw-${item.key}`} at={seats[item.to]} level={item.level} seed={item.key} />)}
         {tableVfx ? <TableShower key={tableVfx.key} emoji={tableVfx.emoji} seed={tableVfx.key % 1000} /> : null}
         {boostFx ? <BoostFx key={boostFx.key} kind={boostFx.kind} fromLeft={boostFx.fromLeft} x={CENTER_X} y={STAGE_Y} /> : null}
+        {canvasSeats ? <SeatGiftCanvas data={seatGiftData} /> : null}
         <FlightCanvas flights={canvasFlights} geometry={flightGeometry} />
         {flying.filter((item) => !flightUrl(item.gift === "c:wholeegg" ? item.gift : item.look ?? item.gift)).map((item) => <div key={item.key} className="pointer-events-none absolute z-40 -translate-x-1/2 -translate-y-1/2" style={{ width: `${item.base}cqmin`, height: `${item.base}cqmin`, left: seatLeft(item.from), top: seatTop(item.from) }}><span className="block h-full w-full" style={{ /* moved with transform only (GPU): smooth like butter, no layout work while flying */ transform: item.moved ? `translate(calc(${seatXq(item.to)} - ${seatXq(item.from)} + ${item.tx}cqmin), calc(${seatYq(item.to)} - ${seatYq(item.from)} + ${item.ty}cqmin))` : "translate(0, 0)", transition: `transform ${item.ms}ms cubic-bezier(0.25, 0.7, 0.4, 1)` }}><span className="block h-full w-full" style={{ animation: `gift-fly-to ${item.ms}ms ease-in-out both`, ["--end" as string]: item.end }}><span className="block h-full w-full" style={SPIN_FLIGHT.test(item.gift) ? { animation: `gift-turn ${item.ms}ms linear both` } : { transform: `rotate(${item.moved ? item.rot ?? 0 : 0}deg)`, transition: `transform ${item.ms}ms cubic-bezier(0.25, 0.7, 0.4, 1)` }}>{/* one look the whole way: the flower/colour that will land, no colour changes in flight */}<Gift anim={!item.still} id={item.gift === "c:wholeegg" ? item.gift : item.look ?? item.gift} className="h-full w-full" /></span></span></span></div>)}
 
@@ -3425,13 +3501,14 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           <div className={cn("relative w-full shrink-0 bg-black", picked !== null || dedicate ? "h-0 overflow-hidden" : "aspect-video max-h-[42%]")}>
             <iframe ref={frameRef} onLoad={() => { window.setTimeout(pushMusic, 800); frameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: "listening", id: 1 }), "*"); }} src={ytSrc(video)} title="YouTube" referrerPolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen className="h-full w-full" />
             {soundPill}
+            {track ? <img src={songByAvatar} alt="" title={t("bottle.musicNow")} className="pointer-events-none absolute left-1.5 top-1.5 h-8 w-8 select-none rounded-full border-2 border-white/80 object-cover shadow" draggable={false} /> : null}
           </div>
         ) : null}
         {video && !wide && !musicMode ? (
           <div ref={miniRef} style={mini.x === null ? { right: 0, top: mini.y, width: MINI_VIDEO_W } : { left: mini.x, top: mini.y, width: MINI_VIDEO_W }} className={cn("absolute z-20 overflow-hidden border shadow-lg", musicMode ? "border-[#4C1D95] bg-[linear-gradient(160deg,#1E1B3A,#4C1D95_65%,#BE185D)] text-white" : "border-border bg-surface", mini.x === null ? "rounded-l-2xl border-r-0" : "rounded-2xl")}>
             <div className="flex items-center">
               <img src={songByAvatar} alt="" title={t("bottle.miniMove")} onPointerDown={(event) => startMini(event, "move")} className="mx-1 h-7 w-7 shrink-0 cursor-move touch-none select-none rounded-full border-2 border-border object-cover" draggable={false} />
-              <div className={cn(musicMode ? "my-1 mr-1 h-[200px] w-[200px] shrink-0 overflow-hidden rounded-xl" : "aspect-video min-w-0 flex-1", "bg-black", miniBusy && "pointer-events-none")}><iframe ref={frameRef} onLoad={() => { window.setTimeout(pushMusic, 800); frameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: "listening", id: 1 }), "*"); }} src={ytSrc(video)} title="YouTube" referrerPolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen className="h-full w-full" /></div>
+              <div className={cn(musicMode ? "my-1 mr-1 h-[200px] w-[200px] shrink-0 overflow-hidden rounded-xl" : "h-[85px] min-w-0 flex-1", "bg-black", miniBusy && "pointer-events-none")}><iframe ref={frameRef} onLoad={() => { window.setTimeout(pushMusic, 800); frameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: "listening", id: 1 }), "*"); }} src={ytSrc(video)} title="YouTube" referrerPolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen className="h-full w-full" /></div>
             </div>
             {musicMode ? <div className="flex items-center gap-2 px-2 pt-0.5"><Equalizer className="h-4 shrink-0" /><p className="min-w-0 flex-1 truncate text-xs font-bold">{videoTitle}</p></div> : null}
             {soundPill}
@@ -3445,6 +3522,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         {audio || (video && musicMode) ? (
           // PC: a bar above the chat. Phone: a small square window like the video one, which can be moved and resized.
           <div ref={wide ? undefined : miniRef} style={wide ? undefined : mini.x === null ? { right: 4, top: mini.y, width: MINI_MUSIC_W } : { left: mini.x, top: mini.y, width: MINI_MUSIC_W }} className={cn("overflow-hidden bg-[linear-gradient(120deg,#1E1B3A,#4C1D95_60%,#BE185D)] text-white", wide ? "relative shrink-0 p-2.5" : "absolute z-20 rounded-2xl border border-white/15 p-2 pt-7 shadow-xl", miniBusy && !wide && "select-none")}>
+            {track ? <img src={songByAvatar} alt="" title={t("bottle.musicNow")} className={cn("pointer-events-none absolute z-[1] select-none rounded-full border-2 border-white/70 object-cover shadow", wide ? "bottom-1.5 left-1.5 h-6 w-6" : "left-1.5 top-1.5 h-6 w-6")} draggable={false} /> : null}
             {audio ? <audio src={audio.url} autoPlay playsInline ref={(node) => { audioRef.current = node; if (node) node.volume = music / 100; }} onPlay={() => setTune((v) => ({ ...v, playing: true }))} onPause={() => setTune((v) => ({ ...v, playing: false }))} onEnded={() => setAudio(null)} onLoadedMetadata={(event) => { const node = event.currentTarget; const dur = node.duration || 0; const at = songNow(); if (at > 2 && at < dur) node.currentTime = at; setTune((v) => ({ ...v, dur })); }} onTimeUpdate={(event) => { const cur = event.currentTarget.currentTime; setTune((v) => ({ ...v, cur })); }} className="hidden" /> : null}
             {/* Songs from the MP3 tab: the YouTube player plays behind the card, only the music player is seen. */}
             {!audio && video ? <iframe ref={frameRef} onLoad={() => { window.setTimeout(pushMusic, 800); frameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: "listening", id: 1 }), "*"); }} src={ytSrc(video)} title="YouTube" referrerPolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media" tabIndex={-1} aria-hidden="true" className="pointer-events-none absolute left-0 top-0 h-[200px] w-[200px] opacity-0" /> : null}

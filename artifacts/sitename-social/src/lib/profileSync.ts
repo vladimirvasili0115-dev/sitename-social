@@ -39,7 +39,7 @@ export async function loadProfile(userId: string) {
     name: data.name, handle: data.handle, gender: data.gender ?? undefined, birthday: data.birthday ?? "", city: data.city ?? "",
     status: data.status ?? "", bio: data.bio ?? "", work: data.work ?? "", education: data.education ?? "", relationship: data.relationship ?? "single",
     joined: String(data.created_at).slice(0, 10), languages: [], interests: [], followers: 0,
-    regGender: data.reg_gender ?? undefined, nameChanges: data.name_changes ?? 0, nameChangedAt: data.name_changed_at ?? undefined,
+    hideAge: Boolean(data.hide_age), regGender: data.reg_gender ?? undefined, nameChanges: data.name_changes ?? 0, nameChangedAt: data.name_changed_at ?? undefined,
   });
 }
 
@@ -48,6 +48,7 @@ export async function saveProfile(patch: ProfileEdits) {
   const { data } = await supabase.auth.getSession();
   const userId = data.session?.user.id;
   const changes: Record<string, unknown> = Object.fromEntries(columns.filter((column) => patch[column] !== undefined).map((column) => [column, patch[column] === "" && column === "birthday" ? null : patch[column]]));
+  if (patch.hideAge !== undefined) changes.hide_age = Boolean(patch.hideAge);
   // Photos are uploaded to storage; the profile then points at the public URL instead of the local copy.
   if (isDataUrl(patch.avatar)) changes.avatar_url = await uploadImage(patch.avatar, "avatars");
   // A photo that is already uploaded (picked from your photos) becomes the profile picture as it is.
