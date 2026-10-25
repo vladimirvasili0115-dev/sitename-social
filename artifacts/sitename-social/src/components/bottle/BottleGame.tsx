@@ -2151,7 +2151,10 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       if (items.length && liveChannel.current) void liveChannel.current.send({ type: "broadcast", event: "gifts", payload: { items } });
     }, 120);
   }
-  const liveTableId = net?.table;
+  // No connection screen up: the live gift channel is closed too (no sounds or flying gifts from the table in the background).
+  const liveTableId = gone || offline ? undefined : net?.table;
+  const silentRef = useRef(false);
+  silentRef.current = Boolean(gone || offline);
   // What is on the photos right now, for the newcomer's "snapshot" (see the effect below).
   const spotsNow = useRef(spots);
   spotsNow.current = spots;
@@ -2273,7 +2276,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // Extra clicks are simply ignored (no hearts taken), so the page never drowns in its own gifts.
   const giftBucket = useRef({ tokens: 40, at: 0 });
   const soundAt = useRef(0);
-  const giftSound = (gift: string, moment: "send" | "land") => { const now = performance.now(); if (now - soundAt.current < 70) return; soundAt.current = now; playGiftSound(gift, moment); };
+  const giftSound = (gift: string, moment: "send" | "land") => { if (silentRef.current) return; const now = performance.now(); if (now - soundAt.current < 70) return; soundAt.current = now; playGiftSound(gift, moment); };
   function sendGift(index: number, gift: string, price: number, ms = 5200) {
     {
       const now = performance.now();
@@ -2730,6 +2733,24 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     input.addEventListener("click", onTap);
     return () => input.removeEventListener("click", onTap);
   }, [hint, myTexts]); // eslint-disable-line react-hooks/exhaustive-deps
+  // No connection (another page took the game over, idle, or the net is down): only this screen is drawn, the whole table is taken off the page, so nothing paints or animates in the background.
+  if (gone || offline) {
+    return (
+      <div data-bottle-root className="relative h-full w-full">
+        <div role="alertdialog" aria-modal="true" className="fixed inset-0 z-[300] flex items-center justify-center bg-[radial-gradient(circle_at_50%_40%,#648A3C,#4E6B33)] p-4">
+          <div className="w-[min(400px,100%)] rounded-3xl bg-white px-5 pb-5 pt-4 text-center text-black shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
+            <p className="text-sm font-bold text-[#C8C8C8]">{({ az: "Əlaqə yoxdur", tr: "Bağlantı yok", ru: "Нет связи", en: "No connection", ka: "კავშირი არ არის" } as Record<string, string>)[locale] ?? "No connection"}</p>
+            <div className="relative mx-auto mt-3 flex h-[124px] w-[124px] items-center justify-center rounded-full bg-[radial-gradient(circle_at_50%_30%,#D4ECFB,#8CC8EE)] text-[64px]">
+              <span aria-hidden="true">{gone === "idle" ? "😴" : "📡"}</span>
+              <span aria-hidden="true" className="absolute -bottom-1 left-1/2 flex h-9 w-9 -translate-x-1/2 items-center justify-center rounded-full bg-[radial-gradient(circle_at_50%_30%,#FF8A3D,#E24E12)] text-xl font-black text-white">!</span>
+            </div>
+            <p className="mt-3 text-[15px]">{gone === "idle" ? t("bottle.goneIdle") : ({ az: "Ay... səninlə əlaqə kəsilib", tr: "Eyvah... bağlantın kesildi", ru: "Ой... связь с тобой потеряна", en: "Oops... you got disconnected", ka: "ვაიმე... კავშირი გაწყდა" } as Record<string, string>)[locale] ?? "Oops... you got disconnected"}</p>
+            <button onClick={() => { if (gone) resumeGame(); else pullRef.current(); }} className="mt-3 h-[30px] min-w-[80px] rounded-lg bg-[#9ACD32] px-5 text-sm font-bold text-white hover:brightness-105">{({ az: "Yenilə", tr: "Yenile", ru: "Обновить", en: "Refresh", ka: "განახლება" } as Record<string, string>)[locale] ?? "Refresh"}</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
   return (
     <div data-bottle-root className={cn("relative flex h-full w-full bg-surface text-text", wide ? "flex-row" : "flex-col")}>
       {/* On a phone-shaped window the title bar sits on the same wood as the table, with no seam between them. */}
@@ -3898,19 +3919,6 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             </div>
             <div className="mt-3"><ComplimentPill kind={complimentIn.kind} big /></div>
             <button onClick={() => setComplimentIn(null)} className="mt-3 h-11 w-full rounded-xl bg-[linear-gradient(180deg,#F87171,#E5484D)] text-sm font-bold text-white shadow hover:brightness-110">{t("bottle.cmpThanks")} 💗</button>
-          </div>
-        </div>
-      ) : null}
-      {gone || offline ? (
-        <div role="alertdialog" aria-modal="true" className="fixed inset-0 z-[300] flex items-center justify-center bg-[radial-gradient(circle_at_50%_40%,#648A3C,#4E6B33)] p-4">
-          <div className="w-[min(400px,100%)] rounded-3xl bg-white px-5 pb-5 pt-4 text-center text-black shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
-            <p className="text-sm font-bold text-[#C8C8C8]">{({ az: "Əlaqə yoxdur", tr: "Bağlantı yok", ru: "Нет связи", en: "No connection", ka: "კავშირი არ არის" } as Record<string, string>)[locale] ?? "No connection"}</p>
-            <div className="relative mx-auto mt-3 flex h-[124px] w-[124px] items-center justify-center rounded-full bg-[radial-gradient(circle_at_50%_30%,#D4ECFB,#8CC8EE)] text-[64px]">
-              <span aria-hidden="true">{gone === "idle" ? "😴" : "📡"}</span>
-              <span aria-hidden="true" className="absolute -bottom-1 left-1/2 flex h-9 w-9 -translate-x-1/2 items-center justify-center rounded-full bg-[radial-gradient(circle_at_50%_30%,#FF8A3D,#E24E12)] text-xl font-black text-white">!</span>
-            </div>
-            <p className="mt-3 text-[15px]">{gone === "idle" ? t("bottle.goneIdle") : ({ az: "Ay... səninlə əlaqə kəsilib", tr: "Eyvah... bağlantın kesildi", ru: "Ой... связь с тобой потеряна", en: "Oops... you got disconnected", ka: "ვაიმე... კავშირი გაწყდა" } as Record<string, string>)[locale] ?? "Oops... you got disconnected"}</p>
-            <button onClick={() => { if (gone) resumeGame(); else pullRef.current(); }} className="mt-3 h-[30px] min-w-[80px] rounded-lg bg-[#9ACD32] px-5 text-sm font-bold text-white hover:brightness-105">{({ az: "Yenilə", tr: "Yenile", ru: "Обновить", en: "Refresh", ka: "განახლება" } as Record<string, string>)[locale] ?? "Refresh"}</button>
           </div>
         </div>
       ) : null}
