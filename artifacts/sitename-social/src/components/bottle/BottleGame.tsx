@@ -522,7 +522,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // The phone video can be dragged by the avatar and resized from its lower-left corner.
   // On the phone the video and music windows keep one small size (they can still be moved, not resized).
   const MINI_VIDEO_W = 170;
-  const MINI_MUSIC_W = 95;
+  const MINI_MUSIC_W = 170;
   const [mini, setMini] = useState<{ x: number | null; y: number; w: number }>({ x: null, y: 8, w: 127 });
   const [miniBusy, setMiniBusy] = useState(false);
   const miniRef = useRef<HTMLDivElement>(null);
