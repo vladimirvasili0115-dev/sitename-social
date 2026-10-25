@@ -394,6 +394,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const online = Boolean(supabase);
   const [net, setNet] = useState<BottleState | null>(null);
   const netSig = useRef({ sig: "", at: 0 });
+  // Players who chose to hide their birth date and age (privacy setting): their age is not shown at the table.
+  const [hideAges, setHideAges] = useState<Record<string, boolean>>({});
+  const hideAskedRef = useRef<Set<string>>(new Set());
   const players = useMemo<Player[]>(() => {
     const me: Player = { id: "me", name: user.name.split(" ")[0], age: 25, female: details.gender === "female", avatar: user.avatar || NO_PHOTO, me: true, zodiac: zodiacOf(details.birthday) };
     if (online) {
@@ -407,12 +410,23 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         if (!row) return place === 7 && !net ? me : { id: `empty-${place}`, name: "", age: 0, female: false, avatar: "", empty: true };
         const female = row.gender === "female";
         if (row.id === net?.me) return { ...me, name: me.name || (row.name ?? "").split(" ")[0], age: row.age ?? me.age, female, zodiac: row.zodiac ?? me.zodiac };
-        return { id: row.id, name: (row.name ?? "").split(" ")[0] || "?", age: row.age ?? 0, female, avatar: row.avatar || NO_PHOTO, zodiac: row.zodiac };
+        return { id: row.id, name: (row.name ?? "").split(" ")[0] || "?", age: hideAges[row.id] ? 0 : row.age ?? 0, female, avatar: row.avatar || NO_PHOTO, zodiac: row.zodiac };
       });
     }
     const others = bots.map((bot, index) => ({ ...bot, avatar: cartoonAvatar(index + 1, bot.female), zodiac: (index * 5) % 12 }));
     return [...others.slice(0, 7), me, ...others.slice(7)];
-  }, [user.name, user.avatar, details.gender, details.birthday, online, net]);
+  }, [user.name, user.avatar, details.gender, details.birthday, online, net, hideAges]);
+  useEffect(() => {
+    if (!online || !net || !supabase) return;
+    const ids = net.seats.map((seat) => seat.id).filter((id) => id !== net.me && !hideAskedRef.current.has(id));
+    if (!ids.length) return;
+    ids.forEach((id) => hideAskedRef.current.add(id));
+    void Promise.resolve(supabase.from("profiles").select("id,hide_age").in("id", ids)).then((res) => {
+      const rows = (res?.data ?? []) as { id: string; hide_age?: boolean | null }[];
+      const hidden = rows.filter((row) => row.hide_age).map((row) => row.id);
+      if (hidden.length) setHideAges((value) => ({ ...value, ...Object.fromEntries(hidden.map((id) => [id, true])) }));
+    }).catch(() => ids.forEach((id) => hideAskedRef.current.delete(id)));
+  }, [online, net]);
   const seated = players.filter((player) => !player.empty);
   const meIndex = Math.max(0, players.findIndex((player) => player.me));
   const { seats, cx: CENTER_X, cy: STAGE_Y } = layouts[wide ? "wide" : "tall"];
@@ -2528,7 +2542,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const cardView = card && cardPlayer ? (() => {
           const loaded = prof && prof.id === cardPlayer.id ? prof.data : null;
           const outside = Boolean(cardOut);
-          const player: Player = cardOut && loaded?.user ? { ...cardOut, name: loaded.user.name ?? cardOut.name, avatar: loaded.user.avatar || cardOut.avatar, age: loaded.user.age ?? 0, female: loaded.user.gender === "female", zodiac: loaded.user.zodiac } : cardPlayer;
+          const player: Player = cardOut && loaded?.user ? { ...cardOut, name: loaded.user.name ?? cardOut.name, avatar: loaded.user.avatar || cardOut.avatar, age: hideAges[cardPlayer.id] ? 0 : loaded.user.age ?? 0, female: loaded.user.gender === "female", zodiac: loaded.user.zodiac } : cardPlayer;
           const seed = picked ?? 0;
           const suitor = admirerOf(player);
           const by = suitor;

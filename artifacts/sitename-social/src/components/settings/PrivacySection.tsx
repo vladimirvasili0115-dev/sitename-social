@@ -1,10 +1,12 @@
 "use client";
 import Link from "next/link";
-import { ChevronRight, EyeOff, Gift, Mail, MessageCircle, PenLine, UserPlus, UserRound, Users, type LucideIcon } from "lucide-react";
+import { Cake, ChevronRight, EyeOff, Gift, Mail, MessageCircle, PenLine, UserPlus, UserRound, Users, type LucideIcon } from "lucide-react";
 import type { Audience, PrivacyKey } from "@/types";
 import { useTranslation } from "@/i18n/useTranslation";
 import type { TranslationKey } from "@/i18n/LanguageProvider";
 import { Select } from "@/components/ui/Select";
+import { Switch } from "@/components/ui/Switch";
+import { useProfile } from "@/components/profile/useProfile";
 import { SettingRow } from "./SettingRow";
 import { SettingsSection } from "./SettingsSection";
 import { useSettings } from "./useSettings";
@@ -24,8 +26,10 @@ const audiences: { value: Audience; label: TranslationKey }[] = [
 ];
 
 export function PrivacySection() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const { settings, update } = useSettings();
+  const { details, update: updateProfile } = useProfile();
+  const birthdayWords = ({ az: ["Doğum tarixini gizlət", "Doğum tarixin və yaşın profildə, oyunda və doğum günü xatırlatmalarında göstərilməsin."], tr: ["Doğum tarihini gizle", "Doğum tarihin ve yaşın profilde, oyunda ve doğum günü hatırlatmalarında gösterilmesin."], ru: ["Скрыть дату рождения", "Дата рождения и возраст не показываются в профиле, в игре и в напоминаниях о днях рождения."], en: ["Hide my birth date", "Your birth date and age are not shown in the profile, in the game or in birthday reminders."] } as Record<string, string[]>)[locale] ?? ["Hide my birth date", "Your birth date and age are not shown."];
   const options = audiences.map((item) => ({ value: item.value, label: t(item.label) }));
   return (
     <>
@@ -35,6 +39,9 @@ export function PrivacySection() {
             <Select<Audience> value={settings.privacy[key] ?? fallback[key] ?? "everyone"} label={t(title)} options={key === "requests" ? options.map((item) => (item.value === "friends" ? { ...item, label: t("settings.optFriendsOfFriends") } : item)) : options} onChange={(value) => update((current) => ({ ...current, privacy: { ...current.privacy, [key]: value } }))} />
           </SettingRow>
         ))}
+      </SettingsSection>
+      <SettingsSection>
+        <SettingRow icon={Cake} title={birthdayWords[0]} hint={birthdayWords[1]}><Switch checked={Boolean(details.hideAge)} label={birthdayWords[0]} onChange={(hideAge) => updateProfile({ hideAge })} /></SettingRow>
       </SettingsSection>
       <SettingsSection>
         <Link href="/invisible" className="block hover:bg-surface-2">
