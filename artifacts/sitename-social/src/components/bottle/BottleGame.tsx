@@ -2845,6 +2845,27 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   }
   return (
     <div data-bottle-root className={cn("relative flex h-full w-full bg-surface text-text", wide ? "flex-row" : "flex-col")}>
+      {waitFor ? (() => {
+        const ahead = Math.max(0, waitFor.position - 1);
+        const words: Record<string, { title: string; text: string; first: string; ahead: string; other: string }> = {
+          az: { title: "Boş yer yoxdur", text: "Masa {t} ətrafında boş yer yoxdur. Lütfən boş yer üçün gözlə.", first: "Növbədə birinci sənsən", ahead: "Səndən əvvəl növbədə {n} nəfər var", other: "Başqa masa seç" },
+          tr: { title: "Boş yer yok", text: "Masa {t} etrafında boş yer yok. Lütfen yer açılmasını bekle.", first: "Sırada birinci sensin", ahead: "Senden önce sırada {n} kişi var", other: "Başka masa seç" },
+          ru: { title: "Нет свободных мест", text: "За столом {t} нет свободных мест. Подожди, пока освободится.", first: "Ты первый в очереди", ahead: "Перед тобой в очереди: {n}", other: "Выбрать другой стол" },
+          en: { title: "No free seats", text: "There are no free seats at table {t}. Please wait for a seat.", first: "You are first in the queue", ahead: "People ahead of you: {n}", other: "Choose another table" },
+          ka: { title: "თავისუფალი ადგილი არ არის", text: "მაგიდასთან {t} თავისუფალი ადგილი არ არის. გთხოვთ დაელოდოთ.", first: "რიგში პირველი ხარ", ahead: "შენს წინ რიგში: {n}", other: "სხვა მაგიდა" },
+        };
+        const w = words[locale] ?? words.en;
+        return (
+          <div role="alertdialog" aria-modal="true" className="fixed inset-0 z-[290] flex items-center justify-center bg-[radial-gradient(circle_at_50%_40%,#648A3C,#4E6B33)] p-4">
+            <div className="w-[min(400px,100%)] rounded-3xl bg-white px-5 pb-5 pt-4 text-center text-black shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
+              <p className="text-sm font-bold text-[#C8C8C8]">{w.title}</p>
+              <p className="mt-3 text-[15px] leading-5">{w.text.replace("{t}", String(waitFor.table))}</p>
+              <p className="mt-2 text-[15px] font-bold leading-5 text-[#4E6B33]">{ahead === 0 ? w.first : w.ahead.replace("{n}", String(ahead))}</p>
+              <button onClick={() => { if (waitFor.back) { backCancel.current = Date.now(); backWait.current = false; } setWaitFor(null); void bottleQueueLeave(); openRooms(); }} className="mt-3 h-[30px] min-w-[80px] rounded-lg bg-[#9ACD32] px-5 text-sm font-bold text-white hover:brightness-105">{w.other}</button>
+            </div>
+          </div>
+        );
+      })() : null}
       {/* On a phone-shaped window the title bar sits on the same wood as the table, with no seam between them. */}
       <div className={cn("relative shrink-0", wide ? "h-full w-[54%]" : "mx-auto w-full max-w-[64dvh]")}>
       {wide ? null : <WoodTable className="pointer-events-none absolute inset-0 h-full w-full" />}
