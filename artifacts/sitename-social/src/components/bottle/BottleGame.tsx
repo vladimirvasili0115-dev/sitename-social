@@ -394,9 +394,6 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const online = Boolean(supabase);
   const [net, setNet] = useState<BottleState | null>(null);
   const netSig = useRef({ sig: "", at: 0 });
-  // Players who chose to hide their age (profile setting): their age is not shown at the table.
-  const [hideAges, setHideAges] = useState<Record<string, boolean>>({});
-  const hideAskedRef = useRef<Set<string>>(new Set());
   const players = useMemo<Player[]>(() => {
     const me: Player = { id: "me", name: user.name.split(" ")[0], age: 25, female: details.gender === "female", avatar: user.avatar || NO_PHOTO, me: true, zodiac: zodiacOf(details.birthday) };
     if (online) {
@@ -410,23 +407,12 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         if (!row) return place === 7 && !net ? me : { id: `empty-${place}`, name: "", age: 0, female: false, avatar: "", empty: true };
         const female = row.gender === "female";
         if (row.id === net?.me) return { ...me, name: me.name || (row.name ?? "").split(" ")[0], age: row.age ?? me.age, female, zodiac: row.zodiac ?? me.zodiac };
-        return { id: row.id, name: (row.name ?? "").split(" ")[0] || "?", age: hideAges[row.id] ? 0 : row.age ?? 0, female, avatar: row.avatar || NO_PHOTO, zodiac: row.zodiac };
+        return { id: row.id, name: (row.name ?? "").split(" ")[0] || "?", age: row.age ?? 0, female, avatar: row.avatar || NO_PHOTO, zodiac: row.zodiac };
       });
     }
     const others = bots.map((bot, index) => ({ ...bot, avatar: cartoonAvatar(index + 1, bot.female), zodiac: (index * 5) % 12 }));
     return [...others.slice(0, 7), me, ...others.slice(7)];
-  }, [user.name, user.avatar, details.gender, details.birthday, online, net, hideAges]);
-  useEffect(() => {
-    if (!online || !net || !supabase) return;
-    const ids = net.seats.map((seat) => seat.id).filter((id) => id !== net.me && !hideAskedRef.current.has(id));
-    if (!ids.length) return;
-    ids.forEach((id) => hideAskedRef.current.add(id));
-    void Promise.resolve(supabase.from("profiles").select("id,hide_age").in("id", ids)).then((res) => {
-      const rows = (res?.data ?? []) as { id: string; hide_age?: boolean | null }[];
-      const hidden = rows.filter((row) => row.hide_age).map((row) => row.id);
-      if (hidden.length) setHideAges((value) => ({ ...value, ...Object.fromEntries(hidden.map((id) => [id, true])) }));
-    }).catch(() => ids.forEach((id) => hideAskedRef.current.delete(id)));
-  }, [online, net]);
+  }, [user.name, user.avatar, details.gender, details.birthday, online, net]);
   const seated = players.filter((player) => !player.empty);
   const meIndex = Math.max(0, players.findIndex((player) => player.me));
   const { seats, cx: CENTER_X, cy: STAGE_Y } = layouts[wide ? "wide" : "tall"];
@@ -535,7 +521,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [menuOpen, setMenuOpen] = useState(false);
   // The phone video can be dragged by the avatar and resized from its lower-left corner.
   // On the phone the video and music windows keep one small size (they can still be moved, not resized).
-  const MINI_VIDEO_W = 160;
+  const MINI_VIDEO_W = 208;
   const MINI_MUSIC_W = 95;
   const [mini, setMini] = useState<{ x: number | null; y: number; w: number }>({ x: null, y: 8, w: 127 });
   const [miniBusy, setMiniBusy] = useState(false);
@@ -2530,7 +2516,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const cardView = card && cardPlayer ? (() => {
           const loaded = prof && prof.id === cardPlayer.id ? prof.data : null;
           const outside = Boolean(cardOut);
-          const player: Player = cardOut && loaded?.user ? { ...cardOut, name: loaded.user.name ?? cardOut.name, avatar: loaded.user.avatar || cardOut.avatar, age: hideAges[cardPlayer.id] ? 0 : loaded.user.age ?? 0, female: loaded.user.gender === "female", zodiac: loaded.user.zodiac } : cardPlayer;
+          const player: Player = cardOut && loaded?.user ? { ...cardOut, name: loaded.user.name ?? cardOut.name, avatar: loaded.user.avatar || cardOut.avatar, age: loaded.user.age ?? 0, female: loaded.user.gender === "female", zodiac: loaded.user.zodiac } : cardPlayer;
           const seed = picked ?? 0;
           const suitor = admirerOf(player);
           const by = suitor;
@@ -3508,7 +3494,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           <div ref={miniRef} style={mini.x === null ? { right: 0, top: mini.y, width: MINI_VIDEO_W } : { left: mini.x, top: mini.y, width: MINI_VIDEO_W }} className={cn("absolute z-20 overflow-hidden border shadow-lg", musicMode ? "border-[#4C1D95] bg-[linear-gradient(160deg,#1E1B3A,#4C1D95_65%,#BE185D)] text-white" : "border-border bg-surface", mini.x === null ? "rounded-l-2xl border-r-0" : "rounded-2xl")}>
             <div className="flex items-center">
               <img src={songByAvatar} alt="" title={t("bottle.miniMove")} onPointerDown={(event) => startMini(event, "move")} className="mx-1 h-7 w-7 shrink-0 cursor-move touch-none select-none rounded-full border-2 border-border object-cover" draggable={false} />
-              <div className={cn(musicMode ? "my-1 mr-1 h-[200px] w-[200px] shrink-0 overflow-hidden rounded-xl" : "h-[85px] min-w-0 flex-1", "bg-black", miniBusy && "pointer-events-none")}><iframe ref={frameRef} onLoad={() => { window.setTimeout(pushMusic, 800); frameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: "listening", id: 1 }), "*"); }} src={ytSrc(video)} title="YouTube" referrerPolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen className="h-full w-full" /></div>
+              <div className={cn(musicMode ? "my-1 mr-1 h-[200px] w-[200px] shrink-0 overflow-hidden rounded-xl" : "aspect-video min-w-0 flex-1", "bg-black", miniBusy && "pointer-events-none")}><iframe ref={frameRef} onLoad={() => { window.setTimeout(pushMusic, 800); frameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: "listening", id: 1 }), "*"); }} src={ytSrc(video)} title="YouTube" referrerPolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen className="h-full w-full" /></div>
             </div>
             {musicMode ? <div className="flex items-center gap-2 px-2 pt-0.5"><Equalizer className="h-4 shrink-0" /><p className="min-w-0 flex-1 truncate text-xs font-bold">{videoTitle}</p></div> : null}
             {soundPill}

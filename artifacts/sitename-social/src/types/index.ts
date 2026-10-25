@@ -18,11 +18,9 @@ export type ProfileDetails = {
   work: string; education: string; languages: string[]; interests: string[]; joined: string; followers: number; gender?: Gender;
   // Set by the server: the gender chosen at registration (private messages in the game), and how often the name was changed.
   regGender?: Gender; nameChanges?: number; nameChangedAt?: string;
-  // The person does not want the age to be shown (game card, birthday reminders, year of birth).
-  hideAge?: boolean;
 };
 export type Gender = "male" | "female";
-export type ProfileEdits = Partial<Pick<User, "name" | "avatar" | "handle"> & Pick<ProfileDetails, "cover" | "status" | "bio" | "city" | "birthday" | "relationship" | "work" | "education" | "gender" | "joined" | "languages" | "interests" | "followers" | "regGender" | "nameChanges" | "nameChangedAt" | "hideAge">>;
+export type ProfileEdits = Partial<Pick<User, "name" | "avatar" | "handle"> & Pick<ProfileDetails, "cover" | "status" | "bio" | "city" | "birthday" | "relationship" | "work" | "education" | "gender" | "joined" | "languages" | "interests" | "followers" | "regGender" | "nameChanges" | "nameChangedAt">>;
 export type Person = { user: User; city: string; mutual: number };
 export type FriendsState = { friends: string[]; incoming: string[]; outgoing: string[]; hidden: string[] };
 export type Message = { id: string; from: "me" | "them"; text: string; at: number; image?: string; audio?: string; read?: boolean; delivered?: boolean };

@@ -36,13 +36,13 @@ export function BirthdayReminder() {
   useEffect(() => {
     if (!supabase || !ids) { setList([]); return; }
     let active = true;
-    void supabase.from("profiles").select("id,birthday,hide_age").in("id", ids.split(",")).not("birthday", "is", null).then(({ data }) => {
+    void supabase.from("profiles").select("id,birthday").in("id", ids.split(",")).not("birthday", "is", null).then(({ data }) => {
       if (!active) return;
       const now = new Date();
-      const found = ((data ?? []) as { id: string; birthday: string | null; hide_age?: boolean | null }[]).flatMap((row): Upcoming[] => {
+      const found = ((data ?? []) as { id: string; birthday: string | null }[]).flatMap((row): Upcoming[] => {
         const when = row.birthday ? daysUntil(row.birthday, now) : null;
         const person = friends.find((item) => item.user.id === row.id);
-        return when && person && when.days <= 7 ? [{ user: person.user, ...when, age: row.hide_age ? undefined : when.age }] : [];
+        return when && person && when.days <= 7 ? [{ user: person.user, ...when }] : [];
       });
       setList(found.sort((a, b) => a.days - b.days));
     });
