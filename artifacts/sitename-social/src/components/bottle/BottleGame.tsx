@@ -58,14 +58,17 @@ const CHAT_KEEP = 40;
 function mergeLines(list: Line[], fresh: Line[]) {
   const out = [...list];
   for (const line of fresh) {
-    const last = out[out.length - 1];
+    let at = out.length - 1;
+    // A stream of different gifts from one player: the gift joins the earlier row of its own kind inside the unbroken run of that player's gift rows (so rows do not alternate and fill the chat).
+    if (line.gift && line.to) while (at > 0 && out[at].gift && !out[at].text && out[at].from === line.from && giftFamily(out[at].gift ?? "") !== giftFamily(line.gift) && out.length - at < 8) at -= 1;
+    const last = out[at];
     if (line.gift && line.to && last && last.gift && giftFamily(last.gift) === giftFamily(line.gift) && last.from === line.from && !last.text) {
       const tos = [...(last.tos ?? (last.to ? [last.to] : []))];
       if (!tos.includes(line.to)) tos.push(line.to);
       // How many of the gifts went to each receiver (the first line is one gift to its receiver).
       const per = { ...(last.per ?? (last.to ? { [last.to]: last.count ?? 1 } : {})) };
       per[line.to] = (per[line.to] ?? 0) + 1;
-      out[out.length - 1] = { ...last, tos, per, count: (last.count ?? 1) + 1 };
+      out[at] = { ...last, tos, per, count: (last.count ?? 1) + 1 };
       continue;
     }
     // Smileys from the same player in a row stand next to each other in one chat row (and wrap to a new row when it is full), not one under the other.
