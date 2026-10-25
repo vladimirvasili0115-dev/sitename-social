@@ -1898,7 +1898,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         setHearts(left);
       }
       // The server counts gifts for the DJ only while the song is playing: tell it how long the song is.
-      if (secs > 0) void Promise.resolve(supabase.rpc("bottle_track_secs", { p_secs: Math.round(secs) })).catch(() => undefined);
+      if (secs > 0) void Promise.resolve(supabase?.rpc("bottle_track_secs", { p_secs: Math.round(secs) })).catch(() => undefined);
       pullRef.current();
     })();
   }
