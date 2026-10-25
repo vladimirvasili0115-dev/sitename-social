@@ -24,6 +24,18 @@ import { ImageViewer } from "@/components/ui/ImageViewer";
 type Props = { chat: Chat; onBack: () => void; onSend: (input: MessageInput) => void; onDelete: (id: string) => void; className?: string };
 const tool = "flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-xl text-muted hover:bg-surface-2 hover:text-text";
 
+// A link in a message opens in a new tab (only http/https; the text is never run as HTML).
+const URL_PATTERN = /((?:https?:\/\/|www\.)[^\s<>"']+)/gi;
+function linkParts(text: string) {
+  return text.split(URL_PATTERN).map((part, index) => {
+    if (index % 2 === 0) return part;
+    const tail = /[.,;:!?)\]]+$/.exec(part)?.[0] ?? "";
+    const url = tail ? part.slice(0, -tail.length) : part;
+    const href = /^https?:\/\//i.test(url) ? url : `https://${url}`;
+    return <span key={index}><a href={href} target="_blank" rel="noopener noreferrer nofollow" onClick={(event) => event.stopPropagation()} className="underline underline-offset-2 hover:opacity-80">{url}</a>{tail}</span>;
+  });
+}
+
 export function ChatPane({ chat, onBack, onSend, onDelete, className }: Props) {
   const { t } = useTranslation();
   const [text, setText] = useState("");
@@ -138,7 +150,7 @@ export function ChatPane({ chat, onBack, onSend, onDelete, className }: Props) {
                   {message.image ? <button type="button" onClick={(event) => { event.stopPropagation(); setViewing(message.image ?? null); }} aria-label={t("photos.view")} className="block w-full cursor-zoom-in"><img src={message.image} alt="" className="max-h-[260px] w-full object-cover" /></button> : null}
                   {message.audio ? <audio src={message.audio} controls preload="metadata" onClick={(event) => event.stopPropagation()} className="mx-2 mt-2 h-10 w-[230px] max-w-full" /> : null}
                   <div className="px-3.5 py-2">
-                    {message.text ? <p className="whitespace-pre-wrap break-words text-sm leading-5">{message.text}</p> : null}
+                    {message.text ? <p className="whitespace-pre-wrap break-words text-sm leading-5">{linkParts(message.text)}</p> : null}
                     <p className={cn("mt-0.5 flex items-center justify-end gap-1 text-[10px]", mine ? "text-bg" : "text-muted")}>{formatClock(message.at)}{mine && message.read !== undefined ? (message.read ? <CheckCheck size={15} strokeWidth={2.4} aria-label={t("messages.read")} className="text-[#34B7F1]" /> : message.delivered ? <CheckCheck size={15} strokeWidth={2.4} aria-label={t("messages.delivered")} className="opacity-80" /> : <Check size={15} strokeWidth={2.4} aria-label={t("messages.sent")} className="opacity-80" />) : null}</p>
                   </div>
                 </div>
