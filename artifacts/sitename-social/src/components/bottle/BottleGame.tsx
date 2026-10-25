@@ -1062,7 +1062,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
               if (!alive || syncTable.current !== tableAtEntry) return;
             }
             const asMe = (id: string | null) => (id === meAtEntry ? "me" : id ?? "");
-            const raw: Line[] = rows.filter((item) => item.from !== meAtEntry).map((item) => (item.kind === "song" ? { id: item.id, from: asMe(item.from), to: item.to ? asMe(item.to) : undefined, song: item.body || "♪" } : item.kind === "gift" && item.to ? { id: item.id, from: asMe(item.from), to: asMe(item.to), gift: item.body ?? "" } : item.kind === "kiss" && item.to ? { id: item.id, from: asMe(item.from), to: asMe(item.to) } : { id: item.id, from: asMe(item.from), text: item.body ?? "" }));
+            const raw: Line[] = rows.map((item) => (item.kind === "song" ? { id: item.id, from: asMe(item.from), to: item.to ? asMe(item.to) : undefined, song: item.body || "♪" } : item.kind === "gift" && item.to ? { id: item.id, from: asMe(item.from), to: asMe(item.to), gift: item.body ?? "" } : item.kind === "kiss" && item.to ? { id: item.id, from: asMe(item.from), to: asMe(item.to) } : { id: item.id, from: asMe(item.from), text: item.body ?? "" }));
             // A gift storm is one row with a count, so the last 20 rows after merging still reach back to the earlier talk.
             const older = mergeLines([], raw).slice(-20);
             setLines((list) => { const have = new Set(list.map((line) => line.id)); const fresh = older.filter((line) => !have.has(line.id)); return fresh.length ? mergeLines(fresh, list) : list; });
