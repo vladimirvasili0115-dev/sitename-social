@@ -2,10 +2,10 @@
 import { VerifiedMark } from "@/components/ui/VerifiedMark";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { Palette, Eye, EyeOff, KeyRound, Award, HeartOff, BadgeCheck, Ban, ChevronDown, Coins, Crown, Gamepad2, Heart, ShieldCheck, ShieldOff, Trash2, Undo2 } from "lucide-react";
+import { Palette, Eye, EyeOff, KeyRound, Award, HeartOff, Lock, LockOpen, BadgeCheck, Ban, ChevronDown, Coins, Crown, Gamepad2, Heart, ShieldCheck, ShieldOff, Trash2, Undo2 } from "lucide-react";
 import { useSyncExternalStore } from "react";
 import { refreshVerified, verifiedStore } from "@/lib/verifiedSync";
-import { banUser, deleteUser, fetchAdminUsers, fetchUserDetail, grantCoins, grantHearts, setModerator, setVerified, vipAll, vipCount, gesturesOpenGet, gesturesOpenSet, setNameColor, gameState, gameGrant, gameFlags, type GameFlags, type GameState, type AdminUser, type UserDetail } from "@/lib/adminSync";
+import { banUser, deleteUser, fetchAdminUsers, fetchUserDetail, grantCoins, grantHearts, setModerator, setVerified, vipAll, vipCount, gesturesOpenGet, gesturesOpenSet, setNameColor, gameState, gameGrant, gameFlags, statFreezeGet, statFreezeSet, type StatKind, type StatFreeze, type GameFlags, type GameState, type AdminUser, type UserDetail } from "@/lib/adminSync";
 import type { TranslationKey } from "@/i18n/LanguageProvider";
 import { initialsAvatar } from "@/lib/avatar";
 import { formatDay } from "@/lib/datetime";
@@ -53,7 +53,13 @@ export function AdminUsers({ owner }: { owner: boolean }) {
   const verified = useSyncExternalStore(verifiedStore.subscribe, verifiedStore.get, verifiedStore.getServer);
   // VIP and TOP of every listed player, so each row shows "VIP et / VIP-i qaytar" and "TOP-a sal / TOP-dan çıxar".
   const [flags, setFlags] = useState<Record<string, GameFlags>>({});
-  const loadFlags = useCallback((ids: string[]) => { if (ids.length) void gameFlags(ids).then((value) => { if (value && typeof value === "object") setFlags((cur) => ({ ...cur, ...value })); }); }, []);
+  // Ratings (kisses, songs, smiles) that the admin froze: nobody can change them any more, only the admin.
+  const [frozen, setFrozen] = useState<StatFreeze>({});
+  const loadFlags = useCallback((ids: string[]) => {
+    if (!ids.length) return;
+    void gameFlags(ids).then((value) => { if (value && typeof value === "object") setFlags((cur) => ({ ...cur, ...value })); });
+    void statFreezeGet(ids).then((value) => { if (value && typeof value === "object") setFrozen((cur) => ({ ...cur, ...Object.fromEntries(ids.map((id) => [id, {}])), ...value })); });
+  }, []);
   const load = useCallback((search: string) => void fetchAdminUsers(search).then((list) => {
     setUsers(list ?? []);
     setFailed(!list);
@@ -79,6 +85,10 @@ export function AdminUsers({ owner }: { owner: boolean }) {
   // VIP and TOP stay until they are taken back (about ten years).
   async function toggleGame(id: string, kind: "vip" | "top", on: boolean) {
     await run(id, async () => (await gameGrant(id, kind, on ? 0 : 3650)) !== null);
+    loadFlags([id]);
+  }
+  async function toggleFreeze(id: string, kind: StatKind, on: boolean) {
+    await run(id, async () => (await statFreezeSet(id, kind, !on)) !== null);
     loadFlags([id]);
   }
   // Search as the moderator types, with a short pause.
@@ -148,6 +158,7 @@ export function AdminUsers({ owner }: { owner: boolean }) {
                     <button disabled={locked} onClick={() => void toggleGame(user.id, "vip", Boolean(flags[user.id]?.vip))} className={cn(action, flags[user.id]?.vip ? "border-[#D97706] text-[#D97706]" : "")}><Crown size={14} />{t(flags[user.id]?.vip ? "admin.vipOff" : "admin.vipOn")}</button>
                     <button disabled={locked} onClick={() => void toggleGame(user.id, "top", Boolean(flags[user.id]?.top))} className={cn(action, flags[user.id]?.top ? "border-[#CA8A04] text-[#CA8A04]" : "")}><Award size={14} />{t(flags[user.id]?.top ? "admin.topOff" : "admin.topOn")}</button>
                     <button disabled={locked} onClick={() => void run(user.id, async () => (await gameGrant(user.id, "admire_block", flags[user.id]?.block ? 0 : 1)) !== null)} className={cn(action, flags[user.id]?.block ? "border-danger text-danger" : "")}><HeartOff size={14} />{t(flags[user.id]?.block ? "admin.admireUnblock" : "admin.admireBlock")}</button>
+                    {([["kisses", "Öpüş"], ["songs", "Musiqi"], ["smiles", "Smayl"]] as [StatKind, string][]).map(([kind, label]) => { const on = Boolean(frozen[user.id]?.[kind]); return <button key={kind} disabled={locked} onClick={() => void toggleFreeze(user.id, kind, on)} className={cn(action, on ? "border-danger text-danger" : "")}>{on ? <LockOpen size={14} /> : <Lock size={14} />}{`${label} ${on ? "dondurulub (aç)" : "dondur"}`}</button>; })}
                     <button disabled={locked} onClick={() => setGameFor(gameFor === user.id ? null : user.id)} aria-expanded={gameFor === user.id} className={action}><Gamepad2 size={14} />{t("admin.game")}</button>
                     <button disabled={locked} onClick={() => setColorFor(colorFor === user.id ? null : user.id)} aria-expanded={colorFor === user.id} className={action}><Palette size={14} /><span className={nameColorClass(nameColors[user.id])}>{t("admin.nameColor")}</span></button>
                     {user.email && supabase ? <button disabled={locked || resetSent[user.id]} onClick={() => { if (!supabase || !user.email) return; void supabase.auth.resetPasswordForEmail(user.email, { redirectTo: `${window.location.origin}/reset-password` }).then(({ error }) => setResetSent((value) => ({ ...value, [user.id]: !error }))); }} title={t("admin.resetHint")} className={action}><KeyRound size={14} />{t(resetSent[user.id] ? "admin.resetSent" : "admin.resetPass")}</button> : null}
