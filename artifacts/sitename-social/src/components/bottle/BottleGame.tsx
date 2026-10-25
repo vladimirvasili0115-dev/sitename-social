@@ -1049,6 +1049,13 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   }, [online]);
   // A song someone put on plays for the whole table (a song older than 5 minutes is not started for newcomers).
   const trackAt = useRef(0);
+  // The "no connection" screen is up (another page took the game over, idle, or the net is down): the song stops here too, no hidden video keeps loading.
+  useEffect(() => {
+    if (!gone && !offline) return;
+    trackAt.current = 0;
+    setVideo(null);
+    setAudio(null);
+  }, [gone, offline]);
   // Everybody hears the same moment of the song: a newcomer starts where the song is now, not from the beginning.
   const songClock = useRef({ pos: 0, at: 0 });
   const songNow = () => songClock.current.pos + (Date.now() - songClock.current.at) / 1000;
