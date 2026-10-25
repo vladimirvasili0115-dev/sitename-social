@@ -929,6 +929,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const session = useRef({ token: Math.random().toString(36).slice(2) + Date.now().toString(36), claimed: false });
   const stopGame = useRef<(why: "idle" | "tab") => void>(() => {});
   const [gone, setGone] = useState<null | "idle" | "tab">(null);
+  const [offline, setOffline] = useState(false);
+  const failedPulls = useRef(0);
   const lastTouch = useRef(0);
   const announce = useRef<() => void>(() => {});
   // "Reconnect" brings this page back into the game in place (no reload): it takes the session over and the other page stops.
@@ -983,7 +985,10 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           if (backWait.current) { backWait.current = false; setWaitFor(null); setPanel((value) => (value === "tables" ? null : value)); }
           data = await bottleSync(lastChat.current);
         }
-        if (!alive || !data) return;
+        if (!alive) return;
+        if (!data) { failedPulls.current += 1; if (failedPulls.current >= 4) setOffline(true); return; }
+        failedPulls.current = 0;
+        setOffline(false);
         if (session.current.claimed && data.session && data.session !== session.current.token) { stopGame.current("tab"); return; }
         // Coming (back) into a room — first load, another table, a re-join or a long pause — starts clean:
         // gifts sent before you came in do not fly in and do not sit on the photos.
@@ -3875,13 +3880,16 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           </div>
         </div>
       ) : null}
-      {gone ? (
-        <div role="alertdialog" aria-modal="true" className="absolute inset-0 z-[90] flex items-center justify-center bg-black/70 p-4">
-          <div className="w-[min(360px,100%)] rounded-2xl bg-white p-5 text-center text-[#1F2937] shadow-2xl">
-            <p className="text-3xl">{gone === "idle" ? "😴" : "🔌"}</p>
-            <p className="mt-2 text-base font-bold">{t("bottle.serverStopped")}</p>
-            <p className="mt-1 text-sm text-[#6B7280]">{t(gone === "idle" ? "bottle.goneIdle" : "bottle.goneTab")}</p>
-            <button onClick={resumeGame} className="mt-4 h-11 w-full rounded-xl bg-[#EE8A2B] text-sm font-bold text-white hover:brightness-110">{t("bottle.goneBack")}</button>
+      {gone || offline ? (
+        <div role="alertdialog" aria-modal="true" className="fixed inset-0 z-[300] flex items-center justify-center bg-[radial-gradient(circle_at_50%_40%,#648A3C,#4E6B33)] p-4">
+          <div className="w-[min(400px,100%)] rounded-3xl bg-white px-5 pb-5 pt-4 text-center text-black shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
+            <p className="text-sm font-bold text-[#C8C8C8]">{({ az: "Əlaqə yoxdur", tr: "Bağlantı yok", ru: "Нет связи", en: "No connection", ka: "კავშირი არ არის" } as Record<string, string>)[locale] ?? "No connection"}</p>
+            <div className="relative mx-auto mt-3 flex h-[124px] w-[124px] items-center justify-center rounded-full bg-[radial-gradient(circle_at_50%_30%,#D4ECFB,#8CC8EE)] text-[64px]">
+              <span aria-hidden="true">{gone === "idle" ? "😴" : "📡"}</span>
+              <span aria-hidden="true" className="absolute -bottom-1 left-1/2 flex h-9 w-9 -translate-x-1/2 items-center justify-center rounded-full bg-[radial-gradient(circle_at_50%_30%,#FF8A3D,#E24E12)] text-xl font-black text-white">!</span>
+            </div>
+            <p className="mt-3 text-[15px]">{gone === "idle" ? t("bottle.goneIdle") : ({ az: "Ay... səninlə əlaqə kəsilib", tr: "Eyvah... bağlantın kesildi", ru: "Ой... связь с тобой потеряна", en: "Oops... you got disconnected", ka: "ვაიმე... კავშირი გაწყდა" } as Record<string, string>)[locale] ?? "Oops... you got disconnected"}</p>
+            <button onClick={() => { if (gone) resumeGame(); else pullRef.current(); }} className="mt-3 h-[30px] min-w-[80px] rounded-lg bg-[#9ACD32] px-5 text-sm font-bold text-white hover:brightness-105">{({ az: "Yenilə", tr: "Yenile", ru: "Обновить", en: "Refresh", ka: "განახლება" } as Record<string, string>)[locale] ?? "Refresh"}</button>
           </div>
         </div>
       ) : null}
