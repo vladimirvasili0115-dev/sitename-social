@@ -571,6 +571,12 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   playersRef.current = players;
   useEffect(() => { setFlying((list) => { const next = list.filter((item) => !item.toId || players[item.to]?.id === item.toId); return next.length === list.length ? list : next; }); }, [players]);
   useEffect(() => { airborne.current = flying.length; }, [flying.length]);
+  // Safety net: a gift that is still "in the air" long after its flight should have ended (tab was in the background, a timer was lost) is removed.
+  useEffect(() => {
+    if (!flying.length) return;
+    const timer = window.setInterval(() => setFlying((list) => { const now = performance.now(); const next = list.filter((item) => item.t0 === undefined || now - item.t0 < item.ms + 6000); return next.length === list.length ? list : next; }), 3000);
+    return () => window.clearInterval(timer);
+  }, [flying.length]);
   // Somebody left the table: their gifts go with them (if they come back they start clean); everybody else keeps theirs.
   const seatedIds = players.map((player) => player.id).join(",");
   useEffect(() => {
@@ -2333,6 +2339,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       setFlying((list) => [...list, { key, gift, look: plan.land, t0: performance.now(), from: meIndex, to: index, toId: player.id, moved: false, ms, mine: true, still: list.length >= 12, rot: plan.spot?.kind === "hatL" ? -45 : plan.spot?.kind === "hatR" ? 45 : plan.spot?.r ?? 0, fixed: plan.spot?.kind === "hatL" || plan.spot?.kind === "hatR", ...flightTo(plan, gift) }]); // no limit: every gift flies
       window.setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))))), 20);
     }
+    say({ from: "me", to: player.id, gift }); // the chat line is written when the gift leaves, not when it lands
     const gen = tableGen.current;
     const startedAt = performance.now();
     window.setTimeout(() => {
@@ -2343,7 +2350,6 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       if (gift === "c:heart1000") heartBurst(key + 0.5, index, 1000);
       fireworks(key, index, price, meIndex, gift);
       landGift(key, player.id, plan);
-      say({ from: "me", to: player.id, gift });
     }, ms + 100);
     setSent((value) => ({ ...value, [player.id]: (value[player.id] ?? 0) + 1 }));
     bumpStat("giftsSent");
@@ -2369,6 +2375,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       if (!busy) setFlying((list) => ([...list, { key, gift, look: plan.land, t0: performance.now(), from: fromAt >= 0 ? fromAt : toAt, to: toAt, toId, moved: false, ms, still: list.length >= 12, rot: plan.spot?.kind === "hatL" ? -45 : plan.spot?.kind === "hatR" ? 45 : plan.spot?.r ?? 0, fixed: plan.spot?.kind === "hatL" || plan.spot?.kind === "hatR", ...flightTo(plan, gift) }]));
       window.setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))))), 20);
     }
+    say({ from: fromId, to: toId, gift }); // the chat line is written when the gift leaves the sender
     const gen = tableGen.current;
     const startedAt = performance.now();
     window.setTimeout(() => {
@@ -2379,7 +2386,6 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       if (gift === "c:heart1000") heartBurst(key + 0.5, toAt, 1000);
       fireworks(key, toAt, priceOf(gift), fromAt, gift);
       landGift(key, toId, plan);
-      say({ from: fromId, to: toId, gift });
     }, ms + 100);
   };
   // Who admires this player: the server keeps it on a live table, the demo keeps it here.
