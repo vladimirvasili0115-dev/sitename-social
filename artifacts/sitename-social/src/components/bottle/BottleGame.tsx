@@ -54,7 +54,7 @@ function giftFamily(gift: string) {
   return `c:${familyOf.get(gift.slice(2)) ?? gift.slice(2)}`;
 }
 // The same gift sent again and again by the same person makes one chat line "🌹 ×5 » receivers" instead of many lines.
-const CHAT_KEEP = 25;
+const CHAT_KEEP = 40;
 function mergeLines(list: Line[], fresh: Line[]) {
   const out = [...list];
   for (const line of fresh) {
@@ -698,9 +698,6 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [refInfo, setRefInfo] = useState<{ invited: number; done: number }>({ invited: 0, done: 0 });
   const [localActive] = useState(() => Date.now());
   const names = useRef<Record<string, { name: string; avatar: string }>>({});
-  // The chat list is rebuilt only when something it shows changed (not on every one-second sync of the table).
-  const chatCache = useRef<{ key: unknown[]; node: ReactNode } | null>(null);
-  const chatActs = useRef<{ give?: (index: number, gift: string, price: number) => void; card?: (user: { id: string; name: string; avatar: string }) => void }>({});
   useEffect(() => { if (!kickedToast) return; const timer = window.setTimeout(() => setKickedToast(false), 12000); return () => window.clearTimeout(timer); }, [kickedToast]);
   // Private rooms (VIP opens them; anyone with the password can come in).
   const [roomsData, setRoomsData] = useState<BottleRooms | null>(null);
@@ -1260,16 +1257,6 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const byId = (id: string) => players.find((player) => player.id === id);
   // Somebody who left the table: his lines stay in the chat for everyone (name and photo are remembered).
   const lineWho = (id: string) => byId(id) ?? (names.current[id] ? { id, name: names.current[id].name, age: 0, female: false, avatar: names.current[id].avatar } as Player : undefined);
-  chatActs.current = { give: (index, gift, price) => { giveGift(index, gift, price); }, card: (user) => showUserCard(user) };
-  const playersKey = players.map((player) => `${player.id}|${player.name}|${player.avatar}|${player.female ? 1 : 0}|${player.me ? 1 : 0}|${player.empty ? 1 : 0}`).join("~");
-  const decorKey = Array.from(new Set(lines.map((line) => line.from))).map((id) => decorOf(id) ?? "").join("|");
-  const cachedChat = (key: unknown[], build: () => ReactNode): ReactNode => {
-    const old = chatCache.current;
-    if (old && old.key.length === key.length && old.key.every((value, n) => Object.is(value, key[n]))) return old.node;
-    const node = build();
-    chatCache.current = { key, node };
-    return node;
-  };
   const staged = phase !== "waiting" && phase !== "spinning" && target !== null;
   const myRole: "spinner" | "target" | null = staged ? (turn === meIndex ? "spinner" : target === meIndex ? "target" : null) : null;
   const canAnswer = deciding && myRole !== null && answers[myRole] === null;
@@ -3707,10 +3694,10 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         {/* The original chat (bottle-html5 ChatContent + chat CSS): light grey list, 30px photos, white bubbles with a tail,
             and one-line info rows "photo → gift/kiss/song → photo" with the original icons. */}
         <div ref={listRef} className={cn("flex min-h-0 flex-1 flex-col gap-[7px] overflow-y-auto bg-[#F5F5F5] py-[7px] text-[13px] text-black [overflow-wrap:break-word] [&>:first-child]:mt-auto [&>*]:[content-visibility:auto] [&>*]:[contain-intrinsic-size:auto_34px]", (picked !== null || (dedicate && !wide)) && "hidden")}>
-          {cachedChat([lines, muted, lineMenu, lang, art, audio, video, lastSongLine, nameColors, iAmAdmin, adminIds, net?.me, playersKey, decorKey], () => {
+          {(() => {
             const O = "/custom/orig/";
             const ic = (name: string, w: number, h: number, extra = "") => <span aria-hidden="true" className={cn("inline-block shrink-0 bg-contain bg-center bg-no-repeat", extra)} style={{ width: w, height: h, backgroundImage: `url(${O}${name}.svg)` }} />;
-            const photo = (player: Player | null | undefined, extra = "") => player ? <button type="button" onClick={() => { const index = players.findIndex((item) => item.id === player.id); if (index >= 0) { setPicked(index); setCard(true); } else chatActs.current.card?.({ id: player.id, name: player.name, avatar: player.avatar }); }} title={player.name} className={cn("h-[30px] w-[30px] shrink-0 rounded-[4px] bg-cover bg-top", extra)} style={{ backgroundImage: `url(${player.avatar || NO_PHOTO})` }} /> : null;
+            const photo = (player: Player | null | undefined, extra = "") => player ? <button type="button" onClick={() => { const index = players.findIndex((item) => item.id === player.id); if (index >= 0) { setPicked(index); setCard(true); } else showUserCard({ id: player.id, name: player.name, avatar: player.avatar }); }} title={player.name} className={cn("h-[30px] w-[30px] shrink-0 rounded-[4px] bg-cover bg-top", extra)} style={{ backgroundImage: `url(${player.avatar || NO_PHOTO})` }} /> : null;
             const arrows = ic("chat_icon_arrows", 11, 11, "mx-[5px]");
             const nameColor = (player: Player) => (player.female ? "#D6336C" : "#2F6FD6");
             const info = "flex min-h-[30px] max-w-full items-center px-[7px]";
@@ -3800,7 +3787,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 {arrows}
                 <span className="flex flex-row-reverse gap-[5px]">{receivers.slice(0, 12).map((player) => <span key={player.id} className="relative">{photo(player)}</span>)}</span>
                 {receivers.length > 12 ? <span className="ml-1 text-xs font-bold text-[#9E9E9E]">+{receivers.length - 12}</span> : null}
-                {!from.me && fromIndex >= 0 && !players[fromIndex].empty ? <button type="button" onClick={() => { const price = priceOf(line.gift ?? ""); if (price) chatActs.current.give?.(fromIndex, line.gift ?? "", price); }} aria-label={t("bottle.giftBack")} title={`${t("bottle.giftBack")} · ${priceOf(line.gift ?? "")} ❤`} className="ml-[9px] h-[22px] w-[30px] shrink-0 bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url(${O}chat_btn_reply.svg)` }} /> : null}
+                {!from.me && fromIndex >= 0 && !players[fromIndex].empty ? <button type="button" onClick={() => { const price = priceOf(line.gift ?? ""); if (price) giveGift(fromIndex, line.gift ?? "", price); }} aria-label={t("bottle.giftBack")} title={`${t("bottle.giftBack")} · ${priceOf(line.gift ?? "")} ❤`} className="ml-[9px] h-[22px] w-[30px] shrink-0 bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url(${O}chat_btn_reply.svg)` }} /> : null}
               </div>
             );
             if (to) return (
@@ -3813,7 +3800,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             );
             return null;
           });
-          })}
+          })()}
         </div>
         <form onSubmit={handleChat} className={cn("relative flex h-[39px] shrink-0 items-center bg-white shadow-[0_0_4px_rgba(0,0,0,0.07)]", picked !== null && "hidden")}>
           <input ref={chatRef} data-hint="chat-input" value={draft} onChange={(event) => setDraft(event.target.value)} maxLength={200} aria-label={t("messages.placeholder")} placeholder={t("messages.placeholder")} autoComplete="off" className={cn(tour === 5 && "ring-4 ring-[#FFD84D]", "ml-[13px] h-full min-w-[100px] flex-1 border-0 bg-transparent text-[14px] text-black outline-none placeholder:text-[#CFCFCF]")} />
