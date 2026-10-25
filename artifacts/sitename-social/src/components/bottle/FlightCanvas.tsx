@@ -12,7 +12,7 @@ export type FlightGeometry = {
   seats: readonly (readonly [number, number])[]; cx: number; cy: number; staged: boolean; turn: number | null; target: number | null;
 };
 
-// cubic-bezier(0.25, 0.7, 0.4, 1): fast start, gentle arrival (same curve the DOM flights used).
+// cubic-bezier(0.3, 0.6, 0.7, 0.9): fast start, the gift is still moving when it lands (same curve the DOM flights use).
 function bezier(p1x: number, p1y: number, p2x: number, p2y: number) {
   const cx = 3 * p1x, bx = 3 * (p2x - p1x) - cx, ax = 1 - cx - bx;
   const cy = 3 * p1y, by = 3 * (p2y - p1y) - cy, ay = 1 - cy - by;
@@ -25,7 +25,7 @@ function bezier(p1x: number, p1y: number, p2x: number, p2y: number) {
     return y(t);
   };
 }
-const ease = bezier(0.25, 0.7, 0.4, 1);
+const ease = bezier(0.3, 0.6, 0.7, 0.9); // arrives still moving (no slow crawl at the end), then lands
 const inOut = (p: number) => (p < 0.5 ? 2 * p * p : 1 - (-2 * p + 2) ** 2 / 2);
 // Size along the way: 0.8 → 1.2 in the first 10%, 1.2 until 85%, then to the size it will sit at.
 function scaleAt(p: number, end: number) {
