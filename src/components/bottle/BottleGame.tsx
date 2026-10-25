@@ -394,6 +394,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const online = Boolean(supabase);
   const [net, setNet] = useState<BottleState | null>(null);
   const netSig = useRef({ sig: "", at: 0 });
+  // Players who chose to hide their age (profile setting): their age is not shown at the table.
+  const [hideAges, setHideAges] = useState<Record<string, boolean>>({});
+  const hideAskedRef = useRef<Set<string>>(new Set());
   const players = useMemo<Player[]>(() => {
     const me: Player = { id: "me", name: user.name.split(" ")[0], age: 25, female: details.gender === "female", avatar: user.avatar || NO_PHOTO, me: true, zodiac: zodiacOf(details.birthday) };
     if (online) {
@@ -407,12 +410,23 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         if (!row) return place === 7 && !net ? me : { id: `empty-${place}`, name: "", age: 0, female: false, avatar: "", empty: true };
         const female = row.gender === "female";
         if (row.id === net?.me) return { ...me, name: me.name || (row.name ?? "").split(" ")[0], age: row.age ?? me.age, female, zodiac: row.zodiac ?? me.zodiac };
-        return { id: row.id, name: (row.name ?? "").split(" ")[0] || "?", age: row.age ?? 0, female, avatar: row.avatar || NO_PHOTO, zodiac: row.zodiac };
+        return { id: row.id, name: (row.name ?? "").split(" ")[0] || "?", age: hideAges[row.id] ? 0 : row.age ?? 0, female, avatar: row.avatar || NO_PHOTO, zodiac: row.zodiac };
       });
     }
     const others = bots.map((bot, index) => ({ ...bot, avatar: cartoonAvatar(index + 1, bot.female), zodiac: (index * 5) % 12 }));
     return [...others.slice(0, 7), me, ...others.slice(7)];
-  }, [user.name, user.avatar, details.gender, details.birthday, online, net]);
+  }, [user.name, user.avatar, details.gender, details.birthday, online, net, hideAges]);
+  useEffect(() => {
+    if (!online || !net || !supabase) return;
+    const ids = net.seats.map((seat) => seat.id).filter((id) => id !== net.me && !hideAskedRef.current.has(id));
+    if (!ids.length) return;
+    ids.forEach((id) => hideAskedRef.current.add(id));
+    void Promise.resolve(supabase.from("profiles").select("id,hide_age").in("id", ids)).then((res) => {
+      const rows = (res?.data ?? []) as { id: string; hide_age?: boolean | null }[];
+      const hidden = rows.filter((row) => row.hide_age).map((row) => row.id);
+      if (hidden.length) setHideAges((value) => ({ ...value, ...Object.fromEntries(hidden.map((id) => [id, true])) }));
+    }).catch(() => ids.forEach((id) => hideAskedRef.current.delete(id)));
+  }, [online, net]);
   const seated = players.filter((player) => !player.empty);
   const meIndex = Math.max(0, players.findIndex((player) => player.me));
   const { seats, cx: CENTER_X, cy: STAGE_Y } = layouts[wide ? "wide" : "tall"];
@@ -521,8 +535,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [menuOpen, setMenuOpen] = useState(false);
   // The phone video can be dragged by the avatar and resized from its lower-left corner.
   // On the phone the video and music windows keep one small size (they can still be moved, not resized).
-  const MINI_VIDEO_W = 104;
-  const MINI_MUSIC_W = 190;
+  const MINI_VIDEO_W = 160;
+  const MINI_MUSIC_W = 95;
   const [mini, setMini] = useState<{ x: number | null; y: number; w: number }>({ x: null, y: 8, w: 127 });
   const [miniBusy, setMiniBusy] = useState(false);
   const miniRef = useRef<HTMLDivElement>(null);
@@ -1047,14 +1061,31 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // Everybody hears the same moment of the song: a newcomer starts where the song is now, not from the beginning.
   const songClock = useRef({ pos: 0, at: 0 });
   const songNow = () => songClock.current.pos + (Date.now() - songClock.current.at) / 1000;
+  const [djPics, setDjPics] = useState<Record<string, string>>({});
   const track = net?.track ?? null;
   // The round photo in the music player shows whoever put the current song on (not the viewer).
   const songByAvatar = (() => {
     const by = track?.by;
     if (!by || by === net?.me) return players[meIndex]?.avatar || NO_PHOTO;
     const seat = net?.seats.find((item) => item.id === by);
-    return seat?.avatar || players.find((player) => player.id === by)?.avatar || NO_PHOTO;
+    // Still shown when the one who put the song on has left the table: the picture comes from the profile.
+    return seat?.avatar || players.find((player) => player.id === by)?.avatar || names.current[by]?.avatar || djPics[by] || NO_PHOTO;
   })();
+  useEffect(() => {
+    const by = track?.by;
+    if (!by || by === net?.me || djPics[by] || net?.seats.some((item) => item.id === by) || names.current[by]?.avatar) return;
+    void Promise.resolve(supabase?.from("profiles").select("avatar_url").eq("id", by).maybeSingle()).then((res) => {
+      const url = (res?.data as { avatar_url?: string | null } | null)?.avatar_url;
+      if (url) setDjPics((value) => ({ ...value, [by]: url }));
+    }).catch(() => undefined);
+  }, [track?.by, net, djPics]);
+  // Nobody left at the table: the server clears the song, here the player closes too.
+  useEffect(() => {
+    if (!online || !net || net.track || trackAt.current === 0) return;
+    trackAt.current = 0;
+    setVideo(null);
+    setAudio(null);
+  }, [online, net]);
   useEffect(() => {
     if (!track || !net || track.at === trackAt.current || (track.by !== net.me && !net.seats.some((seat) => seat.id === net.me))) return;
     const first = trackAt.current === 0;
@@ -2499,7 +2530,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const cardView = card && cardPlayer ? (() => {
           const loaded = prof && prof.id === cardPlayer.id ? prof.data : null;
           const outside = Boolean(cardOut);
-          const player: Player = cardOut && loaded?.user ? { ...cardOut, name: loaded.user.name ?? cardOut.name, avatar: loaded.user.avatar || cardOut.avatar, age: loaded.user.age ?? 0, female: loaded.user.gender === "female", zodiac: loaded.user.zodiac } : cardPlayer;
+          const player: Player = cardOut && loaded?.user ? { ...cardOut, name: loaded.user.name ?? cardOut.name, avatar: loaded.user.avatar || cardOut.avatar, age: hideAges[cardPlayer.id] ? 0 : loaded.user.age ?? 0, female: loaded.user.gender === "female", zodiac: loaded.user.zodiac } : cardPlayer;
           const seed = picked ?? 0;
           const suitor = admirerOf(player);
           const by = suitor;
@@ -3470,13 +3501,14 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           <div className={cn("relative w-full shrink-0 bg-black", picked !== null || dedicate ? "h-0 overflow-hidden" : "aspect-video max-h-[42%]")}>
             <iframe ref={frameRef} onLoad={() => { window.setTimeout(pushMusic, 800); frameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: "listening", id: 1 }), "*"); }} src={ytSrc(video)} title="YouTube" referrerPolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen className="h-full w-full" />
             {soundPill}
+            {track ? <img src={songByAvatar} alt="" title={t("bottle.musicNow")} className="pointer-events-none absolute left-1.5 top-1.5 h-8 w-8 select-none rounded-full border-2 border-white/80 object-cover shadow" draggable={false} /> : null}
           </div>
         ) : null}
         {video && !wide && !musicMode ? (
           <div ref={miniRef} style={mini.x === null ? { right: 0, top: mini.y, width: MINI_VIDEO_W } : { left: mini.x, top: mini.y, width: MINI_VIDEO_W }} className={cn("absolute z-20 overflow-hidden border shadow-lg", musicMode ? "border-[#4C1D95] bg-[linear-gradient(160deg,#1E1B3A,#4C1D95_65%,#BE185D)] text-white" : "border-border bg-surface", mini.x === null ? "rounded-l-2xl border-r-0" : "rounded-2xl")}>
             <div className="flex items-center">
               <img src={songByAvatar} alt="" title={t("bottle.miniMove")} onPointerDown={(event) => startMini(event, "move")} className="mx-1 h-7 w-7 shrink-0 cursor-move touch-none select-none rounded-full border-2 border-border object-cover" draggable={false} />
-              <div className={cn(musicMode ? "my-1 mr-1 h-[200px] w-[200px] shrink-0 overflow-hidden rounded-xl" : "aspect-video min-w-0 flex-1", "bg-black", miniBusy && "pointer-events-none")}><iframe ref={frameRef} onLoad={() => { window.setTimeout(pushMusic, 800); frameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: "listening", id: 1 }), "*"); }} src={ytSrc(video)} title="YouTube" referrerPolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen className="h-full w-full" /></div>
+              <div className={cn(musicMode ? "my-1 mr-1 h-[200px] w-[200px] shrink-0 overflow-hidden rounded-xl" : "h-[85px] min-w-0 flex-1", "bg-black", miniBusy && "pointer-events-none")}><iframe ref={frameRef} onLoad={() => { window.setTimeout(pushMusic, 800); frameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: "listening", id: 1 }), "*"); }} src={ytSrc(video)} title="YouTube" referrerPolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen className="h-full w-full" /></div>
             </div>
             {musicMode ? <div className="flex items-center gap-2 px-2 pt-0.5"><Equalizer className="h-4 shrink-0" /><p className="min-w-0 flex-1 truncate text-xs font-bold">{videoTitle}</p></div> : null}
             {soundPill}
@@ -3490,6 +3522,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         {audio || (video && musicMode) ? (
           // PC: a bar above the chat. Phone: a small square window like the video one, which can be moved and resized.
           <div ref={wide ? undefined : miniRef} style={wide ? undefined : mini.x === null ? { right: 4, top: mini.y, width: MINI_MUSIC_W } : { left: mini.x, top: mini.y, width: MINI_MUSIC_W }} className={cn("overflow-hidden bg-[linear-gradient(120deg,#1E1B3A,#4C1D95_60%,#BE185D)] text-white", wide ? "relative shrink-0 p-2.5" : "absolute z-20 rounded-2xl border border-white/15 p-2 pt-7 shadow-xl", miniBusy && !wide && "select-none")}>
+            {track ? <img src={songByAvatar} alt="" title={t("bottle.musicNow")} className={cn("pointer-events-none absolute z-[1] select-none rounded-full border-2 border-white/70 object-cover shadow", wide ? "bottom-1.5 left-1.5 h-6 w-6" : "left-1.5 top-1.5 h-6 w-6")} draggable={false} /> : null}
             {audio ? <audio src={audio.url} autoPlay playsInline ref={(node) => { audioRef.current = node; if (node) node.volume = music / 100; }} onPlay={() => setTune((v) => ({ ...v, playing: true }))} onPause={() => setTune((v) => ({ ...v, playing: false }))} onEnded={() => setAudio(null)} onLoadedMetadata={(event) => { const node = event.currentTarget; const dur = node.duration || 0; const at = songNow(); if (at > 2 && at < dur) node.currentTime = at; setTune((v) => ({ ...v, dur })); }} onTimeUpdate={(event) => { const cur = event.currentTarget.currentTime; setTune((v) => ({ ...v, cur })); }} className="hidden" /> : null}
             {/* Songs from the MP3 tab: the YouTube player plays behind the card, only the music player is seen. */}
             {!audio && video ? <iframe ref={frameRef} onLoad={() => { window.setTimeout(pushMusic, 800); frameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: "listening", id: 1 }), "*"); }} src={ytSrc(video)} title="YouTube" referrerPolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media" tabIndex={-1} aria-hidden="true" className="pointer-events-none absolute left-0 top-0 h-[200px] w-[200px] opacity-0" /> : null}
