@@ -35,6 +35,8 @@ export const bottleSay = (text: string) => call<null>("bottle_say", { p_text: te
 export const bottleSpend = (amount: number) => call<number>("bottle_spend", { p_amount: amount });
 export const bottleCocktail = (to: string) => call<number>("bottle_cocktail", { p_to: to });
 export const bottleBuyChances = (pack: number) => call<{ hearts: number; chances: number }>("bottle_buy_chances", { p_pack: pack });
+export const bottleSmiles = () => call<number>("bottle_smiles");
+export const bottleBuySmiles = (pack: number) => call<{ hearts: number; smiles: number } | null>("bottle_buy_smiles", { p_pack: pack });
 export const bottleWheel = () => call<{ sector: number; hearts: number; chances: number }>("bottle_wheel_spin");
 export const bottleSong = (to: string, kind: "video" | "mp3") => call<number>("bottle_song", { p_to: to, p_kind: kind });
 export type BottleTables = { tables: { id: number; boys: number; girls: number }[]; friends: { id: string; name: string | null; avatar: string | null; table: number; friend?: boolean }[] };

@@ -36,7 +36,7 @@ import { supabase } from "@/lib/supabase";
 import { refreshFriends } from "@/lib/friendsSync";
 import { ensureMessagesLoaded, openRemoteChat, remoteChats, sendRemoteMessage } from "@/lib/messagesSync";
 import { uploadBlob } from "@/lib/media";
-import { bottleLogIp, bottleAdminIpLookup, type BottleIpRow, bottleAnswer, bottleAchSync, bottleAchView, bottleGesture, bottleProgress, bottleGesturesOpen, bottleSkin, bottleBuyChances, bottleJoin, bottleMove, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleProfile, type BottleProfile, bottleDaily, bottleItems, bottleItemBuy, bottleBooster, bottleTutorial, bottleAdminIds, type BottleItems, bottleLeagueInfo, bottleLeagueClaim, type BottleLeague, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleKickPrice, bottleGift, bottleGiftMany, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, bottleClaim, type BottleState, type BottleSeat, bottleEffectOf, bottleYtGet, bottleYtPut, bottleTableGifts, type BottleSeatGift } from "@/lib/bottleSync";
+import { bottleLogIp, bottleAdminIpLookup, type BottleIpRow, bottleAnswer, bottleAchSync, bottleAchView, bottleGesture, bottleSmiles, bottleBuySmiles, bottleProgress, bottleGesturesOpen, bottleSkin, bottleBuyChances, bottleJoin, bottleMove, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleProfile, type BottleProfile, bottleDaily, bottleItems, bottleItemBuy, bottleBooster, bottleTutorial, bottleAdminIds, type BottleItems, bottleLeagueInfo, bottleLeagueClaim, type BottleLeague, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleKickPrice, bottleGift, bottleGiftMany, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, bottleClaim, type BottleState, type BottleSeat, bottleEffectOf, bottleYtGet, bottleYtPut, bottleTableGifts, type BottleSeatGift } from "@/lib/bottleSync";
 import { ytHint, ytReason } from "./ytHints";
 import { BonusMarket, EnigmaEffect, arrivalLabel, marketLabel } from "./BonusMarket";
 
@@ -105,6 +105,8 @@ const wheelSectors: { hearts?: number; chances?: number; kisses?: number; smiles
 ];
 const prizeText = (item: (typeof wheelSectors)[number]) => (item.hearts ? `❤️ ${item.hearts}` : item.chances ? `🎲 ${item.chances}` : item.kisses ? `💋 ${item.kisses}` : item.smiles ? `😊 ${item.smiles}` : "");
 const chancePacks: [number, number][] = [[300, 900], [50, 150], [15, 45], [5, 20], [1, 5]];
+// Smiley packs: [smileys, price in hearts]. The server (bottle_buy_smiles) has the same list.
+const smilePacks: [number, number][] = [[300, 120], [100, 45], [40, 20], [15, 8], [5, 3]];
 const vipPlans: [number, number][] = [[7, 300], [30, 900], [90, 2200]];
 // Put the channel link here (for example "https://t.me/kanal_adi"); while empty, the settings row says it is not set yet.
 const TELEGRAM_URL = "";
@@ -684,7 +686,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [volume, setVolumeLevel] = useState(80);
   const [music, setMusic] = useState(60);
   const [accept, setAccept] = useState(true);
-  const [panel, setPanel] = useState<"gestures" | "settings" | "top" | "rules" | "shop" | "menu" | "vip" | "bottles" | "frames" | "achievements" | "boosters" | "wheel" | "chances" | "tables" | "rooms" | "active" | "invite" | "compliments" | "kick" | "pass" | "league" | "market" | null>(null);
+  const [panel, setPanel] = useState<"gestures" | "settings" | "top" | "rules" | "shop" | "menu" | "vip" | "bottles" | "frames" | "achievements" | "boosters" | "wheel" | "chances" | "tables" | "rooms" | "active" | "invite" | "compliments" | "kick" | "pass" | "league" | "market" | "smiles" | null>(null);
   // Panels drop down from the top like a hanging sign and go back up when closed.
   const [closing, setClosing] = useState(false);
   const closePanel = () => { if (closing) return; setClosing(true); window.setTimeout(() => { setPanel(null); setClosing(false); }, 260); };
@@ -715,6 +717,40 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [waitFor, setWaitFor] = useState<{ table: number; position: number; back?: boolean } | null>(null);
   const [roomNote, setRoomNote] = useState(false);
   const [chances, setChances] = useState(0);
+  // Smiley balance: a smiley costs one from the balance; packs are bought with hearts.
+  const [smiles, setSmiles] = useState(0);
+  const smileText = useMemo(() => {
+    const all: Record<string, { title: string; balance: string; none: string; back: string; buy: string }> = {
+      az: { title: "Smayl mağazası", balance: "Smayl balansı", none: "Smaylın qalmayıb. Mağazadan smayl al.", back: "Geri", buy: "Al" },
+      tr: { title: "Emoji mağazası", balance: "Emoji bakiyesi", none: "Emojin kalmadı. Mağazadan emoji al.", back: "Geri", buy: "Al" },
+      ru: { title: "Магазин смайлов", balance: "Баланс смайлов", none: "Смайлы закончились. Купи в магазине.", back: "Назад", buy: "Купить" },
+      en: { title: "Smiley shop", balance: "Smiley balance", none: "No smileys left. Buy some in the shop.", back: "Back", buy: "Buy" },
+      ka: { title: "სმაილების მაღაზია", balance: "სმაილების ბალანსი", none: "სმაილები ამოიწურა. იყიდე მაღაზიაში.", back: "უკან", buy: "ყიდვა" },
+    };
+    return all[locale] ?? all.en;
+  }, [locale]);
+  useEffect(() => {
+    if (!online || !net?.me || (panel !== "gestures" && panel !== "smiles" && smiles !== 0)) return;
+    let alive = true;
+    void bottleSmiles().then((value) => { if (alive && typeof value === "number") setSmiles(value); });
+    return () => { alive = false; };
+  }, [online, net?.me, panel]); // eslint-disable-line react-hooks/exhaustive-deps
+  async function buySmiles(pack: number, price: number) {
+    if (heartsRef.current < price) return setPayNote(true);
+    if (online) {
+      const result = await bottleBuySmiles(pack);
+      if (!result) return setPayNote(true);
+      heartsRef.current = result.hearts;
+      setHearts(result.hearts);
+      setSmiles(result.smiles);
+    } else {
+      heartsRef.current -= price;
+      setHearts(heartsRef.current);
+      setSmiles((value) => value + pack);
+    }
+    setPayNote(false);
+    setPanel("gestures");
+  }
   const [wheelTurn, setWheelTurn] = useState(0);
   const [wheelBusy, setWheelBusy] = useState(false);
   const [wheelPrize, setWheelPrize] = useState<number | null>(null);
@@ -1775,13 +1811,22 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   function sendGesture(id: string, price: number, rule: [RuleKind, number]) {
     const left = missing(rule, gesProgress);
     if (left) return openLock(left < 0 ? "vip" : rule[0], rule[1], { gesture: id });
-    if (heartsRef.current < price) return setFrameNote(t("bottle.noHearts"));
+    if (online && smiles < 1) { setFrameNote(smileText.none); setPayNote(false); setPanel("smiles"); return; }
+    if (!online && heartsRef.current < price) return setFrameNote(t("bottle.noHearts"));
     setFrameNote(null);
     closePanel();
     showSeatGesture("me", id);
     playSfx("light_tap");
     bumpStat("gestures");
-    if (online) { void bottleGesture(id).then((left) => { if (typeof left === "number" && left >= 0) { heartsRef.current = left; setHearts(left); pullProgress.current(); pullRef.current(); } }); return; }
+    if (online) {
+      setSmiles((value) => Math.max(0, value - 1));
+      void bottleGesture(id).then((left) => {
+        if (typeof left === "number" && left >= 0) { heartsRef.current = left; setHearts(left); pullProgress.current(); pullRef.current(); }
+        else if (left === -2) { setSmiles(0); setFrameNote(smileText.none); setPayNote(false); setPanel("smiles"); }
+        void bottleSmiles().then((value) => { if (typeof value === "number") setSmiles(value); });
+      });
+      return;
+    }
     heartsRef.current -= price;
     setHearts(heartsRef.current);
     setMySmiles((value) => value + 1);
@@ -3049,9 +3094,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
 
         {panel ? (
           <div className={cn("absolute inset-0 z-50 flex items-center justify-center overflow-hidden bg-black/35 p-3", closing ? "animate-[panel-fade_0.28s_ease-in_reverse_forwards]" : "animate-[panel-fade_0.25s_ease-out]")} onClick={(event) => { event.stopPropagation(); closePanel(); }}>
-            <div role="dialog" aria-modal="true" aria-label={panel === "market" ? marketLabel(locale) : t(`bottle.${panel}`)} onClick={(event) => event.stopPropagation()} className={cn("relative max-h-full origin-top rounded-2xl shadow-2xl motion-reduce:animate-none", panel !== "top" && panel !== "shop" && panel !== "league" && panel !== "kick" && panel !== "pass" && "p-3", panel === "shop" ? "w-auto" : "w-full", closing ? "animate-[panel-up_0.28s_ease-in_forwards]" : "animate-[panel-drop_0.7s_cubic-bezier(0.22,1,0.36,1)]", panel === "shop" ? "flex max-h-[94%] max-w-[93%] flex-col rounded-[17px] bg-[#FFF0F0]" : panel === "wheel" || panel === "chances" ? "max-w-[380px] bg-[linear-gradient(180deg,#12998C,#7FD8C8)]" : panel === "top" ? "flex h-[93%] max-w-[420px] flex-col rounded-[17px] bg-white p-0" : panel === "league" ? "flex max-h-[90%] max-w-[420px] flex-col rounded-[17px] bg-white" : panel === "kick" ? "max-w-[360px] rounded-[17px] bg-white" : panel === "achievements" ? "max-w-[400px] bg-white" : panel === "frames" ? "max-w-[440px] bg-[#F7F7F8]" : panel === "pass" ? "flex h-[90%] max-w-[420px] flex-col rounded-[17px] bg-white" : panel === "rooms" ? "max-w-[400px] border border-[#F5C451]/30 bg-[linear-gradient(165deg,#2B1D4E,#4E2D7C)]" : "max-w-[340px] bg-white")}>
-              <button onClick={() => closePanel()} aria-label={t("photos.close")} title={t("photos.close")} className={cn("absolute -right-2 -top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 bg-white shadow", panel === "shop" ? "z-20 h-8 w-8 border-0 bg-[url(/custom/orig/popup_btn_close.svg)] bg-[length:16px_16px] bg-center bg-no-repeat text-transparent shadow-[0_4px_8px_rgba(0,0,0,0.2)] [&>svg]:hidden" : panel === "wheel" || panel === "chances" ? "border-[#0E8478] text-[#0E8478]" : panel === "top" || panel === "pass" || (panel === "league" && leagueHead === "up") ? "border-0 text-transparent [&>svg]:hidden bg-[url(/custom/orig/popup_btn_close_league_up.svg)] bg-[length:16px_16px] bg-center bg-no-repeat" : panel === "league" && leagueHead === "down" ? "border-0 text-transparent [&>svg]:hidden bg-[url(/custom/orig/popup_btn_close_league_down.svg)] bg-[length:16px_16px] bg-center bg-no-repeat" : panel === "league" || panel === "kick" ? "border-0 text-transparent [&>svg]:hidden bg-[url(/custom/orig/popup_btn_close.svg)] bg-[length:16px_16px] bg-center bg-no-repeat" : panel === "rooms" ? "border-[#F5C451] text-[#C08A12]" : "border-[#8CC63F] text-[#8CC63F]")}><X size={18} strokeWidth={3} /></button>
-              <p className={cn("mb-1 text-center text-sm font-bold", panel === "wheel" || panel === "chances" || panel === "rooms" ? "mb-2 text-white" : "text-[#9CA3AF]", (panel === "top" || panel === "achievements" || panel === "league" || panel === "shop" || panel === "kick" || panel === "pass") && "sr-only")}>{panel === "market" ? marketLabel(locale) : t(`bottle.${panel}`)}</p>
+            <div role="dialog" aria-modal="true" aria-label={panel === "market" ? marketLabel(locale) : panel === "smiles" ? smileText.title : t(`bottle.${panel}`)} onClick={(event) => event.stopPropagation()} className={cn("relative max-h-full origin-top rounded-2xl shadow-2xl motion-reduce:animate-none", panel !== "top" && panel !== "shop" && panel !== "league" && panel !== "kick" && panel !== "pass" && "p-3", panel === "shop" ? "w-auto" : "w-full", closing ? "animate-[panel-up_0.28s_ease-in_forwards]" : "animate-[panel-drop_0.7s_cubic-bezier(0.22,1,0.36,1)]", panel === "shop" ? "flex max-h-[94%] max-w-[93%] flex-col rounded-[17px] bg-[#FFF0F0]" : panel === "wheel" || panel === "chances" || panel === "smiles" ? "max-w-[380px] bg-[linear-gradient(180deg,#12998C,#7FD8C8)]" : panel === "top" ? "flex h-[93%] max-w-[420px] flex-col rounded-[17px] bg-white p-0" : panel === "league" ? "flex max-h-[90%] max-w-[420px] flex-col rounded-[17px] bg-white" : panel === "kick" ? "max-w-[360px] rounded-[17px] bg-white" : panel === "achievements" ? "max-w-[400px] bg-white" : panel === "frames" ? "max-w-[440px] bg-[#F7F7F8]" : panel === "pass" ? "flex h-[90%] max-w-[420px] flex-col rounded-[17px] bg-white" : panel === "rooms" ? "max-w-[400px] border border-[#F5C451]/30 bg-[linear-gradient(165deg,#2B1D4E,#4E2D7C)]" : "max-w-[340px] bg-white")}>
+              <button onClick={() => closePanel()} aria-label={t("photos.close")} title={t("photos.close")} className={cn("absolute -right-2 -top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 bg-white shadow", panel === "shop" ? "z-20 h-8 w-8 border-0 bg-[url(/custom/orig/popup_btn_close.svg)] bg-[length:16px_16px] bg-center bg-no-repeat text-transparent shadow-[0_4px_8px_rgba(0,0,0,0.2)] [&>svg]:hidden" : panel === "wheel" || panel === "chances" || panel === "smiles" ? "border-[#0E8478] text-[#0E8478]" : panel === "top" || panel === "pass" || (panel === "league" && leagueHead === "up") ? "border-0 text-transparent [&>svg]:hidden bg-[url(/custom/orig/popup_btn_close_league_up.svg)] bg-[length:16px_16px] bg-center bg-no-repeat" : panel === "league" && leagueHead === "down" ? "border-0 text-transparent [&>svg]:hidden bg-[url(/custom/orig/popup_btn_close_league_down.svg)] bg-[length:16px_16px] bg-center bg-no-repeat" : panel === "league" || panel === "kick" ? "border-0 text-transparent [&>svg]:hidden bg-[url(/custom/orig/popup_btn_close.svg)] bg-[length:16px_16px] bg-center bg-no-repeat" : panel === "rooms" ? "border-[#F5C451] text-[#C08A12]" : "border-[#8CC63F] text-[#8CC63F]")}><X size={18} strokeWidth={3} /></button>
+              <p className={cn("mb-1 text-center text-sm font-bold", panel === "wheel" || panel === "chances" || panel === "smiles" || panel === "rooms" ? "mb-2 text-white" : "text-[#9CA3AF]", (panel === "top" || panel === "achievements" || panel === "league" || panel === "shop" || panel === "kick" || panel === "pass") && "sr-only")}>{panel === "market" ? marketLabel(locale) : panel === "smiles" ? smileText.title : t(`bottle.${panel}`)}</p>
               {panel === "rooms" ? (() => {
                 const passBox = (value: string, change: (next: string) => void, label: string, focus?: boolean) => (
                   <span className="relative block min-w-0 flex-1">
@@ -3180,6 +3225,23 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                     <button onClick={() => void spinWheel()} disabled={wheelBusy} className="h-9 rounded-lg bg-[#8CC63F] px-5 text-sm font-bold text-white hover:brightness-110 disabled:opacity-60">{t("bottle.wheelSpin")} · 🎲 1</button>
                   </div>
                   {net?.winner ? <p className="mt-2 rounded-lg bg-black/25 p-2 text-center text-xs"><b className="text-[#FDE047]">{t("bottle.wheelWinner")}:</b> {(net.winner.name ?? "").split(" ")[0]} — ❤ {net.winner.amount}</p> : null}
+                </div>
+              ) : panel === "smiles" ? (
+                <div>
+                  <p className="mb-2 flex items-center justify-center gap-1.5 rounded-lg bg-white/90 py-1.5 text-sm font-bold text-[#134E4A]">{t("bottle.balance")}: <Heart size={15} fill="#F4511E" stroke="none" /><span className="tabular-nums">{online && !net ? "…" : hearts}</span> · 😀 <span className="tabular-nums">{smiles}</span></p>
+                  <ul className="grid grid-cols-3 gap-1.5">
+                    {smilePacks.map(([pack, price]) => (
+                      <li key={pack}>
+                        <button onClick={() => void buySmiles(pack, price)} className={cn("flex w-full flex-col items-center rounded-xl bg-white p-2 text-center hover:brightness-95", hearts < price && "opacity-50")}>
+                          <span className="text-base font-black tabular-nums text-[#0E8478]">{pack}</span>
+                          <span aria-hidden="true" className="my-1 text-3xl">😀</span>
+                          <span className="flex items-center gap-1 text-sm font-bold tabular-nums text-[#1F2937]"><Heart size={13} fill="#F4511E" stroke="none" />{price}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                  {payNote ? <p role="status" className="mt-2 rounded-lg bg-white/90 p-2 text-center text-xs font-semibold text-[#7F1D1D]">{t("bottle.noHearts")}</p> : null}
+                  <button onClick={() => setPanel("gestures")} className="mt-2 w-full text-center text-xs font-bold text-white underline">{smileText.back}</button>
                 </div>
               ) : panel === "chances" ? (
                 <div>
@@ -3453,6 +3515,10 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 <AchievementsPanel values={achOther ?? achValue} heading={achOf ? t("bottle.achOf").replace("{name}", achOf.name) : undefined} />
               ) : panel === "gestures" ? (
                 <div className="-mx-3 -mb-3 bg-white">
+                  <div className="flex items-center justify-end gap-2 px-3 pt-2">
+                    <span className="text-[11px] font-semibold text-[#9CA3AF]">{smileText.balance}</span>
+                    <button onClick={() => { setPayNote(false); setPanel("smiles"); }} aria-label={smileText.title} title={smileText.title} className="flex h-7 items-center gap-1 rounded-full bg-[#FFF4E5] pl-2 pr-1 text-sm font-bold tabular-nums text-[#3F3F46] hover:brightness-95">😀 {smiles}<span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#8CC63F] text-white">+</span></button>
+                  </div>
                   <ul className="grid max-h-[min(60vh,420px)] grid-cols-4 gap-1.5 overflow-y-auto p-3 [scrollbar-width:thin] sm:grid-cols-5">
                     {GESTURES.map(([id, price, kind, amount]) => {
                       const left = missing([kind, amount], gesProgress);
@@ -3460,7 +3526,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                         <li key={id}>
                           <button onClick={() => sendGesture(id, price, [kind, amount])} title={left ? (left < 0 ? t("bottle.vipOnly") : lockNote(kind, left)) : undefined} className={cn("flex w-full flex-col items-center rounded-xl border border-[#EEF0F3] p-1 transition-transform hover:-translate-y-0.5 hover:shadow", left !== 0 && "opacity-60")}>
                             <img src={`/custom/gifts/ges_${id}.webp`} alt="" loading="lazy" className={cn("h-14 w-14 object-contain", left !== 0 && "grayscale")} />
-                            <span className="flex h-4 items-center gap-0.5 text-[11px] font-bold text-[#3F3F46]">{left < 0 ? <b className="rounded bg-[#F59E0B] px-1 text-[9px] text-white">VIP</b> : left ? <>🔒<span className="text-[10px] font-semibold text-[#6B7280]">{left >= 1000 ? `${Math.round(left / 100) / 10}k` : left}💋</span></> : <><Heart size={11} fill="#E8352B" stroke="none" />{price}</>}</span>
+                            <span className="flex h-4 items-center gap-0.5 text-[11px] font-bold text-[#3F3F46]">{left < 0 ? <b className="rounded bg-[#F59E0B] px-1 text-[9px] text-white">VIP</b> : left ? <>🔒<span className="text-[10px] font-semibold text-[#6B7280]">{left >= 1000 ? `${Math.round(left / 100) / 10}k` : left}💋</span></> : <>😀1</>}</span>
                           </button>
                         </li>
                       );
@@ -3654,7 +3720,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 return (
                   <button key={id} role="menuitem" aria-disabled={left !== 0} onClick={() => sendGesture(id, price, [kind, amount])} title={left ? (left < 0 ? t("bottle.vipOnly") : lockNote(kind, left)) : undefined} className="group flex flex-col items-center gap-0.5 rounded-xl p-1 hover:bg-[#FFF4E5]">
                     <img src={`/custom/gifts/ges_${id}.webp`} alt="" loading="lazy" className={cn("object-contain transition-transform duration-150 group-hover:scale-110", wide ? "h-14 w-14" : "h-11 w-11", left !== 0 && "opacity-75 grayscale")} />
-                    <span className="flex items-center gap-1 text-xs font-bold tabular-nums text-[#3F3F46]">{left < 0 ? <b className="rounded bg-[#F59E0B] px-1 text-[10px] text-white">VIP</b> : left ? <span aria-label={`${left}`} className="text-[11px] opacity-70">🔒</span> : <><Heart size={13} fill="#E8352B" stroke="none" />{price}</>}</span>
+                    <span className="flex items-center gap-1 text-xs font-bold tabular-nums text-[#3F3F46]">{left < 0 ? <b className="rounded bg-[#F59E0B] px-1 text-[10px] text-white">VIP</b> : left ? <span aria-label={`${left}`} className="text-[11px] opacity-70">🔒</span> : <>😀1</>}</span>
                   </button>
                 );
               })}
