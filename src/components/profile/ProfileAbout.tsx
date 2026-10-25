@@ -11,11 +11,11 @@ export const relationshipLabels: Record<Relationship, TranslationKey> = {
 
 const azMonths = ["yanvar", "fevral", "mart", "aprel", "may", "iyun", "iyul", "avqust", "sentyabr", "oktyabr", "noyabr", "dekabr"];
 
-function formatDate(value: string, locale: string, withDay: boolean, withYear = true) {
+function formatDate(value: string, locale: string, withDay: boolean) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
-  if (locale === "az") return `${withDay ? `${date.getUTCDate()} ` : ""}${azMonths[date.getUTCMonth()]}${withYear ? ` ${date.getUTCFullYear()}` : ""}`;
-  return new Intl.DateTimeFormat(locale, { day: withDay ? "numeric" : undefined, month: "long", year: withYear ? "numeric" : undefined, timeZone: "UTC" }).format(date);
+  if (locale === "az") return `${withDay ? `${date.getUTCDate()} ` : ""}${azMonths[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
+  return new Intl.DateTimeFormat(locale, { day: withDay ? "numeric" : undefined, month: "long", year: "numeric", timeZone: "UTC" }).format(date);
 }
 
 export function ProfileAbout({ details, full = false }: { details: ProfileDetails; full?: boolean }) {
@@ -23,7 +23,7 @@ export function ProfileAbout({ details, full = false }: { details: ProfileDetail
   const all: { icon: LucideIcon; label: TranslationKey; value: string }[] = [
     { icon: MapPin, label: "profile.city", value: details.city },
     { icon: UserRound, label: "auth.gender", value: details.gender ? t(details.gender === "male" ? "auth.male" : "auth.female") : "" },
-    { icon: Cake, label: "profile.birthday", value: formatDate(details.birthday, locale, true, !details.hideAge) },
+    { icon: Cake, label: "profile.birthday", value: formatDate(details.birthday, locale, true) },
     { icon: Heart, label: "profile.relationship", value: t(relationshipLabels[details.relationship]) },
     { icon: Briefcase, label: "profile.work", value: details.work },
     { icon: GraduationCap, label: "profile.education", value: details.education },

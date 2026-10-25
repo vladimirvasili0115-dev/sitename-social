@@ -1,14 +1,9 @@
 import type { LucideIcon } from "lucide-react";
 
 export type Locale = "az" | "tr" | "ru" | "en" | "ka";
-export type User = { id: string; name: string; handle: string; avatar: string; online?: boolean; lastSeen?: number };
-export type Poll = { question: string; options: string[]; votes: number[]; mine?: number };
-export type Post = {
-  id: string; author: User; time: string; text: string; image?: string; video?: string; likes: number; comments: number; reactions: string[]; mine?: boolean; groupId?: string; edited?: boolean; kind?: "avatar";
-  // Reactions by others (emoji -> count), the original post of a repost, the wall it was written on, a poll.
-  reactionCounts?: Record<string, number>; repost?: Post; repostOf?: string; wallOwner?: User; poll?: Poll; at?: number;
-};
-export type StorySlide = { id: string; image: string; video?: string; at: number };
+export type User = { id: string; name: string; handle: string; avatar: string; online?: boolean };
+export type Post = { id: string; author: User; time: string; text: string; image?: string; likes: number; comments: number; reactions: string[]; mine?: boolean; groupId?: string; edited?: boolean; kind?: "avatar" };
+export type StorySlide = { id: string; image: string; at: number };
 export type Story = { id: string; user: User; seen?: boolean; slides: StorySlide[]; mine?: boolean };
 export type NavItem = { key: string; href: string; icon: LucideIcon; disabled?: boolean };
 export type AuthUser = { id?: string; name: string; email: string };
@@ -16,22 +11,17 @@ export type Relationship = "single" | "relationship" | "married";
 export type ProfileDetails = {
   cover: string; status: string; bio: string; city: string; birthday: string; relationship: Relationship;
   work: string; education: string; languages: string[]; interests: string[]; joined: string; followers: number; gender?: Gender;
-  // Set by the server: the gender chosen at registration (private messages in the game), and how often the name was changed.
-  regGender?: Gender; nameChanges?: number; nameChangedAt?: string;
-  // The person does not want the age to be shown (game card, birthday reminders, year of birth).
-  hideAge?: boolean;
 };
 export type Gender = "male" | "female";
-export type ProfileEdits = Partial<Pick<User, "name" | "avatar" | "handle"> & Pick<ProfileDetails, "cover" | "status" | "bio" | "city" | "birthday" | "relationship" | "work" | "education" | "gender" | "joined" | "languages" | "interests" | "followers" | "regGender" | "nameChanges" | "nameChangedAt" | "hideAge">>;
+export type ProfileEdits = Partial<Pick<User, "name" | "avatar" | "handle"> & Pick<ProfileDetails, "cover" | "status" | "bio" | "city" | "birthday" | "relationship" | "work" | "education" | "gender" | "joined" | "languages" | "interests" | "followers">>;
 export type Person = { user: User; city: string; mutual: number };
 export type FriendsState = { friends: string[]; incoming: string[]; outgoing: string[]; hidden: string[] };
-export type Message = { id: string; from: "me" | "them"; text: string; at: number; image?: string; audio?: string; read?: boolean; delivered?: boolean };
+export type Message = { id: string; from: "me" | "them"; text: string; at: number; image?: string; audio?: string };
 export type Conversation = { userId: string; unread: number; messages: Message[] };
 export type GroupCategory = "music" | "sport" | "tech" | "travel" | "food" | "games";
 export type Group = { id: string; name: string; category: GroupCategory; members: number; description: string; cover?: string; joined: boolean; mine?: boolean };
 export type AlbumId = "profile" | "wall" | "travel" | "friends" | "uploads";
-export type Photo = { id: string; src: string; album: AlbumId; own?: boolean; albumId?: string };
-export type PhotoAlbum = { id: string; title: string };
+export type Photo = { id: string; src: string; album: AlbumId; own?: boolean };
 export type VideoCategory = "music" | "travel" | "humor" | "sport" | "food";
 export type Video = { id: string; title: string; author: string; duration: number; views: number; thumb?: string; category?: VideoCategory; src?: string; likes?: number; comments?: number; kind?: "video" | "reel"; authorId?: string; mine?: boolean };
 export type Track = { id: string; title: string; artist: string; duration: number; cover?: string; src?: string; mine?: boolean };
@@ -47,7 +37,7 @@ export type GiftRecord = { id: string; giftId: GiftId; userId: string; at: numbe
 export type GiftTransaction = { id: string; type: "topup" | "gift"; amount: number; at: number; price?: number; giftId?: GiftId };
 export type GiftsState = { balance: number; received: GiftRecord[]; sent: GiftRecord[]; transactions?: GiftTransaction[] };
 export type Audience = "everyone" | "friends" | "nobody";
-export type PrivacyKey = "profile" | "messages" | "requests" | "friendsList" | "gifts" | "wall" | "comments";
+export type PrivacyKey = "profile" | "messages" | "requests" | "friendsList" | "gifts";
 export type NotificationKey = "messages" | "requests" | "likes" | "gifts" | "guests" | "groups" | "sound" | "email";
 export type SettingsState = {
   theme: "dark" | "light";
@@ -59,9 +49,9 @@ export type SettingsState = {
   endedSessions: string[];
   blocked: string[];
 };
-export type NoticeType = "message" | "request" | "like" | "comment" | "gift" | "guest" | "mention" | "reply" | "wall" | "repost" | "photo_like" | "photo_comment";
-export type Notice = { id: string; type: NoticeType; userId: string; at: number; read: boolean; giftId?: GiftId; user?: User; postId?: string };
-export type PostComment = { id: string; userId: string; text: string; at: number; author?: User; parentId?: string };
-export type StoredPost = { id: string; text: string; image?: string; video?: string; at: number; groupId?: string };
+export type NoticeType = "message" | "request" | "like" | "comment" | "gift" | "guest";
+export type Notice = { id: string; type: NoticeType; userId: string; at: number; read: boolean; giftId?: GiftId; user?: User };
+export type PostComment = { id: string; userId: string; text: string; at: number; author?: User };
+export type StoredPost = { id: string; text: string; image?: string; at: number; groupId?: string };
 export type PostsState = { created: StoredPost[]; removed: string[]; liked: string[]; comments: Record<string, PostComment[]>; edits?: Record<string, string> };
 export type StoriesState = { mine: StorySlide[]; seen: string[] };
