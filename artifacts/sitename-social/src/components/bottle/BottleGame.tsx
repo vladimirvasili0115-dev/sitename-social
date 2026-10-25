@@ -140,7 +140,8 @@ function seeded(seed: number) {
 // Three places on the photo, as in the original: "ava" (anywhere, any angle), "drink" (bottom-right corner), "hat" (top-left corner).
 // Random gifts do not push each other off the photo any more: up to RAND_MAX of them stay together and each goes after RAND_KEEP_MS.
 const RAND_MAX = 5;
-const FLY_MAX = 25; // gifts in the air at the same time: when more come (a stream), the oldest ones are cleaned away
+const FLIGHT_GAP_MS = 240; // one drawn gift per pair every 0.24 s: with a 5 s flight that is about 20 gifts in a stream
+const FLY_MAX = 40; // gifts in the air at the same time: when more come (a stream), the oldest ones are cleaned away
 const RAND_KEEP_MS = 30000;
 const RANDOM_SPOT = /^(air_kiss\d|gem\d|flower\d+|loveis\d|iloveyou|bear\d+|egg\d|strawberry\d|valentine\d)$/;
 // Caps and hats sit on the top-left or the top-right corner of the photo, tilted towards it.
@@ -636,6 +637,15 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [shows, setShows] = useState<{ key: number; to: number; level: number }[]>([]);
   const heartsRef = useRef(12);
   const flyId = useRef(1);
+  // A stream of gifts is drawn as a thin, even chain: only every FLIGHT_GAP_MS one gift per sender-receiver pair is drawn, and every drawn gift flies the whole way
+  // (so the stream looks complete from the start to the photo). The others only land (sound, chat line, count) without a picture in the air.
+  const lastFlight = useRef<Record<string, number>>({});
+  const showFlight = (pair: string) => {
+    const now = performance.now();
+    if (now - (lastFlight.current[pair] ?? -1e9) < FLIGHT_GAP_MS) return false;
+    lastFlight.current[pair] = now;
+    return true;
+  };
   const hold = useRef<number | null>(null);
   const [giftNote, setGiftNote] = useState<string | null>(null);
   const [card, setCard] = useState(false);
@@ -2338,7 +2348,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       // My own gifts always fly on my screen: when the sky is full, the oldest gift from someone else makes room.
       // A gift already in the air is never removed before it arrives. When the sky is full, someone else's oldest gift makes room;
       // if all of them are mine, the new one simply lands without a flight.
-      setFlying((list) => [...list, { key, gift, look: plan.land, t0: performance.now(), from: meIndex, to: index, toId: player.id, moved: false, ms, mine: true, still: list.length >= 12, rot: plan.spot?.kind === "hatL" ? -45 : plan.spot?.kind === "hatR" ? 45 : plan.spot?.r ?? 0, fixed: plan.spot?.kind === "hatL" || plan.spot?.kind === "hatR", ...flightTo(plan, gift) }].slice(-FLY_MAX)); // past FLY_MAX gifts in the air the oldest ones are dropped (a stream is not kept in memory)
+      if (showFlight(`me>${player.id}`)) setFlying((list) => [...list, { key, gift, look: plan.land, t0: performance.now(), from: meIndex, to: index, toId: player.id, moved: false, ms, mine: true, still: list.length >= 12, rot: plan.spot?.kind === "hatL" ? -45 : plan.spot?.kind === "hatR" ? 45 : plan.spot?.r ?? 0, fixed: plan.spot?.kind === "hatL" || plan.spot?.kind === "hatR", ...flightTo(plan, gift) }].slice(-FLY_MAX)); // past FLY_MAX gifts in the air the oldest ones are dropped (a stream is not kept in memory)
       window.setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))))), 20);
     }
     say({ from: "me", to: player.id, gift }); // the chat line is written when the gift leaves, not when it lands
@@ -2374,7 +2384,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     else giftSound(gift, "send");
     const plan = planLanding(gift, seed);
     {
-      if (!busy) setFlying((list) => ([...list, { key, gift, look: plan.land, t0: performance.now(), from: fromAt >= 0 ? fromAt : toAt, to: toAt, toId, moved: false, ms, still: list.length >= 12, rot: plan.spot?.kind === "hatL" ? -45 : plan.spot?.kind === "hatR" ? 45 : plan.spot?.r ?? 0, fixed: plan.spot?.kind === "hatL" || plan.spot?.kind === "hatR", ...flightTo(plan, gift) }].slice(-FLY_MAX)));
+      if (!busy && showFlight(`${fromId}>${toId}`)) setFlying((list) => ([...list, { key, gift, look: plan.land, t0: performance.now(), from: fromAt >= 0 ? fromAt : toAt, to: toAt, toId, moved: false, ms, still: list.length >= 12, rot: plan.spot?.kind === "hatL" ? -45 : plan.spot?.kind === "hatR" ? 45 : plan.spot?.r ?? 0, fixed: plan.spot?.kind === "hatL" || plan.spot?.kind === "hatR", ...flightTo(plan, gift) }].slice(-FLY_MAX)));
       window.setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))))), 20);
     }
     say({ from: fromId, to: toId, gift }); // the chat line is written when the gift leaves the sender
