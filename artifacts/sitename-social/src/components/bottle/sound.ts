@@ -17,15 +17,15 @@ function tone(frequency: number, start: number, length: number, volume = 0.16, t
   oscillator.start(context.currentTime + start);
   oscillator.stop(context.currentTime + start + length + 0.05);
 }
-// A short two-note chime (about a third of a second) for a message written to me by name: a small recording (public/sounds/sfx/mention.mp3),
+// A short two-note chime (about a third of a second) for a message written to me by name: a small recording (public/sounds/sfx/ping_drop.mp3),
 // loaded when the game opens (warmPing); a synthesized two-note ping is the fallback while it is not loaded yet.
-export function warmPing() { loadClip("sfx/mention"); }
+export function warmPing() { loadClip("sfx/ping_drop"); }
 export function playPing() {
   if (level === 0 || typeof window === "undefined") return;
   try {
     context ??= new (window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
     if (context.state === "suspended") void context.resume();
-    playClip("sfx/mention", () => { glide(700, 3300, 0, 0.16, 0.22); });
+    playClip("sfx/ping_drop", () => { glide(700, 3300, 0, 0.16, 0.22); });
   } catch {
     // Audio is unavailable or blocked: stays silent.
   }
