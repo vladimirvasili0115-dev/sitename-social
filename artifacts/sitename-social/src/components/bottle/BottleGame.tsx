@@ -1901,16 +1901,19 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     setTracks([]);
     setTrackWhy("");
     if (!key) return setTrackState("nokey");
-    const cacheKey = `bottle-yt:${search.toLowerCase()}`;
+    // One song search = one key: case, punctuation and extra spaces do not make a new (100-unit) YouTube search.
+    const norm = search.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, " ").replace(/\s+/g, " ").trim().slice(0, 80);
+    const cacheKey = `bottle-yt:${norm}`;
+    const staleList = (): Track[] => { try { return (JSON.parse(window.localStorage.getItem(cacheKey) ?? "null") as { list?: Track[] } | null)?.list ?? []; } catch { return []; } };
     try {
-      // Kept for 12 hours on this device: every YouTube search spends a big share of the daily quota.
+      // Kept for 7 days on this device: every YouTube search spends a big share of the daily quota.
       const cached = JSON.parse(window.localStorage.getItem(cacheKey) ?? "null") as { at: number; list: Track[] } | null;
-      if (cached?.list?.length && Date.now() - cached.at < 12 * 3600_000) { setTracks(cached.list); return setTrackState("idle"); }
+      if (cached?.list?.length && Date.now() - cached.at < 7 * 86400_000) { setTracks(cached.list); return setTrackState("idle"); }
     } catch { /* no cache */ }
     setTrackState("loading");
     if (search && online) {
       // The same search done by any player in the last days is already in the database.
-      const shared = await bottleYtGet(search);
+      const shared = await bottleYtGet(norm);
       if (shared?.length) {
         setTracks(shared);
         setTrackState("idle");
@@ -1950,6 +1953,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         const found = await call(`search?part=id&type=video&videoEmbeddable=true&videoCategoryId=10&maxResults=25&q=${encodeURIComponent(search)}`);
         if (!found.ok) {
           setTrackWhy(await ytReason(found));
+          const old = staleList();
+          if (old.length) { setTracks(old); return setTrackState("idle"); }
           const own = [...favs, ...recent].filter((item, index, all) => all.findIndex((other) => other.id === item.id) === index && songScore(search, item.title) >= 0.5);
           if (own.length) { setTracks(own); return setTrackState("idle"); }
           return setTrackState("fail");
@@ -1966,7 +1971,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       setTracks(shown);
       setTrackState("idle");
       try { window.localStorage.setItem(cacheKey, JSON.stringify({ at: Date.now(), list: shown })); } catch { /* storage is full or blocked */ }
-      if (search && online && shown.length) void bottleYtPut(search, shown);
+      if (search && online && shown.length) void bottleYtPut(norm, shown);
     } catch {
       setTrackState("fail");
     }
