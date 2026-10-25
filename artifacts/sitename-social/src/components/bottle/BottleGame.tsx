@@ -1312,6 +1312,12 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     setPanel("tables");
     void bottleTables().then(setRooms);
   }
+  // The open list of tables refreshes itself (a block done meanwhile removes the person from it on both sides).
+  useEffect(() => {
+    if (panel !== "tables" || !online) return;
+    const timer = window.setInterval(() => void bottleTables().then(setRooms), 10000);
+    return () => window.clearInterval(timer);
+  }, [panel, online]);
   function leaveRoom() { void moveTo(null); }
   async function deleteRoom() {
     if (!window.confirm(t("bottle.roomDeleteAsk"))) return;
