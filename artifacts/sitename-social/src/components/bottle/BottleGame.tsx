@@ -396,7 +396,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const netSig = useRef({ sig: "", at: 0 });
   // Players who chose to hide their birth date and age (privacy setting): their age is not shown at the table.
   const [hideAges, setHideAges] = useState<Record<string, boolean>>({});
-  const hideAskedRef = useRef<Set<string>>(new Set());
+  const hideAskedRef = useRef<Map<string, number>>(new Map());
   const players = useMemo<Player[]>(() => {
     const me: Player = { id: "me", name: user.name.split(" ")[0], age: 25, female: details.gender === "female", avatar: user.avatar || NO_PHOTO, me: true, zodiac: zodiacOf(details.birthday) };
     if (online) {
@@ -409,22 +409,23 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         if (row) drawn.add(row.id);
         if (!row) return place === 7 && !net ? me : { id: `empty-${place}`, name: "", age: 0, female: false, avatar: "", empty: true };
         const female = row.gender === "female";
-        if (row.id === net?.me) return { ...me, name: me.name || (row.name ?? "").split(" ")[0], age: row.age ?? me.age, female, zodiac: row.zodiac ?? me.zodiac };
+        if (row.id === net?.me) return { ...me, name: me.name || (row.name ?? "").split(" ")[0], age: details.hideAge ? 0 : row.age ?? me.age, female, zodiac: row.zodiac ?? me.zodiac };
         return { id: row.id, name: (row.name ?? "").split(" ")[0] || "?", age: hideAges[row.id] ? 0 : row.age ?? 0, female, avatar: row.avatar || NO_PHOTO, zodiac: row.zodiac };
       });
     }
     const others = bots.map((bot, index) => ({ ...bot, avatar: cartoonAvatar(index + 1, bot.female), zodiac: (index * 5) % 12 }));
     return [...others.slice(0, 7), me, ...others.slice(7)];
-  }, [user.name, user.avatar, details.gender, details.birthday, online, net, hideAges]);
+  }, [user.name, user.avatar, details.gender, details.birthday, online, net, hideAges, details.hideAge]);
   useEffect(() => {
     if (!online || !net || !supabase) return;
-    const ids = net.seats.map((seat) => seat.id).filter((id) => id !== net.me && !hideAskedRef.current.has(id));
+    const nowMs = Date.now();
+    const ids = net.seats.map((seat) => seat.id).filter((id) => id !== net.me && nowMs - (hideAskedRef.current.get(id) ?? 0) > 60000);
     if (!ids.length) return;
-    ids.forEach((id) => hideAskedRef.current.add(id));
+    ids.forEach((id) => hideAskedRef.current.set(id, nowMs));
     void Promise.resolve(supabase.from("profiles").select("id,hide_age").in("id", ids)).then((res) => {
+      if (res?.error && typeof console !== "undefined") console.warn("[hide_age] could not read:", res.error.message);
       const rows = (res?.data ?? []) as { id: string; hide_age?: boolean | null }[];
-      const hidden = rows.filter((row) => row.hide_age).map((row) => row.id);
-      if (hidden.length) setHideAges((value) => ({ ...value, ...Object.fromEntries(hidden.map((id) => [id, true])) }));
+      if (rows.length) setHideAges((value) => { const next = { ...value }; rows.forEach((row) => { if (row.hide_age) next[row.id] = true; else delete next[row.id]; }); return JSON.stringify(next) === JSON.stringify(value) ? value : next; });
     }).catch(() => ids.forEach((id) => hideAskedRef.current.delete(id)));
   }, [online, net]);
   const seated = players.filter((player) => !player.empty);
@@ -2545,7 +2546,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const cardView = card && cardPlayer ? (() => {
           const loaded = prof && prof.id === cardPlayer.id ? prof.data : null;
           const outside = Boolean(cardOut);
-          const player: Player = cardOut && loaded?.user ? { ...cardOut, name: loaded.user.name ?? cardOut.name, avatar: loaded.user.avatar || cardOut.avatar, age: hideAges[cardPlayer.id] ? 0 : loaded.user.age ?? 0, female: loaded.user.gender === "female", zodiac: loaded.user.zodiac } : cardPlayer;
+          const player: Player = cardOut && loaded?.user ? { ...cardOut, name: loaded.user.name ?? cardOut.name, avatar: loaded.user.avatar || cardOut.avatar, age: hideAges[cardPlayer.id] || (cardPlayer.me && details.hideAge) ? 0 : loaded.user.age ?? 0, female: loaded.user.gender === "female", zodiac: loaded.user.zodiac } : cardPlayer;
           const seed = picked ?? 0;
           const suitor = admirerOf(player);
           const by = suitor;
@@ -2882,7 +2883,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           return (
             <div key={`name-${player.id}`} aria-hidden="true" className={cn("pointer-events-none absolute z-[31] -translate-x-1/2 -translate-y-1/2 transition-[left,top] duration-[1100ms] ease-in-out motion-reduce:duration-0", wide ? "w-[18.5cqmin]" : "w-[17.5cqmin]")} style={staged && active ? { left: `calc(${CENTER_X}% ${index === turn ? "-" : "+"} 12.5cqmin)`, top: `${STAGE_Y}%` } : { left: `${seats[index][0]}%`, top: `${seats[index][1]}%` }}>
               <div className="aspect-square w-full" />
-              <p onClick={player.me ? undefined : (event) => { event.stopPropagation(); setDraft((value) => (value.startsWith(`${player.name}, `) ? value : `${player.name}, ${value}`)); setCard(false); setPicked(null); if (dedicate) chooseMode(false); window.setTimeout(() => chatRef.current?.focus(), 50); }} title={player.me ? undefined : t("bottle.chatMention")} className={cn("relative left-1/2 w-max max-w-[26cqmin] -translate-x-1/2 truncate px-[0.5cqmin] text-center text-[2.4cqmin] font-semibold leading-snug [text-shadow:0_1px_2px_rgba(0,0,0,0.8)]", !player.me && "pointer-events-auto cursor-pointer hover:underline", framed ? "mt-[1.4cqmin]" : "mt-px", isAdminPlayer(player) ? "text-[#FFD54A]" : "text-white")}><span className={vipName(player)}>{isAdminPlayer(player) ? "👑 " : ""}{player.name}{!player.me && nameSuffix(player) ? ` [${nameSuffix(player)}]` : ""}, {player.age}</span></p>
+              <p onClick={player.me ? undefined : (event) => { event.stopPropagation(); setDraft((value) => (value.startsWith(`${player.name}, `) ? value : `${player.name}, ${value}`)); setCard(false); setPicked(null); if (dedicate) chooseMode(false); window.setTimeout(() => chatRef.current?.focus(), 50); }} title={player.me ? undefined : t("bottle.chatMention")} className={cn("relative left-1/2 w-max max-w-[26cqmin] -translate-x-1/2 truncate px-[0.5cqmin] text-center text-[2.4cqmin] font-semibold leading-snug [text-shadow:0_1px_2px_rgba(0,0,0,0.8)]", !player.me && "pointer-events-auto cursor-pointer hover:underline", framed ? "mt-[1.4cqmin]" : "mt-px", isAdminPlayer(player) ? "text-[#FFD54A]" : "text-white")}><span className={vipName(player)}>{isAdminPlayer(player) ? "👑 " : ""}{player.name}{!player.me && nameSuffix(player) ? ` [${nameSuffix(player)}]` : ""}{player.age ? `, ${player.age}` : ""}</span></p>
             </div>
           );
         })}
@@ -3490,7 +3491,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                       <span className="relative block h-24 w-24 shrink-0 p-[9%]">
                         <img src={me.avatar} alt="" className="h-full w-full rounded-lg object-cover" />
                         {pick ? <FrameArt id={pick} className={cn("pointer-events-none absolute", pick >= FIRST_ORIGINAL ? "-inset-[8%] h-[116%] w-[116%]" : "inset-0 h-full w-full")} /> : null}
-                        <span className="absolute inset-x-[9%] bottom-[9%] truncate rounded-b-lg bg-black/45 px-1 text-center text-[10px] font-semibold text-white">{me.name}, {me.age}</span>
+                        <span className="absolute inset-x-[9%] bottom-[9%] truncate rounded-b-lg bg-black/45 px-1 text-center text-[10px] font-semibold text-white">{me.name}{me.age ? `, ${me.age}` : ""}</span>
                       </span>
                       <div className="min-w-0 flex-1">
                         <p className="text-sm leading-snug">{t(pick ? "bottle.frameHint" : "bottle.frameNone")}</p>
