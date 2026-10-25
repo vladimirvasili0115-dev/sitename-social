@@ -39,7 +39,6 @@ export default function EditProfilePage() {
   }, [user.name, details.status, details.bio, details.city, details.birthday, details.relationship, details.work, details.education, details.gender]);
   const set = (field: keyof typeof form) => (event: { target: { value: string } }) => { touched.current = true; setSaved(false); setForm((current) => ({ ...current, [field]: event.target.value })); };
   const wait = nextNameChange(details.nameChanges, details.nameChangedAt);
-  const freeLeft = Math.max(0, 2 - (details.nameChanges ?? 0));
   const sections: [Section, string, typeof UserRound][] = [["main", t("edit.main"), UserRound], ["about", t("profile.tabAbout"), Info], ["career", t("edit.career"), Briefcase], ["photos", t("edit.photos"), ImageIcon]];
 
   function save(event: FormEvent<HTMLFormElement>) {
@@ -79,8 +78,8 @@ export default function EditProfilePage() {
               <>
                 <h1 className="text-lg font-semibold">{t("edit.main")}</h1>
                 <div>
-                  <AuthField label={t("auth.name")} icon={UserRound} value={form.name} onChange={set("name")} disabled={Boolean(wait)} />
-                  <p className="mt-1 text-[11px] text-muted">{wait ? t("edit.nameWait").replace("{d}", wait.toLocaleDateString()) : freeLeft ? t("edit.nameFree").replace("{n}", String(freeLeft)) : t("edit.nameRule")}</p>
+                  <AuthField label={t("auth.name")} icon={UserRound} value={form.name} maxLength={60} onChange={set("name")} disabled={Boolean(wait)} />
+                  {wait ? <p className="mt-1 text-[11px] text-muted">{t("edit.nameWait").replace("{d}", wait.toLocaleDateString())}</p> : null}
                 </div>
                 <HandleField />
                 <label className="block text-xs font-medium text-muted">{t("auth.gender")}
