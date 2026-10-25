@@ -1469,6 +1469,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   };
   // Gifts lying on the photos sit on the photos as before (the old table). Open the game with ?pixi=1 (remembered) to try the canvas layer, ?pixi=0 to turn it off again.
   const [canvasSeats, setCanvasSeats] = useState(false);
+  // Test switch: open the game as /bottle/?nochat=1 to run it without the chat list (to see how much the chat costs).
+  const [noChat, setNoChat] = useState(false);
+  useEffect(() => { try { setNoChat(new URLSearchParams(window.location.search).get("nochat") === "1"); } catch { /* no query */ } }, []);
   useEffect(() => {
     try {
       const q = new URLSearchParams(window.location.search).get("pixi");
@@ -3697,7 +3700,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         {/* The original chat (bottle-html5 ChatContent + chat CSS): light grey list, 30px photos, white bubbles with a tail,
             and one-line info rows "photo → gift/kiss/song → photo" with the original icons. */}
         <div ref={listRef} className={cn("flex min-h-0 flex-1 flex-col gap-[7px] overflow-y-auto bg-[#F5F5F5] py-[7px] text-[15px] text-black [overflow-wrap:break-word] [&>:first-child]:mt-auto [&>*]:[content-visibility:auto] [&>*]:[contain-intrinsic-size:auto_34px]", (picked !== null || (dedicate && !wide)) && "hidden")}>
-          {(() => {
+          {noChat ? null : (() => {
             const O = "/custom/orig/";
             const ic = (name: string, w: number, h: number, extra = "") => <span aria-hidden="true" className={cn("inline-block shrink-0 bg-contain bg-center bg-no-repeat", extra)} style={{ width: w, height: h, backgroundImage: `url(${O}${name}.svg)` }} />;
             const photo = (player: Player | null | undefined, extra = "") => player ? <button type="button" onClick={() => { const index = players.findIndex((item) => item.id === player.id); if (index >= 0) { setPicked(index); setCard(true); } else showUserCard({ id: player.id, name: player.name, avatar: player.avatar }); }} title={player.name} className={cn("h-[30px] w-[30px] shrink-0 rounded-[4px] bg-cover bg-top", extra)} style={{ backgroundImage: `url(${player.avatar || NO_PHOTO})` }} /> : null;

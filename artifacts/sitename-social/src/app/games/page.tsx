@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import type { Game } from "@/types";
 import { games } from "@/data/games";
 import { useTranslation } from "@/i18n/useTranslation";
@@ -31,6 +32,7 @@ const icon = "flex h-[88px] w-[88px] shrink-0 items-center justify-center overfl
 
 export default function GamesPage() {
   const { t } = useTranslation();
+  const router = useRouter();
   const [playing, setPlaying] = useState(false);
   const soon = (game: Game) => {
     const tile = tiles[game.id];
@@ -52,7 +54,7 @@ export default function GamesPage() {
         <h1 className="mb-3 px-2 pt-1 text-[22px] font-bold tracking-[-0.03em]">{t("nav.games")}</h1>
         <ul className="space-y-1">
           <li>
-            <button onClick={() => setPlaying(true)} className={`${row} bg-surface-2 hover:brightness-110`}>
+            <button onClick={() => router.push("/bottle/")} className={`${row} bg-surface-2 hover:brightness-110`}>
               <span aria-hidden="true" className={icon}><BottleTile /></span>
               <span className="min-w-0 flex-1">
                 <span className="block text-base font-bold text-text">{t("bottle.title")}</span>
