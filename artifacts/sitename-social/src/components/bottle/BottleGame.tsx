@@ -36,6 +36,7 @@ import { supabase } from "@/lib/supabase";
 import { refreshFriends } from "@/lib/friendsSync";
 import { ensureMessagesLoaded, openRemoteChat, remoteChats, sendRemoteMessage } from "@/lib/messagesSync";
 import { uploadBlob } from "@/lib/media";
+import { refreshGifts } from "@/lib/giftsSync";
 import { bottleLogIp, bottleAdminIpLookup, type BottleIpRow, bottleAnswer, bottleAchSync, bottleAchView, bottleGesture, bottleSmiles, bottleBuyHearts, bottleGiftAllow, bottleBuySmiles, bottleProgress, bottleGesturesOpen, bottleSkin, bottleBuyChances, bottleJoin, bottleMove, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleProfile, type BottleProfile, bottleDaily, bottleItems, bottleItemBuy, bottleBooster, bottleTutorial, bottleAdminIds, type BottleItems, bottleLeagueInfo, bottleLeagueClaim, type BottleLeague, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleKickPrice, bottleGift, bottleGiftMany, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, bottleClaim, type BottleState, type BottleSeat, bottleEffectOf, bottleYtGet, bottleYtPut, bottleTableGifts, type BottleSeatGift } from "@/lib/bottleSync";
 import { ytHint, ytReason } from "./ytHints";
 import { BonusMarket, EnigmaEffect, arrivalLabel, marketLabel } from "./BonusMarket";
@@ -807,6 +808,17 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [payNote, setPayNote] = useState(false);
   // Bank packs are paid from the site balance (topped up on the site's market page).
   const [packNote, setPackNote] = useState<{ kind: "wait" | "ok" | "balance" | "fail"; n?: number; need?: number } | null>(null);
+  // After a purchase the received bonus is shown on a screen with an OK button; it closes (and the profile is reloaded) by itself after a few seconds even if OK is not pressed.
+  const closePackDone = useCallback(() => {
+    setPackNote((value) => (value?.kind === "ok" ? null : value));
+    pullRef.current();
+    void refreshGifts();
+  }, []);
+  useEffect(() => {
+    if (packNote?.kind !== "ok") return;
+    const timer = window.setTimeout(closePackDone, 7000);
+    return () => window.clearTimeout(timer);
+  }, [packNote, closePackDone]);
   async function buyHeartPack(pack: { hearts: number; price: number }) {
     if (!online) return setPayNote(true);
     setPayNote(false);
@@ -2922,6 +2934,25 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           </div>
         );
       })() : null}
+      {packNote?.kind === "ok" ? (() => {
+        const done: Record<string, { title: string; text: string; ok: string }> = {
+          az: { title: "Bonus alındı!", text: "Hesabına əlavə olundu", ok: "Tamam" },
+          tr: { title: "Bonus alındı!", text: "Hesabına eklendi", ok: "Tamam" },
+          ru: { title: "Бонус получен!", text: "Добавлено на твой счёт", ok: "Хорошо" },
+          en: { title: "Bonus received!", text: "Added to your account", ok: "OK" },
+        };
+        const w = done[locale] ?? done.en;
+        return (
+          <div role="alertdialog" aria-modal="true" aria-label={w.title} className="fixed inset-0 z-[295] flex items-center justify-center bg-black/55 p-4">
+            <div className="w-[min(360px,100%)] rounded-3xl bg-white px-5 pb-5 pt-4 text-center text-black shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
+              <p className="text-sm font-bold text-[#9E9E9E]">{w.title}</p>
+              <p className="mt-3 flex items-center justify-center gap-2 text-[34px] font-black leading-none tabular-nums text-[#F2343F]"><Heart size={30} fill="#F2343F" stroke="none" />+{(packNote.n ?? 0).toLocaleString("ru-RU")}</p>
+              <p className="mt-2 text-[15px] leading-5">{w.text}</p>
+              <button autoFocus onClick={closePackDone} className="mt-4 h-[34px] min-w-[96px] rounded-lg bg-[#9ACD32] px-6 text-sm font-bold text-white hover:brightness-105">{w.ok}</button>
+            </div>
+          </div>
+        );
+      })() : null}
       {/* On a phone-shaped window the title bar sits on the same wood as the table, with no seam between them. */}
       <div className={cn("relative shrink-0", wide ? "h-full w-[54%]" : "mx-auto w-full max-w-[64dvh]")}>
       {wide ? null : <WoodTable className="pointer-events-none absolute inset-0 h-full w-full" />}
@@ -3349,7 +3380,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   <button onClick={() => setPanel("wheel")} className="mt-2 w-full text-center text-xs font-bold text-white underline">{t("bottle.wheelBack")}</button>
                 </div>
               ) : panel === "shop" ? (
-                <ShopPanel hearts={hearts} activeSecs={activeSecs} payNote={payNote} onActive={() => setPanel("active")} onTelegram={() => (TELEGRAM_URL ? window.open(TELEGRAM_URL, "_blank", "noopener") : setPayNote(true))} onVip={() => { setPayNote(false); setPanel("vip"); }} onInvite={openInvite} onCompliments={() => setPanel("compliments")} onPack={(pack) => void buyHeartPack(pack)} packNote={packNote ? <PackNote note={packNote} locale={locale} /> : null} onPass={openPass} />
+                <ShopPanel hearts={hearts} activeSecs={activeSecs} payNote={payNote} onActive={() => setPanel("active")} onTelegram={() => (TELEGRAM_URL ? window.open(TELEGRAM_URL, "_blank", "noopener") : setPayNote(true))} onVip={() => { setPayNote(false); setPanel("vip"); }} onInvite={openInvite} onCompliments={() => setPanel("compliments")} onPack={(pack) => void buyHeartPack(pack)} packNote={packNote && packNote.kind !== "ok" ? <PackNote note={packNote} locale={locale} /> : null} onPass={openPass} />
               ) : panel === "pass" ? (
                 <>
                   <PassPanel data={online ? passData : null} hearts={hearts} now={net?.now ?? Date.now()} onBuy={() => void passAction("buy")} onClaim={(level, premium) => void passAction({ level, premium })} onChest={() => void passAction("chest")} />
