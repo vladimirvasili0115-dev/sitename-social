@@ -2,38 +2,37 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Gamepad2, Lock } from "lucide-react";
-import { DEFAULT_PACKAGE_ID } from "@/data/coins";
-import { usePrices } from "@/components/gifts/usePrices";
 import { useGifts } from "@/components/gifts/useGifts";
-import { GiftArt, giftNames } from "@/components/gifts/GiftArt";
 import { Price } from "@/components/gifts/Price";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { useTranslation } from "@/i18n/useTranslation";
 import { formatDay } from "@/lib/datetime";
-import { PAYMENTS_LIVE, startPayment } from "@/lib/payments";
+import { COINS_PER_AZN, PAYMENTS_LIVE, TOPUP_MAX, TOPUP_MIN, TOPUP_PRESETS, startPayment } from "@/lib/payments";
 import { cn } from "@/lib/utils";
 
 const words = {
-  az: { title: "Market", lead: "Balansını artır, sonra Spin the Bottle oyununun marketində bonus ürəklər al.", soon: "Onlayn ödəniş tezliklə qoşulacaq. Hələlik balans yalnız ödəniş təsdiqi ilə artırılır.", fail: "Ödəniş başlamadı. Bir az sonra yenidən yoxla.", game: "Oyun marketinə keç", gameHint: "Oyundakı marketdə balansınla ürək paketləri ala bilərsən.", history: "Son artırmalar", none: "Hələ artırma yoxdur." },
-  tr: { title: "Market", lead: "Bakiyeni artır, sonra Spin the Bottle oyununun marketinde bonus kalpler al.", soon: "Online ödeme yakında açılacak. Şimdilik bakiye yalnızca onaylanan ödemeyle artar.", fail: "Ödeme başlamadı. Biraz sonra tekrar dene.", game: "Oyun marketine git", gameHint: "Oyundaki marketten bakiyenle kalp paketleri alabilirsin.", history: "Son yüklemeler", none: "Henüz yükleme yok." },
-  ru: { title: "Маркет", lead: "Пополни баланс, затем покупай бонусные сердца в маркете игры Spin the Bottle.", soon: "Онлайн-оплата скоро заработает. Пока баланс пополняется только после подтверждённой оплаты.", fail: "Оплата не началась. Попробуй чуть позже.", game: "Перейти в маркет игры", gameHint: "В маркете игры можно покупать пакеты сердец за баланс.", history: "Последние пополнения", none: "Пополнений пока нет." },
-  en: { title: "Market", lead: "Top up your balance, then buy bonus hearts in the Spin the Bottle game market.", soon: "Online payment will be connected soon. For now the balance only grows with a confirmed payment.", fail: "The payment did not start. Try again in a moment.", game: "Go to the game market", gameHint: "In the game market you can buy heart packs with your balance.", history: "Recent top-ups", none: "No top-ups yet." },
+  az: { title: "Market", lead: "Balansını artır, sonra Spin the Bottle oyununun marketində bonus ürəklər al.", amount: "Məbləğ seç", other: "Digər", enter: "Məbləği yaz", youGet: "Balansına əlavə olunacaq", range: "Məbləğ {min} ₼ ilə {max} ₼ arasında olmalıdır.", soon: "Onlayn ödəniş tezliklə qoşulacaq. Hələlik balans yalnız ödəniş təsdiqi ilə artırılır.", fail: "Ödəniş başlamadı. Bir az sonra yenidən yoxla.", game: "Oyun marketinə keç", gameHint: "Oyundakı marketdə balansınla ürək paketləri ala bilərsən.", history: "Son artırmalar", none: "Hələ artırma yoxdur.", pay: "Ödə" },
+  tr: { title: "Market", lead: "Bakiyeni artır, sonra Spin the Bottle oyununun marketinde bonus kalpler al.", amount: "Tutar seç", other: "Diğer", enter: "Tutarı yaz", youGet: "Bakiyene eklenecek", range: "Tutar {min} ₼ ile {max} ₼ arasında olmalı.", soon: "Online ödeme yakında açılacak. Şimdilik bakiye yalnızca onaylanan ödemeyle artar.", fail: "Ödeme başlamadı. Biraz sonra tekrar dene.", game: "Oyun marketine git", gameHint: "Oyundaki marketten bakiyenle kalp paketleri alabilirsin.", history: "Son yüklemeler", none: "Henüz yükleme yok.", pay: "Öde" },
+  ru: { title: "Маркет", lead: "Пополни баланс, затем покупай бонусные сердца в маркете игры Spin the Bottle.", amount: "Выбери сумму", other: "Другая", enter: "Введи сумму", youGet: "Будет добавлено на баланс", range: "Сумма должна быть от {min} ₼ до {max} ₼.", soon: "Онлайн-оплата скоро заработает. Пока баланс пополняется только после подтверждённой оплаты.", fail: "Оплата не началась. Попробуй чуть позже.", game: "Перейти в маркет игры", gameHint: "В маркете игры можно покупать пакеты сердец за баланс.", history: "Последние пополнения", none: "Пополнений пока нет.", pay: "Оплатить" },
+  en: { title: "Market", lead: "Top up your balance, then buy bonus hearts in the Spin the Bottle game market.", amount: "Choose an amount", other: "Other", enter: "Enter an amount", youGet: "Added to your balance", range: "The amount must be between {min} ₼ and {max} ₼.", soon: "Online payment will be connected soon. For now the balance only grows with a confirmed payment.", fail: "The payment did not start. Try again in a moment.", game: "Go to the game market", gameHint: "In the game market you can buy heart packs with your balance.", history: "Recent top-ups", none: "No top-ups yet.", pay: "Pay" },
 } as const;
 
 export default function MarketPage() {
   const { t, locale } = useTranslation();
   const w = words[locale as keyof typeof words] ?? words.en;
   const { balance, transactions } = useGifts();
-  const { packages } = usePrices();
-  const [packId, setPackId] = useState(DEFAULT_PACKAGE_ID);
+  const [preset, setPreset] = useState<number | "other">(TOPUP_PRESETS[1]);
+  const [custom, setCustom] = useState("");
   const [state, setState] = useState<"idle" | "busy" | "soon" | "fail">("idle");
-  const pack = packages.find((item) => item.id === packId) ?? packages[0];
+  const typed = Number(custom.replace(",", "."));
+  const amount = preset === "other" ? (Number.isFinite(typed) ? Math.round(typed * 100) / 100 : 0) : preset;
+  const valid = amount >= TOPUP_MIN && amount <= TOPUP_MAX;
   const topups = transactions.filter((item) => item.type === "topup").slice(0, 8);
   async function pay() {
-    if (!pack) return;
+    if (!valid) return;
     setState("busy");
-    const result = await startPayment(pack.id);
+    const result = await startPayment(amount);
     setState(result === "redirect" ? "busy" : result);
   }
   return (
@@ -44,25 +43,30 @@ export default function MarketPage() {
       </div>
       <p className="mb-4 px-1 text-sm leading-6 text-muted">{w.lead}</p>
       <Card className="p-5">
-        <p className="mb-2 text-xs font-medium text-muted">{t("gifts.choosePackage")}</p>
-        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-          {packages.map((item) => (
-            <li key={item.id}>
-              <button onClick={() => setPackId(item.id)} aria-pressed={item.id === packId} className={cn("relative flex h-full w-full items-center gap-3 rounded-xl border p-3 text-left", item.id === packId ? "border-accent bg-surface-2" : "border-border hover:bg-surface-2")}>
-                <GiftArt id={item.art} className="h-11 w-11 shrink-0" />
-                <span className="min-w-0">
-                  <span className="block truncate text-[11px] text-muted">{t(giftNames[item.art])}</span>
-                  <Price value={item.coins + item.bonus} className="text-base text-text" />
-                  <span className="block h-4 text-[11px] font-medium text-accent">{item.bonus ? `+${item.bonus} ${t("gifts.bonus")}` : ""}</span>
-                  <span className="block text-sm font-semibold text-text">{item.price.toFixed(2)} AZN</span>
-                </span>
-              </button>
+        <p className="mb-2 text-xs font-medium text-muted">{w.amount}</p>
+        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {TOPUP_PRESETS.map((value) => (
+            <li key={value}>
+              <button onClick={() => setPreset(value)} aria-pressed={preset === value} className={cn("h-14 w-full rounded-xl border text-lg font-semibold tabular-nums", preset === value ? "border-accent bg-surface-2 text-accent" : "border-border hover:bg-surface-2")}>{value} ₼</button>
             </li>
           ))}
+          <li>
+            <button onClick={() => setPreset("other")} aria-pressed={preset === "other"} className={cn("h-14 w-full rounded-xl border text-lg font-semibold", preset === "other" ? "border-accent bg-surface-2 text-accent" : "border-border hover:bg-surface-2")}>{w.other}</button>
+          </li>
         </ul>
-        {state === "soon" || !PAYMENTS_LIVE ? <p role="status" className="mt-4 flex items-start gap-2 rounded-xl border border-border bg-surface-2 p-3 text-xs leading-5 text-muted"><Lock size={15} className="mt-0.5 shrink-0 text-accent" />{w.soon}</p> : null}
+        {preset === "other" ? (
+          <div className="mt-3">
+            <div className="flex h-12 items-center gap-2 rounded-xl border border-border bg-surface-2 px-3">
+              <input value={custom} onChange={(event) => setCustom(event.target.value.replace(/[^0-9.,]/g, "").slice(0, 7))} inputMode="decimal" autoFocus aria-label={w.enter} placeholder={w.enter} className="min-w-0 flex-1 bg-transparent text-base font-semibold tabular-nums outline-none placeholder:font-normal placeholder:text-muted" />
+              <span className="text-base font-semibold text-muted">₼</span>
+            </div>
+            {custom && !valid ? <p role="alert" className="mt-1.5 text-xs text-danger">{w.range.replace("{min}", String(TOPUP_MIN)).replace("{max}", String(TOPUP_MAX))}</p> : null}
+          </div>
+        ) : null}
+        <p className="mt-4 flex items-center justify-between rounded-xl border border-border bg-surface-2 px-3.5 py-2.5 text-sm text-muted">{w.youGet}<Price value={valid ? Math.round(amount * COINS_PER_AZN) : 0} className="text-text" /></p>
+        {state === "soon" || !PAYMENTS_LIVE ? <p role="status" className="mt-3 flex items-start gap-2 rounded-xl border border-border bg-surface-2 p-3 text-xs leading-5 text-muted"><Lock size={15} className="mt-0.5 shrink-0 text-accent" />{w.soon}</p> : null}
         {state === "fail" ? <p role="alert" className="mt-3 rounded-xl border border-danger p-3 text-xs text-danger">{w.fail}</p> : null}
-        <Button className="mt-4 h-12 w-full disabled:opacity-50" disabled={!PAYMENTS_LIVE || state === "busy" || !pack} onClick={() => void pay()}>{t("gifts.pay")} · {pack ? pack.price.toFixed(2) : "0.00"} AZN</Button>
+        <Button className="mt-4 h-12 w-full disabled:opacity-50" disabled={!PAYMENTS_LIVE || state === "busy" || !valid} onClick={() => void pay()}>{w.pay} · {valid ? amount.toFixed(2) : "0.00"} ₼</Button>
       </Card>
       <Card className="mt-4 flex flex-wrap items-center gap-3 p-4">
         <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#FFEDD5] text-[#EA580C]"><Gamepad2 size={20} /></span>
