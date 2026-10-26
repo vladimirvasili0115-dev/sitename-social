@@ -20,7 +20,7 @@ export default function FeedPage() {
   const { feed } = usePosts();
   const { user } = useProfile();
   const { settings } = useSettings();
-  const style = settings.homeStyle ?? "classic";
+  const style = settings.homeStyle ?? "neon";
   const { friends } = useFriends();
   const [tab, setTab] = useState<"forYou" | "following">("forYou");
   const posts = tab === "following" ? feed.filter((post) => post.mine || friends.some((item) => item.user.id === post.author.id)) : feed;

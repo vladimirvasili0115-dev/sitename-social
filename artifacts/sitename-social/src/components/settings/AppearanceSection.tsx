@@ -28,9 +28,9 @@ export function AppearanceSection() {
         <p className="px-4 pt-3 text-xs text-muted">{t("settings.homeStyleHint")}</p>
         <div className="grid grid-cols-2 gap-3 p-4">
           {HOME_STYLES.map((id) => (
-            <button key={id} onClick={() => set({ homeStyle: id })} aria-pressed={(settings.homeStyle ?? "classic") === id} className={cn("rounded-xl border p-2.5 text-left", (settings.homeStyle ?? "classic") === id ? "border-accent bg-surface-2" : "border-border hover:bg-surface-2")}>
+            <button key={id} onClick={() => set({ homeStyle: id })} aria-pressed={(settings.homeStyle ?? "neon") === id} className={cn("rounded-xl border p-2.5 text-left", (settings.homeStyle ?? "neon") === id ? "border-accent bg-surface-2" : "border-border hover:bg-surface-2")}>
               <HomeStylePreview style={id} />
-              <span className={cn("block text-sm font-semibold", (settings.homeStyle ?? "classic") === id ? "text-accent" : "text-text")}>{t(`home.${id}` as TranslationKey)}</span>
+              <span className={cn("block text-sm font-semibold", (settings.homeStyle ?? "neon") === id ? "text-accent" : "text-text")}>{t(`home.${id}` as TranslationKey)}</span>
               <span className="block text-[11px] leading-4 text-muted">{t(`home.${id}Text` as TranslationKey)}</span>
             </button>
           ))}
