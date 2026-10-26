@@ -2825,13 +2825,13 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
               <span className="sr-only">{t(`bottle.${key}` as "bottle.price")}</span>
             </div>
           );
-          const labels = [topIds.has(player.id) ? "label_top_gold.svg" : null, (online ? seat?.vip_badge : player.me && vip) ? "label_vip.svg" : null].filter((item): item is string => Boolean(item));
+          const labels = [topIds.has(player.id) ? "label_top_gold.svg" : null, !topIds.has(player.id) && (online ? seat?.vip_badge : player.me && vip) ? "label_vip.svg" : null].filter((item): item is string => Boolean(item));
           return (
             <div className={cn("inset-0 flex items-center justify-center p-3", wide ? cn("absolute bg-black/10", panel ? "z-[60]" : "z-[45]") : "fixed z-[90] bg-black/50")} onClick={(event) => { event.stopPropagation(); setCard(false); }}>
               <div role="dialog" aria-modal="true" aria-label={`${player.name}, ${player.age}`} onClick={(event) => event.stopPropagation()} className={cn("relative shadow-[0_18px_50px_rgba(0,0,0,0.45)]", land ? "h-[400px] max-h-[80vh] max-w-[91%]" : "w-[400px] max-w-[80vw]")} style={{ borderRadius: 17, maxHeight: land ? undefined : "calc(94% - env(safe-area-inset-top))" }}>
                 <button onClick={() => setCard(false)} aria-label={t("photos.close")} title={t("photos.close")} className="absolute -right-3 -top-3 z-20 flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#8DC63F] bg-white text-[#8DC63F] shadow hover:bg-[#F0FBEA]"><X size={19} strokeWidth={3} /></button>
                 {cardBack.length ? <button onClick={cardGoBack} aria-label={t("bottle.back")} title={t("bottle.back")} className="absolute -left-3 -top-3 z-20 flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#8DC63F] bg-white text-[#8DC63F] shadow hover:bg-[#F0FBEA]"><ChevronLeft size={22} strokeWidth={3} /></button> : null}
-                {labels.map((label, n) => { const top = label.includes("top"); return <span key={label} aria-hidden="true" className={cn("absolute z-10 bg-contain bg-no-repeat", top ? "-left-[21px] h-[48px] w-[72px]" : "-left-[13px] h-[30px] w-[45px]")} style={{ top: 15 + labels.slice(0, n).reduce((sum, item) => sum + (item.includes("top") ? 50 : 32), 0), backgroundImage: `url(${P}${label})` }} />; })}
+                {labels.map((label, n) => { return <span key={label} aria-hidden="true" className={cn("absolute z-10 bg-contain bg-no-repeat", "-left-[21px] h-[48px] w-[72px]")} style={{ top: 15 + labels.slice(0, n).reduce((sum, item) => sum + 50, 0), backgroundImage: `url(${P}${label})` }} />; })}
                 <div className={cn("isolate flex h-full overflow-hidden rounded-[17px] bg-white", land ? "flex-row" : "max-h-[inherit] flex-col")}>
                 <div className={cn("relative shrink-0 overflow-hidden bg-[#F7F5F6]", land ? "aspect-square h-full" : "aspect-square max-h-[38dvh] w-full")}>
                   <img src={player.avatar} alt="" className="h-full w-full object-cover object-top" />
