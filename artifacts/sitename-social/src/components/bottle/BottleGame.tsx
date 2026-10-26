@@ -158,7 +158,7 @@ const SMALL_FLIGHT = new Set(["c:air_kiss1", "c:gem1"]);
 const SCATTER = new Set(["c:wholeegg"]);
 // These gifts fly as the whole picture (egg, tomato) and only break when they reach the photo.
 const WHOLE_FLIGHT = new Set(["c:wholeegg", "c:tomato1"]);
-const SMALL_CORNER = /^b52$/; // the B-52 shot stood far too big on the photo: a third of the usual corner size
+const SMALL_CORNER = /^b52$/; // the B-52 shot stood far too big on the photo: two thirds of the usual corner size
 // The visible part of a gift picture as fractions of its square box on the photo (the picture is centred, or pinned bottom-right for corner gifts).
 function artBox(name: string, pinned: boolean) {
   const e = giftBounds[name];
@@ -239,7 +239,7 @@ function planLanding(gift: string, seed: number = Math.random() * 1e9) {
     else {
     const size = /^(catdress|donkey|flagaz|eiffeltower|amurchik)$/.test(name) ? 92 : /^baloon\d$/.test(name) ? 64 : 76;
     // The cat in the dress used to fill almost the whole photo (89% high): now its visible art is at most 55% high.
-    const edge = size === 76 && name ? cornerSpot(name, undefined, undefined, BIGGER_CORNER.test(name) ? (/^(makarov|revolver)$/.test(name) ? BIGGER_BY * 1.2 : BIGGER_BY) : SMALL_CORNER.test(name) ? CORNER_ALL_BY / 3 : CORNER_ALL_BY) : name === "donkey" ? cornerSpot(name, 40, 34) : name === "catdress" ? (() => { const spot = cornerSpot(name, 55, 40); return spot ? { ...spot, x: spot.x - CAT_SHIFT_LEFT } : null; })() : null;
+    const edge = size === 76 && name ? cornerSpot(name, undefined, undefined, BIGGER_CORNER.test(name) ? (/^(makarov|revolver)$/.test(name) ? BIGGER_BY * 1.2 : BIGGER_BY) : SMALL_CORNER.test(name) ? (CORNER_ALL_BY * 2) / 3 : CORNER_ALL_BY) : name === "donkey" ? cornerSpot(name, 40, 34) : name === "catdress" ? (() => { const spot = cornerSpot(name, 55, 40); return spot ? { ...spot, x: spot.x - CAT_SHIFT_LEFT } : null; })() : null;
     const pinned = name ? artBox(name, true) : null; // the visible art ends exactly on the bottom line of the frame
     spot = edge ? at(edge.s, edge.x, edge.y, "corner") : at(size, 100 - size * 0.72, pinned ? 100 - size * pinned.b : 100 - size * 0.76, /^baloon\d$/.test(name) ? "balloon" : "corner");
     if (name !== "catdress") spot = { ...spot, x: spot.x - CORNER_SHIFT_LEFT - (/^(makarov|revolver)$/.test(name) ? 4 : 0) }; // the pistol: another 2 mm (4%) to the left // flightTo reads this same spot, so the flight ends exactly where the gift stays
