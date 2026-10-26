@@ -580,7 +580,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // On the phone the video and music windows keep one small size (they can still be moved, not resized).
   const MINI_VIDEO_W = 170;
   const MINI_MUSIC_W = 170;
-  const [mini, setMini] = useState<{ x: number | null; y: number; w: number }>({ x: null, y: 8, w: 127 });
+  const [mini, setMini] = useState<{ x: number | null; y: number; w: number }>({ x: null, y: wide ? 8 : 23, w: 127 }) /* on a phone the video starts about 4 mm lower, so the smiley shop at the top stays visible */;
   const [miniBusy, setMiniBusy] = useState(false);
   const miniRef = useRef<HTMLDivElement>(null);
   function startMini(event: ReactPointerEvent, mode: "move" | "size") {
