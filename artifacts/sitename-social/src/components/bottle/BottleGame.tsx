@@ -2594,7 +2594,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       const target = player.me ? net?.me : player.id;
       if (!target) return;
       void bottleAdmire(target).then((left) => {
-        if (left === null || left < 0) return setCardNote(t(left === -3 ? "bottle.admireBlocked" : "bottle.admireFail"));
+        if (left === null || left < 0) return setCardNote(t(left === -3 ? "bottle.admireBlocked" : left === -4 ? "bottle.admireFrozen" : "bottle.admireFail"));
         bumpStat("admire");
         heartsRef.current = left;
         setHearts(left);

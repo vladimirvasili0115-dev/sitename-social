@@ -35,7 +35,7 @@ export async function fetchIsOwner(): Promise<boolean> {
 export type GameState = { hearts: number; kisses?: number; smiles?: number; dj: number; chances: number; vip_until: string | null; top_until: string | null; kiss_fire: number; refuse_slap: number };
 export type GameFlags = { vip: boolean; top: boolean; block?: boolean; price?: number; influence?: number; hearts?: number; kisses?: number; songs?: number; smiles?: number };
 export const gameFlags = (ids: string[]) => call<Record<string, GameFlags>>("admin_game_flags", { ids });
-export type StatKind = "songs" | "kisses" | "smiles";
+export type StatKind = "songs" | "kisses" | "smiles" | "admire";
 export type StatFreeze = Record<string, Partial<Record<StatKind, boolean>>>;
 export const statFreezeGet = (ids: string[]) => call<StatFreeze>("admin_stat_freeze_get", { ids });
 export const statFreezeSet = (id: string, kind: StatKind, on: boolean) => call<boolean>("admin_stat_freeze", { target: id, p_kind: kind, p_on: on });
