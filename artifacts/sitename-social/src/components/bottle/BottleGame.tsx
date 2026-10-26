@@ -158,7 +158,7 @@ const SMALL_FLIGHT = new Set(["c:air_kiss1", "c:gem1"]);
 const SCATTER = new Set(["c:wholeegg"]);
 // These gifts fly as the whole picture (egg, tomato) and only break when they reach the photo.
 const WHOLE_FLIGHT = new Set(["c:wholeegg", "c:tomato1"]);
-const SMALL_CORNER = /^b52$/; // the B-52 shot stood far too big on the photo: two thirds of the usual corner size
+const SMALL_CORNER = /^(b52|drink[a-z]{2})$/; // the B-52 shot and the country glasses (drinkam, drinkaz ...) stood far too big on the photo: two thirds of the usual corner size
 // The visible part of a gift picture as fractions of its square box on the photo (the picture is centred, or pinned bottom-right for corner gifts).
 function artBox(name: string, pinned: boolean) {
   const e = giftBounds[name];

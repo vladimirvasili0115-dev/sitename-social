@@ -22,6 +22,7 @@ export const customPrice = (name: string) => (drinkNames.test(name) ? 2 : prices
 export const customPlace = (name: string): Place =>
   /^(ears|horns)/.test(name) ? "ears"
     : /^(prankcake_\w+2|tomato[23])$/.test(name) ? "face"
+    : name === "magichat" ? "body" // the rabbit-in-a-hat gift stands on the bottom-right corner, not on the head
     : /(cap|crown|hat|cylinder|cowboy|napoleon|musketeer|nurse|clown|bezkoz|indianhat|carnivalmask|horsehead|knight|bow|pharaoh|pilotka|pirat|rasta|sombrero|sparta|sultan|ushanka|viking|glasses)/.test(name) || original.get(name)?.point === "h" ? "head"
     : "body";
 // The order the pictures appear in the gift list (the rest follow in name order).
