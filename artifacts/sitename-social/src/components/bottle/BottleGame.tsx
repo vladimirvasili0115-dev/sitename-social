@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type FormEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type FormEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { Phone, AtSign, ChevronDown, ChevronLeft, LifeBuoy, Pause, Play, Clock, Flame, Search, Star, Ban, Flag, Mail, Gift as GiftIcon, Heart, Home, Maximize, ArrowUpRight, BadgeCheck, Crown, DoorOpen, Eye, EyeOff, KeyRound, Lock, Mars, Trash2, Venus, BookOpen, MessageSquare, Check, Menu, UserRound, Minimize, Music, Plus, UserCheck, Music2, RefreshCw, SendHorizontal, Settings, Trophy, UserPlus, UserRoundCog, Users, Volume2, X } from "lucide-react";
 import type { GiftId } from "@/types";
@@ -487,7 +487,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [spots, setSpots] = useState<Record<string, Spot[]>>({});
   const [scatters, setScatters] = useState<{ key: number; to: string; names: string[]; dirs: [number, number][] }[]>([]);
   // A gift lands: worn ones go on the head, the rest take their spot; family gifts first burst over the whole photo.
-  const landGift = (key: number, toId: string, plan: ReturnType<typeof planLanding>) => {
+  const landGift = (key: number, toId: string, plan: ReturnType<typeof planLanding>) => startTransition(() => landGiftNow(key, toId, plan));
+  const landGiftNow = (key: number, toId: string, plan: ReturnType<typeof planLanding>) => {
     // Three places on a photo: the left corner, the right corner and the middle. A new gift replaces only the gift
     // in its own place; the others stay until a new gift comes to their place.
     // Gifts worn without a spot (stickers) sit in the same places: head/ears on the left, body bottom-right, face in the middle.
@@ -957,7 +958,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // The smiley button next to the chat line puts ordinary emojis into the message (the game smileys open from your own photo).
   const [emojiOpen, setEmojiOpen] = useState(false);
   const [emojiCat, setEmojiCat] = useState(0);
-  const say = useCallback((line: Omit<Line, "id">) => setLines((list) => mergeLines(list, [{ ...line, id: lineId.current++ }])), []);
+  // Chat lines are a low-priority update: in a gift storm the page can draw the flying gifts first and the list right after.
+  const say = useCallback((line: Omit<Line, "id">) => { const id = lineId.current++; startTransition(() => setLines((list) => mergeLines(list, [{ ...line, id }]))); }, []);
   const nextTurn = useCallback(() => {
     setTarget(null);
     setTurn((current) => {
