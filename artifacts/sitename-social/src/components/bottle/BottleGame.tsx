@@ -28,6 +28,7 @@ import { SeatGiftCanvas, type SeatGiftData } from "./SeatGiftCanvas";
 import { FlightCanvas, type CanvasFlight, type FlightGeometry } from "./FlightCanvas";
 import { FIRST_ORIGINAL, FRAME_PRICE, FrameArt, ORIGINAL_FRAMES, frameLooks, frameStone } from "./FrameArt";
 import { PassPanel, type PassData } from "./PassPanel";
+import { OnceImg } from "./OnceImg";
 import { ActivePanel, ComplimentPill, ComplimentsPanel, InvitePanel, ShopPanel, emojiSrc } from "./ShopPanels";
 import { bumpStat, markVisit, readStats, syncStats } from "./achievements";
 import { BottleSvg, WaterBottleSvg, WoodTable } from "./BottleArt";
@@ -361,11 +362,14 @@ function LeagueBadge({ league, className }: { league: number; className?: string
 // Shown for players who have no photo (the original shows a "NO PHOTO" silhouette).
 const NO_PHOTO = "/custom/profile/nophoto.svg";
 const DAILY_PRIZES = [2, 3, 5, 7, 10];
-function Gift({ id, className, anim }: { id: string; className?: string; anim?: boolean }) {
+function Gift({ id, className, anim, once }: { id: string; className?: string; anim?: boolean; once?: string | number }) {
   const art = useCustomArt();
   const name = id.startsWith("c:") ? id.slice(2) : giftFileName(id);
   // Animated version (public/custom/anim) where the gift sits on the photo or flies.
-  const custom = (anim && customFile(art, `anim/${name}`)) || customFile(art, `gifts/${name}`);
+  // With "once" the animation plays one time and then the gift stands still on its last frame (it never starts again).
+  const animFile = anim ? customFile(art, `anim/${name}`) : null;
+  if (animFile && once !== undefined) return <OnceImg src={animFile} freezeKey={once} className={cn("select-none object-contain drop-shadow-[0_2px_2px_rgba(60,25,0,0.3)]", className)} />;
+  const custom = animFile || customFile(art, `gifts/${name}`);
   if (custom) return <img src={custom} alt="" aria-hidden="true" draggable={false} className={cn("select-none object-contain drop-shadow-[0_2px_2px_rgba(60,25,0,0.3)]", className)} />;
   if (id.startsWith("song:")) return <img src={`/custom/orig/${id === "song:video" ? "audio_video_icon" : "audio_music_icon"}.svg`} alt="" aria-hidden="true" draggable={false} className={cn("select-none object-contain", className)} />;
   if (giftEmoji[id]) id = `e:${giftEmoji[id]}`;
@@ -3051,7 +3055,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                     {face ? <Gift id={face} className="absolute left-[8%] top-[10%] z-[2] h-[84%] w-[84%] animate-[gift-drop_0.35s_ease-out]" /> : null}
                     {ears ? <Gift anim id={ears} className="pointer-events-none absolute -left-[34%] -top-[22%] z-[2] h-[58%] w-[104%] -rotate-45 animate-[gift-drop_0.35s_ease-out] drop-shadow" /> : null}
                     {head && hat ? <span key={head} className="pointer-events-none absolute z-[5]" style={{ left: `${hat.x}%`, top: `${hat.y}%`, width: `${hat.s}%`, height: `${hat.s}%`, transform: "rotate(-45deg)" }}><Gift anim id={head} className="h-full w-full animate-[gift-drop_0.35s_ease-out] drop-shadow" /></span> : null}
-                    {spots[player.id]?.length ? spots[player.id].filter((spot) => !canvasCorners(spot)).map((spot) => <span key={spot.key} className={cn("pointer-events-none absolute", spot.kind === "behind" ? "-z-[1]" : spot.kind === "hatL" || spot.kind === "hatR" ? "z-[5]" : "z-[2]")} style={{ left: `${spot.x}%`, top: `${spot.y}%`, width: `${spot.s}%`, height: `${spot.s}%`, transform: spot.kind === "hatL" ? "rotate(-45deg)" : spot.kind === "hatR" ? "rotate(45deg)" : spot.r ? `rotate(${spot.r}deg)` : undefined }}><Gift anim id={spot.gift} className={cn("h-full w-full drop-shadow", spot.x + spot.s / 2 < 45 ? "origin-bottom-left" : "origin-bottom-right", (spot.kind === "corner" || spot.kind === "balloon") && (spot.x + spot.s / 2 < 45 ? "object-left-bottom" : "object-right-bottom"), spot.kind === "balloon" ? "animate-[gift-grow_0.7s_ease-out_forwards]" : "animate-[gift-drop_0.35s_ease-out]")} /></span>)
+                    {spots[player.id]?.length ? spots[player.id].filter((spot) => !canvasCorners(spot)).map((spot) => <span key={spot.key} className={cn("pointer-events-none absolute", spot.kind === "behind" ? "-z-[1]" : spot.kind === "hatL" || spot.kind === "hatR" ? "z-[5]" : "z-[2]")} style={{ left: `${spot.x}%`, top: `${spot.y}%`, width: `${spot.s}%`, height: `${spot.s}%`, transform: spot.kind === "hatL" ? "rotate(-45deg)" : spot.kind === "hatR" ? "rotate(45deg)" : spot.r ? `rotate(${spot.r}deg)` : undefined }}><Gift anim once={spot.kind === "corner" || spot.kind === "balloon" ? spot.key : undefined} id={spot.gift} className={cn("h-full w-full drop-shadow", spot.x + spot.s / 2 < 45 ? "origin-bottom-left" : "origin-bottom-right", (spot.kind === "corner" || spot.kind === "balloon") && (spot.x + spot.s / 2 < 45 ? "object-left-bottom" : "object-right-bottom"), spot.kind === "balloon" ? "animate-[gift-grow_0.7s_ease-out_forwards]" : "animate-[gift-drop_0.35s_ease-out]")} /></span>)
                       : rest.map((gift) => <Gift anim key={`${gift}-${mine.length}`} id={gift} className="absolute bottom-0 right-0 z-[2] h-[58%] w-[58%] animate-[gift-drop_0.35s_ease-out] drop-shadow" />)}
                     {scatters.filter((item) => item.to === player.id).flatMap((item) => item.names.map((name, n) => <span key={`${item.key}-${n}`} className="pointer-events-none absolute left-1/2 top-1/2 z-[3] h-[26%] w-[26%]" style={{ animation: "gift-scatter 1s ease-out forwards", ["--dx" as string]: `${item.dirs[n][0]}cqmin`, ["--dy" as string]: `${item.dirs[n][1]}cqmin` }}><Gift anim id={name} className="h-full w-full drop-shadow" /></span>))}
                   </>;
