@@ -1988,7 +1988,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     setBursts((list) => [...list, { key, to, amount }].slice(-4));
     window.setTimeout(() => setBursts((list) => list.filter((item) => item.key !== key)), 1700);
   }
-  // A single gift glides for 3 seconds; gifts sent in a rapid series (press and hold) fly in about a second.
+  // A single gift flies 5.6 s; gifts sent in a rapid series (press and hold) fly 3.2 s.
   // The flight goes straight to where the gift will sit (offset from the seat centre in cqmin, and its final size).
   const flightTo = (plan: ReturnType<typeof planLanding>, gift: string) => {
     const w = wide ? 18.5 : 17.5;
@@ -2197,7 +2197,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       bucket.tokens -= 1;
     }
     const seed = 1 + Math.floor(Math.random() * 2e9); // goes to the server with the gift, so every screen puts it in the same spot
-    ms = ms <= 1800 ? 6400 : 11200; // 1.6x slower than the first version: a single gift flies 11.2 s, a press-and-hold stream 6.4 s
+    ms = ms <= 1800 ? 3200 : 5600; // a single gift flies 5.6 s, a press-and-hold stream 3.2 s (2x faster than before)
     if (gift.startsWith("c:") && colorSteps.has(gift.slice(2))) gift = `c:${nextColor(gift.slice(2))}`; // one colour per tap, in order
     const player = players[index];
     if (!player || player.empty) return false;
@@ -2240,7 +2240,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // A gift another player sent: it flies from their seat to the receiver, then sits on the photo and goes into the chat.
   const remoteGift = useRef<(from: string, to: string, gift: string, ms: number, seed: number) => void>(() => {});
   remoteGift.current = (fromId, toId, gift, ms, seed) => {
-    ms = ms <= 1800 ? 6400 : 11200; // 1.6x slower than the first version: a single gift flies 11.2 s, a press-and-hold stream 6.4 s
+    ms = ms <= 1800 ? 3200 : 5600; // a single gift flies 5.6 s, a press-and-hold stream 3.2 s (2x faster than before)
     const fromAt = players.findIndex((player) => player.id === fromId);
     const toAt = players.findIndex((player) => player.id === toId);
     if (!gift || toAt < 0) return;
