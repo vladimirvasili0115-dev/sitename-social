@@ -177,6 +177,12 @@ const CORNER_SHIFT_LEFT = 7; // gifts on the bottom-right corner (hearts, drinks
 const CAT_SHIFT_LEFT = 12; // the cat in the dress sits about 6 mm (12% of the photo width) further left (3 mm, then 3 mm more)
 const CORNER_ART_H = 38;
 const CORNER_ART_W = 32;
+// The name shown in the game: the first word ("Samir Aliyev" -> "Samir"). A name written letter by letter or with a one-or-two letter first word ("P ə b a h", "Al Veli") is shown whole, otherwise only its first letter would be left.
+function gameName(raw: string | null | undefined): string {
+  const words = (raw ?? "").trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return "";
+  return [...words[0]].length <= 2 && words.length > 1 ? words.join(" ") : words[0];
+}
 // The cherry cocktail and the Makarov pistol are shown 1.2 times bigger; they grow towards the photo (the right edge and the bottom stay where they were).
 const BIGGER_CORNER = /^(cherry|makarov|revolver)$/;
 const BIGGER_BY = 1.2;
@@ -404,7 +410,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [hideAges, setHideAges] = useState<Record<string, boolean>>({});
   const hideAskedRef = useRef<Map<string, number>>(new Map());
   const players = useMemo<Player[]>(() => {
-    const me: Player = { id: "me", name: user.name.split(" ")[0], age: 25, female: details.gender === "female", avatar: user.avatar || NO_PHOTO, me: true, zodiac: zodiacOf(details.birthday) };
+    const me: Player = { id: "me", name: gameName(user.name), age: 25, female: details.gender === "female", avatar: user.avatar || NO_PHOTO, me: true, zodiac: zodiacOf(details.birthday) };
     if (online) {
       // Every player sees the table the same way: seat N is always at the same place on every screen.
       // A player sits in one seat only: if the list ever holds the same player twice (e.g. an old row next to the new one right after a quick leave and come back), the second one is not drawn, so a photo is never doubled.
@@ -415,8 +421,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         if (row) drawn.add(row.id);
         if (!row) return place === 7 && !net ? me : { id: `empty-${place}`, name: "", age: 0, female: false, avatar: "", empty: true };
         const female = row.gender === "female";
-        if (row.id === net?.me) return { ...me, name: me.name || (row.name ?? "").split(" ")[0], age: details.hideAge ? 0 : row.age ?? me.age, female, zodiac: row.zodiac ?? me.zodiac };
-        return { id: row.id, name: (row.name ?? "").split(" ")[0] || "?", age: hideAges[row.id] ? 0 : row.age ?? 0, female, avatar: row.avatar || NO_PHOTO, zodiac: row.zodiac };
+        if (row.id === net?.me) return { ...me, name: me.name || gameName(row.name), age: details.hideAge ? 0 : row.age ?? me.age, female, zodiac: row.zodiac ?? me.zodiac };
+        return { id: row.id, name: gameName(row.name) || "?", age: hideAges[row.id] ? 0 : row.age ?? 0, female, avatar: row.avatar || NO_PHOTO, zodiac: row.zodiac };
       });
     }
     const others = bots.map((bot, index) => ({ ...bot, avatar: cartoonAvatar(index + 1, bot.female), zodiac: (index * 5) % 12 }));
@@ -1080,7 +1086,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         const gifts = all.filter((item) => item.kind === "gift" && item.from !== data!.me && !(item.seed && seenSeeds.current.has(item.seed)));
         for (const item of gifts) if (item.seed) seenSeeds.current.add(item.seed);
         if (!first) gifts.forEach((item, order) => window.setTimeout(() => remoteGift.current(who(item.from), who(item.to), item.body ?? "", gifts.length > 1 ? 1800 : 3600, item.seed ?? item.id), order * Math.min(150, 900 / gifts.length))); // a big batch still starts within a second
-        for (const seat of data.seats) names.current[seat.id] = { name: (seat.name ?? "").split(" ")[0] || "?", avatar: seat.avatar ?? "" };
+        for (const seat of data.seats) names.current[seat.id] = { name: gameName(seat.name) || "?", avatar: seat.avatar ?? "" };
         const nameOf = (id: string | null) => names.current[id ?? ""]?.name ?? "?"; // own name too, not "you"
         if (!first) all.filter((item) => item.kind === "compliment" && item.to === data!.me).forEach((item) => setComplimentIn({ name: names.current[item.from ?? ""]?.name ?? "?", avatar: names.current[item.from ?? ""]?.avatar || NO_PHOTO, kind: Number(item.body) || 1 }));
         if (!first && all.some((item) => item.kind === "kick" && item.to === data!.me)) setKickedToast(true);
@@ -1117,7 +1123,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             if (unknown.length) {
               try {
                 const found = await supabase?.from("profiles").select("id,name,avatar_url").in("id", unknown);
-                for (const row of (found?.data ?? []) as { id: string; name: string | null; avatar_url: string | null }[]) if (!names.current[row.id]) names.current[row.id] = { name: (row.name ?? "").split(" ")[0] || "?", avatar: row.avatar_url ?? "" };
+                for (const row of (found?.data ?? []) as { id: string; name: string | null; avatar_url: string | null }[]) if (!names.current[row.id]) names.current[row.id] = { name: gameName(row.name) || "?", avatar: row.avatar_url ?? "" };
               } catch { /* names stay unknown */ }
               if (!alive || syncTable.current !== tableAtEntry) return;
             }
@@ -1247,7 +1253,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (!fresh) return;
     if (dm?.id === fresh.userId) return void openRemoteChat(fresh.userId);
     playSound("chosen");
-    setDmToast({ id: fresh.userId, name: fresh.person.user.name.split(" ")[0], avatar: fresh.person.user.avatar });
+    setDmToast({ id: fresh.userId, name: gameName(fresh.person.user.name), avatar: fresh.person.user.avatar });
   }, [chats, online, dm]);
   useEffect(() => {
     if (!dmToast) return;
@@ -3234,7 +3240,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                     <ul>
                       {(rooms?.friends ?? []).map((friend) => (
                         <li key={friend.id}><button onClick={() => void moveTo(friend.table)} className="flex min-h-11 w-full items-center gap-2 rounded-lg px-1 text-left text-sm hover:bg-black/5 disabled:opacity-50">
-                          <img src={friend.avatar || NO_PHOTO} alt="" className="h-9 w-9 shrink-0 rounded-md object-cover" /><span className="min-w-0 flex-1 truncate font-semibold">{(friend.name ?? "").split(" ")[0]}</span>{friend.friend === false ? <span title={t("bottle.roomKnown")} className="shrink-0 text-sm">🎁</span> : null}<span className="shrink-0 text-xs text-[#9CA3AF]">#{friend.table}</span>{counts(friend.table)}
+                          <img src={friend.avatar || NO_PHOTO} alt="" className="h-9 w-9 shrink-0 rounded-md object-cover" /><span className="min-w-0 flex-1 truncate font-semibold">{gameName(friend.name)}</span>{friend.friend === false ? <span title={t("bottle.roomKnown")} className="shrink-0 text-sm">🎁</span> : null}<span className="shrink-0 text-xs text-[#9CA3AF]">#{friend.table}</span>{counts(friend.table)}
                         </button></li>
                       ))}
                     </ul>
@@ -3282,7 +3288,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                     <button onClick={() => { setPayNote(false); setPanel("chances"); }} aria-label={t("bottle.chances")} title={t("bottle.chances")} className="flex h-8 w-8 items-center justify-center rounded-full bg-[#8CC63F] text-lg font-black text-white hover:brightness-110">+</button>
                     <button onClick={() => void spinWheel()} disabled={wheelBusy} className="h-9 rounded-lg bg-[#8CC63F] px-5 text-sm font-bold text-white hover:brightness-110 disabled:opacity-60">{t("bottle.wheelSpin")} · 🎲 1</button>
                   </div>
-                  {net?.winner ? <p className="mt-2 rounded-lg bg-black/25 p-2 text-center text-xs"><b className="text-[#FDE047]">{t("bottle.wheelWinner")}:</b> {(net.winner.name ?? "").split(" ")[0]} — ❤ {net.winner.amount}</p> : null}
+                  {net?.winner ? <p className="mt-2 rounded-lg bg-black/25 p-2 text-center text-xs"><b className="text-[#FDE047]">{t("bottle.wheelWinner")}:</b> {gameName(net.winner.name)} — ❤ {net.winner.amount}</p> : null}
                 </div>
               ) : panel === "smiles" ? (
                 <div>
