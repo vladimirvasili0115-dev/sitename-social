@@ -1600,6 +1600,12 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // fireworks are skipped and the sky is capped. It turns itself off again after the gifts are gone. Test switch: ?lite=1 keeps it always on.
   // The gift list shows its first tiles and adds more while you scroll (about 430 gifts at once were ~2300 page elements, the biggest load on weak phones).
   const [giftLimit, setGiftLimit] = useState(60);
+  const giftListRef = useRef<HTMLDivElement>(null);
+  // A tall panel (computer) is not filled by the first tiles and cannot scroll: keep adding tiles until it is full (or all gifts are shown).
+  useEffect(() => {
+    const el = giftListRef.current;
+    if (el && el.clientHeight > 0 && el.scrollHeight - el.scrollTop - el.clientHeight < 600) setGiftLimit((value) => (value < 600 ? value + 60 : value));
+  }, [giftLimit, panel, picked, dedicate]);
   const [lite, setLite] = useState(false);
   const liteRef = useRef(false);
   const flyingCount = useRef(0);
@@ -3888,7 +3894,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
               })}
             </div>
             ) : (
-            <div role="menu" onScroll={(event) => { const el = event.currentTarget; if (el.scrollHeight - el.scrollTop - el.clientHeight < 600) setGiftLimit((value) => (value < 2000 ? value + 60 : value)); }} className="min-h-0 flex-1 overflow-y-auto bg-white px-1.5 pb-2 pt-1">
+            <div role="menu" ref={giftListRef} onScroll={(event) => { const el = event.currentTarget; if (el.scrollHeight - el.scrollTop - el.clientHeight < 600) setGiftLimit((value) => (value < 600 ? value + 60 : value)); }} className="min-h-0 flex-1 overflow-y-auto bg-white px-1.5 pb-2 pt-1">
               {(() => {
                 // Like the original gift list: the gifts you can send first, then the ones still locked
                 // (by kisses, from the nearest to the farthest, and the VIP ones last). Locked gifts are grey with a lock.
