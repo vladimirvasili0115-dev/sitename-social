@@ -28,7 +28,7 @@ const tr: Record<keyof typeof az, string> = {
   "feed.removeImage":"Fotoğrafı kaldır",
   "story.yours":"Hikayen","story.delete":"Hikayeyi sil",
   "user.notFound":"Kullanıcı bulunamadı.","user.blocked":"Bu kullanıcıyı engelledin.","user.username":"kullanıcı adı",
-  "group.notFound":"Grup bulunamadı.","group.joinToPost":"Paylaşmak için gruba katıl.","group.tabMembers":"Üyeler","group.noDescription":"Açıklama eklenmemiş.",
+  "group.notFound":"Grup bulunamadı.","group.joinToPost":"Paylaşmak için gruba katıl.","group.tabMembers":"Üyeler","group.noDescription":"Açıklama eklenmemiş.", "groups.tabPages": "Sayfalar", "groups.createPage": "Sayfa aç", "groups.pageBadge": "Sayfa", "groups.follow": "Sayfayı takip et", "groups.following": "Takip ediliyor", "groups.followers": "takipçi", "groups.pageName": "Sayfa adı", "groups.emptyPages": "Henüz sayfa yok.", "group.tabFollowers": "Takipçiler", "group.pageOnlyManagers": "Gönderileri yalnızca sayfa sahibi ve yardımcılar yazar. Yorum yapabilir ve beğenebilirsin.", "group.makeEditor": "Yardımcı yap", "group.removeEditor": "Yardımcılıktan çıkar", "group.editorBadge": "Yardımcı", "group.ownerBadge": "Sahip",
   "search.tabPeople":"Kişiler","search.hint":"Aramak için isim, grup veya kelime yaz ve Enter'a bas.",
   "nav.menu":"Menü",
   "post.edit":"Düzenle","post.edited":"düzenlendi",

@@ -21,6 +21,7 @@ export function useGroups() {
     groups: local,
     toggle: (id: string) => update((list) => list.map((item) => (item.id === id ? { ...item, joined: !item.joined, members: item.members + (item.joined ? -1 : 1) } : item))),
     create: (input: Pick<Group, "name" | "category" | "description">) => update((list) => [{ ...input, id: `gr-${Date.now()}`, members: 1, joined: true, mine: true }, ...list]),
+    createPage: (input: { name: string; description: string }) => update((list) => [{ ...input, category: "games" as const, id: `gr-${Date.now()}`, members: 1, joined: true, mine: true, isPage: true }, ...list]),
     remove: (id: string) => update((list) => list.filter((item) => item.id !== id)),
   }), [local, remote, update]);
 }

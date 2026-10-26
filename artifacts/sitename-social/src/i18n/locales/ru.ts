@@ -28,7 +28,7 @@ const ru: Record<keyof typeof az, string> = {
   "feed.removeImage":"Убрать фото",
   "story.yours":"Твоя история","story.delete":"Удалить историю",
   "user.notFound":"Пользователь не найден.","user.blocked":"Ты заблокировал этого пользователя.","user.username":"имя пользователя",
-  "group.notFound":"Группа не найдена.","group.joinToPost":"Вступи в группу, чтобы публиковать.","group.tabMembers":"Участники","group.noDescription":"Описание не добавлено.",
+  "group.notFound":"Группа не найдена.","group.joinToPost":"Вступи в группу, чтобы публиковать.","group.tabMembers":"Участники","group.noDescription":"Описание не добавлено.", "groups.tabPages": "Страницы", "groups.createPage": "Создать страницу", "groups.pageBadge": "Страница", "groups.follow": "Подписаться", "groups.following": "Вы подписаны", "groups.followers": "подписчиков", "groups.pageName": "Название страницы", "groups.emptyPages": "Страниц пока нет.", "group.tabFollowers": "Подписчики", "group.pageOnlyManagers": "Публикуют только владелец и помощники страницы. Вы можете комментировать и ставить лайки.", "group.makeEditor": "Сделать помощником", "group.removeEditor": "Убрать помощника", "group.editorBadge": "Помощник", "group.ownerBadge": "Владелец",
   "search.tabPeople":"Люди","search.hint":"Введи имя, группу или слово и нажми Enter.",
   "nav.menu":"Меню",
   "post.edit":"Редактировать","post.edited":"изменено",

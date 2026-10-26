@@ -132,3 +132,8 @@ export async function fetchWelcome(): Promise<Welcome | null> {
   return data && typeof data === "object" ? data : null;
 }
 export const saveWelcome = async (body: string, enabled: boolean) => (await call("admin_welcome_set", { body, enabled })) !== null;
+
+// Players the admin allowed to open pages (the official game channel, for example).
+export type PageAllow = Record<string, boolean>;
+export const pageAllowGet = (ids: string[]) => call<PageAllow>("admin_page_allow_get", { ids });
+export const pageAllowSet = (id: string, on: boolean) => call<boolean>("admin_page_allow", { target: id, p_on: on });

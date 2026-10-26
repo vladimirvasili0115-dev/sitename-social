@@ -28,7 +28,7 @@ const en: Record<keyof typeof az, string> = {
   "feed.removeImage":"Remove photo",
   "story.yours":"Your story","story.delete":"Delete story",
   "user.notFound":"User not found.","user.blocked":"You've blocked this user.","user.username":"username",
-  "group.notFound":"Group not found.","group.joinToPost":"Join the group to post.","group.tabMembers":"Members","group.noDescription":"No description added.",
+  "group.notFound":"Group not found.","group.joinToPost":"Join the group to post.","group.tabMembers":"Members","group.noDescription":"No description added.", "groups.tabPages": "Pages", "groups.createPage": "Create a page", "groups.pageBadge": "Page", "groups.follow": "Follow", "groups.following": "Following", "groups.followers": "followers", "groups.pageName": "Page name", "groups.emptyPages": "No pages yet.", "group.tabFollowers": "Followers", "group.pageOnlyManagers": "Only the page owner and helpers post here. You can comment and like.", "group.makeEditor": "Make helper", "group.removeEditor": "Remove helper", "group.editorBadge": "Helper", "group.ownerBadge": "Owner",
   "search.tabPeople":"People","search.hint":"Type a name, group or word and press Enter.",
   "nav.menu":"Menu",
   "post.edit":"Edit","post.edited":"edited",

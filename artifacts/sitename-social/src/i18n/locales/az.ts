@@ -37,7 +37,7 @@ const az = {
   "feed.removeImage":"Şəkli sil",
   "story.yours":"Sənin hekayən","story.delete":"Hekayəni sil",
   "user.notFound":"İstifadəçi tapılmadı.","user.blocked":"Bu istifadəçini bloklamısan.","user.username":"istifadəçi adı",
-  "group.notFound":"Qrup tapılmadı.","group.joinToPost":"Paylaşmaq üçün qrupa qoşul.","group.tabMembers":"Üzvlər","group.noDescription":"Təsvir əlavə edilməyib.",
+  "group.notFound":"Qrup tapılmadı.","group.joinToPost":"Paylaşmaq üçün qrupa qoşul.","group.tabMembers":"Üzvlər","group.noDescription":"Təsvir əlavə edilməyib.", "groups.tabPages": "Səhifələr", "groups.createPage": "Səhifə aç", "groups.pageBadge": "Səhifə", "groups.follow": "Səhifəni izlə", "groups.following": "İzlənilir", "groups.followers": "izləyici", "groups.pageName": "Səhifənin adı", "groups.emptyPages": "Hələ heç bir səhifə yoxdur.", "group.tabFollowers": "İzləyicilər", "group.pageOnlyManagers": "Paylaşımı yalnız səhifə sahibi və köməkçilər yazır. Sən şərh yaza və bəyənə bilərsən.", "group.makeEditor": "Köməkçi et", "group.removeEditor": "Köməkçidən çıxar", "group.editorBadge": "Köməkçi", "group.ownerBadge": "Sahib",
   "search.tabPeople":"İnsanlar","search.hint":"Axtarmaq üçün ad, qrup və ya söz yaz və Enter bas.",
   "nav.menu":"Menyu",
   "post.edit":"Redaktə et","post.edited":"redaktə olunub",

@@ -28,7 +28,7 @@ const ka: Record<keyof typeof az, string> = {
   "feed.removeImage":"ფოტოს მოშორება",
   "story.yours":"შენი ისტორია","story.delete":"ისტორიის წაშლა",
   "user.notFound":"მომხმარებელი ვერ მოიძებნა.","user.blocked":"ეს მომხმარებელი დაბლოკილი გყავს.","user.username":"მომხმარებლის სახელი",
-  "group.notFound":"ჯგუფი ვერ მოიძებნა.","group.joinToPost":"გამოსაქვეყნებლად გაწევრიანდი ჯგუფში.","group.tabMembers":"წევრები","group.noDescription":"აღწერა არ არის დამატებული.",
+  "group.notFound":"ჯგუფი ვერ მოიძებნა.","group.joinToPost":"გამოსაქვეყნებლად გაწევრიანდი ჯგუფში.","group.tabMembers":"წევრები","group.noDescription":"აღწერა არ არის დამატებული.", "groups.tabPages": "გვერდები", "groups.createPage": "გვერდის შექმნა", "groups.pageBadge": "გვერდი", "groups.follow": "გამოწერა", "groups.following": "გამოწერილია", "groups.followers": "გამომწერი", "groups.pageName": "გვერდის სახელი", "groups.emptyPages": "გვერდები ჯერ არ არის.", "group.tabFollowers": "გამომწერები", "group.pageOnlyManagers": "პოსტებს მხოლოდ გვერდის მფლობელი და თანაშემწეები წერენ. შეგიძლია კომენტარი დაწერო და მოიწონო.", "group.makeEditor": "თანაშემწედ დანიშვნა", "group.removeEditor": "თანაშემწის მოხსნა", "group.editorBadge": "თანაშემწე", "group.ownerBadge": "მფლობელი",
   "search.tabPeople":"ადამიანები","search.hint":"ჩაწერე სახელი, ჯგუფი ან სიტყვა და დააჭირე Enter-ს.",
   "nav.menu":"მენიუ",
   "post.edit":"რედაქტირება","post.edited":"რედაქტირებულია",

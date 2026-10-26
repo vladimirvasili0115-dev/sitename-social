@@ -19,16 +19,16 @@ export function GroupCard({ group, onToggle, onRemove }: { group: Group; onToggl
     <Card className="flex h-full flex-col overflow-hidden">
       <div className="relative h-24 bg-[linear-gradient(135deg,var(--accent),var(--accent-2))]">
         {group.cover ? <img src={group.cover} alt="" loading="lazy" className="h-full w-full object-cover" /> : null}
-        <span className="absolute left-3 top-3 rounded-full border border-border bg-surface px-2.5 py-1 text-[11px] font-medium text-text">{t(categoryLabels[group.category])}</span>
+        <span className="absolute left-3 top-3 rounded-full border border-border bg-surface px-2.5 py-1 text-[11px] font-medium text-text">{t(group.isPage ? "groups.pageBadge" : categoryLabels[group.category])}</span>
       </div>
       <div className="flex flex-1 flex-col p-4">
         <h2 className="truncate text-sm font-semibold"><Link href={groupHref(group.id)} className="hover:underline">{group.name}</Link></h2>
-        <p className="mt-1 flex items-center gap-1.5 text-xs text-muted"><Users size={13} />{group.members.toLocaleString(locale === "en" ? "en" : "ru")} {t("groups.members")}</p>
+        <p className="mt-1 flex items-center gap-1.5 text-xs text-muted"><Users size={13} />{group.members.toLocaleString(locale === "en" ? "en" : "ru")} {t(group.isPage ? "groups.followers" : "groups.members")}</p>
         <p className="mt-2 line-clamp-2 flex-1 text-xs leading-5 text-muted">{group.description}</p>
         <div className="mt-3 flex items-center gap-2">
           {group.joined
-            ? <Button variant="outline" className="h-9 flex-1 px-3 text-xs" onClick={onToggle}><Check size={14} className="text-accent" />{t("groups.joined")}</Button>
-            : <Button className="h-9 flex-1 px-3 text-xs" onClick={onToggle}><Plus size={14} />{t("groups.join")}</Button>}
+            ? <Button variant="outline" className="h-9 flex-1 px-3 text-xs" onClick={onToggle}><Check size={14} className="text-accent" />{t(group.isPage ? "groups.following" : "groups.joined")}</Button>
+            : <Button className="h-9 flex-1 px-3 text-xs" onClick={onToggle}><Plus size={14} />{t(group.isPage ? "groups.follow" : "groups.join")}</Button>}
           {group.mine ? <IconButton aria-label={t("groups.delete")} title={t("groups.delete")} onClick={onRemove} className="h-9 w-9 shrink-0"><Trash2 size={15} /></IconButton> : null}
         </div>
       </div>
