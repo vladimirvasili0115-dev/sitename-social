@@ -579,7 +579,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // The phone video can be dragged by the avatar and resized from its lower-left corner.
   // On the phone the video and music windows keep one small size (they can still be moved, not resized).
   const MINI_VIDEO_W = 170;
-  const MINI_MUSIC_W = 170;
+  const MINI_MUSIC_W = 100; // the phone music card (MP3 / song player) is about half its old size: it took too much of the chat
   const [mini, setMini] = useState<{ x: number | null; y: number; w: number }>({ x: null, y: wide ? 8 : 23, w: 127 }) /* on a phone the video starts about 4 mm lower, so the smiley shop at the top stays visible */;
   const [miniBusy, setMiniBusy] = useState(false);
   const miniRef = useRef<HTMLDivElement>(null);
@@ -3853,7 +3853,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         ) : null}
         {audio || (video && musicMode) ? (
           // PC: a bar above the chat. Phone: a small square window like the video one, which can be moved and resized.
-          <div ref={wide ? undefined : miniRef} style={wide ? undefined : mini.x === null ? { right: 4, top: mini.y, width: MINI_MUSIC_W } : { left: mini.x, top: mini.y, width: MINI_MUSIC_W }} className={cn("overflow-hidden bg-[linear-gradient(120deg,#1E1B3A,#4C1D95_60%,#BE185D)] text-white", wide ? "relative shrink-0 p-2.5" : "absolute z-20 rounded-2xl border border-white/15 p-2 pt-7 shadow-xl", miniBusy && !wide && "select-none")}>
+          <div ref={wide ? undefined : miniRef} style={wide ? undefined : mini.x === null ? { right: 4, top: mini.y, width: MINI_MUSIC_W } : { left: mini.x, top: mini.y, width: MINI_MUSIC_W }} className={cn("overflow-hidden bg-[linear-gradient(120deg,#1E1B3A,#4C1D95_60%,#BE185D)] text-white", wide ? "relative shrink-0 p-2.5" : "absolute z-20 rounded-2xl border border-white/15 p-1.5 pt-6 shadow-xl", miniBusy && !wide && "select-none")}>
             {track ? <img src={songByAvatar} alt="" title={t("bottle.musicNow")} className={cn("pointer-events-none absolute z-[1] select-none rounded-full border-2 border-white/70 object-cover shadow", wide ? "bottom-1.5 left-1.5 h-6 w-6" : "left-1.5 top-1.5 h-6 w-6")} draggable={false} /> : null}
             {audio ? <audio src={audio.url} autoPlay playsInline ref={(node) => { audioRef.current = node; if (node) node.volume = music / 100; }} onPlay={() => setTune((v) => ({ ...v, playing: true }))} onPause={() => setTune((v) => ({ ...v, playing: false }))} onEnded={() => setAudio(null)} onLoadedMetadata={(event) => { const node = event.currentTarget; const dur = node.duration || 0; const at = songNow(); if (at > 2 && at < dur) node.currentTime = at; setTune((v) => ({ ...v, dur })); }} onTimeUpdate={(event) => { const cur = event.currentTarget.currentTime; setTune((v) => ({ ...v, cur })); }} className="hidden" /> : null}
             {/* Songs from the MP3 tab: the YouTube player plays behind the card, only the music player is seen. */}
@@ -3875,14 +3875,14 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             </div>
             ) : (
             <div className="flex flex-col items-center">
-              <span title={t("bottle.miniMove")} onPointerDown={(event) => startMini(event, "move")} className="flex w-full cursor-move touch-none select-none justify-center pb-1.5 pt-0.5"><span className={cn("flex shrink-0 items-center justify-center rounded-full border-4 border-white/20 bg-[radial-gradient(circle,#BE185D_20%,#111_21%,#2a2a2a_45%,#111_46%,#333_70%,#111_71%)] bg-cover bg-center shadow-lg", tune.playing && "animate-[spin_3s_linear_infinite]", "h-auto w-[58%] aspect-square")} style={!audio && video ? { backgroundImage: `radial-gradient(circle,#1E1B3A 14%,transparent 15%),url(https://i.ytimg.com/vi/${video}/mqdefault.jpg)` } : undefined}><span className="h-2 w-2 rounded-full bg-white/80" /></span></span>
-              <p className="w-full truncate text-center text-xs font-black">{audio ? audio.name : videoTitle}</p>
-              <div className="mt-1.5 flex w-full items-center gap-1.5">
-                <button onClick={() => { const node = audio ? audioRef.current : null; if (node) { if (node.paused) void node.play().catch(() => {}); else node.pause(); return; } setTouched(true); ytCall(tune.playing ? "pauseVideo" : "playVideo"); if (!tune.playing) ytCall("unMute"); }} aria-label={tune.playing ? "Pause" : "Play"} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-[#4C1D95] shadow">{tune.playing ? <Pause size={14} fill="currentColor" /> : <Play size={14} fill="currentColor" className="translate-x-px" />}</button>
+              <span title={t("bottle.miniMove")} onPointerDown={(event) => startMini(event, "move")} className="flex w-full cursor-move touch-none select-none justify-center pb-1.5 pt-0.5"><span className={cn("flex shrink-0 items-center justify-center rounded-full border-2 border-white/20 bg-[radial-gradient(circle,#BE185D_20%,#111_21%,#2a2a2a_45%,#111_46%,#333_70%,#111_71%)] bg-cover bg-center shadow-lg", tune.playing && "animate-[spin_3s_linear_infinite]", "h-auto w-[40%] aspect-square")} style={!audio && video ? { backgroundImage: `radial-gradient(circle,#1E1B3A 14%,transparent 15%),url(https://i.ytimg.com/vi/${video}/mqdefault.jpg)` } : undefined}><span className="h-2 w-2 rounded-full bg-white/80" /></span></span>
+              <p className="w-full truncate text-center text-[10px] font-black">{audio ? audio.name : videoTitle}</p>
+              <div className="mt-1 flex w-full items-center gap-1">
+                <button onClick={() => { const node = audio ? audioRef.current : null; if (node) { if (node.paused) void node.play().catch(() => {}); else node.pause(); return; } setTouched(true); ytCall(tune.playing ? "pauseVideo" : "playVideo"); if (!tune.playing) ytCall("unMute"); }} aria-label={tune.playing ? "Pause" : "Play"} className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-[#4C1D95] shadow">{tune.playing ? <Pause size={14} fill="currentColor" /> : <Play size={14} fill="currentColor" className="translate-x-px" />}</button>
                 <input type="range" min={0} max={Math.max(1, Math.floor(tune.dur))} value={Math.floor(tune.cur)} onChange={(event) => { const at = Number(event.target.value); const node = audio ? audioRef.current : null; if (node) node.currentTime = at; else ytCall("seekTo", [at, true]); setTune((v) => ({ ...v, cur: at })); }} aria-label={audio ? audio.name : videoTitle} className="min-w-0 flex-1 accent-[#EC4899]" />
-                <Equalizer className={cn("h-4 shrink-0", !tune.playing && "opacity-40 [&>span]:![animation-play-state:paused]")} />
+                <Equalizer className={cn("h-3 shrink-0", !tune.playing && "opacity-40 [&>span]:![animation-play-state:paused]")} />
               </div>
-              <p className="mt-0.5 w-full text-center text-[10px] tabular-nums text-white/60">{clock(tune.cur)} / {clock(tune.dur)}</p>
+              <p className="mt-0.5 w-full text-center text-[9px] tabular-nums text-white/60">{clock(tune.cur)} / {clock(tune.dur)}</p>
             </div>
             )}
             {!audio && soundPill}
