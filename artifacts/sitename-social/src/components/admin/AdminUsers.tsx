@@ -1,4 +1,5 @@
 "use client";
+import { formatManat } from "@/components/gifts/Price";
 import { VerifiedMark } from "@/components/ui/VerifiedMark";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
@@ -126,7 +127,8 @@ export function AdminUsers({ owner }: { owner: boolean }) {
   }
   function handleCoins(event: FormEvent<HTMLFormElement>, id: string) {
     event.preventDefault();
-    const value = Math.trunc(Number(amount));
+    // Hearts are whole numbers; the balance is typed in manat and kept in coins (1 ₼ = 100).
+    const value = grantKind === "hearts" ? Math.trunc(Number(amount)) : Math.round((Number(amount.replace(",", ".")) || 0) * 100);
     if (!value) return;
     setCoinsFor(null);
     void run(id, async () => (await (grantKind === "hearts" ? grantHearts(id, value) : grantCoins(id, value))) !== null);
@@ -157,11 +159,11 @@ export function AdminUsers({ owner }: { owner: boolean }) {
                         {online ? <span className={cn(chip, "border-border text-accent")}>{t("common.onlineNow")}</span> : null}
                       </div>
                       <p className="flex min-w-0 items-center gap-1 text-xs text-muted">{user.email ? <><span className="truncate">{shown[user.id] ? user.email : maskEmail(user.email)}</span><button type="button" onClick={() => setShown((value) => ({ ...value, [user.id]: !value[user.id] }))} aria-label={t(shown[user.id] ? "admin.emailHide" : "admin.emailShow")} title={t(shown[user.id] ? "admin.emailHide" : "admin.emailShow")} className="shrink-0 rounded p-0.5 text-muted hover:text-text">{shown[user.id] ? <EyeOff size={13} /> : <Eye size={13} />}</button><span className="shrink-0">·</span></> : null}<span className="truncate">@{user.handle}</span></p>
-                      <p className="mt-0.5 text-[11px] text-muted">{t("admin.joined")}: {formatDay(user.joined)} · {t("gifts.balance")}: <span className="tabular-nums text-text">{user.balance}</span></p>
+                      <p className="mt-0.5 text-[11px] text-muted">{t("admin.joined")}: {formatDay(user.joined)} · {t("gifts.balance")}: <span className="tabular-nums text-text">{formatManat(user.balance)}</span></p>
                     </div>
                   </div>
                   <div className="mt-3 flex flex-wrap gap-2">
-                    {owner ? <button disabled={locked} onClick={() => { setGrantKind("coins"); setCoinsFor(coinsFor === user.id && grantKind === "coins" ? null : user.id); setAmount("100"); }} className={action}><Coins size={14} />{t("admin.coins")}</button> : null}
+                    {owner ? <button disabled={locked} onClick={() => { setGrantKind("coins"); setCoinsFor(coinsFor === user.id && grantKind === "coins" ? null : user.id); setAmount("1"); }} className={action}><Coins size={14} />{t("admin.coins")}</button> : null}
                     <button disabled={locked} onClick={() => void toggleGame(user.id, "vip", Boolean(flags[user.id]?.vip))} className={cn(action, flags[user.id]?.vip ? "border-[#D97706] text-[#D97706]" : "")}><Crown size={14} />{t(flags[user.id]?.vip ? "admin.vipOff" : "admin.vipOn")}</button>
                     <button disabled={locked} onClick={() => void toggleGame(user.id, "top", Boolean(flags[user.id]?.top))} className={cn(action, flags[user.id]?.top ? "border-[#CA8A04] text-[#CA8A04]" : "")}><Award size={14} />{t(flags[user.id]?.top ? "admin.topOff" : "admin.topOn")}</button>
                     <button disabled={locked} onClick={() => void run(user.id, async () => (await gameGrant(user.id, "admire_block", flags[user.id]?.block ? 0 : 1)) !== null)} className={cn(action, flags[user.id]?.block ? "border-danger text-danger" : "")}><HeartOff size={14} />{t(flags[user.id]?.block ? "admin.admireUnblock" : "admin.admireBlock")}</button>
@@ -241,10 +243,10 @@ export function AdminUsers({ owner }: { owner: boolean }) {
                   {gameFor === user.id ? <GamePanel id={user.id} /> : null}
                   {coinsFor === user.id ? (
                     <form onSubmit={(event) => handleCoins(event, user.id)} className="mt-3 flex flex-wrap items-center gap-2">
-                      <span className={`flex h-10 items-center gap-1.5 rounded-xl px-3 text-xs font-bold ${grantKind === "hearts" ? "bg-[#F4511E] text-white" : "bg-surface-2 text-text"}`}>{grantKind === "hearts" ? <Heart size={14} fill="currentColor" /> : <Coins size={14} />}{t(grantKind === "hearts" ? "admin.hearts" : "admin.coins")}</span>
-                      <input type="number" value={amount} onChange={(event) => setAmount(event.target.value)} min={-1000000} max={1000000} step={1} aria-label={t("admin.coinsAmount")} className="h-10 w-32 rounded-xl border border-border bg-surface-2 px-3 text-sm tabular-nums text-text outline-none focus:border-accent" />
+                      <span className={`flex h-10 items-center gap-1.5 rounded-xl px-3 text-xs font-bold ${grantKind === "hearts" ? "bg-[#F4511E] text-white" : "bg-surface-2 text-text"}`}>{grantKind === "hearts" ? <Heart size={14} fill="currentColor" /> : <span aria-hidden="true">₼</span>}{grantKind === "hearts" ? t("admin.hearts") : "Balans (₼)"}</span>
+                      <input type="number" value={amount} onChange={(event) => setAmount(event.target.value)} min={-1000000} max={1000000} step={grantKind === "hearts" ? 1 : 0.01} aria-label={t("admin.coinsAmount")} className="h-10 w-32 rounded-xl border border-border bg-surface-2 px-3 text-sm tabular-nums text-text outline-none focus:border-accent" />
                       <button type="submit" className="h-10 rounded-xl bg-accent px-4 text-xs font-semibold text-bg">{t("admin.coinsApply")}</button>
-                      <p className="basis-full text-[11px] text-muted">{t(grantKind === "hearts" ? "admin.heartsHint" : "admin.coinsHint")}</p>
+                      <p className="basis-full text-[11px] text-muted">{grantKind === "hearts" ? t("admin.heartsHint") : "Məbləği manatla yaz: müsbət rəqəm balansı artırır, mənfi azaldır (məsələn 5 və ya 2.50)."}</p>
                     </form>
                   ) : null}
                 </Card>

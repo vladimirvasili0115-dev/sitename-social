@@ -196,7 +196,7 @@ function PackNote({ note, locale }: { note: { kind: "wait" | "ok" | "balance" | 
   if (note.kind === "wait") return <>{w.wait}</>;
   if (note.kind === "ok") return <>{w.ok.replace("{n}", (note.n ?? 0).toLocaleString("ru-RU"))}</>;
   if (note.kind === "fail") return <>{w.fail}</>;
-  return <>{w.balance.replace("{need}", String(note.need ?? "?"))} <a href="/market/" target="_blank" rel="noopener" className="underline">{w.top}</a></>;
+  return <>{w.balance.replace("{need}", note.need ? `${(note.need / 100).toLocaleString("ru-RU")} ₼` : "?")} <a href="/market/" target="_blank" rel="noopener" className="underline">{w.top}</a></>;
 }
 const BIGGER_CORNER = /^(cherry|makarov|revolver)$/;
 const BIGGER_BY = 1.2;
@@ -3657,7 +3657,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 <div className="max-h-[78cqmin] overflow-y-auto text-[#1F2937]">
                   <ul className="space-y-1 text-sm">{[1, 2, 3, 4, 5, 6].map((n) => <li key={n} className="flex gap-2"><span aria-hidden="true">👑</span>{t(`bottle.vip${n}` as "bottle.vip1")}</li>)}</ul>
                   <div className="mt-3 grid grid-cols-3 gap-1.5">
-                    {vipPlans.map(([days, price]) => <button key={days} onClick={() => setPayNote(true)} className="rounded-xl border border-[#FCD34D] bg-[#FFFBEB] p-2 text-center hover:brightness-95"><span className="block text-sm font-black text-[#B45309]">{days} {t("bottle.days")}</span><span className="mt-1 block rounded-md bg-[#8CC63F] py-1 text-[11px] font-bold tabular-nums text-white">{price} {t("bottle.currency")}</span></button>)}
+                    {vipPlans.map(([days, price]) => <button key={days} onClick={() => setPayNote(true)} className="rounded-xl border border-[#FCD34D] bg-[#FFFBEB] p-2 text-center hover:brightness-95"><span className="block text-sm font-black text-[#B45309]">{days} {t("bottle.days")}</span><span className="mt-1 block rounded-md bg-[#8CC63F] py-1 text-[11px] font-bold tabular-nums text-white">{price} ₼</span></button>)}
                   </div>
                   {payNote ? <p role="status" className="mt-2 rounded-lg bg-[#FEF3C7] p-2 text-center text-xs font-semibold text-[#92400E]">{t("bottle.paySoon")}</p> : null}
                 </div>
