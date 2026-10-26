@@ -10,6 +10,7 @@ import { useSettings } from "@/components/settings/useSettings";
 
 const settingFor: Record<NoticeType, NotificationKey> = { message: "messages", request: "requests", like: "likes", comment: "likes", gift: "gifts", guest: "guests", mention: "likes", reply: "likes", wall: "likes", repost: "likes", photo_like: "likes", photo_comment: "likes" };
 const online = Boolean(supabase);
+// Message notices are not listed here: new messages (and call lines in a chat) show on the envelope icon next to the bell.
 
 export function useNotifications() {
   const [local, update] = useStore(noticesStore);
@@ -19,7 +20,7 @@ export function useNotifications() {
   useEffect(() => ensureNoticesLoaded(accountId), [accountId]);
   return useMemo(() => {
     const all = online ? remote : local;
-    const notices = all.filter((item) => notifications[settingFor[item.type]] && !blocked.includes(item.userId)).sort((a, b) => b.at - a.at);
+    const notices = all.filter((item) => item.type !== "message" && notifications[settingFor[item.type]] && !blocked.includes(item.userId)).sort((a, b) => b.at - a.at);
     const patch = (match: (item: Notice) => boolean, change: Partial<Notice>) => update((list) => list.map((item) => (match(item) ? { ...item, ...change } : item)));
     const actions = online
       ? { markRead: (id: string) => void remoteNoticeActions.markRead(id), markAllRead: () => void remoteNoticeActions.markAllRead(), remove: (id: string) => void remoteNoticeActions.remove(id), clear: () => void remoteNoticeActions.clear() }
