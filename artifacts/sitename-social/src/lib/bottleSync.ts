@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { rpcEnd, rpcStart } from "./rpcTiming";
 
 // Live tables of the bottle game. The database owns the game: seats, turns, where the bottle stops, answers and kisses.
 export type BottleSeat = { seat: number; id: string; name: string | null; avatar: string | null; gender: string | null; kisses: number; total?: number; smiles?: number; songs?: number; zodiac?: number | null; age: number | null; status?: string | null; frame?: number; pass?: boolean; top?: boolean; vip_badge?: boolean; kicked?: { by: string; at: number } | null; admirer?: { id: string; name: string | null; avatar: string | null; amount: number } | null };
@@ -14,7 +15,10 @@ export type BottleState = {
 export type BottleTrack = { kind: "youtube" | "mp3"; ref: string; title: string | null; by: string | null; to: string | null; at: number };
 async function call<T>(name: string, args?: Record<string, unknown>): Promise<T | null> {
   if (!supabase) return null;
+  const timed = name.startsWith("bottle_gift");
+  const started = timed ? rpcStart() : 0;
   const { data, error } = await supabase.rpc(name, args);
+  if (timed) rpcEnd(started, !error);
   return error ? null : (data as T);
 }
 export const bottleJoin = () => call<number>("bottle_join");

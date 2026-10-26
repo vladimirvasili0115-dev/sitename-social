@@ -1,10 +1,11 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { giftRpcStats } from "@/lib/rpcTiming";
 
 // A small measuring panel for slow phones: open the game as /bottle/?perf=1.
 // It shows the frames per second, the slowest frame, how many page elements there are, the memory (Chrome only) and the long freezes of the last 10 seconds.
 // Tap the panel to copy one line of numbers that can be sent as a message.
-type Reading = { fps: number; worst: number; nodes: number; heap: number | null; freezes: number; imgs: number; at: string; where: string; pics: string };
+type Reading = { fps: number; worst: number; nodes: number; heap: number | null; freezes: number; imgs: number; at: string; where: string; pics: string; rpc: ReturnType<typeof giftRpcStats> };
 
 
 // Where the page elements are: the biggest groups of elements (so the heavy part of the game can be named) and the pictures counted by folder.
@@ -65,6 +66,7 @@ export function PerfMeter({ lite }: { lite?: boolean }) {
         freezes: longTasks.current.length,
         imgs: document.images.length,
         at: new Date().toLocaleTimeString(),
+        rpc: giftRpcStats(),
         ...detail.current,
       });
       frames = 0;
@@ -73,7 +75,7 @@ export function PerfMeter({ lite }: { lite?: boolean }) {
     return () => { stop = true; cancelAnimationFrame(raf); window.clearInterval(timer); observer?.disconnect(); };
   }, []);
   if (!reading) return null;
-  const line = `FPS ${reading.fps}, slowest frame ${reading.worst} ms, elements ${reading.nodes}, images ${reading.imgs}, heap ${reading.heap ?? "?"} MB, freezes(10s) ${reading.freezes}, lite=${lite ? "ON" : "off"}, BIGGEST: ${reading.where}, PICTURES: ${reading.pics}, ${typeof navigator !== "undefined" ? navigator.userAgent : ""}`;
+  const line = `FPS ${reading.fps}, slowest frame ${reading.worst} ms, elements ${reading.nodes}, images ${reading.imgs}, heap ${reading.heap ?? "?"} MB, freezes(10s) ${reading.freezes}, lite=${lite ? "ON" : "off"}, GIFT-SERVER(10s) calls ${reading.rpc.n} avg ${reading.rpc.avg} ms max ${reading.rpc.max} ms failed ${reading.rpc.fail} waiting ${reading.rpc.pending}, BIGGEST: ${reading.where}, PICTURES: ${reading.pics}, ${typeof navigator !== "undefined" ? navigator.userAgent : ""}`;
   const bad = reading.fps < 30 || reading.worst > 120;
   return (
     <button type="button" onClick={() => { try { void navigator.clipboard.writeText(line).then(() => { setCopied(true); window.setTimeout(() => setCopied(false), 1500); }); } catch { /* clipboard is blocked */ } }}
@@ -81,6 +83,7 @@ export function PerfMeter({ lite }: { lite?: boolean }) {
       <span className="block">FPS <b>{reading.fps}</b> · slowest <b>{reading.worst}</b> ms</span>
       <span className="block">elements <b>{reading.nodes}</b> · images <b>{reading.imgs}</b></span>
       <span className="block">heap <b>{reading.heap ?? "?"}</b> MB · freezes <b>{reading.freezes}</b></span>
+      <span className="block">gift server <b>{reading.rpc.avg}</b> ms avg · <b>{reading.rpc.max}</b> max · calls <b>{reading.rpc.n}</b> · failed <b>{reading.rpc.fail}</b> · waiting <b>{reading.rpc.pending}</b></span>
       <span className="block text-[9px] opacity-80">{copied ? "copied ✓" : "tap = copy"}</span>
     </button>
   );
