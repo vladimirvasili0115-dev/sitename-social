@@ -2157,7 +2157,38 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   function searchTracks(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const id = youtubeId(query);
-    if (id) { setTrackState("idle"); return setTracks([{ id, title: "YouTube" }]); }
+    if (id) {
+      setTrackState("idle");
+      // A pasted link has no title yet: it is looked up (own lists, this device, then YouTube) so the chat shows the song's name, not the word "YouTube".
+      const known = [...favs, ...recent].find((item) => item.id === id && item.title && item.title !== "YouTube");
+      let title = known?.title ?? "";
+      if (!title) { try { title = window.localStorage.getItem(`bottle-yt-title:${id}`) ?? ""; } catch { /* no storage */ } }
+      setTracks([{ id, title: title || "YouTube", duration: known?.duration }]);
+      if (!title) {
+        const apply = (found: string) => {
+          if (!found) return;
+          try { window.localStorage.setItem(`bottle-yt-title:${id}`, found); } catch { /* storage is full or blocked */ }
+          setTracks((list) => list.map((item) => (item.id === id ? { ...item, title: found } : item)));
+        };
+        void (async () => {
+          const key = (process.env.NEXT_PUBLIC_YOUTUBE_API_KEY ?? "").split(",").map((item) => item.trim()).filter(Boolean)[0];
+          try {
+            if (key) {
+              const res = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${id}&key=${key}`);
+              if (res.ok) {
+                const item = ((await res.json()) as { items?: { snippet: { title: string } }[] }).items?.[0];
+                if (item?.snippet?.title) return apply(item.snippet.title);
+              }
+            }
+          } catch { /* try the next way */ }
+          try {
+            const res = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(`https://www.youtube.com/watch?v=${id}`)}&format=json`);
+            if (res.ok) apply(((await res.json()) as { title?: string }).title ?? "");
+          } catch { /* the title stays "YouTube" */ }
+        })();
+      }
+      return;
+    }
     if (query.trim().length >= 2) void loadTracks(query.trim());
   }
   function sendMp3(event: FormEvent<HTMLFormElement>) {
