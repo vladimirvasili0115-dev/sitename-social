@@ -5,7 +5,7 @@ import { isRemoteId } from "./remoteProfiles";
 import { invisibleStore, settingsStore } from "./stores";
 import { supabase } from "./supabase";
 
-type Prefs = Partial<Pick<SettingsState, "theme" | "homeStyle" | "notifications" | "autoplay" | "reelsMuted">> & { invisible?: Partial<InvisibleState> };
+type Prefs = Partial<Pick<SettingsState, "theme" | "notifications" | "autoplay" | "reelsMuted">> & { invisible?: Partial<InvisibleState> };
 type Row = { privacy: Partial<SettingsState["privacy"]> | null; prefs: Prefs | null };
 
 let userId: string | null = null;
@@ -32,7 +32,6 @@ async function load(id: string) {
   settingsStore.write({
     ...local,
     theme: prefs.theme === "light" || prefs.theme === "dark" ? prefs.theme : local.theme,
-    homeStyle: prefs.homeStyle === "live" || prefs.homeStyle === "neon" || prefs.homeStyle === "social" || prefs.homeStyle === "classic" ? prefs.homeStyle : local.homeStyle,
     autoplay: typeof prefs.autoplay === "boolean" ? prefs.autoplay : local.autoplay,
     reelsMuted: typeof prefs.reelsMuted === "boolean" ? prefs.reelsMuted : local.reelsMuted,
     notifications: { ...local.notifications, ...(prefs.notifications ?? {}) },
@@ -48,8 +47,8 @@ async function load(id: string) {
 async function push() {
   if (!supabase || !ready || !userId) return;
   const id = userId;
-  const { theme, homeStyle, notifications, autoplay, reelsMuted, privacy, blocked } = settingsStore.read();
-  const prefs: Prefs = { theme, homeStyle, notifications, autoplay, reelsMuted, invisible: invisibleStore.read() };
+  const { theme, notifications, autoplay, reelsMuted, privacy, blocked } = settingsStore.read();
+  const prefs: Prefs = { theme, notifications, autoplay, reelsMuted, invisible: invisibleStore.read() };
   const { error } = await supabase.from("user_settings").upsert({ user_id: id, privacy, prefs, updated_at: new Date().toISOString() });
   if (error) {
     // The account no longer exists (deleted): stop syncing instead of repeating the error.

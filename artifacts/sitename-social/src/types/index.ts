@@ -51,7 +51,6 @@ export type PrivacyKey = "profile" | "messages" | "requests" | "friendsList" | "
 export type NotificationKey = "messages" | "requests" | "likes" | "gifts" | "guests" | "groups" | "sound" | "email";
 export type SettingsState = {
   theme: "dark" | "light";
-  homeStyle?: "classic" | "live" | "neon" | "social";
   privacy: Record<PrivacyKey, Audience>;
   notifications: Record<NotificationKey, boolean>;
   autoplay: boolean;
