@@ -39,6 +39,9 @@ export type StatKind = "songs" | "kisses" | "smiles";
 export type StatFreeze = Record<string, Partial<Record<StatKind, boolean>>>;
 export const statFreezeGet = (ids: string[]) => call<StatFreeze>("admin_stat_freeze_get", { ids });
 export const statFreezeSet = (id: string, kind: StatKind, on: boolean) => call<boolean>("admin_stat_freeze", { target: id, p_kind: kind, p_on: on });
+export type GiftAllow = Record<string, Record<string, boolean>>;
+export const giftAllowGet = (ids: string[]) => call<GiftAllow>("admin_gift_allow_get", { ids });
+export const giftAllowSet = (id: string, gift: string, on: boolean) => call<boolean>("admin_gift_allow", { target: id, p_gift: gift, p_on: on });
 export const gameState = (id: string) => call<GameState>("admin_game_state", { target: id });
 export const gameGrant = (id: string, kind: "vip" | "top" | "price" | "influence" | "admire_block" | "dj" | "kisses" | "smiles" | "chances" | "kiss_fire" | "refuse_slap", amount: number) => call<GameState>("admin_game_grant", { target: id, p_kind: kind, amount });
 // VIP for every player at once (owner and moderators); days are added on top of any VIP someone already has.

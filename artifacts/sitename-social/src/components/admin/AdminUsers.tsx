@@ -2,10 +2,10 @@
 import { VerifiedMark } from "@/components/ui/VerifiedMark";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { Palette, Eye, EyeOff, KeyRound, Award, HeartOff, Lock, LockOpen, BadgeCheck, Ban, ChevronDown, Coins, Crown, Gamepad2, Heart, ShieldCheck, ShieldOff, Trash2, Undo2 } from "lucide-react";
+import { Palette, Eye, EyeOff, KeyRound, Award, HeartOff, Lock, LockOpen, Wine, BadgeCheck, Ban, ChevronDown, Coins, Crown, Gamepad2, Heart, ShieldCheck, ShieldOff, Trash2, Undo2 } from "lucide-react";
 import { useSyncExternalStore } from "react";
 import { refreshVerified, verifiedStore } from "@/lib/verifiedSync";
-import { banUser, deleteUser, fetchAdminUsers, fetchUserDetail, grantCoins, grantHearts, setModerator, setVerified, vipAll, vipCount, gesturesOpenGet, gesturesOpenSet, setNameColor, gameState, gameGrant, gameFlags, statFreezeGet, statFreezeSet, type StatKind, type StatFreeze, type GameFlags, type GameState, type AdminUser, type UserDetail } from "@/lib/adminSync";
+import { banUser, deleteUser, fetchAdminUsers, fetchUserDetail, grantCoins, grantHearts, setModerator, setVerified, vipAll, vipCount, gesturesOpenGet, gesturesOpenSet, setNameColor, gameState, gameGrant, gameFlags, statFreezeGet, statFreezeSet, giftAllowGet, giftAllowSet, type GiftAllow, type StatKind, type StatFreeze, type GameFlags, type GameState, type AdminUser, type UserDetail } from "@/lib/adminSync";
 import type { TranslationKey } from "@/i18n/LanguageProvider";
 import { initialsAvatar } from "@/lib/avatar";
 import { formatDay } from "@/lib/datetime";
@@ -55,9 +55,12 @@ export function AdminUsers({ owner }: { owner: boolean }) {
   const [flags, setFlags] = useState<Record<string, GameFlags>>({});
   // Ratings (kisses, songs, smiles) that the admin froze: nobody can change them any more, only the admin.
   const [frozen, setFrozen] = useState<StatFreeze>({});
+  // The cherry cocktail is hidden for new accounts: here the admin allows it for a player.
+  const [allowed, setAllowed] = useState<GiftAllow>({});
   const loadFlags = useCallback((ids: string[]) => {
     if (!ids.length) return;
     void gameFlags(ids).then((value) => { if (value && typeof value === "object") setFlags((cur) => ({ ...cur, ...value })); });
+    void giftAllowGet(ids).then((value) => { if (value && typeof value === "object") setAllowed((cur) => ({ ...cur, ...Object.fromEntries(ids.map((id) => [id, {}])), ...value })); });
     void statFreezeGet(ids).then((value) => { if (value && typeof value === "object") setFrozen((cur) => ({ ...cur, ...Object.fromEntries(ids.map((id) => [id, {}])), ...value })); });
   }, []);
   const load = useCallback((search: string) => void fetchAdminUsers(search).then((list) => {
@@ -85,6 +88,10 @@ export function AdminUsers({ owner }: { owner: boolean }) {
   // VIP and TOP stay until they are taken back (about ten years).
   async function toggleGame(id: string, kind: "vip" | "top", on: boolean) {
     await run(id, async () => (await gameGrant(id, kind, on ? 0 : 3650)) !== null);
+    loadFlags([id]);
+  }
+  async function toggleAllow(id: string, gift: string, on: boolean) {
+    await run(id, async () => (await giftAllowSet(id, gift, !on)) !== null);
     loadFlags([id]);
   }
   async function toggleFreeze(id: string, kind: StatKind, on: boolean) {
@@ -159,6 +166,7 @@ export function AdminUsers({ owner }: { owner: boolean }) {
                     <button disabled={locked} onClick={() => void toggleGame(user.id, "top", Boolean(flags[user.id]?.top))} className={cn(action, flags[user.id]?.top ? "border-[#CA8A04] text-[#CA8A04]" : "")}><Award size={14} />{t(flags[user.id]?.top ? "admin.topOff" : "admin.topOn")}</button>
                     <button disabled={locked} onClick={() => void run(user.id, async () => (await gameGrant(user.id, "admire_block", flags[user.id]?.block ? 0 : 1)) !== null)} className={cn(action, flags[user.id]?.block ? "border-danger text-danger" : "")}><HeartOff size={14} />{t(flags[user.id]?.block ? "admin.admireUnblock" : "admin.admireBlock")}</button>
                     {([["kisses", "Öpüş"], ["songs", "Musiqi"], ["smiles", "Smayl"]] as [StatKind, string][]).map(([kind, label]) => { const on = Boolean(frozen[user.id]?.[kind]); return <button key={kind} disabled={locked} onClick={() => void toggleFreeze(user.id, kind, on)} className={cn(action, on ? "border-danger text-danger" : "")}>{on ? <LockOpen size={14} /> : <Lock size={14} />}{`${label} ${on ? "dondurulub (aç)" : "dondur"}`}</button>; })}
+                    {(() => { const on = Boolean(allowed[user.id]?.["c:cherry"]); return <button disabled={locked} onClick={() => void toggleAllow(user.id, "c:cherry", on)} className={cn(action, on ? "border-accent text-accent" : "")}><Wine size={14} />{on ? "Kokteyl icazəli (al)" : "Kokteyl icazə ver"}</button>; })()}
                     <button disabled={locked} onClick={() => setGameFor(gameFor === user.id ? null : user.id)} aria-expanded={gameFor === user.id} className={action}><Gamepad2 size={14} />{t("admin.game")}</button>
                     <button disabled={locked} onClick={() => setColorFor(colorFor === user.id ? null : user.id)} aria-expanded={colorFor === user.id} className={action}><Palette size={14} /><span className={nameColorClass(nameColors[user.id])}>{t("admin.nameColor")}</span></button>
                     {user.email && supabase ? <button disabled={locked || resetSent[user.id]} onClick={() => { if (!supabase || !user.email) return; void supabase.auth.resetPasswordForEmail(user.email, { redirectTo: `${window.location.origin}/reset-password` }).then(({ error }) => setResetSent((value) => ({ ...value, [user.id]: !error }))); }} title={t("admin.resetHint")} className={action}><KeyRound size={14} />{t(resetSent[user.id] ? "admin.resetSent" : "admin.resetPass")}</button> : null}

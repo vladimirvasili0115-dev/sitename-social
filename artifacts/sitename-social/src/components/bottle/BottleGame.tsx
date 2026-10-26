@@ -36,7 +36,7 @@ import { supabase } from "@/lib/supabase";
 import { refreshFriends } from "@/lib/friendsSync";
 import { ensureMessagesLoaded, openRemoteChat, remoteChats, sendRemoteMessage } from "@/lib/messagesSync";
 import { uploadBlob } from "@/lib/media";
-import { bottleLogIp, bottleAdminIpLookup, type BottleIpRow, bottleAnswer, bottleAchSync, bottleAchView, bottleGesture, bottleSmiles, bottleBuySmiles, bottleProgress, bottleGesturesOpen, bottleSkin, bottleBuyChances, bottleJoin, bottleMove, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleProfile, type BottleProfile, bottleDaily, bottleItems, bottleItemBuy, bottleBooster, bottleTutorial, bottleAdminIds, type BottleItems, bottleLeagueInfo, bottleLeagueClaim, type BottleLeague, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleKickPrice, bottleGift, bottleGiftMany, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, bottleClaim, type BottleState, type BottleSeat, bottleEffectOf, bottleYtGet, bottleYtPut, bottleTableGifts, type BottleSeatGift } from "@/lib/bottleSync";
+import { bottleLogIp, bottleAdminIpLookup, type BottleIpRow, bottleAnswer, bottleAchSync, bottleAchView, bottleGesture, bottleSmiles, bottleGiftAllow, bottleBuySmiles, bottleProgress, bottleGesturesOpen, bottleSkin, bottleBuyChances, bottleJoin, bottleMove, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleProfile, type BottleProfile, bottleDaily, bottleItems, bottleItemBuy, bottleBooster, bottleTutorial, bottleAdminIds, type BottleItems, bottleLeagueInfo, bottleLeagueClaim, type BottleLeague, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleKickPrice, bottleGift, bottleGiftMany, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, bottleClaim, type BottleState, type BottleSeat, bottleEffectOf, bottleYtGet, bottleYtPut, bottleTableGifts, type BottleSeatGift } from "@/lib/bottleSync";
 import { ytHint, ytReason } from "./ytHints";
 import { BonusMarket, EnigmaEffect, arrivalLabel, marketLabel } from "./BonusMarket";
 
@@ -646,6 +646,15 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [vip, setVip] = useState(false);
   // Admins: everything in the game is open for them (to test it), and their seat and card look different.
   const iAmAdmin = useIsAdmin() === true;
+  // The cherry cocktail is hidden for accounts the admin did not allow (the server refuses it too).
+  const [giftAllow, setGiftAllow] = useState<string[]>([]);
+  useEffect(() => {
+    if (!online || !net?.me) return;
+    let alive = true;
+    void bottleGiftAllow().then((list) => { if (alive && Array.isArray(list)) setGiftAllow(list); });
+    return () => { alive = false; };
+  }, [online, net?.me]);
+  const giftHidden = (name: string) => name === "cherry" && !iAmAdmin && online && !giftAllow.includes("c:cherry");
 
   const [adminIds, setAdminIds] = useState<string[]>([]);
   useEffect(() => { if (online) void bottleAdminIds().then((ids) => { if (Array.isArray(ids)) setAdminIds(ids); }); }, [online]);
@@ -2557,6 +2566,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const stopHold = () => { if (hold.current) window.clearInterval(hold.current); hold.current = null; };
   const cancelPress = () => { if (pressed.current) window.clearTimeout(pressed.current.timer); pressed.current = null; stopHold(); };
   function giveGift(index: number, gift: string, price: number, need?: number) {
+    if (gift === "c:cherry" && giftHidden("cherry")) return false;
     if (gift.startsWith("song:")) { openSong(index); if (gift === "song:mp3") { setSongTab("mp3"); if (!tracks.length) void loadTracks(""); } return false; }
     if (need === -1 && !vip) { openLock("vip", 1, { gift }); return false; }
     if (need && need > 0) { const rule = GIFT_RULES[gift] ?? ["kisses", lockedGifts.find(([id]) => id === gift)?.[2] ?? need]; openLock(rule[0], rule[1], { gift }); return false; }
@@ -3779,7 +3789,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
               {(() => {
                 // Like the original gift list: the gifts you can send first, then the ones still locked
                 // (by kisses, from the nearest to the farthest, and the VIP ones last). Locked gifts are grey with a lock.
-                const all = [...(iAmAdmin ? [["c:heart1000", 1000, 0] as [string, number, number]] : []), ...giftChoices.slice(0, 2), ...customGiftNames(art).filter((name) => !name.startsWith("ges_") && name !== "heart1000").map((name) => [`c:${name}`, GIFT_PRICES[name] ?? customPrice(name), missing(GIFT_RULES[`c:${name}`], progress)] as [string, number, number]), ...giftChoices.slice(2), ...lockedGifts.map(([gift, price, need]) => [gift, price, Math.max(0, need - progress.kisses)] as [string, number, number])]
+                const all = [...(iAmAdmin ? [["c:heart1000", 1000, 0] as [string, number, number]] : []), ...giftChoices.slice(0, 2), ...customGiftNames(art).filter((name) => !name.startsWith("ges_") && name !== "heart1000" && !giftHidden(name)).map((name) => [`c:${name}`, GIFT_PRICES[name] ?? customPrice(name), missing(GIFT_RULES[`c:${name}`], progress)] as [string, number, number]), ...giftChoices.slice(2), ...lockedGifts.map(([gift, price, need]) => [gift, price, Math.max(0, need - progress.kisses)] as [string, number, number])]
                   .map(([gift, price, need]) => [gift, price, need ?? 0] as [string, number, number]);
                 const isLocked = (need: number) => (need === -1 ? !vip : need > 0);
                 const open = all.filter(([, , need]) => !isLocked(need));
