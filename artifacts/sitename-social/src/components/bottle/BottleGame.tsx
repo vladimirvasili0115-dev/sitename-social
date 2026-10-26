@@ -29,6 +29,7 @@ import { FlightCanvas, type CanvasFlight, type FlightGeometry } from "./FlightCa
 import { FIRST_ORIGINAL, FRAME_PRICE, FrameArt, ORIGINAL_FRAMES, frameLooks, frameStone } from "./FrameArt";
 import { PassPanel, type PassData } from "./PassPanel";
 import { OnceImg } from "./OnceImg";
+import { PerfMeter } from "./PerfMeter";
 import { ActivePanel, ComplimentPill, ComplimentsPanel, InvitePanel, ShopPanel, emojiSrc } from "./ShopPanels";
 import { bumpStat, markVisit, readStats, syncStats } from "./achievements";
 import { BottleSvg, WaterBottleSvg, WoodTable } from "./BottleArt";
@@ -1587,6 +1588,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // Test switch: open the game as /bottle/?nochat=1 to run it without the chat list (to see how much the chat costs).
   const [noChat, setNoChat] = useState(false);
   useEffect(() => { try { setNoChat(new URLSearchParams(window.location.search).get("nochat") === "1"); } catch { /* no query */ } }, []);
+  // Measuring panel (FPS, elements, memory) for slow phones: /bottle/?perf=1
+  const [perf, setPerf] = useState(false);
+  useEffect(() => { try { setPerf(new URLSearchParams(window.location.search).get("perf") === "1"); } catch { /* no query */ } }, []);
   useEffect(() => {
     try {
       const q = new URLSearchParams(window.location.search).get("pixi");
@@ -2948,6 +2952,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           </div>
         );
       })() : null}
+      {perf ? <PerfMeter /> : null}
       {packNote?.kind === "ok" ? (() => {
         const done: Record<string, { title: string; text: string; ok: string }> = {
           az: { title: "Bonus alındı!", text: "Hesabına əlavə olundu", ok: "Tamam" },
