@@ -198,6 +198,8 @@ function PackNote({ note, locale }: { note: { kind: "wait" | "ok" | "balance" | 
   if (note.kind === "fail") return <>{w.fail}</>;
   return <>{w.balance.replace("{need}", note.need ? `${(note.need / 100).toLocaleString("ru-RU")} ₼` : "?")} <a href="/market/" target="_blank" rel="noopener" className="underline">{w.top}</a></>;
 }
+// Auto-clicker guard: at most this many gifts a second from one device (enough for fast tapping at a full table of 12).
+const GIFT_BUCKET = 120;
 const BIGGER_CORNER = /^(cherry|makarov|revolver)$/;
 const BIGGER_BY = 1.2;
 const CORNER_ALL_BY = 1.7; // every other gift on the bottom-right corner is 1.7x bigger (they looked tiny next to the photo)
@@ -2433,18 +2435,22 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   }
   // Auto-clicker guard: at most 40 gifts a second from this device (a hold-to-send stream to 10 people fits in it).
   // Extra clicks are simply ignored (no hearts taken), so the page never drowns in its own gifts.
-  const giftBucket = useRef({ tokens: 40, at: 0 });
+  const giftBucket = useRef({ tokens: GIFT_BUCKET, at: 0 });
+  // Tokens are taken for the whole group at once (everyone at the table or nobody), so a fast tapper never leaves the same last seats without a gift.
+  const groupPaid = useRef(false);
+  function takeGiftTokens(count: number) {
+    const now = performance.now();
+    const bucket = giftBucket.current;
+    bucket.tokens = Math.min(GIFT_BUCKET, bucket.tokens + ((now - bucket.at) / 1000) * GIFT_BUCKET);
+    bucket.at = now;
+    if (bucket.tokens < count) return false;
+    bucket.tokens -= count;
+    return true;
+  }
   const soundAt = useRef(0);
   const giftSound = (gift: string, moment: "send" | "land") => { if (silentRef.current) return; const now = performance.now(); if (now - soundAt.current < 70) return; soundAt.current = now; playGiftSound(gift, moment); };
   function sendGift(index: number, gift: string, price: number, ms = 5200) {
-    {
-      const now = performance.now();
-      const bucket = giftBucket.current;
-      bucket.tokens = Math.min(40, bucket.tokens + ((now - bucket.at) / 1000) * 40);
-      bucket.at = now;
-      if (bucket.tokens < 1) return true; // too fast: skipped without stopping a hold-to-send stream
-      bucket.tokens -= 1;
-    }
+    if (!groupPaid.current && !takeGiftTokens(1)) return true; // too fast: skipped without stopping a hold-to-send stream
     const seed = 1 + Math.floor(Math.random() * 2e9); // goes to the server with the gift, so every screen puts it in the same spot
     ms = ms <= 1800 ? 4000 : 6000; // a single gift flies 6 s, a press-and-hold stream 4 s
     if (gift.startsWith("c:") && colorSteps.has(gift.slice(2))) gift = `c:${nextColor(gift.slice(2))}`; // one colour per tap, in order
@@ -2622,7 +2628,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (!targets.length) { setGiftNote(t("bottle.pickReceivers")); return false; }
     if (gift.startsWith("song:")) { giveGift(targets[0], gift, price, need); setSongMany(targets); return false; }
     let sent = false;
-    for (const index of targets) { if (!giveGift(index, gift, price, need)) break; sent = true; }
+    if (!takeGiftTokens(targets.length)) return true; // too fast for the whole group: this tap is skipped as a whole, nobody gets half of it
+    groupPaid.current = true;
+    try { for (const index of targets) { if (!giveGift(index, gift, price, need)) break; sent = true; } } finally { groupPaid.current = false; }
     if (sent && targets.length > 1) bumpStat("multi");
     return sent;
   }
@@ -2635,7 +2643,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       if (giveMany(targets, gift, price, need) && !gift.startsWith("song:")) hold.current = window.setInterval(() => {
         const now = ids.map((id) => playersRef.current.findIndex((item) => item.id === id && !item.empty)).filter((index) => index >= 0);
         if (!now.length) return stopHold();
-        for (const index of now) if (!sendGift(index, gift, price, 1800)) return stopHold();
+        if (!takeGiftTokens(now.length)) return; // the whole round or nothing
+        groupPaid.current = true;
+        try { for (const index of now) if (!sendGift(index, gift, price, 1800)) return stopHold(); } finally { groupPaid.current = false; }
       }, 300); // full speed: no thinning of the stream
     }, 380) };
     pressed.current = state;
