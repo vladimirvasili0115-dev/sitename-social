@@ -22,8 +22,8 @@ export const formatActive = (secs: number, t: (key: TranslationKey) => string) =
 // The original bank (bottle-html5 BankDialog + bank CSS): a pink window with the heart pattern on top and
 // 90×146 white cards, each with a coloured stripe, a picture and a small button. Our own cards (active play,
 // season pass, channel, VIP, friends, compliments) are drawn the same way as the original's.
-export function ShopPanel({ hearts, activeSecs, payNote, onActive, onTelegram, onVip, onInvite, onCompliments, onPack, onPass }: {
-  hearts: number; activeSecs: number; payNote: boolean; onActive: () => void; onTelegram: () => void; onVip: () => void; onInvite: () => void; onCompliments: () => void; onPack: () => void; onPass: () => void;
+export function ShopPanel({ hearts, activeSecs, payNote, onActive, onTelegram, onVip, onInvite, onCompliments, onPack, onPass, packNote }: {
+  hearts: number; activeSecs: number; payNote: boolean; packNote?: ReactNode; onActive: () => void; onTelegram: () => void; onVip: () => void; onInvite: () => void; onCompliments: () => void; onPack: (pack: { hearts: number; price: number }) => void; onPass: () => void;
 }) {
   const { t } = useTranslation();
   const O = "/custom/orig/";
@@ -58,11 +58,12 @@ export function ShopPanel({ hearts, activeSecs, payNote, onActive, onTelegram, o
         {shopPacks.map((pack, i) => card(`p${pack.hearts}`, "bank_gold_bg",
           <><span className="pl-[18px] font-bold text-[rgb(255,62,0)] bg-no-repeat [background-position:left_-1px] [background-size:17px_18px]" style={bg("bank_heart")}>{pack.hearts.toLocaleString("ru-RU")}</span>{pack.bonus ? <span className="-mt-[3px] text-[11px] text-[rgb(255,143,0)]">{pack.bonus}% {t("bottle.bankBonus")}</span> : null}</>,
           <span className="relative block bg-contain bg-no-repeat" style={{ ...bg(`bank_opt_${shopPacks.length - i}`), ...[{ w: 50, h: 24 }, { w: 72, h: 33 }, { w: 55, h: 41 }, { w: 68, h: 42 }, { w: 63, h: 50 }, { w: 88, h: 52 }, { w: 86, h: 53 }].map(({ w, h }) => ({ width: w, height: h }))[Math.min(6, shopPacks.length - i - 1)] }} />,
-          btn(green, onPack, <span className="tabular-nums">{pack.price.toLocaleString("ru-RU")} {t("bottle.currency")}</span>),
+          btn(green, () => onPack(pack), <span className="tabular-nums">{pack.price.toLocaleString("ru-RU")} {t("bottle.currency")}</span>),
           pack.tag ? <span className="absolute -left-1 -right-1 -top-1 z-[1] mx-auto flex h-[18px] w-fit min-w-16 max-w-[98px] justify-center rounded-[3px] px-1.5 text-[8.5px] font-bold text-white shadow-[0_1px_2px_rgba(0,0,0,0.25)]" style={{ backgroundColor: pack.tag === "best" ? "#E6007E" : "#A24DC2" }}><span className="mt-[2px] whitespace-nowrap">{t(pack.tag === "best" ? "bottle.bankProfit" : "bottle.bankHit")}</span></span> : undefined))}
         {card("active", "bank_blue_bg", <span className={small}>{t("bottle.activeTitle")}<b className="mt-0.5 block text-[rgb(47,137,233)]">{formatActive(activeSecs, t)}</b></span>, <Pic e="⏰" className="h-10 w-10" />, btn(cyan, onActive, t("bottle.details")))}
         {card("channel", "bank_blue_bg", <span className={small}>{t("bottle.channelJoin")}</span>, <Pic e="🔔" className="h-10 w-10" />, btn(cyan, onTelegram, t("bottle.channelGo")))}
       </ul>
+      {packNote ? <div role="status" className="relative mx-2.5 mb-2.5 rounded-[5px] border border-[rgb(239,102,102)] bg-[rgb(255,245,207)] px-2 py-1.5 text-center text-[12px] font-bold text-[#424242]">{packNote}</div> : null}
       {payNote ? <p role="status" className="relative mx-2.5 mb-2.5 rounded-[5px] border border-[rgb(239,102,102)] bg-[rgb(255,245,207)] px-2 py-1.5 text-center text-[12px] font-bold text-[#424242]">{t("bottle.paySoon")}</p> : null}
     </div>
   );

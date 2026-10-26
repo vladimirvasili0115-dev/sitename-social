@@ -1,6 +1,6 @@
 import {
   Activity, Bookmark, CircleUserRound, Clapperboard, Compass, Gamepad2, Gift, Images,
-  Mail, Music2, Settings2, EyeOff, Users, UsersRound, Video,
+  Mail, Music2, Settings2, EyeOff, Users, UsersRound, Video, Wallet,
 } from "lucide-react";
 import type { NavItem } from "@/types";
 
@@ -20,4 +20,5 @@ export const navigation: NavItem[] = [
   { key: "nav.settings", href: "/settings", icon: Settings2 },
   { key: "nav.online", href: "/online", icon: Activity },
   { key: "nav.gifts", href: "/gifts", icon: Gift },
+  { key: "gifts.topUp", href: "/market", icon: Wallet },
 ];

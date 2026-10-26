@@ -36,7 +36,7 @@ import { supabase } from "@/lib/supabase";
 import { refreshFriends } from "@/lib/friendsSync";
 import { ensureMessagesLoaded, openRemoteChat, remoteChats, sendRemoteMessage } from "@/lib/messagesSync";
 import { uploadBlob } from "@/lib/media";
-import { bottleLogIp, bottleAdminIpLookup, type BottleIpRow, bottleAnswer, bottleAchSync, bottleAchView, bottleGesture, bottleSmiles, bottleGiftAllow, bottleBuySmiles, bottleProgress, bottleGesturesOpen, bottleSkin, bottleBuyChances, bottleJoin, bottleMove, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleProfile, type BottleProfile, bottleDaily, bottleItems, bottleItemBuy, bottleBooster, bottleTutorial, bottleAdminIds, type BottleItems, bottleLeagueInfo, bottleLeagueClaim, type BottleLeague, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleKickPrice, bottleGift, bottleGiftMany, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, bottleClaim, type BottleState, type BottleSeat, bottleEffectOf, bottleYtGet, bottleYtPut, bottleTableGifts, type BottleSeatGift } from "@/lib/bottleSync";
+import { bottleLogIp, bottleAdminIpLookup, type BottleIpRow, bottleAnswer, bottleAchSync, bottleAchView, bottleGesture, bottleSmiles, bottleBuyHearts, bottleGiftAllow, bottleBuySmiles, bottleProgress, bottleGesturesOpen, bottleSkin, bottleBuyChances, bottleJoin, bottleMove, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleProfile, type BottleProfile, bottleDaily, bottleItems, bottleItemBuy, bottleBooster, bottleTutorial, bottleAdminIds, type BottleItems, bottleLeagueInfo, bottleLeagueClaim, type BottleLeague, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleKickPrice, bottleGift, bottleGiftMany, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, bottleClaim, type BottleState, type BottleSeat, bottleEffectOf, bottleYtGet, bottleYtPut, bottleTableGifts, type BottleSeatGift } from "@/lib/bottleSync";
 import { ytHint, ytReason } from "./ytHints";
 import { BonusMarket, EnigmaEffect, arrivalLabel, marketLabel } from "./BonusMarket";
 
@@ -184,6 +184,19 @@ function gameName(raw: string | null | undefined): string {
   return [...words[0]].length <= 2 && words.length > 1 ? words.join(" ") : words[0];
 }
 // The cherry cocktail and the Makarov pistol are shown 1.2 times bigger; they grow towards the photo (the right edge and the bottom stay where they were).
+const packWords: Record<string, { wait: string; ok: string; balance: string; fail: string; top: string }> = {
+  az: { wait: "…", ok: "❤ {n} hesabına əlavə olundu!", balance: "Sayt balansın kifayət etmir ({need} lazımdır).", fail: "Alınmadı. Bir az sonra yenidən yoxla.", top: "Balansı artır" },
+  tr: { wait: "…", ok: "❤ {n} hesabına eklendi!", balance: "Site bakiyen yetmiyor ({need} gerekli).", fail: "Satın alınamadı. Biraz sonra tekrar dene.", top: "Bakiyeyi artır" },
+  ru: { wait: "…", ok: "❤ {n} добавлено на счёт!", balance: "Баланса сайта не хватает (нужно {need}).", fail: "Не удалось купить. Попробуй позже.", top: "Пополнить баланс" },
+  en: { wait: "…", ok: "❤ {n} added to your account!", balance: "Your site balance is not enough ({need} needed).", fail: "Could not buy. Try again in a moment.", top: "Top up balance" },
+};
+function PackNote({ note, locale }: { note: { kind: "wait" | "ok" | "balance" | "fail"; n?: number; need?: number }; locale: string }) {
+  const w = packWords[locale] ?? packWords.en;
+  if (note.kind === "wait") return <>{w.wait}</>;
+  if (note.kind === "ok") return <>{w.ok.replace("{n}", (note.n ?? 0).toLocaleString("ru-RU"))}</>;
+  if (note.kind === "fail") return <>{w.fail}</>;
+  return <>{w.balance.replace("{need}", String(note.need ?? "?"))} <a href="/market/" target="_blank" rel="noopener" className="underline">{w.top}</a></>;
+}
 const BIGGER_CORNER = /^(cherry|makarov|revolver)$/;
 const BIGGER_BY = 1.2;
 const CORNER_ALL_BY = 1.7; // every other gift on the bottom-right corner is 1.7x bigger (they looked tiny next to the photo)
@@ -792,6 +805,17 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [framePick, setFramePick] = useState<number | null>(null);
   const [frameNote, setFrameNote] = useState<string | null>(null);
   const [payNote, setPayNote] = useState(false);
+  // Bank packs are paid from the site balance (topped up on the site's market page).
+  const [packNote, setPackNote] = useState<{ kind: "wait" | "ok" | "balance" | "fail"; n?: number; need?: number } | null>(null);
+  async function buyHeartPack(pack: { hearts: number; price: number }) {
+    if (!online) return setPayNote(true);
+    setPayNote(false);
+    setPackNote({ kind: "wait" });
+    const result = await bottleBuyHearts(pack.hearts);
+    if (result && typeof result.hearts === "number") { heartsRef.current = result.hearts; setHearts(result.hearts); setPackNote({ kind: "ok", n: pack.hearts }); }
+    else if (result?.error === "balance") setPackNote({ kind: "balance", need: result.need });
+    else setPackNote({ kind: "fail" });
+  }
   const [tableNo, setTableNo] = useState(60);
   const [copied, setCopied] = useState(false);
   const [waitNote, setWaitNote] = useState(false);
@@ -3325,7 +3349,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   <button onClick={() => setPanel("wheel")} className="mt-2 w-full text-center text-xs font-bold text-white underline">{t("bottle.wheelBack")}</button>
                 </div>
               ) : panel === "shop" ? (
-                <ShopPanel hearts={hearts} activeSecs={activeSecs} payNote={payNote} onActive={() => setPanel("active")} onTelegram={() => (TELEGRAM_URL ? window.open(TELEGRAM_URL, "_blank", "noopener") : setPayNote(true))} onVip={() => { setPayNote(false); setPanel("vip"); }} onInvite={openInvite} onCompliments={() => setPanel("compliments")} onPack={() => setPayNote(true)} onPass={openPass} />
+                <ShopPanel hearts={hearts} activeSecs={activeSecs} payNote={payNote} onActive={() => setPanel("active")} onTelegram={() => (TELEGRAM_URL ? window.open(TELEGRAM_URL, "_blank", "noopener") : setPayNote(true))} onVip={() => { setPayNote(false); setPanel("vip"); }} onInvite={openInvite} onCompliments={() => setPanel("compliments")} onPack={(pack) => void buyHeartPack(pack)} packNote={packNote ? <PackNote note={packNote} locale={locale} /> : null} onPass={openPass} />
               ) : panel === "pass" ? (
                 <>
                   <PassPanel data={online ? passData : null} hearts={hearts} now={net?.now ?? Date.now()} onBuy={() => void passAction("buy")} onClaim={(level, premium) => void passAction({ level, premium })} onChest={() => void passAction("chest")} />

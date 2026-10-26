@@ -37,6 +37,8 @@ export const bottleCocktail = (to: string) => call<number>("bottle_cocktail", { 
 export const bottleBuyChances = (pack: number) => call<{ hearts: number; chances: number }>("bottle_buy_chances", { p_pack: pack });
 // Restricted gifts (the cherry cocktail) that the admin allowed for this account.
 export const bottleGiftAllow = () => call<string[]>("bottle_my_gift_allow");
+// A bank pack bought with the site balance (see the market page); the price is taken from the server's own table.
+export const bottleBuyHearts = (hearts: number) => call<{ hearts?: number; balance?: number; bought?: number; error?: "bad" | "balance"; need?: number }>("bottle_buy_hearts_pack", { p_hearts: hearts });
 export const bottleSmiles = () => call<number>("bottle_smiles");
 export const bottleBuySmiles = (pack: number) => call<{ hearts: number; smiles: number } | null>("bottle_buy_smiles", { p_pack: pack });
 export const bottleWheel = () => call<{ sector: number; hearts: number; chances: number }>("bottle_wheel_spin");
