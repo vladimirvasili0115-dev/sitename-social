@@ -1596,6 +1596,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // Measuring panel (FPS, elements, memory) for slow phones: /bottle/?perf=1
   // Automatic lite mode: while gifts are flying and the frame rate stays under 28 FPS for two seconds, new gifts fly and land as still pictures,
   // fireworks are skipped and the sky is capped. It turns itself off again after the gifts are gone. Test switch: ?lite=1 keeps it always on.
+  // The gift list shows its first tiles and adds more while you scroll (about 430 gifts at once were ~2300 page elements, the biggest load on weak phones).
+  const [giftLimit, setGiftLimit] = useState(60);
   const [lite, setLite] = useState(false);
   const liteRef = useRef(false);
   const flyingCount = useRef(0);
@@ -3884,7 +3886,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
               })}
             </div>
             ) : (
-            <div role="menu" className="min-h-0 flex-1 overflow-y-auto bg-white px-1.5 pb-2 pt-1">
+            <div role="menu" onScroll={(event) => { const el = event.currentTarget; if (el.scrollHeight - el.scrollTop - el.clientHeight < 600) setGiftLimit((value) => (value < 2000 ? value + 60 : value)); }} className="min-h-0 flex-1 overflow-y-auto bg-white px-1.5 pb-2 pt-1">
               {(() => {
                 // Like the original gift list: the gifts you can send first, then the ones still locked
                 // (by kisses, from the nearest to the farthest, and the VIP ones last). Locked gifts are grey with a lock.
@@ -3911,8 +3913,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 const head = (text: string, count: number) => <p className="sticky top-0 z-[1] flex items-center gap-2 bg-white/95 px-1.5 py-1.5 text-[12px] font-bold uppercase tracking-wide text-[#6B7280] backdrop-blur-sm"><span>{text}</span><span className="rounded-full bg-[#F3F4F6] px-1.5 text-[11px] tabular-nums">{count}</span><span className="h-px flex-1 bg-[#EEEEEE]" /></p>;
                 return <>
                   {head(t("bottle.giftsOpen"), open.length)}
-                  <div className={grid}>{open.map((item, index) => tile(item, index))}</div>
-                  {locked.length ? <>{head(t("bottle.giftsLocked"), locked.length)}<div className={grid}>{locked.map((item, index) => tile(item, 1000 + index))}</div></> : null}
+                  <div className={grid}>{open.slice(0, giftLimit).map((item, index) => tile(item, index))}</div>
+                  {locked.length && giftLimit > open.length ? <>{head(t("bottle.giftsLocked"), locked.length)}<div className={grid}>{locked.slice(0, giftLimit - open.length).map((item, index) => tile(item, 1000 + index))}</div></> : null}
                 </>;
               })()}
             </div>
