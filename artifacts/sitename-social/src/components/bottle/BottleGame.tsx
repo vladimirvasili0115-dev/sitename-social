@@ -363,7 +363,10 @@ function LeagueBadge({ league, className }: { league: number; className?: string
 // Shown for players who have no photo (the original shows a "NO PHOTO" silhouette).
 const NO_PHOTO = "/custom/profile/nophoto.svg";
 const DAILY_PRIZES = [2, 3, 5, 7, 10];
-function Gift({ id, className, anim, once }: { id: string; className?: string; anim?: boolean; once?: string | number }) {
+function Gift({ id, className, anim, once, lazy }: { id: string; className?: string; anim?: boolean; once?: string | number; lazy?: boolean }) {
+  // "lazy" is for the long gift list: its pictures load when they scroll into view, decode off the main thread and carry no shadow filter (hundreds of filters are slow on weak phones).
+  const shadow = lazy ? "" : "drop-shadow-[0_2px_2px_rgba(60,25,0,0.3)]";
+  const loadHints = lazy ? ({ loading: "lazy", decoding: "async" } as const) : ({ decoding: "async" } as const);
   const art = useCustomArt();
   const name = id.startsWith("c:") ? id.slice(2) : giftFileName(id);
   // Animated version (public/custom/anim) where the gift sits on the photo or flies.
@@ -371,11 +374,11 @@ function Gift({ id, className, anim, once }: { id: string; className?: string; a
   const animFile = anim ? customFile(art, `anim/${name}`) : null;
   if (animFile && once !== undefined) return <OnceImg src={animFile} freezeKey={once} className={cn("select-none object-contain drop-shadow-[0_2px_2px_rgba(60,25,0,0.3)]", className)} />;
   const custom = animFile || customFile(art, `gifts/${name}`);
-  if (custom) return <img src={custom} alt="" aria-hidden="true" draggable={false} className={cn("select-none object-contain drop-shadow-[0_2px_2px_rgba(60,25,0,0.3)]", className)} />;
+  if (custom) return <img src={custom} alt="" aria-hidden="true" draggable={false} {...loadHints} className={cn("select-none object-contain", shadow, className)} />;
   if (id.startsWith("song:")) return <img src={`/custom/orig/${id === "song:video" ? "audio_video_icon" : "audio_music_icon"}.svg`} alt="" aria-hidden="true" draggable={false} className={cn("select-none object-contain", className)} />;
   if (giftEmoji[id]) id = `e:${giftEmoji[id]}`;
   if (!id.startsWith("e:")) return <GiftArt id={id as GiftId} className={className} />;
-  return <img src={giftSrc(id.slice(2))} alt="" aria-hidden="true" draggable={false} className={cn("select-none object-contain drop-shadow-[0_2px_2px_rgba(60,25,0,0.3)]", className)} />;
+  return <img src={giftSrc(id.slice(2))} alt="" aria-hidden="true" draggable={false} {...loadHints} className={cn("select-none object-contain", shadow, className)} />;
 }
 // An own bottle from public/custom/bottles/<n>/: shadow under it, the bottle, then colour and light layers on top.
 function LayeredBottle({ set, n, className }: { set: Set<string>; n: number; className?: string }) {
@@ -2642,20 +2645,10 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (sent && targets.length > 1) bumpStat("multi");
     return sent;
   }
-  function pressGift(targets: number[], gift: string, price: number, need: number | undefined, x: number, y: number) {
+  function pressGift(_targets: number[], _gift: string, _price: number, _need: number | undefined, x: number, y: number) {
     cancelPress();
-    const state = { started: false, x, y, timer: window.setTimeout(() => {
-      state.started = true;
-      const ids = targets.map((index) => players[index]?.id).filter(Boolean);
-      // The stream follows the receivers by who they are: one who leaves the table drops out, and when nobody is left it stops.
-      if (giveMany(targets, gift, price, need) && !gift.startsWith("song:")) hold.current = window.setInterval(() => {
-        const now = ids.map((id) => playersRef.current.findIndex((item) => item.id === id && !item.empty)).filter((index) => index >= 0);
-        if (!now.length) return stopHold();
-        if (!takeGiftTokens(now.length)) return; // the whole round or nothing
-        groupPaid.current = true;
-        try { for (const index of now) if (!sendGift(index, gift, price, 1800)) return stopHold(); } finally { groupPaid.current = false; }
-      }, 300); // full speed: no thinning of the stream
-    }, 380) };
+    // A tap sends one gift when the finger is lifted. Pressing and holding sends nothing (there is no stream of gifts any more).
+    const state = { started: false, x, y, timer: window.setTimeout(() => { state.started = true; }, 380) };
     pressed.current = state;
   }
   function releaseGift(targets: number[], gift: string, price: number, need?: number) {
@@ -3878,9 +3871,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   const shut = isLocked(need);
                   const note = shut ? (need === -1 ? t("bottle.vipOnly") : lockNote("kisses", need)) : undefined;
                   return (
-                    <button key={`${gift}-${order}`} role="menuitem" aria-disabled={shut} onPointerDown={(event) => pressGift(giftTargets, gift, price, need, event.clientX, event.clientY)} onPointerMove={(event) => { const state = pressed.current; if (state && !state.started && Math.hypot(event.clientX - state.x, event.clientY - state.y) > 8) cancelPress(); }} onPointerUp={() => releaseGift(giftTargets, gift, price, need)} onPointerLeave={cancelPress} onPointerCancel={cancelPress} onContextMenu={(event) => event.preventDefault()} onKeyDown={(event) => { if (event.key === "Enter" && !event.repeat) giveMany(giftTargets, gift, price, need); }} aria-label={note ?? `${t("gifts.send")} ${price}`} title={note} className={cn("group flex touch-pan-y select-none flex-col items-center justify-around rounded-[9px] transition-colors duration-500 hover:bg-[#F2F2F2] active:bg-[#D1D1D1]", wide ? "h-[95px]" : "h-[84px]")}>
+                    <button key={`${gift}-${order}`} role="menuitem" aria-disabled={shut} onPointerDown={(event) => pressGift(giftTargets, gift, price, need, event.clientX, event.clientY)} onPointerMove={(event) => { const state = pressed.current; if (state && !state.started && Math.hypot(event.clientX - state.x, event.clientY - state.y) > 8) cancelPress(); }} onPointerUp={() => releaseGift(giftTargets, gift, price, need)} onPointerLeave={cancelPress} onPointerCancel={cancelPress} onContextMenu={(event) => event.preventDefault()} onKeyDown={(event) => { if (event.key === "Enter" && !event.repeat) giveMany(giftTargets, gift, price, need); }} aria-label={note ?? `${t("gifts.send")} ${price}`} title={note} className={cn("group flex [content-visibility:auto] [contain-intrinsic-size:auto_92px] touch-pan-y select-none flex-col items-center justify-around rounded-[9px] transition-colors duration-500 hover:bg-[#F2F2F2] active:bg-[#D1D1D1]", wide ? "h-[95px]" : "h-[84px]")}>
                       <span className={cn("relative flex items-center", wide ? "h-[60px]" : "h-[52px]")}>
-                        <Gift id={gift} className={cn("transition-transform duration-150 group-hover:scale-110", wide ? "h-[60px] w-[60px]" : "h-[50px] w-[50px]", shut && "grayscale")} />
+                        <Gift lazy id={gift} className={cn("transition-transform duration-150 group-hover:scale-110", wide ? "h-[60px] w-[60px]" : "h-[50px] w-[50px]", shut && "grayscale")} />
                       </span>
                       {shut
                         ? <span aria-hidden="true" className={cn("bg-contain bg-center bg-no-repeat", need === -1 ? "h-[18px] w-[39px]" : "h-[18px] w-[15px]")} style={{ backgroundImage: `url(/custom/orig/${need === -1 ? "store_lock_vip" : "store_lock"}.svg)` }} />
