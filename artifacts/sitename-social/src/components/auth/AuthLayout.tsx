@@ -25,13 +25,13 @@ export function AuthLayout({ title, subtitle, footer, children }: { title: strin
           <LanguageSwitcher />
         </header>
         <main className="grid flex-1 items-center gap-8 py-8 lg:grid-cols-[1.15fr_420px] lg:gap-16">
-          <section>
+          <section className="order-2 lg:order-1">
             <h2 className="max-w-[780px] text-[clamp(26px,4.2vw,58px)] font-extrabold leading-[1.08] tracking-[-0.02em] [text-shadow:0_2px_20px_rgba(0,0,0,0.5)]">{t("auth.photoTitle")}</h2>
             <p className="mt-4 text-[17px] font-semibold text-white/90 [text-shadow:0_1px_10px_rgba(0,0,0,0.5)] sm:text-xl">{t("auth.photoTagline")}</p>
             <GameStrip className={cn("mt-6 max-w-[720px]", photo ? "" : "lg:hidden")} />
             {photo ? null : <GameOrbit className="mt-2 hidden w-[min(100%,470px)] lg:block" />}
           </section>
-          <div className="w-full max-w-[420px] justify-self-center text-text lg:justify-self-end">
+          <div className="order-1 w-full max-w-[420px] justify-self-center text-text lg:order-2 lg:justify-self-end">
             <div className="rounded-2xl border border-white/25 bg-surface/95 p-5 shadow-[0_24px_60px_rgba(0,0,0,0.45)] backdrop-blur-md sm:p-6">
               <h1 className="text-[26px] font-semibold tracking-[-0.035em]">{title}</h1>
               <p className="mb-5 mt-1.5 text-sm leading-6 text-muted">{subtitle}</p>
