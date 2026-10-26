@@ -3972,7 +3972,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
               <div key={line.id} className="flex max-w-full items-start px-[7px]">
                 {photo(from)}
                 <div className="flex min-w-0 flex-1 flex-wrap items-start">
-                  {(line.gestures ?? [line.gesture]).map((id, n) => <img key={n} src={`/custom/anim/ges_${id}.webp`} alt="" className="-mb-1 ml-[4px] -mt-[2px] h-7 w-7 shrink-0 object-contain" />)}
+                  {/* a smiley in the chat plays once and then stands still */}{(line.gestures ?? [line.gesture]).map((id, n) => <OnceImg key={n} src={`/custom/anim/ges_${id}.webp`} freezeKey={`chat-${line.id}-${n}`} className="-mb-1 ml-[4px] -mt-[2px] h-7 w-7 shrink-0 object-contain" />)}
                 </div>
               </div>
             );
