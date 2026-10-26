@@ -76,7 +76,7 @@ function mergeLines(list: Line[], fresh: Line[]) {
     }
     // Smileys from the same player in a row stand next to each other in one chat row (and wrap to a new row when it is full), not one under the other.
     if (line.gesture && last && last.gesture && last.from === line.from) {
-      out[out.length - 1] = { ...last, gestures: [...(last.gestures ?? [last.gesture]), line.gesture].slice(-80) };
+      out[out.length - 1] = { ...last, gestures: [...(last.gestures ?? [last.gesture]), line.gesture].slice(-400) };
       continue;
     }
     out.push(line);
@@ -4029,7 +4029,12 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
               <div key={line.id} className="flex max-w-full items-start px-[7px]">
                 {photo(from)}
                 <div className="flex min-w-0 flex-1 flex-wrap items-start">
-                  {/* a smiley in the chat plays once and then stands still */}{(line.gestures ?? [line.gesture]).map((id, n) => <OnceImg key={n} src={`/custom/anim/ges_${id}.webp`} freezeKey={`chat-${line.id}-${n}`} className="-mb-1 ml-[4px] -mt-[2px] h-7 w-7 shrink-0 object-contain" />)}
+                  {/* a smiley in the chat plays once and then stands still */}{(() => {
+                    // The same smiley sent again and again stands once with a counter (×N): far fewer pictures and rows in the chat.
+                    const runs: { id: string; n: number }[] = [];
+                    for (const id of line.gestures ?? [line.gesture ?? ""]) { const last = runs[runs.length - 1]; if (last && last.id === id) last.n += 1; else runs.push({ id, n: 1 }); }
+                    return runs.map((run, n) => <span key={n} className="inline-flex items-end"><OnceImg src={`/custom/anim/ges_${run.id}.webp`} freezeKey={`chat-${line.id}-${n}`} className="-mb-1 ml-[4px] -mt-[2px] h-7 w-7 shrink-0 object-contain" />{run.n > 1 ? <b className="mb-0.5 ml-0.5 text-[12px] font-extrabold leading-none text-[#6B7280]">×{run.n}</b> : null}</span>);
+                  })()}
                 </div>
               </div>
             );
