@@ -1578,10 +1578,25 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (online) void bottleSpend(price);
     return true;
   };
+  // The first 10 of ANY rating (kisses, music, hearts, harem, smiles; all time) get the TOP badge by themselves (no admin needed); refreshed every 5 minutes.
+  const [autoTop, setAutoTop] = useState<Set<string>>(() => new Set());
+  useEffect(() => {
+    if (!online) return;
+    let alive = true;
+    const load = () => void Promise.all((["kisses", "songs", "dear", "influence", "smiles"] as const).map((kind) => bottleTop(kind, "all"))).then((all) => {
+      if (!alive) return;
+      const ids = new Set<string>();
+      for (const data of all) if (data && Array.isArray(data.list)) for (const row of data.list) if (row.place >= 1 && row.place <= 10) ids.add(row.id);
+      setAutoTop(ids);
+    });
+    load();
+    const timer = window.setInterval(load, 300000);
+    return () => { alive = false; window.clearInterval(timer); };
+  }, [online]);
   const topIds = new Set(seated.map((player) => ({ id: player.id, count: kisses[player.id] ?? 0 })).filter((item) => item.count > 0).sort((a, b) => b.count - a.count).slice(0, 3).map((item) => item.id));
   // A TOP badge given in the admin panel shows as well.
   // Online the TOP and VIP ribbons are the ones given in the admin panel; taking them back removes them.
-  if (online) { topIds.clear(); for (const player of seated) if (net?.seats.find((seat) => seat.id === (player.me ? net.me : player.id))?.top) topIds.add(player.id); }
+  if (online) { topIds.clear(); for (const player of seated) if (net?.seats.find((seat) => seat.id === (player.me ? net.me : player.id))?.top || autoTop.has(player.me ? net?.me ?? "" : player.id)) topIds.add(player.id); }
   const skinFilter = (n: number) => (n % 15 ? `hue-rotate(${(n % 15) * 24}deg) saturate(${n % 3 === 0 ? 1.4 : 1.1})` : undefined);
   const art = useCustomArt();
   // Picture of a flying gift for the canvas (null: drawn as before, e.g. the few vector gifts).
