@@ -363,6 +363,8 @@ function LeagueBadge({ league, className }: { league: number; className?: string
 // Shown for players who have no photo (the original shows a "NO PHOTO" silhouette).
 const NO_PHOTO = "/custom/profile/nophoto.svg";
 const DAILY_PRIZES = [2, 3, 5, 7, 10];
+// Lite mode (switched on by the game when the phone cannot keep up with a gift storm): gifts stay still pictures instead of animated ones.
+let liteGifts = false;
 function Gift({ id, className, anim, once, lazy }: { id: string; className?: string; anim?: boolean; once?: string | number; lazy?: boolean }) {
   // "lazy" is for the long gift list: its pictures load when they scroll into view, decode off the main thread and carry no shadow filter (hundreds of filters are slow on weak phones).
   const shadow = lazy ? "" : "drop-shadow-[0_2px_2px_rgba(60,25,0,0.3)]";
@@ -371,7 +373,7 @@ function Gift({ id, className, anim, once, lazy }: { id: string; className?: str
   const name = id.startsWith("c:") ? id.slice(2) : giftFileName(id);
   // Animated version (public/custom/anim) where the gift sits on the photo or flies.
   // With "once" the animation plays one time and then the gift stands still on its last frame (it never starts again).
-  const animFile = anim ? customFile(art, `anim/${name}`) : null;
+  const animFile = anim && !liteGifts ? customFile(art, `anim/${name}`) : null;
   if (animFile && once !== undefined) return <OnceImg src={animFile} freezeKey={once} className={cn("select-none object-contain drop-shadow-[0_2px_2px_rgba(60,25,0,0.3)]", className)} />;
   const custom = animFile || customFile(art, `gifts/${name}`);
   if (custom) return <img src={custom} alt="" aria-hidden="true" draggable={false} {...loadHints} className={cn("select-none object-contain", shadow, className)} />;
@@ -1592,6 +1594,30 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [noChat, setNoChat] = useState(false);
   useEffect(() => { try { setNoChat(new URLSearchParams(window.location.search).get("nochat") === "1"); } catch { /* no query */ } }, []);
   // Measuring panel (FPS, elements, memory) for slow phones: /bottle/?perf=1
+  // Automatic lite mode: while gifts are flying and the frame rate stays under 28 FPS for two seconds, new gifts fly and land as still pictures,
+  // fireworks are skipped and the sky is capped. It turns itself off again after the gifts are gone. Test switch: ?lite=1 keeps it always on.
+  const [lite, setLite] = useState(false);
+  const liteRef = useRef(false);
+  const flyingCount = useRef(0);
+  flyingCount.current = flying.length;
+  useEffect(() => {
+    let force = false;
+    try { force = new URLSearchParams(window.location.search).get("lite") === "1"; } catch { /* no query */ }
+    const set = (on: boolean) => { if (liteRef.current === on) return; liteRef.current = on; liteGifts = on; setLite(on); };
+    if (force) { set(true); return; }
+    let raf = 0; let last = 0; let frames = 0; let since = 0; let slow = 0; let calm = 0;
+    const loop = (now: number) => {
+      raf = requestAnimationFrame(loop);
+      if (!last) { last = now; since = now; return; }
+      frames += 1; last = now;
+      if (now - since < 1000) return;
+      const fps = (frames * 1000) / (now - since); frames = 0; since = now;
+      if (flyingCount.current > 0 && fps < 28) { slow += 1; calm = 0; if (slow >= 2) set(true); }
+      else { slow = 0; if (flyingCount.current === 0) { calm += 1; if (calm >= 5) set(false); } }
+    };
+    raf = requestAnimationFrame(loop);
+    return () => { cancelAnimationFrame(raf); liteGifts = false; };
+  }, []);
   const [perf, setPerf] = useState(false);
   useEffect(() => { try { setPerf(new URLSearchParams(window.location.search).get("perf") === "1"); } catch { /* no query */ } }, []);
   useEffect(() => {
@@ -2227,7 +2253,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     const { min, pct } = giftShare.current;
     if (gift !== "c:heart1000" && to >= 0 && from !== to && pct > 0 && price >= min) heartBurst(key + 0.5, to, Math.max(1, Math.floor((price * pct) / 100)));
     const level = fireworksLevel(price);
-    if (!level || to < 0) return;
+    if (!level || to < 0 || liteRef.current) return;
     if (showsRef.current >= 2) return; // at most two shows at once, so a flood of gifts does not freeze the page
     showsRef.current += 1;
     window.setTimeout(() => { showsRef.current -= 1; }, 1300 + [0, 2, 3, 4, 5][level] * 280 + 600);
@@ -2483,7 +2509,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       // My own gifts always fly on my screen: when the sky is full, the oldest gift from someone else makes room.
       // A gift already in the air is never removed before it arrives. When the sky is full, someone else's oldest gift makes room;
       // if all of them are mine, the new one simply lands without a flight.
-      setFlying((list) => [...list, { key, gift, look: plan.land, t0: performance.now(), from: meIndex, to: index, toId: player.id, moved: false, ms, mine: true, still: list.length >= 12, rot: plan.spot?.kind === "hatL" ? -45 : plan.spot?.kind === "hatR" ? 45 : plan.spot?.r ?? 0, fixed: plan.spot?.kind === "hatL" || plan.spot?.kind === "hatR", ...flightTo(plan, gift) }]); // no limit: every gift flies
+      setFlying((list) => [...list, { key, gift, look: plan.land, t0: performance.now(), from: meIndex, to: index, toId: player.id, moved: false, ms, mine: true, still: liteRef.current || list.length >= 12, rot: plan.spot?.kind === "hatL" ? -45 : plan.spot?.kind === "hatR" ? 45 : plan.spot?.r ?? 0, fixed: plan.spot?.kind === "hatL" || plan.spot?.kind === "hatR", ...flightTo(plan, gift) }]); // no limit: every gift flies
       window.setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))))), 20);
     }
     say({ from: "me", to: player.id, gift }); // the chat line is written when the gift leaves, not when it lands
@@ -2519,7 +2545,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     else giftSound(gift, "send");
     const plan = planLanding(gift, seed);
     {
-      if (!busy) setFlying((list) => ([...list, { key, gift, look: plan.land, t0: performance.now(), from: fromAt >= 0 ? fromAt : toAt, to: toAt, toId, moved: false, ms, still: list.length >= 12, rot: plan.spot?.kind === "hatL" ? -45 : plan.spot?.kind === "hatR" ? 45 : plan.spot?.r ?? 0, fixed: plan.spot?.kind === "hatL" || plan.spot?.kind === "hatR", ...flightTo(plan, gift) }]));
+      if (!busy) setFlying((list) => ([...list, { key, gift, look: plan.land, t0: performance.now(), from: fromAt >= 0 ? fromAt : toAt, to: toAt, toId, moved: false, ms, still: liteRef.current || list.length >= 12, rot: plan.spot?.kind === "hatL" ? -45 : plan.spot?.kind === "hatR" ? 45 : plan.spot?.r ?? 0, fixed: plan.spot?.kind === "hatL" || plan.spot?.kind === "hatR", ...flightTo(plan, gift) }]));
       window.setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))))), 20);
     }
     say({ from: fromId, to: toId, gift }); // the chat line is written when the gift leaves the sender
@@ -2945,7 +2971,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           </div>
         );
       })() : null}
-      {perf ? <PerfMeter /> : null}
+      {perf ? <PerfMeter lite={lite} /> : null}
       {packNote?.kind === "ok" ? (() => {
         const done: Record<string, { title: string; text: string; ok: string }> = {
           az: { title: "Bonus alındı!", text: "Hesabına əlavə olundu", ok: "Tamam" },
