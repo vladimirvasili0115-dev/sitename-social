@@ -3,7 +3,7 @@ import { useEffect, useMemo, useSyncExternalStore } from "react";
 import type { Conversation, Person } from "@/types";
 import { people } from "@/data/friends";
 import { initialConversations } from "@/data/messages";
-import { ensureMessagesLoaded, openRemoteChat, remoteChats, removeRemoteMessage, sendRemoteMessage } from "@/lib/messagesSync";
+import { clearRemoteChat, ensureMessagesLoaded, openRemoteChat, remoteChats, removeRemoteMessage, sendRemoteMessage } from "@/lib/messagesSync";
 import { createStore } from "@/lib/store";
 import { supabase } from "@/lib/supabase";
 import { useStore } from "@/lib/useStore";
@@ -29,6 +29,7 @@ export function useMessages() {
         open: (userId: string) => void openRemoteChat(userId),
         send: (userId: string, input: MessageInput) => void sendRemoteMessage(userId, input),
         removeMessage: (_userId: string, id: string) => void removeRemoteMessage(id),
+        clear: (userId: string) => clearRemoteChat(userId),
       };
     }
     const chats = conversations.map((item) => ({ ...item, person: people.find((entry) => entry.user.id === item.userId) })).filter((item): item is Chat => Boolean(item.person));
@@ -40,6 +41,7 @@ export function useMessages() {
       send: (userId: string, input: MessageInput) => update((list) => list.map((item) => (item.userId === userId
         ? { ...item, messages: [...item.messages, { text: input.text, image: input.image, audio: input.audio ? URL.createObjectURL(input.audio) : undefined, id: `m-${Date.now()}`, from: "me" as const, at: Date.now() }] }
         : item))),
+      clear: async (userId: string) => { update((list) => list.map((item) => (item.userId === userId ? { ...item, messages: [], unread: 0 } : item))); return true; },
       removeMessage: (userId: string, id: string) => update((list) => list.map((item) => (item.userId === userId ? { ...item, messages: item.messages.filter((message) => message.id !== id) } : item))),
     };
   }, [conversations, remote, update]);

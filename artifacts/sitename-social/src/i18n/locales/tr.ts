@@ -108,5 +108,7 @@ const tr: Record<keyof typeof az, string> = {
   "bottle.gestures": "Gülücükler", "bottle.lock_kisses": "{n} öpücük sonra açılacak", "bottle.lock_dj": "{n} şarkı daha ithaf et — açılacak", "bottle.lock_friends": "{n} arkadaş daha davet et — açılacak", "bottle.lock_gestures": "{n} gülücük daha gönder — açılacak", "bottle.lock_free": "",
   "bottle.lockTitle_kisses": "Öpücük yetmiyor", "bottle.lockTitle_dj": "Şarkı yetmiyor", "bottle.lockTitle_friends": "Arkadaş yetmiyor", "bottle.lockTitle_gestures": "Gülücük yetmiyor", "bottle.lockTitle_vip": "Sadece VIP", "bottle.lockTitle_free": "", "bottle.lockText_kisses": "Bunu açmak için daha çok öpücük topla", "bottle.lockText_dj": "Bunu açmak için daha çok şarkı ithaf et", "bottle.lockText_friends": "Bunu açmak için daha çok arkadaş davet et", "bottle.lockText_gestures": "Bunu açmak için daha çok gülücük gönder", "bottle.lockText_vip": "Bu sadece VIP oyuncular içindir", "bottle.lockText_free": "", "bottle.lockOk": "Anladım", "bottle.lockMore": "Öğren", "bottle.lockVip": "VIP ol",
   "bottle.pass": "Sezon geçişi",
+  "messages.clear": "Sohbeti temizle",
+  "messages.clearConfirm": "Bu sohbet yalnızca senden silinecek. Karşı tarafta kalacak. Devam edilsin mi?",
 };
 export default tr;

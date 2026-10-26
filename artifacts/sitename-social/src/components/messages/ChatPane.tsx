@@ -21,7 +21,7 @@ import type { Chat, MessageInput } from "./useMessages";
 import { VoiceRecorder } from "./VoiceRecorder";
 import { ImageViewer } from "@/components/ui/ImageViewer";
 
-type Props = { chat: Chat; onBack: () => void; onSend: (input: MessageInput) => void; onDelete: (id: string) => void; className?: string };
+type Props = { chat: Chat; onBack: () => void; onSend: (input: MessageInput) => void; onDelete: (id: string) => void; onClear?: () => void; className?: string };
 const tool = "flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-xl text-muted hover:bg-surface-2 hover:text-text";
 
 // A link in a message opens in a new tab (only http/https; the text is never run as HTML).
@@ -36,7 +36,7 @@ function linkParts(text: string) {
   });
 }
 
-export function ChatPane({ chat, onBack, onSend, onDelete, className }: Props) {
+export function ChatPane({ chat, onBack, onSend, onDelete, onClear, className }: Props) {
   const { t } = useTranslation();
   const [text, setText] = useState("");
   const [image, setImage] = useState<string | null>(null);
@@ -109,12 +109,13 @@ export function ChatPane({ chat, onBack, onSend, onDelete, className }: Props) {
           <Link href={userHref(user.id)} className="block truncate text-sm font-semibold hover:underline">{user.name}<VerifiedMark userId={user.id} size={14} /></Link>
           <div className={cn("text-xs", typing || user.online ? "text-accent" : "text-muted")}>{typing ? t("messages.typing") : user.online ? t("common.onlineNow") : lastSeenText(user.lastSeen, t)}</div>
         </div>
-        {supabase ? (
-          <div className="ml-auto flex shrink-0 items-center gap-1">
+        <div className="ml-auto flex shrink-0 items-center gap-1">
+          {onClear && count > 0 ? <IconButton aria-label={t("messages.clear")} title={t("messages.clear")} onClick={() => { if (window.confirm(t("messages.clearConfirm"))) onClear(); }}><Trash2 size={17} /></IconButton> : null}
+          {supabase ? <>
             <IconButton aria-label={t("call.voice")} title={t("call.voice")} onClick={() => void startCall({ id: user.id, name: user.name, avatar: user.avatar }, false)}><Phone size={18} /></IconButton>
             <IconButton aria-label={t("call.video")} title={t("call.video")} onClick={() => void startCall({ id: user.id, name: user.name, avatar: user.avatar }, true)}><Video size={19} /></IconButton>
-          </div>
-        ) : null}
+          </> : null}
+        </div>
       </div>
       <div ref={listRef} className="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 py-4 sm:px-5">
         {count ? chat.messages.map((message, index) => {

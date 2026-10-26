@@ -117,5 +117,7 @@ const az = {
   "bottle.gestures": "Smayliklər", "bottle.lock_kisses": "{n} öpüş sonra açılacaq", "bottle.lock_dj": "Daha {n} mahnı həsr et — açılacaq", "bottle.lock_friends": "Daha {n} dost dəvət et — açılacaq", "bottle.lock_gestures": "Daha {n} smaylik göndər — açılacaq", "bottle.lock_free": "",
   "bottle.lockTitle_kisses": "Daha çox öpüş lazımdır", "bottle.lockTitle_dj": "DJ xalları yetərli deyil", "bottle.lockTitle_friends": "Daha çox dost lazımdır", "bottle.lockTitle_gestures": "Reytinq balı yetərli deyil", "bottle.lockTitle_vip": "VIP abunəlik lazımdır", "bottle.lockTitle_free": "", "bottle.lockText_kisses": "Bu hədiyyəni açmaq üçün daha çox öpüş almalısan", "bottle.lockText_dj": "Bu hədiyyəni açmaq üçün daha çox DJ xalı əldə edin", "bottle.lockText_friends": "Daha çox dost dəvət et", "bottle.lockText_gestures": "Bu hədiyyənin əlçatan olması üçün \"Ən emosional\" reytinqində yuxarı çıx.", "bottle.lockText_vip": "Bu hədiyyənin əlçatan olması üçün VIP abunəlik əldə et", "bottle.lockText_free": "", "bottle.lockOk": "Oldu", "bottle.lockMore": "Təfərrüatlar", "bottle.lockVip": "Təfərrüatlar",
   "bottle.pass": "Mövsüm keçidi",
+  "messages.clear": "Yazışmanı təmizlə",
+  "messages.clearConfirm": "Bu yazışma yalnız səndən silinəcək. Qarşı tərəfdə qalacaq. Davam edək?",
 } as const;
 export default az;

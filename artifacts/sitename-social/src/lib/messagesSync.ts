@@ -35,11 +35,16 @@ export async function refreshMessages() {
   const { data, error } = await supabase.from("messages").select("*")
     .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`).order("created_at", { ascending: false }).limit(1000);
   if (error) return console.error("Messages could not be loaded:", error.message);
+  // "Clear chat": messages up to the moment a player cleared the chat are hidden for that player only (the other side keeps them).
+  const clears = new Map<string, number>();
+  const cleared = await supabase.from("message_clears").select("other_id,cleared_at").eq("user_id", userId);
+  if (!cleared.error) for (const item of (cleared.data ?? []) as { other_id: string; cleared_at: string }[]) clears.set(item.other_id, Date.parse(item.cleared_at));
   const byUser = new Map<string, Conversation>();
   opened.forEach((id) => byUser.set(id, { userId: id, unread: 0, messages: [] }));
   [...(data as Row[])].reverse().forEach((row) => {
     const mine = row.sender_id === userId;
     const other = mine ? row.recipient_id : row.sender_id;
+    if (Date.parse(row.created_at) <= (clears.get(other) ?? 0)) return;
     const chat = byUser.get(other) ?? { userId: other, unread: 0, messages: [] };
     chat.messages.push({ id: row.id, from: mine ? "me" : "them", text: row.text, image: row.image_url ?? undefined, audio: row.audio_url ?? undefined, at: Date.parse(row.created_at), read: mine ? Boolean(row.read_at) : undefined, delivered: mine ? Boolean(row.delivered_at || row.read_at) : undefined });
     if (!mine && !row.read_at) chat.unread += 1;
@@ -86,6 +91,16 @@ export async function removeRemoteMessage(id: string) {
   if (!supabase) return;
   await supabase.from("messages").delete().eq("id", id);
   await refreshMessages();
+}
+
+// Clears the whole chat with one person for me only (the server writes the moment; needs paket-DZ.sql).
+export async function clearRemoteChat(otherId: string) {
+  if (!supabase) return false;
+  const { error } = await supabase.rpc("message_clear", { p_other: otherId });
+  if (error) { console.error("Chat could not be cleared:", error.message); return false; }
+  opened.delete(otherId);
+  await refreshMessages();
+  return true;
 }
 
 // The chat a click on the envelope should open: the newest one with unread messages (null when nothing is unread).

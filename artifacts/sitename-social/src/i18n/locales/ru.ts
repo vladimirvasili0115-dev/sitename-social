@@ -108,5 +108,7 @@ const ru: Record<keyof typeof az, string> = {
   "bottle.gestures": "Смайлики", "bottle.lock_kisses": "Откроется ещё через {n} поцелуев", "bottle.lock_dj": "Посвяти ещё {n} песен — откроется", "bottle.lock_friends": "Пригласи ещё {n} друзей — откроется", "bottle.lock_gestures": "Отправь ещё {n} смайликов — откроется", "bottle.lock_free": "",
   "bottle.lockTitle_kisses": "Не хватает поцелуев", "bottle.lockTitle_dj": "Не хватает песен", "bottle.lockTitle_friends": "Не хватает друзей", "bottle.lockTitle_gestures": "Не хватает смайликов", "bottle.lockTitle_vip": "Только для VIP", "bottle.lockTitle_free": "", "bottle.lockText_kisses": "Чтобы открыть это, получи больше поцелуев", "bottle.lockText_dj": "Чтобы открыть это, посвяти больше песен", "bottle.lockText_friends": "Чтобы открыть это, пригласи больше друзей", "bottle.lockText_gestures": "Чтобы открыть это, отправь больше смайликов", "bottle.lockText_vip": "Это только для VIP-игроков", "bottle.lockText_free": "", "bottle.lockOk": "Понятно", "bottle.lockMore": "Узнать", "bottle.lockVip": "Стать VIP",
   "bottle.pass": "Сезонный пропуск",
+  "messages.clear": "Очистить переписку",
+  "messages.clearConfirm": "Переписка будет удалена только у вас. У собеседника она останется. Продолжить?",
 };
 export default ru;

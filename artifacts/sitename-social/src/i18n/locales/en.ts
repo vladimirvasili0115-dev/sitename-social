@@ -108,5 +108,7 @@ const en: Record<keyof typeof az, string> = {
   "bottle.gestures": "Smileys", "bottle.lock_kisses": "Unlocks after {n} more kisses", "bottle.lock_dj": "Dedicate {n} more songs to unlock", "bottle.lock_friends": "Invite {n} more friends to unlock", "bottle.lock_gestures": "Send {n} more smileys to unlock", "bottle.lock_free": "",
   "bottle.lockTitle_kisses": "Not enough kisses", "bottle.lockTitle_dj": "Not enough songs", "bottle.lockTitle_friends": "Not enough friends", "bottle.lockTitle_gestures": "Not enough smileys", "bottle.lockTitle_vip": "VIP only", "bottle.lockTitle_free": "", "bottle.lockText_kisses": "Get more kisses to unlock this", "bottle.lockText_dj": "Dedicate more songs to unlock this", "bottle.lockText_friends": "Invite more friends to unlock this", "bottle.lockText_gestures": "Send more smileys to unlock this", "bottle.lockText_vip": "This is for VIP players only", "bottle.lockText_free": "", "bottle.lockOk": "Got it", "bottle.lockMore": "Learn", "bottle.lockVip": "Get VIP",
   "bottle.pass": "Season pass",
+  "messages.clear": "Clear chat",
+  "messages.clearConfirm": "This chat will be removed only for you. The other person keeps it. Continue?",
 };
 export default en;
