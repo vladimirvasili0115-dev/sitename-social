@@ -27,12 +27,11 @@ import { clock as callClock, parseCallLog } from "@/lib/callLog";
 import { FlightCanvas, type CanvasFlight, type FlightGeometry } from "./FlightCanvas";
 import { FIRST_ORIGINAL, FRAME_PRICE, FrameArt, ORIGINAL_FRAMES, frameLooks, frameStone } from "./FrameArt";
 import { PassPanel, type PassData } from "./PassPanel";
-import { ActivePanel, ComplimentPill, ComplimentsPanel, InvitePanel, ShopPanel, emojiSrc, shopPacks } from "./ShopPanels";
+import { ActivePanel, ComplimentPill, ComplimentsPanel, InvitePanel, ShopPanel, emojiSrc } from "./ShopPanels";
 import { bumpStat, markVisit, readStats, syncStats } from "./achievements";
 import { BottleSvg, WaterBottleSvg, WoodTable } from "./BottleArt";
 import { playGiftSound, playSfx, playSound, setVolume } from "./sound";
 import { supabase } from "@/lib/supabase";
-import { buyHeartsWithBalance, COINS_PER_AZN } from "@/lib/payments";
 import { refreshFriends } from "@/lib/friendsSync";
 import { ensureMessagesLoaded, openRemoteChat, remoteChats, sendRemoteMessage } from "@/lib/messagesSync";
 import { uploadBlob } from "@/lib/media";
@@ -619,15 +618,6 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [vip, setVip] = useState(false);
   // Admins: everything in the game is open for them (to test it), and their seat and card look different.
   const iAmAdmin = useIsAdmin() === true;
-  // The cocktails (pink glass and cherry) are open only for players the admin allowed or who topped up the balance: the server decides, the list just hides them.
-  const [cocktailRpc, setCocktailRpc] = useState(false);
-  useEffect(() => {
-    if (!supabase) return;
-    let live = true;
-    void supabase.rpc("bottle_cocktail_open").then(({ data }) => { if (live) setCocktailRpc(data === true); });
-    return () => { live = false; };
-  }, []);
-  const cocktailOpen = iAmAdmin || cocktailRpc;
 
   const [adminIds, setAdminIds] = useState<string[]>([]);
   useEffect(() => { if (online) void bottleAdminIds().then((ids) => { if (Array.isArray(ids)) setAdminIds(ids); }); }, [online]);
@@ -720,23 +710,6 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [framePick, setFramePick] = useState<number | null>(null);
   const [frameNote, setFrameNote] = useState<string | null>(null);
   const [payNote, setPayNote] = useState(false);
-  // Hearts bought with the site balance (AZN): the server takes the money and adds the hearts.
-  const [packNote, setPackNote] = useState("");
-  async function buyPack(packHearts: number) {
-    const pack = shopPacks.find((item) => item.hearts === packHearts);
-    if (!pack) return;
-    setPayNote(false);
-    setPackNote("");
-    if (!online) return setPayNote(true);
-    if (!window.confirm(t("bottle.packConfirm").replace("{n}", packHearts.toLocaleString("ru-RU")).replace("{a}", String(pack.price)))) return;
-    const result = await buyHeartsWithBalance(packHearts);
-    if (!result) return setPackNote(t("bottle.packFail"));
-    if (result.error === "balance") return setPackNote(t("bottle.packNoBalance").replace("{a}", String(Math.ceil((result.need ?? pack.price * COINS_PER_AZN) / COINS_PER_AZN))));
-    if (result.error || typeof result.hearts !== "number") return setPackNote(t("bottle.packFail"));
-    heartsRef.current = result.hearts;
-    setHearts(result.hearts);
-    setPackNote(t("bottle.packBought").replace("{n}", packHearts.toLocaleString("ru-RU")));
-  }
   const [tableNo, setTableNo] = useState(60);
   const [copied, setCopied] = useState(false);
   const [waitNote, setWaitNote] = useState(false);
@@ -3081,7 +3054,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   <button onClick={() => setPanel("wheel")} className="mt-2 w-full text-center text-xs font-bold text-white underline">{t("bottle.wheelBack")}</button>
                 </div>
               ) : panel === "shop" ? (
-                <ShopPanel hearts={hearts} activeSecs={activeSecs} payNote={payNote} onActive={() => setPanel("active")} onTelegram={() => (TELEGRAM_URL ? window.open(TELEGRAM_URL, "_blank", "noopener") : setPayNote(true))} onVip={() => { setPayNote(false); setPanel("vip"); }} onInvite={openInvite} onCompliments={() => setPanel("compliments")} packNote={packNote} onPack={(amount) => void buyPack(amount)} onPass={openPass} />
+                <ShopPanel hearts={hearts} activeSecs={activeSecs} payNote={payNote} onActive={() => setPanel("active")} onTelegram={() => (TELEGRAM_URL ? window.open(TELEGRAM_URL, "_blank", "noopener") : setPayNote(true))} onVip={() => { setPayNote(false); setPanel("vip"); }} onInvite={openInvite} onCompliments={() => setPanel("compliments")} onPack={() => setPayNote(true)} onPass={openPass} />
               ) : panel === "pass" ? (
                 <>
                   <PassPanel data={online ? passData : null} hearts={hearts} now={net?.now ?? Date.now()} onBuy={() => void passAction("buy")} onClaim={(level, premium) => void passAction({ level, premium })} onChest={() => void passAction("chest")} />
@@ -3548,7 +3521,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
               {(() => {
                 // Like the original gift list: the gifts you can send first, then the ones still locked
                 // (by kisses, from the nearest to the farthest, and the VIP ones last). Locked gifts are grey with a lock.
-                const all = [...(iAmAdmin ? [["c:heart1000", 1000, 0] as [string, number, number]] : []), ...giftChoices.slice(0, 2), ...customGiftNames(art).filter((name) => !name.startsWith("ges_") && name !== "heart1000" && (cocktailOpen || !isDrink(`c:${name}`))).map((name) => [`c:${name}`, GIFT_PRICES[name] ?? customPrice(name), missing(GIFT_RULES[`c:${name}`], progress)] as [string, number, number]), ...giftChoices.slice(2), ...lockedGifts.map(([gift, price, need]) => [gift, price, Math.max(0, need - progress.kisses)] as [string, number, number])]
+                const all = [...(iAmAdmin ? [["c:heart1000", 1000, 0] as [string, number, number]] : []), ...giftChoices.slice(0, 2), ...customGiftNames(art).filter((name) => !name.startsWith("ges_") && name !== "heart1000").map((name) => [`c:${name}`, GIFT_PRICES[name] ?? customPrice(name), missing(GIFT_RULES[`c:${name}`], progress)] as [string, number, number]), ...giftChoices.slice(2), ...lockedGifts.map(([gift, price, need]) => [gift, price, Math.max(0, need - progress.kisses)] as [string, number, number])]
                   .map(([gift, price, need]) => [gift, price, need ?? 0] as [string, number, number]);
                 const isLocked = (need: number) => (need === -1 ? !vip : need > 0);
                 const open = all.filter(([, , need]) => !isLocked(need));

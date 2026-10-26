@@ -129,9 +129,5 @@ const ka: Record<keyof typeof az, string> = {
   "home.registered": "რეგისტრირებული",
   "home.seeAll": "ყველას ნახვა",
   "home.people": "ადამიანი",
-  "bottle.packConfirm": "შევიძინო {n} გული {a} AZN-ად?",
-  "bottle.packBought": "{n} გული შეძენილია.",
-  "bottle.packNoBalance": "ბალანსი არასაკმარისია: საჭიროა {a} AZN.",
-  "bottle.packFail": "ვერ შეიძინა. სცადე მოგვიანებით.",
 };
 export default ka;

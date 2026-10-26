@@ -129,9 +129,5 @@ const tr: Record<keyof typeof az, string> = {
   "home.registered": "Kayıtlı üye",
   "home.seeAll": "Hepsini gör",
   "home.people": "kişi",
-  "bottle.packConfirm": "{n} kalp {a} AZN'ye alınsın mı?",
-  "bottle.packBought": "{n} kalp alındı.",
-  "bottle.packNoBalance": "Bakiye yetersiz: {a} AZN gerekli.",
-  "bottle.packFail": "Alınamadı. Biraz sonra tekrar dene.",
 };
 export default tr;
