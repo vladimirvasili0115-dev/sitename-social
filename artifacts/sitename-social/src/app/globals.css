@@ -332,3 +332,10 @@ button { cursor: pointer; }
 
 /* chat: moving gradient names are painted still (a moving text gradient repaints every frame for every row) */
 [class*="overflow-wrap:break-word"] .gold-name,[class*="overflow-wrap:break-word"] .name-chameleon,[class*="overflow-wrap:break-word"] .name-champagne{animation:none;background-position:40% 50%}
+
+/* Sign-in page: floating game signs, the glowing logo and its slow shine. */
+@keyframes login-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes login-glow { 0%, 100% { opacity: 0.55; transform: scale(1); } 50% { opacity: 1; transform: scale(1.1); } }
+@keyframes login-shine { 0% { transform: translateX(-120%) skewX(-20deg); } 55%, 100% { transform: translateX(320%) skewX(-20deg); } }
+@keyframes login-live { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
+@media (prefers-reduced-motion: reduce) { .login-anim { animation: none !important; } }
