@@ -129,5 +129,9 @@ const en: Record<keyof typeof az, string> = {
   "home.registered": "Registered",
   "home.seeAll": "See all",
   "home.people": "people",
+  "bottle.packConfirm": "Buy {n} hearts for {a} AZN?",
+  "bottle.packBought": "{n} hearts bought.",
+  "bottle.packNoBalance": "Not enough balance: {a} AZN needed.",
+  "bottle.packFail": "Could not buy. Try again later.",
 };
 export default en;

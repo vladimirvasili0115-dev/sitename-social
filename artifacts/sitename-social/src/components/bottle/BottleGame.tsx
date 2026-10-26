@@ -27,11 +27,12 @@ import { clock as callClock, parseCallLog } from "@/lib/callLog";
 import { FlightCanvas, type CanvasFlight, type FlightGeometry } from "./FlightCanvas";
 import { FIRST_ORIGINAL, FRAME_PRICE, FrameArt, ORIGINAL_FRAMES, frameLooks, frameStone } from "./FrameArt";
 import { PassPanel, type PassData } from "./PassPanel";
-import { ActivePanel, ComplimentPill, ComplimentsPanel, InvitePanel, ShopPanel, emojiSrc } from "./ShopPanels";
+import { ActivePanel, ComplimentPill, ComplimentsPanel, InvitePanel, ShopPanel, emojiSrc, shopPacks } from "./ShopPanels";
 import { bumpStat, markVisit, readStats, syncStats } from "./achievements";
 import { BottleSvg, WaterBottleSvg, WoodTable } from "./BottleArt";
 import { playGiftSound, playSfx, playSound, setVolume } from "./sound";
 import { supabase } from "@/lib/supabase";
+import { buyHeartsWithBalance, COINS_PER_AZN } from "@/lib/payments";
 import { refreshFriends } from "@/lib/friendsSync";
 import { ensureMessagesLoaded, openRemoteChat, remoteChats, sendRemoteMessage } from "@/lib/messagesSync";
 import { uploadBlob } from "@/lib/media";
@@ -719,6 +720,23 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [framePick, setFramePick] = useState<number | null>(null);
   const [frameNote, setFrameNote] = useState<string | null>(null);
   const [payNote, setPayNote] = useState(false);
+  // Hearts bought with the site balance (AZN): the server takes the money and adds the hearts.
+  const [packNote, setPackNote] = useState("");
+  async function buyPack(packHearts: number) {
+    const pack = shopPacks.find((item) => item.hearts === packHearts);
+    if (!pack) return;
+    setPayNote(false);
+    setPackNote("");
+    if (!online) return setPayNote(true);
+    if (!window.confirm(t("bottle.packConfirm").replace("{n}", packHearts.toLocaleString("ru-RU")).replace("{a}", String(pack.price)))) return;
+    const result = await buyHeartsWithBalance(packHearts);
+    if (!result) return setPackNote(t("bottle.packFail"));
+    if (result.error === "balance") return setPackNote(t("bottle.packNoBalance").replace("{a}", String(Math.ceil((result.need ?? pack.price * COINS_PER_AZN) / COINS_PER_AZN))));
+    if (result.error || typeof result.hearts !== "number") return setPackNote(t("bottle.packFail"));
+    heartsRef.current = result.hearts;
+    setHearts(result.hearts);
+    setPackNote(t("bottle.packBought").replace("{n}", packHearts.toLocaleString("ru-RU")));
+  }
   const [tableNo, setTableNo] = useState(60);
   const [copied, setCopied] = useState(false);
   const [waitNote, setWaitNote] = useState(false);
@@ -3063,7 +3081,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   <button onClick={() => setPanel("wheel")} className="mt-2 w-full text-center text-xs font-bold text-white underline">{t("bottle.wheelBack")}</button>
                 </div>
               ) : panel === "shop" ? (
-                <ShopPanel hearts={hearts} activeSecs={activeSecs} payNote={payNote} onActive={() => setPanel("active")} onTelegram={() => (TELEGRAM_URL ? window.open(TELEGRAM_URL, "_blank", "noopener") : setPayNote(true))} onVip={() => { setPayNote(false); setPanel("vip"); }} onInvite={openInvite} onCompliments={() => setPanel("compliments")} onPack={() => setPayNote(true)} onPass={openPass} />
+                <ShopPanel hearts={hearts} activeSecs={activeSecs} payNote={payNote} onActive={() => setPanel("active")} onTelegram={() => (TELEGRAM_URL ? window.open(TELEGRAM_URL, "_blank", "noopener") : setPayNote(true))} onVip={() => { setPayNote(false); setPanel("vip"); }} onInvite={openInvite} onCompliments={() => setPanel("compliments")} packNote={packNote} onPack={(amount) => void buyPack(amount)} onPass={openPass} />
               ) : panel === "pass" ? (
                 <>
                   <PassPanel data={online ? passData : null} hearts={hearts} now={net?.now ?? Date.now()} onBuy={() => void passAction("buy")} onClaim={(level, premium) => void passAction({ level, premium })} onChest={() => void passAction("chest")} />

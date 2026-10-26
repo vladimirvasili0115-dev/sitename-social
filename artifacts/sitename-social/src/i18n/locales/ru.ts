@@ -129,5 +129,9 @@ const ru: Record<keyof typeof az, string> = {
   "home.registered": "Зарегистрировано",
   "home.seeAll": "Показать всех",
   "home.people": "чел.",
+  "bottle.packConfirm": "Купить {n} сердец за {a} AZN?",
+  "bottle.packBought": "Куплено сердец: {n}.",
+  "bottle.packNoBalance": "Недостаточно баланса: нужно {a} AZN.",
+  "bottle.packFail": "Не получилось. Попробуй позже.",
 };
 export default ru;

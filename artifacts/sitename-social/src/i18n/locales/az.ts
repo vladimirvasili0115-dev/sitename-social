@@ -138,5 +138,9 @@ const az = {
   "home.registered": "Qeydiyyatdan keçən",
   "home.seeAll": "Hamısına bax",
   "home.people": "nəfər",
+  "bottle.packConfirm": "{n} ürək {a} AZN-ə alınsın?",
+  "bottle.packBought": "{n} ürək alındı.",
+  "bottle.packNoBalance": "Balansda AZN çatmır: lazımdır {a} AZN.",
+  "bottle.packFail": "Alınmadı. Bir az sonra yenə yoxla.",
 } as const;
 export default az;
