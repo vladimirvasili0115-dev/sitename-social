@@ -126,6 +126,8 @@ export async function fetchPriceTables(): Promise<{ gifts: import("./pricesSync"
 }
 
 export const setVerified = async (id: string, enabled: boolean) => (await call("admin_set_verified", { target: id, enabled })) !== null;
+// The owner sets a new password for any player (e-mail or phone account).
+export const setUserPassword = async (id: string, password: string) => (await call("admin_set_password", { target: id, new_password: password })) !== null;
 export type Welcome = { enabled: boolean; text: string };
 export async function fetchWelcome(): Promise<Welcome | null> {
   const data = await call<Welcome>("admin_welcome_get");

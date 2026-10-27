@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Palette, Eye, EyeOff, KeyRound, Award, HeartOff, Lock, LockOpen, Wine, FileText, BadgeCheck, Ban, ChevronDown, Coins, Crown, Gamepad2, Heart, ShieldCheck, ShieldOff, Trash2, Undo2 } from "lucide-react";
 import { useSyncExternalStore } from "react";
 import { refreshVerified, verifiedStore } from "@/lib/verifiedSync";
-import { banUser, deleteUser, fetchAdminUsers, fetchUserDetail, grantCoins, grantHearts, setModerator, setVerified, vipAll, vipCount, gesturesOpenGet, gesturesOpenSet, setNameColor, gameState, gameGrant, gameFlags, statFreezeGet, statFreezeSet, pageAllowGet, pageAllowSet, type PageAllow, giftAllowGet, giftAllowSet, type GiftAllow, type StatKind, type StatFreeze, type GameFlags, type GameState, type AdminUser, type UserDetail } from "@/lib/adminSync";
+import { setUserPassword, banUser, deleteUser, fetchAdminUsers, fetchUserDetail, grantCoins, grantHearts, setModerator, setVerified, vipAll, vipCount, gesturesOpenGet, gesturesOpenSet, setNameColor, gameState, gameGrant, gameFlags, statFreezeGet, statFreezeSet, pageAllowGet, pageAllowSet, type PageAllow, giftAllowGet, giftAllowSet, type GiftAllow, type StatKind, type StatFreeze, type GameFlags, type GameState, type AdminUser, type UserDetail } from "@/lib/adminSync";
 import type { TranslationKey } from "@/i18n/LanguageProvider";
 import { initialsAvatar } from "@/lib/avatar";
 import { formatDay } from "@/lib/datetime";
@@ -39,6 +39,11 @@ export function AdminUsers({ owner }: { owner: boolean }) {
   const [confirm, setConfirm] = useState<string | null>(null);
   const [coinsFor, setCoinsFor] = useState<string | null>(null);
   const [gameFor, setGameFor] = useState<string | null>(null);
+  // "Set password": the owner types (or generates) a new password for a player who lost the account.
+  const [pwFor, setPwFor] = useState<string | null>(null);
+  const [pwText, setPwText] = useState("");
+  const [pwNote, setPwNote] = useState("");
+  const makePassword = () => { const chars = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789"; const bytes = crypto.getRandomValues(new Uint32Array(10)); setPwText(Array.from(bytes, (n) => chars[n % chars.length]).join("")); };
   const [colorFor, setColorFor] = useState<string | null>(null);
   const nameColors = useNameColors();
   const [grantKind, setGrantKind] = useState<"coins" | "hearts">("coins");
@@ -180,6 +185,7 @@ export function AdminUsers({ owner }: { owner: boolean }) {
                     <button disabled={locked} onClick={() => setGameFor(gameFor === user.id ? null : user.id)} aria-expanded={gameFor === user.id} className={action}><Gamepad2 size={14} />{t("admin.game")}</button>
                     <button disabled={locked} onClick={() => setColorFor(colorFor === user.id ? null : user.id)} aria-expanded={colorFor === user.id} className={action}><Palette size={14} /><span className={nameColorClass(nameColors[user.id])}>{t("admin.nameColor")}</span></button>
                     {user.email && supabase ? <button disabled={locked || resetSent[user.id]} onClick={() => { if (!supabase || !user.email) return; void supabase.auth.resetPasswordForEmail(user.email, { redirectTo: `${window.location.origin}/reset-password` }).then(({ error }) => setResetSent((value) => ({ ...value, [user.id]: !error }))); }} title={t("admin.resetHint")} className={action}><KeyRound size={14} />{t(resetSent[user.id] ? "admin.resetSent" : "admin.resetPass")}</button> : null}
+                    {owner ? <button disabled={locked} onClick={() => { setPwFor(pwFor === user.id ? null : user.id); setPwText(""); setPwNote(""); }} aria-expanded={pwFor === user.id} className={action}><KeyRound size={14} />Şifrə təyin et</button> : null}
                     {user.moderator ? null : user.banned
                       ? <button disabled={locked} onClick={() => void run(user.id, () => banUser(user.id, -1, ""))} className={action}><Undo2 size={14} />{t("settings.blkUnblock")}</button>
                       : <button disabled={locked} onClick={() => { setBanFor(banFor === user.id ? null : user.id); setBanDays(7); setReason(""); }} className={cn(danger, "text-danger hover:bg-surface-2")}><Ban size={14} />{t("admin.ban")}</button>}
@@ -188,6 +194,16 @@ export function AdminUsers({ owner }: { owner: boolean }) {
                     {user.moderator || !owner ? null : <button disabled={locked} onClick={() => (asking ? void run(user.id, () => deleteUser(user.id)) : setConfirm(user.id))} className={cn(danger, asking ? "bg-danger text-bg" : "text-danger hover:bg-surface-2")}><Trash2 size={14} />{t(asking ? "admin.confirm" : "settings.accDelete")}</button>}
                     <button onClick={() => toggleDetail(user.id)} aria-expanded={openId === user.id} className={cn(action, "ml-auto")}>{t("admin.details")}<ChevronDown size={14} className={openId === user.id ? "rotate-180" : ""} /></button>
                   </div>
+                  {owner && pwFor === user.id ? (
+                    <form onSubmit={(event) => { event.preventDefault(); if (pwText.length < 8) return setPwNote("Şifrə ən azı 8 simvol olmalıdır."); void setUserPassword(user.id, pwText).then((ok) => setPwNote(ok ? `Şifrə dəyişdi: ${pwText} — bunu adama göndər, o girəndən sonra Ayarlar → Təhlükəsizlik-də özü dəyişsin.` : "Alınmadı. paket-EC.sql işlədilib? (adminə dəyişmək olmur)")); }} className="mt-3 space-y-2">
+                      <div className="flex flex-wrap gap-2">
+                        <input value={pwText} onChange={(event) => setPwText(event.target.value)} minLength={8} maxLength={72} aria-label="Yeni şifrə" placeholder="Yeni şifrə (ən azı 8 simvol)" autoComplete="off" className="h-10 min-w-0 flex-1 rounded-xl border border-border bg-surface px-3 text-sm outline-none focus:border-accent" />
+                        <button type="button" onClick={makePassword} className="h-10 rounded-xl border border-border px-3 text-xs font-semibold hover:bg-surface-2">Təsadüfi</button>
+                        <button type="submit" className="h-10 rounded-xl bg-accent px-4 text-xs font-semibold text-bg">Təyin et</button>
+                      </div>
+                      {pwNote ? <p role="status" className="text-xs font-semibold text-accent">{pwNote}</p> : null}
+                    </form>
+                  ) : null}
                   {banFor === user.id ? (
                     <form onSubmit={(event) => handleBan(event, user.id)} className="mt-3 space-y-2">
                       <div className="flex flex-wrap gap-2">
