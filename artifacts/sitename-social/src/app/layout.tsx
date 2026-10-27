@@ -3,6 +3,7 @@ import { Inter, Noto_Sans_Georgian } from "next/font/google";
 import "./globals.css";
 import { SITE_NAME } from "@/config/site";
 import { AppShell } from "@/components/layout/AppShell";
+import { SplashScreen } from "@/components/layout/SplashScreen";
 import { LanguageProvider } from "@/i18n/LanguageProvider";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { PwaRegister } from "@/components/layout/PwaRegister";
@@ -21,6 +22,6 @@ export const viewport: Viewport = { themeColor: "#0B1215", viewportFit: "cover" 
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return <html lang="az" data-scroll-behavior="smooth" className={`${inter.variable} ${georgian.variable}`}>
-    <body><PwaRegister /><LanguageProvider><AuthProvider><AppShell>{children}</AppShell></AuthProvider></LanguageProvider></body>
+    <body><PwaRegister /><SplashScreen /><LanguageProvider><AuthProvider><AppShell>{children}</AppShell></AuthProvider></LanguageProvider></body>
   </html>;
 }
