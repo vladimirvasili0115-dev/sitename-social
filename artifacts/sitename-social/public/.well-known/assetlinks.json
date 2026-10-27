@@ -1,0 +1,10 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.ravetill.twa",
+      "sha256_cert_fingerprints": ["DB:79:83:84:AC:56:56:E6:1D:93:E8:B4:92:FE:B1:B7:6F:79:1D:AD:CB:FE:79:D1:4F:FF:A6:42:62:C6:CA:6E"]
+    }
+  }
+]
