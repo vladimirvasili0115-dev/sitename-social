@@ -1336,7 +1336,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     const later = window.setTimeout(down, 150); // rows that were not drawn yet (off screen) change the height a moment later
     return () => { window.cancelAnimationFrame(frame); window.clearTimeout(later); };
   }, [lines, picked]);
-  useEffect(() => setVolume(volume / 100), [volume]);
+  // Waiting in the queue for a full table: nothing of the game may be heard (no table music, no sounds of the room).
+  const queued = Boolean(waitFor);
+  useEffect(() => setVolume(queued ? 0 : volume / 100), [volume, queued]);
   // Songs must start by themselves on every device. Browsers only allow sound after the person has touched the page,
   // so a video starts muted until then and gets its sound on the first tap anywhere in the game (or the 🔊 button).
   const [touched, setTouched] = useState(false);
@@ -1348,9 +1350,10 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const ytCall = useCallback((func: string, args: unknown[] = []) => frameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: "command", func, args }), "*"), []);
   const pushMusic = useCallback(() => {
     ytCall("setVolume", [music]);
+    if (queued) { ytCall("mute"); return; } // muted, not paused: the song keeps its place and is in time again when the queue ends
     if (music > 0 && touched) { ytCall("unMute"); ytCall("playVideo"); }
     if (music === 0) ytCall("mute");
-  }, [music, touched, ytCall]);
+  }, [music, touched, ytCall, queued]);
   useEffect(pushMusic, [pushMusic, video]);
   useEffect(() => {
     if (typeof navigator !== "undefined" && (navigator as Navigator & { userActivation?: { hasBeenActive: boolean } }).userActivation?.hasBeenActive) setTouched(true);
@@ -3873,7 +3876,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           // PC: a bar above the chat. Phone: a small square window like the video one, which can be moved and resized.
           <div ref={wide ? undefined : miniRef} style={wide ? undefined : mini.x === null ? { right: 4, top: mini.y, width: MINI_MUSIC_W } : { left: mini.x, top: mini.y, width: MINI_MUSIC_W }} className={cn("overflow-hidden bg-[linear-gradient(120deg,#1E1B3A,#4C1D95_60%,#BE185D)] text-white", wide ? "relative shrink-0 p-2.5" : "absolute z-20 rounded-2xl border border-white/15 p-1.5 pt-6 shadow-xl", miniBusy && !wide && "select-none")}>
             {track ? <img src={songByAvatar} alt="" title={t("bottle.musicNow")} className={cn("pointer-events-none absolute z-[1] select-none rounded-full border-2 border-white/70 object-cover shadow", wide ? "bottom-1.5 left-1.5 h-6 w-6" : "left-1.5 top-1.5 h-6 w-6")} draggable={false} /> : null}
-            {audio ? <audio src={audio.url} autoPlay playsInline ref={(node) => { audioRef.current = node; if (node) node.volume = music / 100; }} onPlay={() => setTune((v) => ({ ...v, playing: true }))} onPause={() => setTune((v) => ({ ...v, playing: false }))} onEnded={() => setAudio(null)} onLoadedMetadata={(event) => { const node = event.currentTarget; const dur = node.duration || 0; const at = songNow(); if (at > 2 && at < dur) node.currentTime = at; setTune((v) => ({ ...v, dur })); }} onTimeUpdate={(event) => { const cur = event.currentTarget.currentTime; setTune((v) => ({ ...v, cur })); }} className="hidden" /> : null}
+            {audio ? <audio src={audio.url} muted={queued} autoPlay playsInline ref={(node) => { audioRef.current = node; if (node) node.volume = music / 100; }} onPlay={() => setTune((v) => ({ ...v, playing: true }))} onPause={() => setTune((v) => ({ ...v, playing: false }))} onEnded={() => setAudio(null)} onLoadedMetadata={(event) => { const node = event.currentTarget; const dur = node.duration || 0; const at = songNow(); if (at > 2 && at < dur) node.currentTime = at; setTune((v) => ({ ...v, dur })); }} onTimeUpdate={(event) => { const cur = event.currentTarget.currentTime; setTune((v) => ({ ...v, cur })); }} className="hidden" /> : null}
             {/* Songs from the MP3 tab: the YouTube player plays behind the card, only the music player is seen. */}
             {!audio && video ? <iframe ref={frameRef} onLoad={() => { window.setTimeout(pushMusic, 800); frameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: "listening", id: 1 }), "*"); }} src={ytSrc(video)} title="YouTube" referrerPolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media" tabIndex={-1} aria-hidden="true" className="pointer-events-none absolute left-0 top-0 h-[200px] w-[200px] opacity-0" /> : null}
             {wide ? (
