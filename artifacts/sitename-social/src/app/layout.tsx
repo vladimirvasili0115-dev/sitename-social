@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   icons: { icon: "/favicon.svg", apple: "/icons/apple-touch-icon.png" },
   appleWebApp: { capable: true, title: SITE_NAME, statusBarStyle: "black-translucent" },
 };
-export const viewport: Viewport = { themeColor: "#0B1215" };
+export const viewport: Viewport = { themeColor: "#0B1215", viewportFit: "cover" };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return <html lang="az" data-scroll-behavior="smooth" className={`${inter.variable} ${georgian.variable}`}>

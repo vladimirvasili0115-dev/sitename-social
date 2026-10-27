@@ -29,7 +29,7 @@ export function Header() {
   const unreadMessages = useNavBadges()["/messages"];
   const musicOn = Boolean(useSiteMusic().now);
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-bg/95 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-border bg-bg/95 pt-[env(safe-area-inset-top)] backdrop-blur">
       <div className="relative mx-auto flex h-[72px] max-w-[1160px] items-center gap-2 px-4 sm:gap-5 md:px-6">
         <Link href="/feed" className="flex min-w-0 items-center gap-2.5">
           <LogoMark className="h-9 w-9 shrink-0 drop-shadow-[0_2px_6px_rgba(255,77,141,0.35)]" />
