@@ -2771,7 +2771,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   };
   // A place is only shown when it is in the first 5000, like the original.
   const rankLine = (rank: number | null | undefined) => rank && rank < 5000 ? <span className="text-[11px] font-semibold text-[#9CA3AF]">{t("bottle.rankOf").replace("{n}", rank.toLocaleString("ru-RU"))}</span> : null;
-  const [statsOpen, setStatsOpen] = useState(true);
+  // First look: kisses, music and smiles; the arrow opens the other ratings (price, harem).
+  const [statsOpen, setStatsOpen] = useState(false);
   // The original card has two layouts: "landscape" (photo on the left) and "portrait" (photo on top), by the screen shape.
   const [landscape, setLandscape] = useState(false);
   useEffect(() => {
@@ -2877,11 +2878,11 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                       <div className="flex flex-col items-start">
                         {statRow("statKisses", "kiss.svg", "rgb(219,49,0)", stats[0].value, info?.kisses_rank)}
                         {statRow("statSongs", "dj.svg", "rgb(180,93,140)", stats[1].value, info?.songs_rank)}
+                        {statRow("statSmiles", "gesture.svg", "rgb(252,131,0)", stats[2].value, info?.smiles_rank)}
                         <div className={cn("flex flex-col overflow-hidden transition-all duration-[250ms] ease-linear", !statsOpen ? "mt-0 h-0" : big ? "-mt-[10px] h-[64px]" : "h-[42px]")}>
                           {statRow("price", "price.svg", "rgb(216,87,35)", suitor ? suitor.amount : 0, info?.price_rank)}
                           {statRow("harem", "harem.svg", "rgb(173,23,0)", harem, info?.harem_rank)}
                         </div>
-                        {statRow("statSmiles", "gesture.svg", "rgb(252,131,0)", stats[2].value, info?.smiles_rank)}
                       </div>
                       {cup !== null ? <button onClick={() => { setCard(false); setPanel("league"); }} title={t(`bottle.league${cup}` as "bottle.league0")} className="shrink-0 self-center"><LeagueBadge league={cup} className="h-[48px] w-[46px]" /></button> : null}
                     </div>
