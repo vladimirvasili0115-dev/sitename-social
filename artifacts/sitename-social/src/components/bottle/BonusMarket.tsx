@@ -23,7 +23,7 @@ export const enigmaLabel = (locale: string) => wordsFor(locale).label;
 // "ENİGMA GƏLDİ" -> "<NAME> GƏLDİ": the player's own name replaces the first word of the sentence.
 export const arrivalLabel = (locale: string, name: string) => {
   const rest = wordsFor(locale).label.split(" ").slice(1).join(" ");
-  const who = (name || "").trim().split(/\s+/)[0].slice(0, 14);
+  const who = (name || "").trim().replace(/\s+/g, " ").slice(0, 20); // the whole game name (a name like "P ə b a h" is not cut to its first letter)
   return who ? `${who} ${rest}` : wordsFor(locale).label;
 };
 
