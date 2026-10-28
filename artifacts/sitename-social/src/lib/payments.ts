@@ -3,8 +3,8 @@ import { supabase } from "./supabase";
 // Turn this on only after a payment provider is connected (an Edge Function "topup-pay" that returns the provider's payment page address).
 // Until then the market shows the packages, but the pay button is off: balance is never credited without a confirmed payment.
 export const PAYMENTS_LIVE = true;
-// Payments go through the Telegram bot: card, receipt photo, then the owner presses "Approve" and the balance is credited.
-export const TELEGRAM_BOT = "Ravetill_bot";
+// Payments: the card and the receipt upload are on the site; the receipt goes to the owner in Telegram, who approves it, and the balance is then credited by the server.
+export const PAY_FUNCTION = "clever-worker";
 
 // 1 AZN = 100 balance coins (the same rate as the old packages); the server uses the same rate and has the last word.
 export const COINS_PER_AZN = 100;
@@ -21,14 +21,50 @@ export async function createTopupOrder(amount: number): Promise<TopupOrder | nul
   return data as TopupOrder;
 }
 
-// 2) The provider's payment page. The balance is credited only by the server when the provider confirms the payment.
-export async function startPayment(amount: number): Promise<"soon" | "fail" | "redirect"> {
-  if (!PAYMENTS_LIVE || !supabase) return "soon";
+// 2) On-site payment: a request (card is taken in turn), the card, the receipt photo, then the owner approves in Telegram.
+export type PayRequest = { id: string; amount: number; status: "new" | "card" | "receipt" | "approved" | "rejected" | "expired"; expires_at: string };
+export type PayCard = { number: string; holder: string; amount: number; expires_at: string };
+
+export async function createPayRequest(amount: number): Promise<{ id?: string; error?: "bad" | "many" | "nocard" | "fail" }> {
+  if (!PAYMENTS_LIVE || !supabase) return { error: "fail" };
   const { data, error } = await supabase.rpc("pay_request_create", { p_amount: amount });
-  const code = (data as { code?: string } | null)?.code;
-  if (error || !code || !/^[0-9a-f]{12}$/.test(code)) return "fail";
-  window.location.href = `https://t.me/${TELEGRAM_BOT}?start=${code}`;
-  return "redirect";
+  if (error || !data) return { error: "fail" };
+  const out = data as { id?: string; error?: "bad" | "many" | "nocard" };
+  return out.id ? { id: out.id } : { error: out.error ?? "fail" };
+}
+
+export async function getPayCard(id: string): Promise<PayCard | { error: "expired" | "done" | "notfound" | "fail" }> {
+  if (!supabase) return { error: "fail" };
+  const { data, error } = await supabase.rpc("pay_request_card", { p_id: id });
+  if (error || !data) return { error: "fail" };
+  return data as PayCard | { error: "expired" | "done" | "notfound" };
+}
+
+export async function loadPayRequest(id?: string): Promise<PayRequest | null> {
+  if (!supabase) return null;
+  const base = supabase.from("pay_requests").select("id,amount,status,expires_at");
+  const { data, error } = id
+    ? await base.eq("id", id).maybeSingle()
+    : await base.in("status", ["new", "card", "receipt"]).order("created_at", { ascending: false }).limit(1).maybeSingle();
+  if (error || !data) return null;
+  const row = data as PayRequest;
+  if ((row.status === "new" || row.status === "card") && Date.parse(row.expires_at) < Date.now()) return { ...row, status: "expired" };
+  return row;
+}
+
+export async function cancelPayRequest(id: string) {
+  if (supabase) await supabase.rpc("pay_request_cancel", { p_id: id });
+}
+
+export const RECEIPT_MAX_BYTES = 5 * 1024 * 1024;
+export async function sendReceipt(id: string, image: File): Promise<boolean> {
+  if (!supabase || image.size > RECEIPT_MAX_BYTES || !image.type.startsWith("image/")) return false;
+  const body = new FormData();
+  body.append("id", id);
+  body.append("image", image);
+  const { error } = await supabase.functions.invoke(PAY_FUNCTION, { body });
+  if (error) { console.error("receipt upload failed:", error.message); return false; }
+  return true;
 }
 
 // Game hearts bought from the site balance (the game's bank packs).
