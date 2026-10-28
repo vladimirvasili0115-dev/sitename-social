@@ -961,35 +961,6 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const lineId = useRef(3);
   const listRef = useRef<HTMLDivElement>(null);
   const chatRef = useRef<HTMLInputElement>(null);
-  // Phone only: while the chat input is focused (keyboard open) the game picture stays where it is; the chat shrinks and the input row sits right above the keyboard.
-  const [typing, setTyping] = useState(false);
-  const [kbHeight, setKbHeight] = useState(0);
-  const [kbTop, setKbTop] = useState(0);
-  const rootRef = useRef<HTMLDivElement>(null);
-  const blurTimer = useRef(0);
-  // While the game is open the phone resizes the page when the keyboard opens (instead of panning it up), so the game picture keeps its place.
-  useEffect(() => {
-    const meta = document.querySelector('meta[name="viewport"]');
-    if (!meta) return;
-    const before = meta.getAttribute("content") ?? "";
-    if (!before.includes("interactive-widget")) meta.setAttribute("content", `${before}${before ? ", " : ""}interactive-widget=resizes-content`);
-    return () => { meta.setAttribute("content", before); };
-  }, []);
-  useEffect(() => {
-    if (!typing) { setKbHeight(0); setKbTop(0); return; }
-    const vv = window.visualViewport;
-    // The phone pans the visible area (visual viewport) when the keyboard opens: the game window follows exactly that visible area.
-    const update = () => { setKbHeight(Math.round(vv ? vv.height : window.innerHeight)); setKbTop(Math.round(vv ? vv.offsetTop : 0)); };
-    // The browser scrolls the game window up to reveal the input: put it back so the picture does not move.
-    const unscroll = () => { for (let node: HTMLElement | null = rootRef.current; node; node = node.parentElement) if (node.scrollTop) node.scrollTop = 0; };
-    update();
-    vv?.addEventListener("resize", update);
-    vv?.addEventListener("scroll", update);
-    window.addEventListener("resize", update);
-    const later = window.setTimeout(update, 350);
-    const keep = window.setInterval(unscroll, 40);
-    return () => { vv?.removeEventListener("resize", update); vv?.removeEventListener("scroll", update); window.removeEventListener("resize", update); window.clearTimeout(later); window.clearInterval(keep); };
-  }, [typing]);
   // The smiley button next to the chat line puts ordinary emojis into the message (the game smileys open from your own photo).
   const [emojiOpen, setEmojiOpen] = useState(false);
   const [emojiCat, setEmojiCat] = useState(0);
@@ -3046,7 +3017,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     );
   }
   return (
-    <div ref={rootRef} data-bottle-root className={cn("relative flex h-full w-full bg-surface text-text", wide ? "flex-row" : "flex-col")} style={typing && kbHeight > 0 && !wide ? { height: kbHeight, maxHeight: "100%", transform: kbTop ? `translateY(${kbTop}px)` : undefined } : undefined}>
+    <div data-bottle-root className={cn("relative flex h-full w-full bg-surface text-text", wide ? "flex-row" : "flex-col")}>
       {waitFor ? (() => {
         const ahead = Math.max(0, waitFor.position - 1);
         const words: Record<string, { title: string; text: string; first: string; ahead: string; other: string }> = {
@@ -3887,7 +3858,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
 
       <div className={cn("relative flex min-h-0 min-w-0 flex-1 flex-col bg-[#F5F5F5]", wide ? "-ml-px" : "-mt-px")}>
         {video && wide && !musicMode ? (
-          <div className={cn("relative w-full shrink-0 bg-black", picked !== null || dedicate || (typing && !wide) ? "h-0 overflow-hidden" : "aspect-video max-h-[42%]")}>
+          <div className={cn("relative w-full shrink-0 bg-black", picked !== null || dedicate ? "h-0 overflow-hidden" : "aspect-video max-h-[42%]")}>
             <iframe ref={frameRef} onLoad={() => { window.setTimeout(pushMusic, 800); frameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: "listening", id: 1 }), "*"); }} src={ytSrc(video)} title="YouTube" referrerPolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen className="h-full w-full" />
             {soundPill}
             {track ? <img src={songByAvatar} alt="" title={t("bottle.musicNow")} className="pointer-events-none absolute left-1.5 top-1.5 h-8 w-8 select-none rounded-full border-2 border-white/80 object-cover shadow" draggable={false} /> : null}
@@ -4138,7 +4109,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           })()}
         </div>
         <form onSubmit={handleChat} className={cn("relative flex h-[39px] shrink-0 items-center bg-white shadow-[0_0_4px_rgba(0,0,0,0.07)]", picked !== null && "hidden")}>
-          <input ref={chatRef} data-hint="chat-input" onFocus={() => { window.clearTimeout(blurTimer.current); try { if (window.matchMedia("(pointer: coarse)").matches) setTyping(true); } catch { /* no matchMedia */ } }} onBlur={() => { window.clearTimeout(blurTimer.current); blurTimer.current = window.setTimeout(() => setTyping(false), 250); }} value={draft} onChange={(event) => setDraft(event.target.value)} maxLength={200} aria-label={t("messages.placeholder")} placeholder={t("messages.placeholder")} autoComplete="off" className={cn(tour === 5 && "ring-4 ring-[#FFD84D]", "ml-[13px] h-full min-w-[100px] flex-1 border-0 bg-transparent text-[14px] text-black outline-none placeholder:text-[#CFCFCF]")} />
+          <input ref={chatRef} data-hint="chat-input" value={draft} onChange={(event) => setDraft(event.target.value)} maxLength={200} aria-label={t("messages.placeholder")} placeholder={t("messages.placeholder")} autoComplete="off" className={cn(tour === 5 && "ring-4 ring-[#FFD84D]", "ml-[13px] h-full min-w-[100px] flex-1 border-0 bg-transparent text-[14px] text-black outline-none placeholder:text-[#CFCFCF]")} />
           <button type="button" onClick={() => setEmojiOpen((value) => !value)} aria-expanded={emojiOpen} aria-label={t("messages.placeholder")} title="😊" className="ml-1 mr-1.5 h-[26px] w-[26px] shrink-0 rounded-full bg-contain bg-center bg-no-repeat active:brightness-75" style={{ backgroundImage: "url(/custom/orig/chat_btn_emoji.svg)" }} />
           {emojiOpen ? (
             <>
