@@ -961,6 +961,27 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const lineId = useRef(3);
   const listRef = useRef<HTMLDivElement>(null);
   const chatRef = useRef<HTMLInputElement>(null);
+  // Phone only: while the chat input is focused (keyboard open) the game picture keeps its size and slides up, and the chat keeps about 4 lines above the input.
+  const [typing, setTyping] = useState(false);
+  const [kbHeight, setKbHeight] = useState(0);
+  const [kbShift, setKbShift] = useState(0);
+  const stageWrapRef = useRef<HTMLDivElement>(null);
+  const blurTimer = useRef(0);
+  useEffect(() => {
+    if (!typing) { setKbHeight(0); setKbShift(0); return; }
+    const vv = window.visualViewport;
+    const update = () => {
+      const height = Math.round(vv ? vv.height : window.innerHeight);
+      setKbHeight(height);
+      const stage = stageWrapRef.current;
+      setKbShift(stage ? Math.max(0, Math.min(stage.offsetHeight - 140, stage.offsetHeight + 190 - height)) : 0);
+    };
+    update();
+    vv?.addEventListener("resize", update);
+    window.addEventListener("resize", update);
+    const later = window.setTimeout(update, 350);
+    return () => { vv?.removeEventListener("resize", update); window.removeEventListener("resize", update); window.clearTimeout(later); };
+  }, [typing]);
   // The smiley button next to the chat line puts ordinary emojis into the message (the game smileys open from your own photo).
   const [emojiOpen, setEmojiOpen] = useState(false);
   const [emojiCat, setEmojiCat] = useState(0);
@@ -3017,7 +3038,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     );
   }
   return (
-    <div data-bottle-root className={cn("relative flex h-full w-full bg-surface text-text", wide ? "flex-row" : "flex-col")}>
+    <div data-bottle-root className={cn("relative flex h-full w-full bg-surface text-text", wide ? "flex-row" : "flex-col")} style={typing && kbHeight > 0 && !wide ? { height: kbHeight, maxHeight: "100%" } : undefined}>
       {waitFor ? (() => {
         const ahead = Math.max(0, waitFor.position - 1);
         const words: Record<string, { title: string; text: string; first: string; ahead: string; other: string }> = {
@@ -3060,7 +3081,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         );
       })() : null}
       {/* On a phone-shaped window the title bar sits on the same wood as the table, with no seam between them. */}
-      <div className={cn("relative shrink-0", wide ? "h-full w-[54%]" : "mx-auto w-full max-w-[64dvh]")}>
+      <div ref={stageWrapRef} style={kbShift > 0 && !wide ? { marginTop: -kbShift } : undefined} className={cn("relative shrink-0", wide ? "h-full w-[54%]" : "mx-auto w-full max-w-[64dvh]")}>
       {wide ? null : <WoodTable className="pointer-events-none absolute inset-0 h-full w-full" />}
       {wide ? null : header}
       <div className={cn("relative shrink-0 overflow-hidden [container-type:size]", wide ? "h-full w-full bg-[#E0A04E]" : "aspect-[9/10] w-full")} onClick={() => { setPicked(null); if (dedicate) chooseMode(false); }}>
@@ -3856,9 +3877,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       </div>
       </div>
 
-      <div className={cn("relative flex min-h-0 min-w-0 flex-1 flex-col bg-[#F5F5F5]", wide ? "-ml-px" : "-mt-px")}>
+      <div style={typing && !wide ? { minHeight: 190 } : undefined} className={cn("relative flex min-h-0 min-w-0 flex-1 flex-col bg-[#F5F5F5]", wide ? "-ml-px" : "-mt-px")}>
         {video && wide && !musicMode ? (
-          <div className={cn("relative w-full shrink-0 bg-black", picked !== null || dedicate ? "h-0 overflow-hidden" : "aspect-video max-h-[42%]")}>
+          <div className={cn("relative w-full shrink-0 bg-black", picked !== null || dedicate || (typing && !wide) ? "h-0 overflow-hidden" : "aspect-video max-h-[42%]")}>
             <iframe ref={frameRef} onLoad={() => { window.setTimeout(pushMusic, 800); frameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: "listening", id: 1 }), "*"); }} src={ytSrc(video)} title="YouTube" referrerPolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen className="h-full w-full" />
             {soundPill}
             {track ? <img src={songByAvatar} alt="" title={t("bottle.musicNow")} className="pointer-events-none absolute left-1.5 top-1.5 h-8 w-8 select-none rounded-full border-2 border-white/80 object-cover shadow" draggable={false} /> : null}
@@ -4109,7 +4130,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           })()}
         </div>
         <form onSubmit={handleChat} className={cn("relative flex h-[39px] shrink-0 items-center bg-white shadow-[0_0_4px_rgba(0,0,0,0.07)]", picked !== null && "hidden")}>
-          <input ref={chatRef} data-hint="chat-input" value={draft} onChange={(event) => setDraft(event.target.value)} maxLength={200} aria-label={t("messages.placeholder")} placeholder={t("messages.placeholder")} autoComplete="off" className={cn(tour === 5 && "ring-4 ring-[#FFD84D]", "ml-[13px] h-full min-w-[100px] flex-1 border-0 bg-transparent text-[14px] text-black outline-none placeholder:text-[#CFCFCF]")} />
+          <input ref={chatRef} data-hint="chat-input" onFocus={() => { window.clearTimeout(blurTimer.current); try { if (window.matchMedia("(pointer: coarse)").matches) setTyping(true); } catch { /* no matchMedia */ } }} onBlur={() => { window.clearTimeout(blurTimer.current); blurTimer.current = window.setTimeout(() => setTyping(false), 250); }} value={draft} onChange={(event) => setDraft(event.target.value)} maxLength={200} aria-label={t("messages.placeholder")} placeholder={t("messages.placeholder")} autoComplete="off" className={cn(tour === 5 && "ring-4 ring-[#FFD84D]", "ml-[13px] h-full min-w-[100px] flex-1 border-0 bg-transparent text-[14px] text-black outline-none placeholder:text-[#CFCFCF]")} />
           <button type="button" onClick={() => setEmojiOpen((value) => !value)} aria-expanded={emojiOpen} aria-label={t("messages.placeholder")} title="😊" className="ml-1 mr-1.5 h-[26px] w-[26px] shrink-0 rounded-full bg-contain bg-center bg-no-repeat active:brightness-75" style={{ backgroundImage: "url(/custom/orig/chat_btn_emoji.svg)" }} />
           {emojiOpen ? (
             <>
