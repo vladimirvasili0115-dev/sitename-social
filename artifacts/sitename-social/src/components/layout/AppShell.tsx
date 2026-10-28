@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { isAuthRoute, isPublicRoute } from "@/lib/auth";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -26,14 +26,17 @@ export function AppShell({ children }: { children: ReactNode }) {
   const authRoute = isAuthRoute(pathname);
   const hadUser = useRef(false);
   const publicRoute = isPublicRoute(pathname);
-  // The game page is a light page: no side panels, no calls, no site music, no reels (less work in the background while playing).
-  const lite = pathname.startsWith("/bottle");
   const { settings } = useSettings();
+  // Inside the installed Android app the site's footer is shown on the feed (Lent) page only.
+  const [inApp, setInApp] = useState(false);
+  useEffect(() => {
+    try { setInApp(document.referrer.startsWith("android-app://") || window.matchMedia("(display-mode: fullscreen)").matches || window.matchMedia("(display-mode: standalone)").matches); } catch { setInApp(false); }
+  }, []);
   const ban = useSyncExternalStore(banStore.subscribe, banStore.get, banStore.getServer);
   // Calls: listen for incoming calls on every page while signed in.
   const profile = useProfile().user;
   const accountId = user?.id;
-  useEffect(() => { if (!accountId || lite) return; return startCallService({ id: accountId, name: profile.name, avatar: profile.avatar }); }, [accountId, lite]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (!accountId) return; return startCallService({ id: accountId, name: profile.name, avatar: profile.avatar }); }, [accountId]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (accountId) updateCallSelf({ id: accountId, name: profile.name, avatar: profile.avatar }); }, [accountId, profile.name, profile.avatar]);
 
   useEffect(() => {
@@ -57,8 +60,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   if (!ready || !user) return <div className="min-h-[100dvh] bg-bg" />;
   if (ban) return <BannedScreen ban={ban} />;
 
-  if (lite) return <div className="min-h-[100dvh] bg-bg text-text"><main className="min-w-0">{children}</main></div>;
-
   return <div className="min-h-[100dvh] bg-bg text-text">
     <Header />
     <SiteNotice />
@@ -66,7 +67,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <Sidebar />
       <main className="min-w-0 flex-1">{children}</main>
     </div>
-    <Footer />
+    {inApp && pathname.replace(/\/+$/, "") !== "/feed" ? null : <Footer />}
     <MobileNav />
     <FlashNotice />
     <ReportHost />
