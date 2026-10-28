@@ -12,10 +12,10 @@ import { COINS_PER_AZN, PAYMENTS_LIVE, TOPUP_MAX, TOPUP_MIN, TOPUP_PRESETS, star
 import { cn } from "@/lib/utils";
 
 const words = {
-  az: { title: "Market", lead: "Balansını artır, sonra Spin the Bottle oyununun marketində bonus ürəklər al.", amount: "Məbləğ seç", other: "Digər", enter: "Məbləği yaz", youGet: "Balansına əlavə olunacaq", range: "Məbləğ {min} ₼ ilə {max} ₼ arasında olmalıdır.", soon: "Onlayn ödəniş tezliklə qoşulacaq. Hələlik balans yalnız ödəniş təsdiqi ilə artırılır.", fail: "Ödəniş başlamadı. Bir az sonra yenidən yoxla.", game: "Oyun marketinə keç", gameHint: "Oyundakı marketdə balansınla ürək paketləri ala bilərsən.", history: "Son artırmalar", none: "Hələ artırma yoxdur.", pay: "Ödə" },
-  tr: { title: "Market", lead: "Bakiyeni artır, sonra Spin the Bottle oyununun marketinde bonus kalpler al.", amount: "Tutar seç", other: "Diğer", enter: "Tutarı yaz", youGet: "Bakiyene eklenecek", range: "Tutar {min} ₼ ile {max} ₼ arasında olmalı.", soon: "Online ödeme yakında açılacak. Şimdilik bakiye yalnızca onaylanan ödemeyle artar.", fail: "Ödeme başlamadı. Biraz sonra tekrar dene.", game: "Oyun marketine git", gameHint: "Oyundaki marketten bakiyenle kalp paketleri alabilirsin.", history: "Son yüklemeler", none: "Henüz yükleme yok.", pay: "Öde" },
-  ru: { title: "Маркет", lead: "Пополни баланс, затем покупай бонусные сердца в маркете игры Spin the Bottle.", amount: "Выбери сумму", other: "Другая", enter: "Введи сумму", youGet: "Будет добавлено на баланс", range: "Сумма должна быть от {min} ₼ до {max} ₼.", soon: "Онлайн-оплата скоро заработает. Пока баланс пополняется только после подтверждённой оплаты.", fail: "Оплата не началась. Попробуй чуть позже.", game: "Перейти в маркет игры", gameHint: "В маркете игры можно покупать пакеты сердец за баланс.", history: "Последние пополнения", none: "Пополнений пока нет.", pay: "Оплатить" },
-  en: { title: "Market", lead: "Top up your balance, then buy bonus hearts in the Spin the Bottle game market.", amount: "Choose an amount", other: "Other", enter: "Enter an amount", youGet: "Added to your balance", range: "The amount must be between {min} ₼ and {max} ₼.", soon: "Online payment will be connected soon. For now the balance only grows with a confirmed payment.", fail: "The payment did not start. Try again in a moment.", game: "Go to the game market", gameHint: "In the game market you can buy heart packs with your balance.", history: "Recent top-ups", none: "No top-ups yet.", pay: "Pay" },
+  az: { title: "Market", lead: "Balansını artır, sonra Spin the Bottle oyununun marketində bonus ürəklər al.", amount: "Məbləğ seç", other: "Digər", enter: "Məbləği yaz", youGet: "Balansına əlavə olunacaq", range: "Məbləğ {min} ₼ ilə {max} ₼ arasında olmalıdır.", soon: "Ödəniş Telegram botu (@Ravetill_bot) üzərindən edilir: kartı görəcək, çeki göndərəcəksiniz. Təsdiqdən sonra balans avtomatik artır.", fail: "Ödəniş başlamadı. Bir az sonra yenidən yoxla.", game: "Oyun marketinə keç", gameHint: "Oyundakı marketdə balansınla ürək paketləri ala bilərsən.", history: "Son artırmalar", none: "Hələ artırma yoxdur.", pay: "Ödə" },
+  tr: { title: "Market", lead: "Bakiyeni artır, sonra Spin the Bottle oyununun marketinde bonus kalpler al.", amount: "Tutar seç", other: "Diğer", enter: "Tutarı yaz", youGet: "Bakiyene eklenecek", range: "Tutar {min} ₼ ile {max} ₼ arasında olmalı.", soon: "Ödeme Telegram botu (@Ravetill_bot) üzerinden yapılır: kartı görür, dekontu gönderirsin. Onaydan sonra bakiye otomatik artar.", fail: "Ödeme başlamadı. Biraz sonra tekrar dene.", game: "Oyun marketine git", gameHint: "Oyundaki marketten bakiyenle kalp paketleri alabilirsin.", history: "Son yüklemeler", none: "Henüz yükleme yok.", pay: "Öde" },
+  ru: { title: "Маркет", lead: "Пополни баланс, затем покупай бонусные сердца в маркете игры Spin the Bottle.", amount: "Выбери сумму", other: "Другая", enter: "Введи сумму", youGet: "Будет добавлено на баланс", range: "Сумма должна быть от {min} ₼ до {max} ₼.", soon: "Оплата проходит через Telegram-бота (@Ravetill_bot): вы увидите карту и отправите чек. После подтверждения баланс пополнится автоматически.", fail: "Оплата не началась. Попробуй чуть позже.", game: "Перейти в маркет игры", gameHint: "В маркете игры можно покупать пакеты сердец за баланс.", history: "Последние пополнения", none: "Пополнений пока нет.", pay: "Оплатить" },
+  en: { title: "Market", lead: "Top up your balance, then buy bonus hearts in the Spin the Bottle game market.", amount: "Choose an amount", other: "Other", enter: "Enter an amount", youGet: "Added to your balance", range: "The amount must be between {min} ₼ and {max} ₼.", soon: "Payment goes through the Telegram bot (@Ravetill_bot): you see the card and send the receipt. After approval the balance is topped up automatically.", fail: "The payment did not start. Try again in a moment.", game: "Go to the game market", gameHint: "In the game market you can buy heart packs with your balance.", history: "Recent top-ups", none: "No top-ups yet.", pay: "Pay" },
 } as const;
 
 export default function MarketPage() {
@@ -33,7 +33,7 @@ export default function MarketPage() {
     if (!valid) return;
     setState("busy");
     const result = await startPayment(amount);
-    setState(result === "redirect" ? "busy" : result);
+    setState(result === "redirect" ? "idle" : result);
   }
   return (
     <div>
@@ -64,7 +64,7 @@ export default function MarketPage() {
           </div>
         ) : null}
         <p className="mt-4 flex items-center justify-between rounded-xl border border-border bg-surface-2 px-3.5 py-2.5 text-sm text-muted">{w.youGet}<Price value={valid ? Math.round(amount * COINS_PER_AZN) : 0} className="text-text" /></p>
-        {state === "soon" || !PAYMENTS_LIVE ? <p role="status" className="mt-3 flex items-start gap-2 rounded-xl border border-border bg-surface-2 p-3 text-xs leading-5 text-muted"><Lock size={15} className="mt-0.5 shrink-0 text-accent" />{w.soon}</p> : null}
+        <p role="status" className="mt-3 flex items-start gap-2 rounded-xl border border-border bg-surface-2 p-3 text-xs leading-5 text-muted"><Lock size={15} className="mt-0.5 shrink-0 text-accent" />{w.soon}</p>
         {state === "fail" ? <p role="alert" className="mt-3 rounded-xl border border-danger p-3 text-xs text-danger">{w.fail}</p> : null}
         <Button className="mt-4 h-12 w-full disabled:opacity-50" disabled={!PAYMENTS_LIVE || state === "busy" || !valid} onClick={() => void pay()}>{w.pay} · {valid ? amount.toFixed(2) : "0.00"} ₼</Button>
       </Card>

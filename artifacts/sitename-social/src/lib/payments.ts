@@ -2,7 +2,9 @@ import { supabase } from "./supabase";
 
 // Turn this on only after a payment provider is connected (an Edge Function "topup-pay" that returns the provider's payment page address).
 // Until then the market shows the packages, but the pay button is off: balance is never credited without a confirmed payment.
-export const PAYMENTS_LIVE = false;
+export const PAYMENTS_LIVE = true;
+// Payments go through the Telegram bot: card, receipt photo, then the owner presses "Approve" and the balance is credited.
+export const TELEGRAM_BOT = "Ravetill_bot";
 
 // 1 AZN = 100 balance coins (the same rate as the old packages); the server uses the same rate and has the last word.
 export const COINS_PER_AZN = 100;
@@ -22,12 +24,10 @@ export async function createTopupOrder(amount: number): Promise<TopupOrder | nul
 // 2) The provider's payment page. The balance is credited only by the server when the provider confirms the payment.
 export async function startPayment(amount: number): Promise<"soon" | "fail" | "redirect"> {
   if (!PAYMENTS_LIVE || !supabase) return "soon";
-  const order = await createTopupOrder(amount);
-  if (!order?.order) return "fail";
-  const { data, error } = await supabase.functions.invoke("topup-pay", { body: { order: order.order } });
-  const url = (data as { url?: string } | null)?.url;
-  if (error || !url || !/^https:\/\//i.test(url)) return "fail";
-  window.location.href = url;
+  const { data, error } = await supabase.rpc("pay_request_create", { p_amount: amount });
+  const code = (data as { code?: string } | null)?.code;
+  if (error || !code || !/^[0-9a-f]{12}$/.test(code)) return "fail";
+  window.location.href = `https://t.me/${TELEGRAM_BOT}?start=${code}`;
   return "redirect";
 }
 
