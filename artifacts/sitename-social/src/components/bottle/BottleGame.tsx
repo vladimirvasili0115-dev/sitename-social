@@ -961,26 +961,23 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const lineId = useRef(3);
   const listRef = useRef<HTMLDivElement>(null);
   const chatRef = useRef<HTMLInputElement>(null);
-  // Phone only: while the chat input is focused (keyboard open) the game picture keeps its size and slides up, and the chat keeps about 4 lines above the input.
+  // Phone only: while the chat input is focused (keyboard open) the game picture stays where it is; the chat shrinks and the input row sits right above the keyboard.
   const [typing, setTyping] = useState(false);
   const [kbHeight, setKbHeight] = useState(0);
-  const [kbShift, setKbShift] = useState(0);
-  const stageWrapRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
   const blurTimer = useRef(0);
   useEffect(() => {
-    if (!typing) { setKbHeight(0); setKbShift(0); return; }
+    if (!typing) { setKbHeight(0); return; }
     const vv = window.visualViewport;
-    const update = () => {
-      const height = Math.round(vv ? vv.height : window.innerHeight);
-      setKbHeight(height);
-      const stage = stageWrapRef.current;
-      setKbShift(stage ? Math.max(0, Math.min(stage.offsetHeight - 140, stage.offsetHeight + 190 - height)) : 0);
-    };
+    const update = () => setKbHeight(Math.round(vv ? vv.height : window.innerHeight));
+    // The browser scrolls the game window up to reveal the input: put it back so the picture does not move.
+    const unscroll = () => { for (let node: HTMLElement | null = rootRef.current; node; node = node.parentElement) if (node.scrollTop) node.scrollTop = 0; };
     update();
     vv?.addEventListener("resize", update);
     window.addEventListener("resize", update);
     const later = window.setTimeout(update, 350);
-    return () => { vv?.removeEventListener("resize", update); window.removeEventListener("resize", update); window.clearTimeout(later); };
+    const keep = window.setInterval(unscroll, 40);
+    return () => { vv?.removeEventListener("resize", update); window.removeEventListener("resize", update); window.clearTimeout(later); window.clearInterval(keep); };
   }, [typing]);
   // The smiley button next to the chat line puts ordinary emojis into the message (the game smileys open from your own photo).
   const [emojiOpen, setEmojiOpen] = useState(false);
@@ -3038,7 +3035,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     );
   }
   return (
-    <div data-bottle-root className={cn("relative flex h-full w-full bg-surface text-text", wide ? "flex-row" : "flex-col")} style={typing && kbHeight > 0 && !wide ? { height: kbHeight, maxHeight: "100%" } : undefined}>
+    <div ref={rootRef} data-bottle-root className={cn("relative flex h-full w-full bg-surface text-text", wide ? "flex-row" : "flex-col")} style={typing && kbHeight > 0 && !wide ? { height: kbHeight, maxHeight: "100%" } : undefined}>
       {waitFor ? (() => {
         const ahead = Math.max(0, waitFor.position - 1);
         const words: Record<string, { title: string; text: string; first: string; ahead: string; other: string }> = {
@@ -3081,7 +3078,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         );
       })() : null}
       {/* On a phone-shaped window the title bar sits on the same wood as the table, with no seam between them. */}
-      <div ref={stageWrapRef} style={kbShift > 0 && !wide ? { marginTop: -kbShift } : undefined} className={cn("relative shrink-0", wide ? "h-full w-[54%]" : "mx-auto w-full max-w-[64dvh]")}>
+      <div className={cn("relative shrink-0", wide ? "h-full w-[54%]" : "mx-auto w-full max-w-[64dvh]")}>
       {wide ? null : <WoodTable className="pointer-events-none absolute inset-0 h-full w-full" />}
       {wide ? null : header}
       <div className={cn("relative shrink-0 overflow-hidden [container-type:size]", wide ? "h-full w-full bg-[#E0A04E]" : "aspect-[9/10] w-full")} onClick={() => { setPicked(null); if (dedicate) chooseMode(false); }}>
@@ -3877,7 +3874,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       </div>
       </div>
 
-      <div style={typing && !wide ? { minHeight: 190 } : undefined} className={cn("relative flex min-h-0 min-w-0 flex-1 flex-col bg-[#F5F5F5]", wide ? "-ml-px" : "-mt-px")}>
+      <div className={cn("relative flex min-h-0 min-w-0 flex-1 flex-col bg-[#F5F5F5]", wide ? "-ml-px" : "-mt-px")}>
         {video && wide && !musicMode ? (
           <div className={cn("relative w-full shrink-0 bg-black", picked !== null || dedicate || (typing && !wide) ? "h-0 overflow-hidden" : "aspect-video max-h-[42%]")}>
             <iframe ref={frameRef} onLoad={() => { window.setTimeout(pushMusic, 800); frameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: "listening", id: 1 }), "*"); }} src={ytSrc(video)} title="YouTube" referrerPolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen className="h-full w-full" />
