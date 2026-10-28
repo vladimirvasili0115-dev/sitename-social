@@ -8,15 +8,14 @@ import { cn } from "@/lib/utils";
 import { useNavBadges } from "./useNavBadges";
 import { newestUnreadChat, openChatFromBadge } from "@/lib/messagesSync";
 
-// The bottom bar shows only the feed (Lent) and the Menu button; the other pages are in the Menu.
-const mobileHrefs = ["/feed"];
+const mobileHrefs = ["/feed", "/friends", "/messages", "/profile"];
 export function MobileNav() {
   const pathname = usePathname();
   const { t } = useTranslation();
   const badges = useNavBadges();
   const items = navigation.filter((item) => mobileHrefs.includes(item.href));
   return (
-    <nav aria-label={t("nav.mainNavigation")} className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-2 border-t border-border bg-surface/95 px-1 pb-[env(safe-area-inset-bottom)] pt-1 backdrop-blur lg:hidden">
+    <nav aria-label={t("nav.mainNavigation")} className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-border bg-surface/95 px-1 pb-[env(safe-area-inset-bottom)] pt-1 backdrop-blur lg:hidden">
       {items.map(({ key, href, icon: Icon }) => {
         const active = pathname === href;
         const unreadChat = href === "/messages" && badges[href] ? newestUnreadChat() : null;

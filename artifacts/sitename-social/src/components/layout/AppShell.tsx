@@ -62,7 +62,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <Sidebar />
       <main className="min-w-0 flex-1">{children}</main>
     </div>
-    {pathname.replace(/\/+$/, "") === "/menu" ? null : <Footer />}
+    <Footer />
     <MobileNav />
     <FlashNotice />
     <ReportHost />
