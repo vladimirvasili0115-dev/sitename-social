@@ -23,7 +23,8 @@ export async function createTopupOrder(amount: number): Promise<TopupOrder | nul
 
 // 2) On-site payment: a request (card is taken in turn), the card, the receipt photo, then the owner approves in Telegram.
 export type PayRequest = { id: string; amount: number; status: "new" | "card" | "receipt" | "approved" | "rejected" | "expired"; expires_at: string };
-export type PayCard = { number: string; holder: string; amount: number; expires_at: string };
+export type PayMethod = "card" | "m10";
+export type PayCard = { number: string; holder: string; m10?: string | null; amount: number; expires_at: string };
 
 export async function createPayRequest(amount: number): Promise<{ id?: string; error?: "bad" | "many" | "nocard" | "fail" }> {
   if (!PAYMENTS_LIVE || !supabase) return { error: "fail" };
@@ -57,11 +58,12 @@ export async function cancelPayRequest(id: string) {
 }
 
 export const RECEIPT_MAX_BYTES = 5 * 1024 * 1024;
-export async function sendReceipt(id: string, image: File): Promise<boolean> {
+export async function sendReceipt(id: string, image: File, method: PayMethod = "card"): Promise<boolean> {
   if (!supabase || image.size > RECEIPT_MAX_BYTES || !image.type.startsWith("image/")) return false;
   const body = new FormData();
   body.append("id", id);
   body.append("image", image);
+  body.append("method", method);
   const { error } = await supabase.functions.invoke(PAY_FUNCTION, { body });
   if (error) { console.error("receipt upload failed:", error.message); return false; }
   return true;

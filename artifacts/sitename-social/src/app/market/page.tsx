@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { useTranslation } from "@/i18n/useTranslation";
 import { formatDay } from "@/lib/datetime";
-import { COINS_PER_AZN, PAYMENTS_LIVE, RECEIPT_MAX_BYTES, TOPUP_MAX, TOPUP_MIN, TOPUP_PRESETS, cancelPayRequest, createPayRequest, getPayCard, loadPayRequest, sendReceipt, type PayCard, type PayRequest } from "@/lib/payments";
+import { COINS_PER_AZN, PAYMENTS_LIVE, RECEIPT_MAX_BYTES, TOPUP_MAX, TOPUP_MIN, TOPUP_PRESETS, cancelPayRequest, createPayRequest, getPayCard, loadPayRequest, sendReceipt, type PayCard, type PayMethod, type PayRequest } from "@/lib/payments";
 import { refreshGifts } from "@/lib/giftsSync";
 import { cn } from "@/lib/utils";
 
@@ -21,10 +21,10 @@ const words = {
 
 // Texts of the on-site payment panel (the card, the receipt upload, the waiting for the owner's approval).
 const panelWords = {
-  az: { card: "Kart nömrəsi", holder: "Kartın sahibi", copy: "Kopyala", copied: "Kopyalandı", left: "Qalan vaxt", step: "Bu kartın nömrəsinə dəqiq məbləği köçür, sonra ödəniş çekinin şəklini seç və «Ödədim» düyməsinə bas.", pick: "Çekin şəklini seç", chosen: "Seçildi", paid: "Ödədim", sending: "Göndərilir...", waiting: "Çek göndərildi. Təsdiq gözlənilir, balans təsdiqdən sonra avtomatik artacaq.", done: "✅ Ödəniş təsdiqləndi. Balansına əlavə olundu.", rejected: "❌ Ödəniş təsdiqlənmədi. Sualın varsa bizimlə əlaqə saxla.", expired: "Vaxt bitdi. Yenidən başla.", again: "Yeni ödəniş", cancel: "Ləğv et", many: "Çoxlu açıq sorğun var. Bir az gözlə və ya əvvəlkini tamamla.", big: "Şəkil 5 MB-dan böyük olmamalıdır.", bad: "Yalnız şəkil faylı seç.", fail: "Göndərilmədi. Bir az sonra yenidən yoxla." },
-  tr: { card: "Kart numarası", holder: "Kart sahibi", copy: "Kopyala", copied: "Kopyalandı", left: "Kalan süre", step: "Bu kart numarasına tam tutarı gönder, sonra ödeme dekontunun fotoğrafını seç ve «Ödedim» düğmesine bas.", pick: "Dekont fotoğrafını seç", chosen: "Seçildi", paid: "Ödedim", sending: "Gönderiliyor...", waiting: "Dekont gönderildi. Onay bekleniyor, bakiye onaydan sonra otomatik artar.", done: "✅ Ödeme onaylandı. Bakiyene eklendi.", rejected: "❌ Ödeme onaylanmadı. Sorun varsa bizimle iletişime geç.", expired: "Süre doldu. Yeniden başla.", again: "Yeni ödeme", cancel: "İptal", many: "Çok sayıda açık talebin var. Biraz bekle veya öncekini tamamla.", big: "Fotoğraf 5 MB'tan büyük olmamalı.", bad: "Yalnızca fotoğraf dosyası seç.", fail: "Gönderilemedi. Biraz sonra tekrar dene." },
-  ru: { card: "Номер карты", holder: "Владелец карты", copy: "Копировать", copied: "Скопировано", left: "Осталось времени", step: "Переведи точную сумму на этот номер карты, затем выбери фото чека и нажми «Я оплатил».", pick: "Выбрать фото чека", chosen: "Выбрано", paid: "Я оплатил", sending: "Отправка...", waiting: "Чек отправлен. Ожидается подтверждение, баланс пополнится автоматически после него.", done: "✅ Оплата подтверждена. Баланс пополнен.", rejected: "❌ Оплата не подтверждена. Если есть вопросы, свяжись с нами.", expired: "Время вышло. Начни заново.", again: "Новая оплата", cancel: "Отмена", many: "У тебя много открытых заявок. Подожди или завершите предыдущую.", big: "Фото не больше 5 МБ.", bad: "Выбери файл изображения.", fail: "Не отправилось. Попробуй позже." },
-  en: { card: "Card number", holder: "Card holder", copy: "Copy", copied: "Copied", left: "Time left", step: "Transfer the exact amount to this card, then choose the photo of the payment receipt and press “I paid”.", pick: "Choose the receipt photo", chosen: "Selected", paid: "I paid", sending: "Sending...", waiting: "Receipt sent. Waiting for approval, the balance is credited automatically after it.", done: "✅ Payment approved. Added to your balance.", rejected: "❌ Payment was not approved. Contact us if you have questions.", expired: "Time is over. Start again.", again: "New payment", cancel: "Cancel", many: "You have many open requests. Wait or finish the previous one.", big: "The photo must be under 5 MB.", bad: "Choose an image file.", fail: "Could not send. Try again later." },
+  az: { card: "Kart nömrəsi", cardTab: "Kart", m10Tab: "M10", m10: "M10 nömrəsi", holder: "Kartın sahibi", copy: "Kopyala", copied: "Kopyalandı", left: "Qalan vaxt", step: "Dəqiq məbləği seçdiyin üsulla (kart və ya M10) göstərilən nömrəyə köçür, sonra ödəniş çekinin şəklini seç və «Ödədim» düyməsinə bas.", pick: "Çekin şəklini seç", chosen: "Seçildi", paid: "Ödədim", sending: "Göndərilir...", waiting: "Çek göndərildi. Təsdiq gözlənilir, balans təsdiqdən sonra avtomatik artacaq.", done: "✅ Ödəniş təsdiqləndi. Balansına əlavə olundu.", rejected: "❌ Ödəniş təsdiqlənmədi. Sualın varsa bizimlə əlaqə saxla.", expired: "Vaxt bitdi. Yenidən başla.", again: "Yeni ödəniş", cancel: "Ləğv et", many: "Çoxlu açıq sorğun var. Bir az gözlə və ya əvvəlkini tamamla.", big: "Şəkil 5 MB-dan böyük olmamalıdır.", bad: "Yalnız şəkil faylı seç.", fail: "Göndərilmədi. Bir az sonra yenidən yoxla." },
+  tr: { card: "Kart numarası", cardTab: "Kart", m10Tab: "M10", m10: "M10 numarası", holder: "Kart sahibi", copy: "Kopyala", copied: "Kopyalandı", left: "Kalan süre", step: "Tam tutarı seçtiğin yöntemle (kart veya M10) gösterilen numaraya gönder, sonra ödeme dekontunun fotoğrafını seç ve «Ödedim» düğmesine bas.", pick: "Dekont fotoğrafını seç", chosen: "Seçildi", paid: "Ödedim", sending: "Gönderiliyor...", waiting: "Dekont gönderildi. Onay bekleniyor, bakiye onaydan sonra otomatik artar.", done: "✅ Ödeme onaylandı. Bakiyene eklendi.", rejected: "❌ Ödeme onaylanmadı. Sorun varsa bizimle iletişime geç.", expired: "Süre doldu. Yeniden başla.", again: "Yeni ödeme", cancel: "İptal", many: "Çok sayıda açık talebin var. Biraz bekle veya öncekini tamamla.", big: "Fotoğraf 5 MB'tan büyük olmamalı.", bad: "Yalnızca fotoğraf dosyası seç.", fail: "Gönderilemedi. Biraz sonra tekrar dene." },
+  ru: { card: "Номер карты", cardTab: "Карта", m10Tab: "M10", m10: "Номер M10", holder: "Владелец карты", copy: "Копировать", copied: "Скопировано", left: "Осталось времени", step: "Переведи точную сумму выбранным способом (карта или M10) на указанный номер, затем выбери фото чека и нажми «Я оплатил».", pick: "Выбрать фото чека", chosen: "Выбрано", paid: "Я оплатил", sending: "Отправка...", waiting: "Чек отправлен. Ожидается подтверждение, баланс пополнится автоматически после него.", done: "✅ Оплата подтверждена. Баланс пополнен.", rejected: "❌ Оплата не подтверждена. Если есть вопросы, свяжись с нами.", expired: "Время вышло. Начни заново.", again: "Новая оплата", cancel: "Отмена", many: "У тебя много открытых заявок. Подожди или завершите предыдущую.", big: "Фото не больше 5 МБ.", bad: "Выбери файл изображения.", fail: "Не отправилось. Попробуй позже." },
+  en: { card: "Card number", cardTab: "Card", m10Tab: "M10", m10: "M10 number", holder: "Card holder", copy: "Copy", copied: "Copied", left: "Time left", step: "Transfer the exact amount by the method you chose (card or M10) to the number shown, then choose the photo of the payment receipt and press “I paid”.", pick: "Choose the receipt photo", chosen: "Selected", paid: "I paid", sending: "Sending...", waiting: "Receipt sent. Waiting for approval, the balance is credited automatically after it.", done: "✅ Payment approved. Added to your balance.", rejected: "❌ Payment was not approved. Contact us if you have questions.", expired: "Time is over. Start again.", again: "New payment", cancel: "Cancel", many: "You have many open requests. Wait or finish the previous one.", big: "The photo must be under 5 MB.", bad: "Choose an image file.", fail: "Could not send. Try again later." },
 } as const;
 
 function clock(ms: number) {
@@ -49,6 +49,7 @@ export default function MarketPage() {
   const [image, setImage] = useState<File | null>(null);
   const [note, setNote] = useState("");
   const [copied, setCopied] = useState(false);
+  const [method, setMethod] = useState<PayMethod>("card");
   const [now, setNow] = useState(Date.now());
   const fileInput = useRef<HTMLInputElement>(null);
   // A payment that was started earlier (page refreshed) is shown again.
@@ -72,7 +73,7 @@ export default function MarketPage() {
   }, [req]);
   const left = card ? Date.parse(card.expires_at) - now : 0;
   const timedOut = req !== null && (req.status === "new" || req.status === "card") && card !== null && left <= 0;
-  function reset() { setReq(null); setCard(null); setImage(null); setNote(""); setState("idle"); }
+  function reset() { setMethod("card"); setReq(null); setCard(null); setImage(null); setNote(""); setState("idle"); }
   async function pay() {
     if (!valid) return;
     setState("busy");
@@ -87,7 +88,8 @@ export default function MarketPage() {
   }
   async function copyNumber() {
     if (!card) return;
-    try { await navigator.clipboard.writeText(card.number); setCopied(true); window.setTimeout(() => setCopied(false), 1800); } catch { /* clipboard blocked */ }
+    const raw = method === "m10" ? (card.m10 ?? "") : card.number;
+    try { await navigator.clipboard.writeText(raw); setCopied(true); window.setTimeout(() => setCopied(false), 1800); } catch { /* clipboard blocked */ }
   }
   function chooseImage(file: File | undefined) {
     setNote("");
@@ -100,7 +102,7 @@ export default function MarketPage() {
     if (!req || !image) return;
     setState("busy");
     setNote("");
-    const ok = await sendReceipt(req.id, image);
+    const ok = await sendReceipt(req.id, image, method);
     setState("idle");
     if (!ok) return setNote(pw.fail);
     setReq({ ...req, status: "receipt" });
@@ -121,13 +123,16 @@ export default function MarketPage() {
           {req.status === "receipt" ? <p role="status" className="mt-3 flex items-start gap-2 rounded-xl border border-border bg-surface-2 p-3 text-sm text-muted"><Lock size={15} className="mt-0.5 shrink-0 text-accent" />{pw.waiting}</p> : null}
           {(req.status === "new" || req.status === "card") && card && !timedOut ? (
             <>
+              <div className="mt-3 grid grid-cols-2 gap-2" role="tablist">
+                {(["card", "m10"] as const).map((item) => <button key={item} type="button" role="tab" aria-selected={method === item} onClick={() => { setMethod(item); setCopied(false); }} className={cn("h-11 rounded-xl border text-sm font-semibold", method === item ? "border-accent bg-surface-2 text-accent" : "border-border text-muted hover:text-text")}>{item === "card" ? `💳 ${pw.cardTab}` : `📱 ${pw.m10Tab}`}</button>)}
+              </div>
               <div className="mt-3 rounded-xl border border-border bg-surface-2 p-3.5">
-                <p className="text-xs text-muted">{pw.card}</p>
+                <p className="text-xs text-muted">{method === "m10" ? pw.m10 : pw.card}</p>
                 <div className="mt-1 flex items-center gap-2">
-                  <span className="min-w-0 flex-1 break-all text-xl font-bold tabular-nums tracking-wide">{card.number.replace(/(\d{4})(?=\d)/g, "$1 ")}</span>
+                  <span className="min-w-0 flex-1 break-all text-xl font-bold tabular-nums tracking-wide">{method === "m10" ? (card.m10 ?? "").replace(/^(\d{3})(\d{3})(\d{2})(\d{2})$/, "$1 $2 $3 $4") : card.number.replace(/(\d{4})(?=\d)/g, "$1 ")}</span>
                   <button type="button" onClick={() => void copyNumber()} className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-border px-3 text-xs font-semibold hover:border-accent">{copied ? <Check size={14} /> : <Copy size={14} />}{copied ? pw.copied : pw.copy}</button>
                 </div>
-                {card.holder ? <p className="mt-2 text-xs text-muted">{pw.holder}: <span className="font-semibold text-text">{card.holder}</span></p> : null}
+                {method === "card" && card.holder ? <p className="mt-2 text-xs text-muted">{pw.holder}: <span className="font-semibold text-text">{card.holder}</span></p> : null}
                 <p className="mt-2 text-sm font-semibold">{Number(req.amount).toFixed(2)} ₼ · <span className="font-normal text-muted">{pw.left}: {clock(left)}</span></p>
               </div>
               <p className="mt-3 text-xs leading-5 text-muted">{pw.step}</p>
