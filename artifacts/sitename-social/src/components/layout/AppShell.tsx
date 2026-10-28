@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useRef, useSyncExternalStore, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { isAuthRoute, isPublicRoute } from "@/lib/auth";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -27,11 +27,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   const hadUser = useRef(false);
   const publicRoute = isPublicRoute(pathname);
   const { settings } = useSettings();
-  // Inside the installed Android app the site's footer is shown on the feed (Lent) page only.
-  const [inApp, setInApp] = useState(false);
-  useEffect(() => {
-    try { setInApp(document.referrer.startsWith("android-app://") || window.matchMedia("(display-mode: fullscreen)").matches || window.matchMedia("(display-mode: standalone)").matches); } catch { setInApp(false); }
-  }, []);
   const ban = useSyncExternalStore(banStore.subscribe, banStore.get, banStore.getServer);
   // Calls: listen for incoming calls on every page while signed in.
   const profile = useProfile().user;
@@ -67,7 +62,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <Sidebar />
       <main className="min-w-0 flex-1">{children}</main>
     </div>
-    {inApp && pathname.replace(/\/+$/, "") !== "/feed" ? null : <Footer />}
+    {pathname.replace(/\/+$/, "") === "/menu" ? null : <Footer />}
     <MobileNav />
     <FlashNotice />
     <ReportHost />

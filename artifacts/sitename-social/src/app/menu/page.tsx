@@ -21,7 +21,7 @@ export default function MenuPage() {
     if (query.trim()) router.push(`/search?q=${encodeURIComponent(query.trim())}`);
   }
   return (
-    <div>
+    <div className="pb-24 lg:pb-0">
       <h1 className="mb-4 px-1 text-[23px] font-semibold tracking-[-0.035em]">{t("nav.menu")}</h1>
       <form onSubmit={handleSubmit} className="mb-4"><SearchInput value={query} onChange={setQuery} label={t("header.search")} /></form>
       <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
