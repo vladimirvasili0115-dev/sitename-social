@@ -26,6 +26,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const authRoute = isAuthRoute(pathname);
   const hadUser = useRef(false);
   const publicRoute = isPublicRoute(pathname);
+  // On a phone the site footer (SAYT / ƏYLƏNCƏ / HESAB / MƏLUMAT) is shown on the feed (Lent) page only; on a computer it stays everywhere.
+  const onFeed = pathname.replace(/\/+$/, "") === "/feed";
   const { settings } = useSettings();
   const ban = useSyncExternalStore(banStore.subscribe, banStore.get, banStore.getServer);
   // Calls: listen for incoming calls on every page while signed in.
@@ -58,11 +60,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   return <div className="min-h-[100dvh] bg-bg text-text">
     <Header />
     <SiteNotice />
-    <div className="mx-auto flex min-h-[calc(100dvh-72px)] max-w-[1160px] items-start gap-6 px-4 pt-6 md:px-6">
+    <div className={`mx-auto flex min-h-[calc(100dvh-72px)] max-w-[1160px] items-start gap-6 px-4 pt-6 md:px-6${onFeed ? "" : " pb-24 lg:pb-0"}`}>
       <Sidebar />
       <main className="min-w-0 flex-1">{children}</main>
     </div>
-    <Footer />
+    <div className={onFeed ? undefined : "hidden lg:block"}><Footer /></div>
     <MobileNav />
     <FlashNotice />
     <ReportHost />
