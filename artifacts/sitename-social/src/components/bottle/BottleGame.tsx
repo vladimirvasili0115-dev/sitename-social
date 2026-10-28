@@ -967,6 +967,14 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [kbTop, setKbTop] = useState(0);
   const rootRef = useRef<HTMLDivElement>(null);
   const blurTimer = useRef(0);
+  // While the game is open the phone resizes the page when the keyboard opens (instead of panning it up), so the game picture keeps its place.
+  useEffect(() => {
+    const meta = document.querySelector('meta[name="viewport"]');
+    if (!meta) return;
+    const before = meta.getAttribute("content") ?? "";
+    if (!before.includes("interactive-widget")) meta.setAttribute("content", `${before}${before ? ", " : ""}interactive-widget=resizes-content`);
+    return () => { meta.setAttribute("content", before); };
+  }, []);
   useEffect(() => {
     if (!typing) { setKbHeight(0); setKbTop(0); return; }
     const vv = window.visualViewport;
