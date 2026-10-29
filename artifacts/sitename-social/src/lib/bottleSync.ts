@@ -116,3 +116,7 @@ export const bottleEffectOf = (user: string) => call<string | null>("bottle_effe
 export type BottleYtTrack = { id: string; title: string; duration?: string };
 export const bottleYtGet = (q: string) => call<BottleYtTrack[]>("bottle_yt_get", { p_q: q });
 export const bottleYtPut = (q: string, list: BottleYtTrack[]) => call<null>("bottle_yt_put", { p_q: q, p_list: list });
+
+// "Accept kisses" setting: kept on the server so a player who switches it off really stops receiving kisses.
+export const bottleGetAccept = () => call<boolean>("bottle_get_accept");
+export const bottleSetAccept = (accept: boolean) => call<boolean>("bottle_set_accept", { p_accept: accept });
