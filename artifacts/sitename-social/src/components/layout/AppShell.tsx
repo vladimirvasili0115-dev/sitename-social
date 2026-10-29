@@ -18,6 +18,7 @@ import { CallHost } from "@/components/calls/CallHost";
 import { ReelsHost } from "@/components/reels/ReelsHost";
 import { startCallService, updateCallSelf } from "@/lib/callSync";
 import { useProfile } from "@/components/profile/useProfile";
+import { PushPrompt } from "./PushPrompt";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -67,6 +68,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className={onFeed ? undefined : "hidden lg:block"}><Footer /></div>
     <MobileNav />
     <FlashNotice />
+    <PushPrompt />
     <ReportHost />
     <SiteMusicHost />
     <CallHost />
