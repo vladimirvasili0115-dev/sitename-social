@@ -7,6 +7,7 @@ import { Palette, Eye, EyeOff, KeyRound, Award, HeartOff, Lock, LockOpen, Wine, 
 import { useSyncExternalStore } from "react";
 import { refreshVerified, verifiedStore } from "@/lib/verifiedSync";
 import { setUserPassword, banUser, deleteUser, fetchAdminUsers, fetchUserDetail, grantCoins, grantHearts, setModerator, setVerified, vipAll, vipCount, gesturesOpenGet, gesturesOpenSet, setNameColor, gameState, gameGrant, gameFlags, statFreezeGet, statFreezeSet, pageAllowGet, pageAllowSet, type PageAllow, giftAllowGet, giftAllowSet, type GiftAllow, type StatKind, type StatFreeze, type GameFlags, type GameState, type AdminUser, type UserDetail } from "@/lib/adminSync";
+import { broadcastCount, broadcastSend } from "@/lib/adminSync";
 import type { TranslationKey } from "@/i18n/LanguageProvider";
 import { initialsAvatar } from "@/lib/avatar";
 import { formatDay } from "@/lib/datetime";
@@ -150,6 +151,7 @@ export function AdminUsers({ owner }: { owner: boolean }) {
     <>
       <VipAllCard />
       <GesturesOpenCard />
+      {owner ? <BroadcastCard /> : null}
       <SearchInput value={query} onChange={setQuery} label={t(owner ? "admin.searchUsers" : "admin.searchUsersMod")} className="mb-4" />
       {failed ? <p role="alert" className="mb-3 rounded-xl border border-danger px-4 py-2.5 text-sm text-danger">{t("report.failed")}</p> : null}
       {users === null ? null : users.length ? (
@@ -284,6 +286,75 @@ export function AdminUsers({ owner }: { owner: boolean }) {
 }
 
 // One click gives every player VIP for the chosen number of days (the owner and moderators can do it).
+// Message to all players. Nothing is sent before the admin confirms the number of people in a window; the sending runs in small batches.
+function BroadcastCard() {
+  const [text, setText] = useState("");
+  const [step, setStep] = useState<"edit" | "confirm" | "sending" | "done">("edit");
+  const [total, setTotal] = useState(0);
+  const [sent, setSent] = useState(0);
+  const [skipped, setSkipped] = useState(0);
+  const [error, setError] = useState(false);
+  const clean = text.trim();
+  async function ask() {
+    setError(false);
+    const count = await broadcastCount();
+    if (typeof count !== "number") { setError(true); return; }
+    setTotal(count);
+    setStep("confirm");
+  }
+  async function send() {
+    setError(false);
+    setSent(0);
+    setSkipped(0);
+    setStep("sending");
+    let after: string | null = null;
+    let doneSent = 0;
+    let doneSkipped = 0;
+    for (let round = 0; round < 1000; round += 1) {
+      const batch = await broadcastSend(clean, after);
+      if (!batch || typeof batch !== "object") { setError(true); setStep("done"); return; }
+      doneSent += batch.sent;
+      doneSkipped += batch.skipped;
+      setSent(doneSent);
+      setSkipped(doneSkipped);
+      if (batch.done) break;
+      after = batch.last;
+    }
+    setStep("done");
+    setText("");
+  }
+  return (
+    <Card className="mb-4 p-4">
+      <div className="flex items-start gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#DBEAFE] text-xl">📣</span>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold">Hamıya mesaj</p>
+          <p className="mt-0.5 text-xs leading-5 text-muted">Mesaj sənin hesabından hər oyunçunun Mesajlar qutusuna düşür. Göndərməzdən əvvəl neçə nəfərə gedəcəyi göstərilir və təsdiq soruşulur.</p>
+        </div>
+      </div>
+      <textarea value={text} onChange={(event) => { setText(event.target.value); if (step === "done") setStep("edit"); }} disabled={step === "sending" || step === "confirm"} maxLength={1000} rows={3} aria-label="Hamıya mesaj" placeholder="Mesajın mətni (1000 simvola qədər)" className="mt-3 w-full resize-y rounded-xl border border-border bg-surface-2 p-3 text-sm text-text outline-none placeholder:text-muted focus:border-accent disabled:opacity-60" />
+      {step === "confirm" ? (
+        <div role="alertdialog" aria-label="Təsdiq" className="mt-3 rounded-xl border border-danger px-4 py-3">
+          <p className="text-sm font-semibold text-danger">{total} nəfərə göndərilsin?</p>
+          <p className="mt-1 whitespace-pre-wrap break-words text-xs text-muted">{clean}</p>
+          <p className="mt-1 text-xs font-semibold text-danger">Göndərildikdən sonra geri qaytarmaq olmur.</p>
+          <div className="mt-3 flex justify-end gap-2">
+            <button type="button" onClick={() => setStep("edit")} className="inline-flex h-9 items-center rounded-xl border border-border px-3.5 text-xs font-semibold hover:bg-surface-2">Ləğv et</button>
+            <button type="button" onClick={() => void send()} className="inline-flex h-9 items-center rounded-xl bg-danger px-3.5 text-xs font-semibold text-white hover:brightness-110">Təsdiq et</button>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-3 flex items-center justify-end gap-3">
+          {step === "sending" ? <span className="text-xs font-semibold text-muted">Göndərilir… {sent}</span> : null}
+          <button type="button" disabled={!clean || step === "sending"} onClick={() => void ask()} className="inline-flex h-9 items-center rounded-xl bg-[#2563EB] px-3.5 text-xs font-semibold text-white hover:brightness-110 disabled:opacity-50">Göndər</button>
+        </div>
+      )}
+      {step === "done" && !error ? <p role="status" className="mt-2 text-xs font-semibold text-accent">Göndərildi: {sent}{skipped ? ` (keçildi: ${skipped} — məxfilik ayarı və ya başqa səbəb)` : ""}</p> : null}
+      {error ? <p role="status" className="mt-2 text-xs font-semibold text-danger">Xəta oldu.{sent ? ` Artıq göndərilən: ${sent}.` : ""} Yenidən basma, əvvəlcə yoxla.</p> : null}
+    </Card>
+  );
+}
+
 function GesturesOpenCard() {
   const { t } = useTranslation();
   const [on, setOn] = useState<boolean | null>(null);

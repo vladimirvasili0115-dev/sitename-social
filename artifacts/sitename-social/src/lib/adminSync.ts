@@ -139,3 +139,8 @@ export const saveWelcome = async (body: string, enabled: boolean) => (await call
 export type PageAllow = Record<string, boolean>;
 export const pageAllowGet = (ids: string[]) => call<PageAllow>("admin_page_allow_get", { ids });
 export const pageAllowSet = (id: string, on: boolean) => call<boolean>("admin_page_allow", { target: id, p_on: on });
+
+// Message to everybody: first the number of people who would get it (for the "are you sure?" window), then the sending in small batches.
+export type BroadcastBatch = { sent: number; skipped: number; last: string | null; done: boolean };
+export const broadcastCount = () => call<number>("admin_broadcast_count");
+export const broadcastSend = (text: string, after: string | null) => call<BroadcastBatch>("admin_broadcast", { p_text: text, p_after: after, p_limit: 300 });
