@@ -120,3 +120,6 @@ export const bottleYtPut = (q: string, list: BottleYtTrack[]) => call<null>("bot
 // "Accept kisses" setting: kept on the server so a player who switches it off really stops receiving kisses.
 export const bottleGetAccept = () => call<boolean>("bottle_get_accept");
 export const bottleSetAccept = (accept: boolean) => call<boolean>("bottle_set_accept", { p_accept: accept });
+
+// VIP and TOP ribbons of a player who is not at my table (the card of an admirer or of someone from the ratings).
+export const bottleBadges = (user: string) => call<{ vip: boolean; top: boolean }>("bottle_badges", { p_user: user });

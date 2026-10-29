@@ -39,7 +39,7 @@ import { refreshFriends } from "@/lib/friendsSync";
 import { ensureMessagesLoaded, openRemoteChat, remoteChats, sendRemoteMessage } from "@/lib/messagesSync";
 import { uploadBlob } from "@/lib/media";
 import { refreshGifts } from "@/lib/giftsSync";
-import { bottleLogIp, bottleAdminIpLookup, type BottleIpRow, bottleAnswer, bottleAchSync, bottleAchView, bottleGesture, bottleSmiles, bottleBuyHearts, bottleGiftAllow, bottleBuySmiles, bottleProgress, bottleGesturesOpen, bottleSkin, bottleGetAccept, bottleSetAccept, bottleBuyChances, bottleJoin, bottleMove, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleProfile, type BottleProfile, bottleDaily, bottleItems, bottleItemBuy, bottleBooster, bottleTutorial, bottleAdminIds, type BottleItems, bottleLeagueInfo, bottleLeagueClaim, type BottleLeague, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleKickPrice, bottleGift, bottleGiftMany, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, bottleClaim, type BottleState, type BottleSeat, bottleEffectOf, bottleYtGet, bottleYtPut, bottleTableGifts, type BottleSeatGift } from "@/lib/bottleSync";
+import { bottleLogIp, bottleAdminIpLookup, type BottleIpRow, bottleAnswer, bottleAchSync, bottleAchView, bottleGesture, bottleSmiles, bottleBuyHearts, bottleGiftAllow, bottleBuySmiles, bottleProgress, bottleGesturesOpen, bottleSkin, bottleBadges, bottleGetAccept, bottleSetAccept, bottleBuyChances, bottleJoin, bottleMove, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleProfile, type BottleProfile, bottleDaily, bottleItems, bottleItemBuy, bottleBooster, bottleTutorial, bottleAdminIds, type BottleItems, bottleLeagueInfo, bottleLeagueClaim, type BottleLeague, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleKickPrice, bottleGift, bottleGiftMany, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, bottleClaim, type BottleState, type BottleSeat, bottleEffectOf, bottleYtGet, bottleYtPut, bottleTableGifts, type BottleSeatGift } from "@/lib/bottleSync";
 import { ytHint, ytReason } from "./ytHints";
 import { BonusMarket, EnigmaEffect, arrivalLabel, marketLabel } from "./BonusMarket";
 
@@ -2674,6 +2674,15 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [prof, setProf] = useState<{ id: string; data: BottleProfile } | null>(null);
   // The card can walk to the admirer's card (also someone not at this table) and come back with the arrow.
   const [cardOut, setCardOut] = useState<Player | null>(null);
+  // The VIP / TOP ribbons of someone who is not at the table (an admirer's card, a card from the ratings): the table has no data about them, the server tells.
+  const [outBadges, setOutBadges] = useState<{ id: string; vip: boolean; top: boolean } | null>(null);
+  useEffect(() => {
+    const id = cardOut?.id;
+    if (!online || !id) return;
+    let alive = true;
+    void bottleBadges(id).then((value) => { if (alive && value) setOutBadges({ id, vip: Boolean(value.vip), top: Boolean(value.top) }); });
+    return () => { alive = false; };
+  }, [online, cardOut?.id]);
   const [cardBack, setCardBack] = useState<{ picked: number | null; out: Player | null }[]>([]);
   useEffect(() => { if (!card) { setCardOut(null); setCardBack([]); } }, [card]);
   const cardPlayer = cardOut ?? (picked !== null ? players[picked] : null);
@@ -2856,7 +2865,10 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
               <span className="sr-only">{t(`bottle.${key}` as "bottle.price")}</span>
             </div>
           );
-          const labels = [topIds.has(player.id) ? "label_top_gold.svg" : null, !topIds.has(player.id) && (online ? seat?.vip_badge : player.me && vip) ? "label_vip.svg" : null].filter((item): item is string => Boolean(item));
+          const outTop = outside && online && (autoTop.has(player.id) || (outBadges?.id === player.id && outBadges.top));
+          const outVip = outside && online && outBadges?.id === player.id && outBadges.vip;
+          const showTop = topIds.has(player.id) || outTop;
+          const labels = [showTop ? "label_top_gold.svg" : null, !showTop && ((online ? seat?.vip_badge : player.me && vip) || outVip) ? "label_vip.svg" : null].filter((item): item is string => Boolean(item));
           return (
             <div className={cn("inset-0 flex items-center justify-center p-3", wide ? cn("absolute bg-black/10", panel ? "z-[60]" : "z-[45]") : panel ? "fixed z-[100] bg-black/50" : "fixed z-[90] bg-black/50")} onClick={(event) => { event.stopPropagation(); setCard(false); }}>
               <div role="dialog" aria-modal="true" aria-label={`${player.name}, ${player.age}`} onClick={(event) => event.stopPropagation()} className={cn("relative shadow-[0_18px_50px_rgba(0,0,0,0.45)]", land ? "h-[400px] max-h-[80vh] max-w-[91%]" : "w-[400px] max-w-[80vw]")} style={{ borderRadius: 17, maxHeight: land ? undefined : "calc(94% - env(safe-area-inset-top))" }}>
