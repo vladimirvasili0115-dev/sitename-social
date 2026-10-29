@@ -2783,7 +2783,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     );
   };
   // A place is only shown when it is in the first 5000, like the original.
-  const rankLine = (rank: number | null | undefined) => rank && rank < 5000 ? <span className="text-[11px] font-semibold text-[#9CA3AF]">{t("bottle.rankOf").replace("{n}", rank.toLocaleString("ru-RU"))}</span> : null;
+  const rankLine = (rank: number | null | undefined) => rank && rank <= 50 ? <span className="text-[11px] font-semibold text-[#9CA3AF]">{t("bottle.rankOf").replace("{n}", rank.toLocaleString("ru-RU"))}</span> : null;
   // First look: kisses, music and smiles; the arrow opens the other ratings (price, harem).
   const [statsOpen, setStatsOpen] = useState(false);
   // The original card has two layouts: "landscape" (photo on the left) and "portrait" (photo on top), by the screen shape.
@@ -2852,7 +2852,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             <div key={key} className={cn("flex h-[17px] items-center", big ? "mb-[10px] first:mt-[10px]" : "mb-1 last:mb-0")} title={t(`bottle.${key}` as "bottle.price")}>
               <span aria-hidden="true" className="mr-[7px] h-[17px] w-[23px] shrink-0 bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url(${P}${icon})` }} />
               <b className="mr-[10px] whitespace-nowrap text-[14px] tabular-nums" style={{ color }}>{online && !net ? "…" : value.toLocaleString("ru-RU")}</b>
-              {rank && rank < 5000 ? <span className="truncate text-[11px] tracking-[-0.24px] text-[#A7A7A7]">{t("bottle.rankOf").replace("{n}", rank.toLocaleString("ru-RU"))}</span> : null}
+              {rank && rank <= 50 ? <span className="truncate text-[11px] tracking-[-0.24px] text-[#A7A7A7]">{t("bottle.rankOf").replace("{n}", rank.toLocaleString("ru-RU"))}</span> : null}
               <span className="sr-only">{t(`bottle.${key}` as "bottle.price")}</span>
             </div>
           );
@@ -2908,7 +2908,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                       {by && !by.self ? <button type="button" onClick={() => openAdmirerCard(by)} aria-label={by.name} title={by.name} className="mr-[11px] h-16 w-16 shrink-0 overflow-hidden rounded-[10px] active:brightness-75"><img src={by.avatar || NO_PHOTO} alt="" className="h-full w-full object-cover object-top" /></button> : <span aria-hidden="true" className="mr-[11px] flex h-16 w-16 shrink-0 items-end justify-center overflow-hidden rounded-[10px] bg-[#EEF1F5]"><UserRound size={56} className="-mb-2 text-[#C3CAD4]" fill="#DDE2E9" strokeWidth={1.2} /></span>}
                       <div className="flex min-w-0 flex-1 flex-col justify-start gap-1.5">
                         <p className="flex shrink-0 text-[14px] leading-4 text-[#4A4A4A]">{by && !by.self ? <>{t("bottle.admirer")}<button type="button" onClick={() => openAdmirerCard(by)} className="ml-[5px] truncate font-bold text-[#1F49D6] hover:underline">{by.me ? t("common.you") : by.name}</button></> : t("bottle.noAdmirer")}</p>
-                        <p className="flex h-[17px] items-center text-[14px] font-bold tabular-nums"><span aria-hidden="true" className="mr-[6px] h-[14px] w-[18px] bg-contain bg-no-repeat" style={{ backgroundImage: `url(${P}heart.svg)` }} />{suitor ? suitor.amount : 0}{info?.price_rank && info.price_rank < 5000 ? <span className="ml-[10px] truncate text-[11px] font-normal text-[#A7A7A7]">{t("bottle.rankOf").replace("{n}", info.price_rank.toLocaleString("ru-RU"))}</span> : null}</p>
+                        <p className="flex h-[17px] items-center text-[14px] font-bold tabular-nums"><span aria-hidden="true" className="mr-[6px] h-[14px] w-[18px] bg-contain bg-no-repeat" style={{ backgroundImage: `url(${P}heart.svg)` }} />{suitor ? suitor.amount : 0}{info?.price_rank && info.price_rank <= 50 ? <span className="ml-[10px] truncate text-[11px] font-normal text-[#A7A7A7]">{t("bottle.rankOf").replace("{n}", info.price_rank.toLocaleString("ru-RU"))}</span> : null}</p>
                         {player.me ? (suitor && !suitor.self ? <button onClick={() => court(player)} title={`${suitor.amount + 1} ❤`} className="h-6 w-fit rounded-[3px] bg-[#8DC63F] px-[11px] text-[14px] text-white hover:brightness-105">{t("bottle.freeSelf")}</button> : null)
                           : suitor?.me ? null : <button onClick={() => court(player)} title={`${(suitor?.amount ?? 0) + 1} ❤`} className="h-6 w-fit rounded-[3px] bg-[#8DC63F] px-[11px] text-[14px] text-white hover:brightness-105">{t("bottle.beAdmirer")}</button>}
                       </div>
