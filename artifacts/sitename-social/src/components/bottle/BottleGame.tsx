@@ -2147,11 +2147,11 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     return true;
   }
   // Live table: the server takes the hearts, puts the song on for the whole table and writes "X put on a song" in the chat.
-  function playLive(kind: "youtube" | "mp3", ref: string, title: string, secs = 0) {
+  function playLive(kind: "youtube" | "mp3", ref: string, title: string, secs = 0, music = false) {
     const targets = songTo().map((index) => players[index]);
     void (async () => {
       for (const target of targets.length ? targets : [null]) {
-        const left = await bottlePlay(target && !target.me ? target.id : null, kind, ref, title);
+        const left = await bottlePlay(target && !target.me ? target.id : null, kind, ref, title, music);
         if (left === null || left < 0) { setGiftNote(t("bottle.songFailLive")); break; }
         heartsRef.current = left;
         setHearts(left);
@@ -2173,7 +2173,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (songBusy()) return;
     const count = Math.max(1, songTo().length);
     if (heartsRef.current < SONG_PRICE.video * count) return setGiftNote(t("bottle.noHearts"));
-    if (online) playLive("youtube", track.id, music ? `♫ ${cleanSong(track.title)}` : cleanSong(track.title), durationSeconds(track.duration) || 0);
+    if (online) playLive("youtube", track.id, music ? `♫ ${cleanSong(track.title)}` : cleanSong(track.title), durationSeconds(track.duration) || 0, music);
     else for (let n = 0; n < count; n++) paySong("video");
     songClock.current = { pos: 0, at: Date.now() };
     setAudio(null);

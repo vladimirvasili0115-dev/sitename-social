@@ -54,7 +54,7 @@ export const bottleMove = (table: number | null) => call<BottleMove>("bottle_mov
 // After a dropped connection: back to the last table (or its queue) for 5 minutes.
 export const bottleRejoin = () => call<BottleMove | null>("bottle_rejoin");
 export const bottleQueueLeave = () => call<null>("bottle_queue_leave");
-export const bottlePlay = (to: string | null, kind: "youtube" | "mp3", ref: string, title: string) => call<number>("bottle_play", { p_to: to, p_kind: kind, p_ref: ref, p_title: title.slice(0, 120) });
+export const bottlePlay = (to: string | null, kind: "youtube" | "mp3", ref: string, title: string, music = false) => call<number>("bottle_play", { p_to: to, p_kind: kind, p_ref: ref, p_title: title.slice(0, 120), ...(music ? { p_music: true } : {}) });
 export type BottleTopRow = { id: string; name: string | null; avatar: string | null; count: number; place: number; gender?: string | null; vip?: boolean };
 export type BottleTop = { list: BottleTopRow[]; me: { place: number; count: number } | null };
 export const bottleTop = (kind: "kisses" | "songs" | "cocktails" | "smiles" | "dear" | "influence", period: "all" | "month" | "week" | "day") => call<BottleTop>("bottle_top", { p_kind: kind, p_period: period });
