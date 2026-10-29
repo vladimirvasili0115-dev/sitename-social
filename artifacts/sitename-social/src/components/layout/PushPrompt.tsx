@@ -3,10 +3,8 @@ import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { supabase } from "@/lib/supabase";
 
-// Phone notifications (Web Push): asks once, then keeps the device registered on the server so new messages and other alerts reach the phone.
+// Phone notifications (Web Push): asks, registers this device on the server and, when something is wrong, says exactly what on the screen.
 const PUBLIC_KEY = "BFoao0hWo8WvZ-BbCoF2OwtWLYyTOb-suFH8KpOoTLUdmrzBA7js7mDvS8dEIWfb9A9qoKTtb2wdP2e3ZfRfqC8";
-const ASKED_KEY = "rv-push-asked";
-const ASK_AGAIN_MS = 7 * 24 * 3600 * 1000;
 
 function keyBytes(base64: string) {
   const padded = (base64 + "=".repeat((4 - (base64.length % 4)) % 4)).replace(/-/g, "+").replace(/_/g, "/");
@@ -16,53 +14,83 @@ function keyBytes(base64: string) {
   return out;
 }
 
-async function register(): Promise<boolean> {
-  if (!supabase) return false;
+// Returns null when the device is registered, otherwise the reason (shown to the player).
+async function register(): Promise<string | null> {
+  if (!supabase) return "Server qoşulmayıb";
   try {
-    const reg = await navigator.serviceWorker.ready;
-    const sub = (await reg.pushManager.getSubscription()) ?? (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(PUBLIC_KEY) as unknown as BufferSource }));
+    const reg = await Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise<null>((resolve) => window.setTimeout(() => resolve(null), 8000)),
+    ]);
+    if (!reg) return "Service worker hazır deyil (8 san gözlədim)";
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(PUBLIC_KEY) as unknown as BufferSource });
     const json = sub.toJSON();
-    if (!json.endpoint || !json.keys?.p256dh || !json.keys?.auth) return false;
+    if (!json.endpoint || !json.keys?.p256dh || !json.keys?.auth) return "Cihaz açarları alınmadı";
     const { error } = await supabase.rpc("push_subscribe", { p_endpoint: json.endpoint, p_p256dh: json.keys.p256dh, p_auth: json.keys.auth });
-    return !error;
-  } catch { return false; }
+    return error ? "Server qəbul etmədi: " + error.message : null;
+  } catch (error) {
+    return "Abunəlik alınmadı: " + (error instanceof Error ? error.name + " — " + error.message : String(error));
+  }
+}
+
+function missing() {
+  const lost: string[] = [];
+  if (!("serviceWorker" in navigator)) lost.push("serviceWorker");
+  if (!("PushManager" in window)) lost.push("PushManager");
+  if (!("Notification" in window)) lost.push("Notification");
+  return lost;
 }
 
 export function PushPrompt() {
   const { user } = useAuth();
-  const [show, setShow] = useState(false);
   const accountId = user?.id;
-  const supported = typeof window !== "undefined" && "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+  // "ok" = registered; "ask" = permission not asked yet; otherwise the text of the problem.
+  const [state, setState] = useState<"checking" | "ok" | "ask" | { problem: string }>("checking");
+  const [hidden, setHidden] = useState(false);
+
+  const check = useCallback(async () => {
+    const lost = missing();
+    if (lost.length) { setState({ problem: "Bu tətbiq/brauzer push bildirişini dəstəkləmir (yoxdur: " + lost.join(", ") + ")" }); return; }
+    if (Notification.permission === "denied") { setState({ problem: "Bildiriş icazəsi rədd edilib. Telefon ayarlarından Ravetill (və ya Chrome) üçün bildirişləri aç." }); return; }
+    if (Notification.permission === "default") { setState("ask"); return; }
+    const reason = await register();
+    setState(reason ? { problem: reason } : "ok");
+  }, []);
 
   useEffect(() => {
-    if (!accountId || !supported) return;
-    if (Notification.permission === "granted") { void register(); return; }
-    if (Notification.permission !== "default") return;
-    let last = 0;
-    try { last = Number(window.localStorage.getItem(ASKED_KEY) ?? 0); } catch { /* storage is blocked */ }
-    if (Date.now() - last < ASK_AGAIN_MS) return;
-    const timer = window.setTimeout(() => setShow(true), 4000);
+    if (!accountId) return;
+    const timer = window.setTimeout(() => { void check(); }, 3000);
     return () => window.clearTimeout(timer);
-  }, [accountId, supported]);
+  }, [accountId, check]);
 
-  const later = useCallback(() => {
-    setShow(false);
-    try { window.localStorage.setItem(ASKED_KEY, String(Date.now())); } catch { /* storage is blocked */ }
-  }, []);
   const allow = useCallback(async () => {
-    setShow(false);
-    try { window.localStorage.setItem(ASKED_KEY, String(Date.now())); } catch { /* storage is blocked */ }
-    const answer = await Notification.requestPermission();
-    if (answer === "granted") await register();
+    try {
+      const answer = await Notification.requestPermission();
+      if (answer === "granted") {
+        const reason = await register();
+        setState(reason ? { problem: reason } : "ok");
+      } else {
+        setState({ problem: "İcazə verilmədi (" + answer + "). Telefon ayarlarından bildirişləri aç." });
+      }
+    } catch (error) {
+      setState({ problem: "İcazə sorğusu alınmadı: " + (error instanceof Error ? error.message : String(error)) });
+    }
   }, []);
 
-  if (!show) return null;
+  if (!accountId || hidden || state === "checking" || state === "ok") return null;
+  const problem = typeof state === "object" ? state.problem : null;
   return (
-    <div role="dialog" aria-label="Bildirişlər" className="fixed inset-x-3 bottom-[88px] z-[60] mx-auto flex max-w-[420px] items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3 shadow-lg lg:bottom-6">
+    <div role="dialog" aria-label="Bildirişlər" className="fixed inset-x-3 bottom-[88px] z-[60] mx-auto flex max-w-[420px] items-start gap-3 rounded-2xl border border-border bg-surface px-4 py-3 shadow-lg lg:bottom-6">
       <span aria-hidden="true" className="text-2xl">🔔</span>
-      <p className="min-w-0 flex-1 text-sm font-semibold leading-5">Yeni mesajlar və bildirişlər telefona gəlsin?</p>
-      <button type="button" onClick={later} className="h-9 rounded-xl px-2.5 text-xs font-semibold text-muted hover:bg-surface-2">Sonra</button>
-      <button type="button" onClick={() => void allow()} className="h-9 rounded-xl bg-accent px-3.5 text-xs font-semibold text-white hover:brightness-110">Aç</button>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold leading-5">{problem ? "Bildirişlər telefona gəlmir" : "Yeni mesajlar və bildirişlər telefona gəlsin?"}</p>
+        {problem ? <p className="mt-1 break-words text-xs leading-4 text-muted">{problem}</p> : null}
+        <div className="mt-2 flex justify-end gap-2">
+          <button type="button" onClick={() => setHidden(true)} className="h-9 rounded-xl px-2.5 text-xs font-semibold text-muted hover:bg-surface-2">Bağla</button>
+          <button type="button" onClick={() => void (state === "ask" ? allow() : check())} className="h-9 rounded-xl bg-accent px-3.5 text-xs font-semibold text-white hover:brightness-110">{state === "ask" ? "Aç" : "Yenidən yoxla"}</button>
+        </div>
+      </div>
     </div>
   );
 }
