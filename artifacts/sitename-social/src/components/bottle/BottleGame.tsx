@@ -772,6 +772,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [showPass, setShowPass] = useState(false);
   const [rooms, setRooms] = useState<BottleTables | null>(null);
   const [waitFor, setWaitFor] = useState<{ table: number; position: number; back?: boolean } | null>(null);
+  // While I stand in the queue of another (full) table I am in no table at all: the sync finds no seat, and this must not throw me back into some table.
+  const queueing = useRef(false);
+  queueing.current = Boolean(waitFor && !waitFor.back);
   const [roomNote, setRoomNote] = useState(false);
   const [chances, setChances] = useState(0);
   // Smiley balance: a smiley costs one from the balance; packs are bought with hearts.
@@ -1121,6 +1124,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       try {
         let data = await bottleSync(lastChat.current);
         let rejoined = false;
+        if (!data && queueing.current) return; // waiting in the queue of another table: no seat is expected
         if (!data) {
           rejoined = true;
           // Lost the seat (weak internet, reload): first try the same table again, waiting in its queue when it is full.
