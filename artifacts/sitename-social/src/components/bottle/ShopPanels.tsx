@@ -22,8 +22,8 @@ export const formatActive = (secs: number, t: (key: TranslationKey) => string) =
 // The original bank (bottle-html5 BankDialog + bank CSS): a pink window with the heart pattern on top and
 // 90×146 white cards, each with a coloured stripe, a picture and a small button. Our own cards (active play,
 // season pass, channel, VIP, friends, compliments) are drawn the same way as the original's.
-export function ShopPanel({ hearts, activeSecs, payNote, onActive, onTelegram, onVip, onInvite, onCompliments, onPack, onPass, packNote }: {
-  hearts: number; activeSecs: number; payNote: boolean; packNote?: ReactNode; onActive: () => void; onTelegram: () => void; onVip: () => void; onInvite: () => void; onCompliments: () => void; onPack: (pack: { hearts: number; price: number }) => void; onPass: () => void;
+export function ShopPanel({ hearts, activeSecs, payNote, onActive, onTelegram, onVip, onInvite, onCompliments, onPack, onPass }: {
+  hearts: number; activeSecs: number; payNote: boolean; onActive: () => void; onTelegram: () => void; onVip: () => void; onInvite: () => void; onCompliments: () => void; onPack: () => void; onPass: () => void;
 }) {
   const { t } = useTranslation();
   const O = "/custom/orig/";
@@ -53,17 +53,16 @@ export function ShopPanel({ hearts, activeSecs, payNote, onActive, onTelegram, o
       <ul className="relative grid min-h-0 grid-cols-3 gap-[5px] overflow-y-auto px-2.5 pb-2.5 pt-[3px] [scrollbar-width:none] [@media(min-width:700px)]:grid-cols-4">
         {card("pass", "bank_gold_bg", <span className="text-center text-[10px] font-bold uppercase text-[rgb(255,144,0)]">{t("bottle.bankPremium")}</span>, icon("bank_premium_pass", 62, 39), btn(blue, onPass, t("bottle.details")))}
         {card("vip", "bank_gold_bg", <><span className="font-bold text-[rgb(255,144,0)]">VIP</span><span className="-mt-[3px] text-[11px] text-[rgb(255,144,0)]">{t("bottle.bankStatus")}</span></>, icon("bank_vip", 55, 37), btn(blue, onVip, t("bottle.details")))}
-        {card("friends", "bank_violet_bg", <span className={small}>{withHeart(t("bottle.bankInvite"), 20)}</span>, icon("bank_friends", 68, 40), btn(blue, onInvite, t("bottle.details")))}
+        {card("friends", "bank_violet_bg", <span className={small}>{withHeart(t("bottle.bankInvite"), 3000)}</span>, icon("bank_friends", 68, 40), btn(blue, onInvite, t("bottle.details")))}
         {card("compliments", "bank_cyan_bg", <span className={small}>{withHeart(t("bottle.bankCompliment"), 10)}</span>, icon("bank_compliment", 70, 47), btn(blue, onCompliments, t("bottle.details")))}
         {shopPacks.map((pack, i) => card(`p${pack.hearts}`, "bank_gold_bg",
           <><span className="pl-[18px] font-bold text-[rgb(255,62,0)] bg-no-repeat [background-position:left_-1px] [background-size:17px_18px]" style={bg("bank_heart")}>{pack.hearts.toLocaleString("ru-RU")}</span>{pack.bonus ? <span className="-mt-[3px] text-[11px] text-[rgb(255,143,0)]">{pack.bonus}% {t("bottle.bankBonus")}</span> : null}</>,
           <span className="relative block bg-contain bg-no-repeat" style={{ ...bg(`bank_opt_${shopPacks.length - i}`), ...[{ w: 50, h: 24 }, { w: 72, h: 33 }, { w: 55, h: 41 }, { w: 68, h: 42 }, { w: 63, h: 50 }, { w: 88, h: 52 }, { w: 86, h: 53 }].map(({ w, h }) => ({ width: w, height: h }))[Math.min(6, shopPacks.length - i - 1)] }} />,
-          btn(green, () => onPack(pack), <span className="tabular-nums">{pack.price.toLocaleString("ru-RU")} ₼</span>),
+          btn(green, onPack, <span className="tabular-nums">{pack.price.toLocaleString("ru-RU")} {t("bottle.currency")}</span>),
           pack.tag ? <span className="absolute -left-1 -right-1 -top-1 z-[1] mx-auto flex h-[18px] w-fit min-w-16 max-w-[98px] justify-center rounded-[3px] px-1.5 text-[8.5px] font-bold text-white shadow-[0_1px_2px_rgba(0,0,0,0.25)]" style={{ backgroundColor: pack.tag === "best" ? "#E6007E" : "#A24DC2" }}><span className="mt-[2px] whitespace-nowrap">{t(pack.tag === "best" ? "bottle.bankProfit" : "bottle.bankHit")}</span></span> : undefined))}
         {card("active", "bank_blue_bg", <span className={small}>{t("bottle.activeTitle")}<b className="mt-0.5 block text-[rgb(47,137,233)]">{formatActive(activeSecs, t)}</b></span>, <Pic e="⏰" className="h-10 w-10" />, btn(cyan, onActive, t("bottle.details")))}
         {card("channel", "bank_blue_bg", <span className={small}>{t("bottle.channelJoin")}</span>, <Pic e="🔔" className="h-10 w-10" />, btn(cyan, onTelegram, t("bottle.channelGo")))}
       </ul>
-      {packNote ? <div role="status" className="relative mx-2.5 mb-2.5 rounded-[5px] border border-[rgb(239,102,102)] bg-[rgb(255,245,207)] px-2 py-1.5 text-center text-[12px] font-bold text-[#424242]">{packNote}</div> : null}
       {payNote ? <p role="status" className="relative mx-2.5 mb-2.5 rounded-[5px] border border-[rgb(239,102,102)] bg-[rgb(255,245,207)] px-2 py-1.5 text-center text-[12px] font-bold text-[#424242]">{t("bottle.paySoon")}</p> : null}
     </div>
   );
@@ -104,11 +103,11 @@ export function InvitePanel({ link, invited, done }: { link: string | null; invi
         {[false, true].map((female) => (
           <span key={String(female)} className="flex flex-col items-center">
             <img src={cartoonAvatar(female ? 4 : 7, female)} alt="" className="h-20 w-20 rounded-full object-cover ring-4 ring-[#8CC63F]" />
-            <span className="-mt-3 flex items-center gap-0.5 rounded-full bg-[#8CC63F] px-2 py-0.5 text-sm font-black text-white shadow">+<H size={13} />20</span>
+            <span className="-mt-3 flex items-center gap-0.5 rounded-full bg-[#8CC63F] px-2 py-0.5 text-sm font-black text-white shadow">+<H size={13} />3000</span>
           </span>
         ))}
       </div>
-      <p className="mt-3 text-sm leading-snug">{t("bottle.inviteText1")} <b className="whitespace-nowrap text-[#E11D48]"><H />20</b> {t("bottle.inviteText2")}</p>
+      <p className="mt-3 text-sm leading-snug">{t("bottle.inviteText1")} <b className="whitespace-nowrap text-[#E11D48]"><H />3000</b> {t("bottle.inviteText2")}</p>
       <p className="mt-2 rounded-lg bg-[#FEF9C3] px-2 py-1.5 text-xs font-semibold text-[#713F12]">{t("bottle.inviteStats")}: <b>{invited}</b> · {t("bottle.inviteDone")}: <b>{done}</b></p>
       {link ? <p className="mt-2 truncate rounded-lg bg-[#F3F4F6] px-2 py-1.5 font-mono text-[11px] text-[#4B5563]">{link}</p> : <p className="mt-2 text-xs text-[#6B7280]">{t("bottle.liveOnly")}</p>}
       <button onClick={copy} disabled={!link} className="mt-3 inline-flex h-10 items-center gap-2 rounded-xl bg-[linear-gradient(180deg,#9BD65A,#6DB33F)] px-6 text-sm font-bold text-white shadow hover:brightness-105 disabled:opacity-50">{copied ? <><Check size={16} />{t("bottle.copied")}</> : <><Copy size={15} />{t("bottle.inviteBtn")}</>}</button>
