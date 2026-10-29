@@ -39,7 +39,7 @@ export function NeonHome({ name }: { name: string }) {
       <div className="mt-4 flex flex-wrap gap-2 sm:mt-5">
         <Link href="/bottle" className="rounded-full bg-white px-4 py-2 text-xs font-bold text-purple-900">🍾 {w.play}</Link>
         {canInstall
-          ? <a href="/ravetill.apk" download="Ravetill.apk" className="rounded-full bg-white/20 px-4 py-2 text-xs font-bold text-white">📲 {w.get}</a>
+          ? <a href="/ravetill.apk" download="Ravetill.apk" className="rounded-full bg-white/20 px-6 py-3 text-[15px] font-bold text-white">📲 {w.get}</a>
           : <Link href="/games" className="rounded-full bg-white/20 px-4 py-2 text-xs font-bold text-white">{w.all}</Link>}
       </div>
     </section>
