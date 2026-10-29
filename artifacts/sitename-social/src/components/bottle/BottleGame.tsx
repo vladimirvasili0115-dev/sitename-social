@@ -368,7 +368,7 @@ function LeagueBadge({ league, className }: { league: number; className?: string
 // Daily bonus hearts for day 1–7 in a row (the server uses the same numbers, see bottle_daily_claim).
 // Shown for players who have no photo (the original shows a "NO PHOTO" silhouette).
 const NO_PHOTO = "/custom/profile/nophoto.svg";
-const DAILY_PRIZES = [2, 3, 5, 7, 10];
+const DAILY_PRIZES = [300, 600, 1200, 2400, 4800];
 // Lite mode (switched on by the game when the phone cannot keep up with a gift storm): gifts stay still pictures instead of animated ones.
 let liteGifts = false;
 function Gift({ id, className, anim, once, lazy }: { id: string; className?: string; anim?: boolean; once?: string | number; lazy?: boolean }) {
@@ -4187,14 +4187,14 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                       <span className="h-[22px] w-[22px] rounded-full bg-white bg-[length:13px_10px] bg-center bg-no-repeat" style={on && day !== daily.day ? { backgroundImage: "url(/custom/orig/achievement_icon_check.svg)" } : undefined} />
                       <span className="pl-[5px] text-[14px]">{day === daily.day ? t("bottle.dailyToday") : t(`bottle.dailyDay${day}` as "bottle.dailyDay1")}</span>
                     </div>
-                    <span className="mx-[15px] ml-1 flex h-[19px] w-[26px] shrink-0 justify-center bg-[length:26px_19px] bg-no-repeat" style={{ backgroundImage: "url(/custom/orig/daily_bonus_heart.svg)" }}><span className="self-center text-[13px] font-bold text-white">{daily.premium ? prize * 2 : prize}</span></span>
+                    <span className="mx-[10px] ml-1 flex h-[28px] w-[40px] shrink-0 justify-center bg-[length:40px_28px] bg-no-repeat" style={{ backgroundImage: "url(/custom/orig/daily_bonus_heart.svg)" }}><span className="self-center text-[12px] font-bold text-white">{daily.premium ? prize * 2 : prize}</span></span>
                   </div>
                 );
               })}
             </div>
             <button type="button" onClick={() => { if (!daily.premium) { takeDaily(); openPass(); } }} className={cn("mt-2.5 flex h-[45px] w-[233px] items-center justify-between rounded-[10px] bg-[#FDB100] text-white", !daily.premium && "cursor-pointer")}>
               <span className="ml-3 text-left text-[12px] font-bold">{t(daily.premium ? "bottle.dailyPremiumOn" : "bottle.dailyPremiumOff")}</span>
-              {daily.premium ? <span className="mx-[15px] ml-1 flex h-[19px] w-[26px] shrink-0 justify-center bg-[length:26px_19px] bg-no-repeat" style={{ backgroundImage: "url(/custom/orig/daily_bonus_heart.svg)" }}><span className="self-center text-[13px] font-bold text-white">{daily.hearts}</span></span> : <span aria-hidden="true" className="ml-1 h-[45px] w-[55px] shrink-0 bg-[length:58px_65px] bg-center bg-no-repeat" style={{ backgroundImage: "url(/custom/orig/daily_bonus_premium_icon.svg)" }} />}
+              {daily.premium ? <span className="mx-[10px] ml-1 flex h-[28px] w-[40px] shrink-0 justify-center bg-[length:40px_28px] bg-no-repeat" style={{ backgroundImage: "url(/custom/orig/daily_bonus_heart.svg)" }}><span className="self-center text-[12px] font-bold text-white">{daily.hearts}</span></span> : <span aria-hidden="true" className="ml-1 h-[45px] w-[55px] shrink-0 bg-[length:58px_65px] bg-center bg-no-repeat" style={{ backgroundImage: "url(/custom/orig/daily_bonus_premium_icon.svg)" }} />}
             </button>
             <div className="flex w-full justify-center px-[15px] py-5"><OrigButton onClick={takeDaily}>{t("bottle.dailyBtn")} +{daily.hearts} ❤</OrigButton></div>
           </div>
