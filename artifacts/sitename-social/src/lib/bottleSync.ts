@@ -123,3 +123,8 @@ export const bottleSetAccept = (accept: boolean) => call<boolean>("bottle_set_ac
 
 // VIP and TOP ribbons of a player who is not at my table (the card of an admirer or of someone from the ratings).
 export const bottleBadges = (user: string) => call<{ vip: boolean; top: boolean }>("bottle_badges", { p_user: user });
+
+export type BottleWeekTop = { kind: string; prize: number; rows: { id: string; name: string | null; avatar: string | null; score: number }[]; me: { score: number; rank: number } | null; left: number };
+export const bottleWeekTop = (kind: "active" | "spend" | "kisses" | "songs") => call<BottleWeekTop>("bottle_week_top", { p_kind: kind });
+export const bottleWeekPrizes = () => call<{ week: string; kind: string; amount: number }[]>("bottle_week_prizes");
+export const bottleWeekClaim = () => call<{ got: number; hearts: number }>("bottle_week_claim");

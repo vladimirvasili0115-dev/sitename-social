@@ -41,6 +41,7 @@ import { uploadBlob } from "@/lib/media";
 import { refreshGifts } from "@/lib/giftsSync";
 import { bottleLogIp, bottleAdminIpLookup, type BottleIpRow, bottleAnswer, bottleAchSync, bottleAchView, bottleGesture, bottleSmiles, bottleBuyHearts, bottleGiftAllow, bottleBuySmiles, bottleProgress, bottleGesturesOpen, bottleSkin, bottleBadges, bottleGetAccept, bottleSetAccept, bottleBuyChances, bottleJoin, bottleMove, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleProfile, type BottleProfile, bottleDaily, bottleItems, bottleItemBuy, bottleBooster, bottleTutorial, bottleAdminIds, type BottleItems, bottleLeagueInfo, bottleLeagueClaim, type BottleLeague, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleKickPrice, bottleGift, bottleGiftMany, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, bottleClaim, type BottleState, type BottleSeat, bottleEffectOf, bottleYtGet, bottleYtPut, bottleTableGifts, type BottleSeatGift } from "@/lib/bottleSync";
 import { ytHint, ytReason } from "./ytHints";
+import { WeeklyPanel, WeekPrizePopup } from "./WeeklyTop";
 import { BonusMarket, EnigmaEffect, arrivalLabel, marketLabel } from "./BonusMarket";
 
 type Player = { id: string; name: string; age: number; female: boolean; avatar: string; me?: boolean; empty?: boolean; zodiac?: number | null };
@@ -746,6 +747,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [panel, setPanel] = useState<"gestures" | "settings" | "top" | "rules" | "shop" | "menu" | "vip" | "bottles" | "frames" | "achievements" | "boosters" | "wheel" | "chances" | "tables" | "rooms" | "active" | "invite" | "compliments" | "kick" | "pass" | "league" | "market" | "smiles" | null>(null);
   // Panels drop down from the top like a hanging sign and go back up when closed.
   const [closing, setClosing] = useState(false);
+  const [weekOpen, setWeekOpen] = useState(false);
   const closePanel = () => { if (closing) return; setClosing(true); window.setTimeout(() => { setPanel(null); setClosing(false); }, 260); };
   const [passData, setPassData] = useState<PassData | null>(null);
   const [passNote, setPassNote] = useState<string | null>(null);
@@ -2015,6 +2017,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     { key: "pass", label: t("bottle.passPremium"), go: openPass, icon: <img src={emojiSrc("🎟️")} alt="" className="h-6 w-6" /> },
     { key: "ach", label: t("bottle.achievements"), dot: !(kisses.me ?? 0), go: () => setPanel("achievements"), icon: <span className="block h-6 w-6 bg-center bg-no-repeat" style={{ backgroundImage: "url(/custom/orig/misc_menu_achievements.svg)", backgroundSize: "21px 21px" }} /> },
     { key: "rating", label: t("bottle.menuRatings"), go: () => { setTopKind("kisses"); setPanel("top"); }, icon: <span className="block h-6 w-6 bg-center bg-no-repeat" style={{ backgroundImage: "url(/custom/orig/misc_menu_tops.svg)", backgroundSize: "24px 15px" }} /> },
+    { key: "week", label: locale === "az" ? "Həftənin yarışı" : "Weekly contest", go: () => { setPanel(null); setWeekOpen(true); }, icon: <span className="flex h-6 w-6 items-center justify-center text-lg">🏆</span> },
     { key: "league", label: t("bottle.league"), go: () => setPanel("league"), icon: <svg viewBox="0 0 24 24" className="h-6 w-6"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3Z" fill="#F2B705" stroke="#B7791F" strokeWidth="1.4" /><path d="m12 7 1.5 3.1 3.4.4-2.5 2.3.7 3.3L12 14.5 8.9 16.1l.7-3.3-2.5-2.3 3.4-.4L12 7Z" fill="#FFFFFF" /></svg> },
     { key: "bottles", label: t("bottle.menuBottles"), go: () => { setPayNote(false); setPanel("bottles"); }, icon: <span className="block h-6 w-6 bg-center bg-no-repeat" style={{ backgroundImage: "url(/custom/orig/misc_menu_bottle.svg)", backgroundSize: "23px 23px" }} /> },
     { key: "market", label: marketLabel(locale), go: () => { setPayNote(false); setPanel("market"); }, icon: <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[linear-gradient(180deg,#A855F7,#6D28D9)] text-[13px]" aria-hidden="true">💎</span> },
@@ -3331,6 +3334,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             </div>
           );
         })() : null}
+
+        {weekOpen ? <WeeklyPanel locale={locale} onClose={() => setWeekOpen(false)} /> : null}
+        <WeekPrizePopup locale={locale} online={online} onHearts={(value) => { heartsRef.current = value; setHearts(value); }} />
 
         {panel ? (
           <div className={cn(panel === "top" && !wide ? "fixed inset-0 z-[90]" : "absolute inset-0 z-50", "flex items-center justify-center overflow-hidden bg-black/35 p-3", closing ? "animate-[panel-fade_0.28s_ease-in_reverse_forwards]" : "animate-[panel-fade_0.25s_ease-out]")} onClick={(event) => { event.stopPropagation(); closePanel(); }}>
