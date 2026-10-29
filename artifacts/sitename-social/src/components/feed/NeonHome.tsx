@@ -32,7 +32,7 @@ export function NeonHome({ name }: { name: string }) {
   }, []);
   return <>
     <section className="relative mb-4 overflow-hidden rounded-3xl p-5 text-white sm:p-7" style={{ background: "linear-gradient(120deg,#1e1b4b,#4c1d95 50%,#be185d)", boxShadow: "0 0 0 1px rgba(255,255,255,.12) inset, 0 12px 40px -12px rgba(190,24,93,.6)" }}>
-      <span aria-hidden="true" className="pointer-events-none absolute -right-2 top-2 rotate-[8deg] sm:right-10">
+      <span aria-hidden="true" className="pointer-events-none absolute right-[3px] top-[19px] rotate-[8deg] sm:right-[51px]">
         <img src="/bottle-hero.png" alt="" className="h-[120px] w-[120px] sm:h-[140px] sm:w-[140px]" style={{ filter: "drop-shadow(0 8px 14px rgba(0,0,0,.4))" }} />
         <svg viewBox="0 0 90 56" className="absolute -left-3 top-1 h-[26px] w-[42px] -rotate-[10deg] rounded-[3px] shadow-[0_0_0_2px_rgba(255,255,255,.6),0_4px_8px_rgba(0,0,0,.45)]"><rect width="90" height="56" fill="#509E2F"/><rect width="90" height="37.3" fill="#EF3340"/><rect width="90" height="18.7" fill="#00B5E2"/><circle cx="41" cy="28" r="10.5" fill="#fff"/><circle cx="44.2" cy="28" r="8.4" fill="#EF3340"/><polygon points="63.00,21.50 63.99,25.60 67.60,23.40 65.40,27.01 69.50,28.00 65.40,28.99 67.60,32.60 63.99,30.40 63.00,34.50 62.01,30.40 58.40,32.60 60.60,28.99 56.50,28.00 60.60,27.01 58.40,23.40 62.01,25.60" fill="#fff"/></svg>
       </span>
