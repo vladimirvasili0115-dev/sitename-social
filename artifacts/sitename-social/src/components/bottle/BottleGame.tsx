@@ -368,6 +368,8 @@ function LeagueBadge({ league, className }: { league: number; className?: string
 // Daily bonus hearts for day 1–7 in a row (the server uses the same numbers, see bottle_daily_claim).
 // Shown for players who have no photo (the original shows a "NO PHOTO" silhouette).
 const NO_PHOTO = "/custom/profile/nophoto.svg";
+// Table 21 is shown as "021" everywhere the table number is written (the real number in the database stays 21).
+const tableLabel = (n: number | string | null | undefined) => (Number(n) === 21 ? "021" : String(n ?? ""));
 const DAILY_PRIZES = [300, 600, 1200, 2400, 4800];
 // Lite mode (switched on by the game when the phone cannot keep up with a gift storm): gifts stay still pictures instead of animated ones.
 let liteGifts = false;
@@ -3041,7 +3043,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           <div role="alertdialog" aria-modal="true" className="fixed inset-0 z-[290] flex items-center justify-center bg-[radial-gradient(circle_at_50%_40%,#648A3C,#4E6B33)] p-4">
             <div className="w-[min(400px,100%)] rounded-3xl bg-white px-5 pb-5 pt-4 text-center text-black shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
               <p className="text-sm font-bold text-[#C8C8C8]">{w.title}</p>
-              <p className="mt-3 text-[15px] leading-5">{w.text.replace("{t}", String(waitFor.table))}</p>
+              <p className="mt-3 text-[15px] leading-5">{w.text.replace("{t}", tableLabel(waitFor.table))}</p>
               <p className="mt-2 text-[15px] font-bold leading-5 text-[#4E6B33]">{ahead === 0 ? w.first : w.ahead.replace("{n}", String(ahead))}</p>
               <button onClick={() => { if (waitFor.back) { backCancel.current = Date.now(); backWait.current = false; } setWaitFor(null); void bottleQueueLeave(); openRooms(); }} className="mt-3 h-[30px] min-w-[80px] rounded-lg bg-[#9ACD32] px-5 text-sm font-bold text-white hover:brightness-105">{w.other}</button>
             </div>
@@ -3099,7 +3101,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           </span>
           <button onClick={() => setPanel("settings")} aria-label={t("bottle.settings")} title={t("bottle.settings")} className={tool}><Settings size={18} /></button>
           <span className="flex-1" />
-          <span className={cn("text-center text-[max(8px,1.55cqmin)] font-bold leading-tight text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.7)]", wide && "order-last mt-1")}>{net?.room ? <><span aria-hidden="true">🔒</span><br /><span className="line-clamp-2 block max-w-[64px] break-words">{net.room.name}</span><button onClick={leaveRoom} aria-label={t("bottle.roomLeave")} title={t("bottle.roomLeave")} className="mx-auto mt-1 flex items-center gap-1 rounded-full bg-[#E5484D] px-2 py-0.5 text-[11px] font-bold text-white shadow hover:bg-[#D13438] [text-shadow:none]"><X size={12} strokeWidth={3} />{t("bottle.roomLeaveShort")}</button>{canDeleteRoom ? <button onClick={() => void deleteRoom()} aria-label={t("bottle.roomDelete")} title={t("bottle.roomDelete")} className="mx-auto mt-1 flex items-center gap-1 rounded-full bg-[#7C2D12] px-2 py-0.5 text-[11px] font-bold text-white shadow hover:bg-[#9A3412] [text-shadow:none]"><Trash2 size={12} strokeWidth={2.6} />{t("bottle.roomDeleteShort")}</button> : null}</> : <>{t("bottle.table")}<br />{online ? net?.table ?? "…" : tableNo}</>}</span>
+          <span className={cn("text-center text-[max(8px,1.55cqmin)] font-bold leading-tight text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.7)]", wide && "order-last mt-1")}>{net?.room ? <><span aria-hidden="true">🔒</span><br /><span className="line-clamp-2 block max-w-[64px] break-words">{net.room.name}</span><button onClick={leaveRoom} aria-label={t("bottle.roomLeave")} title={t("bottle.roomLeave")} className="mx-auto mt-1 flex items-center gap-1 rounded-full bg-[#E5484D] px-2 py-0.5 text-[11px] font-bold text-white shadow hover:bg-[#D13438] [text-shadow:none]"><X size={12} strokeWidth={3} />{t("bottle.roomLeaveShort")}</button>{canDeleteRoom ? <button onClick={() => void deleteRoom()} aria-label={t("bottle.roomDelete")} title={t("bottle.roomDelete")} className="mx-auto mt-1 flex items-center gap-1 rounded-full bg-[#7C2D12] px-2 py-0.5 text-[11px] font-bold text-white shadow hover:bg-[#9A3412] [text-shadow:none]"><Trash2 size={12} strokeWidth={2.6} />{t("bottle.roomDeleteShort")}</button> : null}</> : <>{t("bottle.table")}<br />{online ? (net?.table != null ? tableLabel(net.table) : "…") : tableLabel(tableNo)}</>}</span>
           {myTurn
             ? <span aria-label={`${seconds}`} className={cn(tool, "text-[max(14px,3cqmin)] font-bold tabular-nums")}>{seconds}</span>
             : <button onClick={changeTable} aria-label={t("bottle.changeTable")} title={t("bottle.changeTable")} className={tool}><RefreshCw size={17} /></button>}
@@ -3399,7 +3401,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   <div className="max-h-[80cqmin] overflow-y-auto text-[#1F2937]">
                     {waitFor ? (
                       <div role="status" className="mb-2 rounded-xl bg-[#FEF3C7] p-3 text-center text-sm font-semibold text-[#92400E]">
-                        {t("bottle.roomFull1")} {waitFor.table} {t("bottle.roomFull2")} {waitFor.position === 1 ? t("bottle.roomFirst") : `${t("bottle.roomPlace")} ${waitFor.position}`}
+                        {t("bottle.roomFull1")} {tableLabel(waitFor.table)} {t("bottle.roomFull2")} {waitFor.position === 1 ? t("bottle.roomFirst") : `${t("bottle.roomPlace")} ${waitFor.position}`}
                         <button onClick={() => { if (waitFor.back) { backCancel.current = Date.now(); backWait.current = false; } setWaitFor(null); void bottleQueueLeave(); }} className="mt-2 block w-full rounded-lg bg-white py-1.5 text-xs font-bold text-[#92400E]">{t("bottle.roomCancel")}</button>
                       </div>
                     ) : null}
@@ -3419,7 +3421,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                     <ul>
                       {ordered.map((room) => (
                         <li key={room.id}><button onClick={() => void moveTo(room.id)} className="flex min-h-11 w-full items-center gap-2 rounded-lg px-1 text-left text-sm hover:bg-black/5 disabled:opacity-50">
-                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-[#E9A957]"><BottleSvg className="h-7 rotate-[28deg]" /></span><span className="min-w-0 flex-1 font-semibold tabular-nums">#{room.id}{room.id === net?.table ? ` · ${t("bottle.roomHere")}` : room.boys + room.girls >= 12 ? ` · ${t("bottle.roomFullTag")}` : ""}</span>{counts(room.id)}
+                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-[#E9A957]"><BottleSvg className="h-7 rotate-[28deg]" /></span><span className="min-w-0 flex-1 font-semibold tabular-nums">#{tableLabel(room.id)}{room.id === net?.table ? ` · ${t("bottle.roomHere")}` : room.boys + room.girls >= 12 ? ` · ${t("bottle.roomFullTag")}` : ""}</span>{counts(room.id)}
                         </button></li>
                       ))}
                     </ul>
