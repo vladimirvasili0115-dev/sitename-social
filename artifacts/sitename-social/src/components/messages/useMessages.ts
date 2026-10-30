@@ -3,7 +3,7 @@ import { useEffect, useMemo, useSyncExternalStore } from "react";
 import type { Conversation, Person } from "@/types";
 import { people } from "@/data/friends";
 import { initialConversations } from "@/data/messages";
-import { clearRemoteChat, ensureMessagesLoaded, openRemoteChat, remoteChats, removeRemoteMessage, sendRemoteMessage } from "@/lib/messagesSync";
+import { clearRemoteChat, deleteRemoteMessages, ensureMessagesLoaded, hideRemoteMessages, openRemoteChat, remoteChats, removeRemoteMessage, sendRemoteMessage } from "@/lib/messagesSync";
 import { createStore } from "@/lib/store";
 import { supabase } from "@/lib/supabase";
 import { useStore } from "@/lib/useStore";
@@ -12,7 +12,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 const store = createStore<Conversation[]>("sitename-messages", initialConversations);
 const online = Boolean(supabase);
 export type Chat = Conversation & { person: Person };
-export type MessageInput = { text: string; image?: string; audio?: Blob };
+export type MessageInput = { text: string; image?: string; audio?: Blob; replyTo?: string };
 const lastAt = (item: Conversation) => item.messages[item.messages.length - 1]?.at ?? Number.MAX_SAFE_INTEGER;
 const byRecent = (list: Chat[]) => [...list].sort((a, b) => lastAt(b) - lastAt(a));
 
@@ -29,6 +29,8 @@ export function useMessages() {
         open: (userId: string) => void openRemoteChat(userId),
         send: (userId: string, input: MessageInput) => void sendRemoteMessage(userId, input),
         removeMessage: (_userId: string, id: string) => void removeRemoteMessage(id),
+        hideMessages: (_userId: string, ids: string[]) => void hideRemoteMessages(ids),
+        deleteMessages: (_userId: string, ids: string[]) => void deleteRemoteMessages(ids),
         clear: (userId: string) => clearRemoteChat(userId),
       };
     }
@@ -39,10 +41,12 @@ export function useMessages() {
         ? list.map((item) => (item.userId === userId ? { ...item, unread: 0 } : item))
         : people.some((entry) => entry.user.id === userId) ? [...list, { userId, unread: 0, messages: [] }] : list)),
       send: (userId: string, input: MessageInput) => update((list) => list.map((item) => (item.userId === userId
-        ? { ...item, messages: [...item.messages, { text: input.text, image: input.image, audio: input.audio ? URL.createObjectURL(input.audio) : undefined, id: `m-${Date.now()}`, from: "me" as const, at: Date.now() }] }
+        ? { ...item, messages: [...item.messages, { text: input.text, image: input.image, audio: input.audio ? URL.createObjectURL(input.audio) : undefined, id: `m-${Date.now()}`, from: "me" as const, at: Date.now(), replyTo: input.replyTo }] }
         : item))),
       clear: async (userId: string) => { update((list) => list.map((item) => (item.userId === userId ? { ...item, messages: [], unread: 0 } : item))); return true; },
       removeMessage: (userId: string, id: string) => update((list) => list.map((item) => (item.userId === userId ? { ...item, messages: item.messages.filter((message) => message.id !== id) } : item))),
+      hideMessages: (userId: string, ids: string[]) => update((list) => list.map((item) => (item.userId === userId ? { ...item, messages: item.messages.filter((message) => !ids.includes(message.id)) } : item))),
+      deleteMessages: (userId: string, ids: string[]) => update((list) => list.map((item) => (item.userId === userId ? { ...item, messages: item.messages.filter((message) => !ids.includes(message.id)) } : item))),
     };
   }, [conversations, remote, update]);
 }

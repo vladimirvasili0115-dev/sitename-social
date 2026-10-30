@@ -5,7 +5,7 @@ import { flashRefusal } from "./flash";
 import { fetchUsers } from "./usersCache";
 
 export type RemoteChat = Conversation & { person: Person };
-type Row = { id: string; sender_id: string; recipient_id: string; text: string; image_url: string | null; audio_url?: string | null; read_at: string | null; delivered_at?: string | null; created_at: string };
+type Row = { id: string; sender_id: string; recipient_id: string; text: string; image_url: string | null; audio_url?: string | null; read_at: string | null; delivered_at?: string | null; reply_to?: string | null; created_at: string };
 
 const none: RemoteChat[] = [];
 let state = none;
@@ -39,14 +39,19 @@ export async function refreshMessages() {
   const clears = new Map<string, number>();
   const cleared = await supabase.from("message_clears").select("other_id,cleared_at").eq("user_id", userId);
   if (!cleared.error) for (const item of (cleared.data ?? []) as { other_id: string; cleared_at: string }[]) clears.set(item.other_id, Date.parse(item.cleared_at));
+  // "Delete for me": messages this player hid for themselves only (needs paket-FE.sql; without it nothing is hidden).
+  const hidden = new Set<string>();
+  const hides = await supabase.from("message_hides").select("message_id").eq("user_id", userId);
+  if (!hides.error) for (const item of (hides.data ?? []) as { message_id: string }[]) hidden.add(String(item.message_id));
   const byUser = new Map<string, Conversation>();
   opened.forEach((id) => byUser.set(id, { userId: id, unread: 0, messages: [] }));
   [...(data as Row[])].reverse().forEach((row) => {
     const mine = row.sender_id === userId;
     const other = mine ? row.recipient_id : row.sender_id;
     if (Date.parse(row.created_at) <= (clears.get(other) ?? 0)) return;
+    if (hidden.has(String(row.id))) return;
     const chat = byUser.get(other) ?? { userId: other, unread: 0, messages: [] };
-    chat.messages.push({ id: row.id, from: mine ? "me" : "them", text: row.text, image: row.image_url ?? undefined, audio: row.audio_url ?? undefined, at: Date.parse(row.created_at), read: mine ? Boolean(row.read_at) : undefined, delivered: mine ? Boolean(row.delivered_at || row.read_at) : undefined });
+    chat.messages.push({ id: row.id, from: mine ? "me" : "them", text: row.text, image: row.image_url ?? undefined, audio: row.audio_url ?? undefined, at: Date.parse(row.created_at), read: mine ? Boolean(row.read_at) : undefined, delivered: mine ? Boolean(row.delivered_at || row.read_at) : undefined, replyTo: row.reply_to ? String(row.reply_to) : undefined });
     if (!mine && !row.read_at) chat.unread += 1;
     byUser.set(other, chat);
   });
@@ -78,18 +83,33 @@ export async function openRemoteChat(otherId: string) {
   await supabase.from("messages").update({ read_at: new Date().toISOString() }).eq("sender_id", otherId).eq("recipient_id", userId).is("read_at", null);
   await refreshMessages();
 }
-export async function sendRemoteMessage(otherId: string, input: { text: string; image?: string; audio?: Blob }) {
+export async function sendRemoteMessage(otherId: string, input: { text: string; image?: string; audio?: Blob; replyTo?: string }) {
   if (!supabase) return;
   const image_url = isDataUrl(input.image) ? await uploadImage(input.image, "messages") : input.image && /^(https:\/\/|\/custom\/)/.test(input.image) ? input.image : null;
   const audio_url = input.audio ? await uploadBlob(input.audio, "voice", input.audio.type.includes("mp4") ? "m4a" : "webm") : null;
   if (input.audio && !audio_url) return;
-  const { error } = await supabase.from("messages").insert({ recipient_id: otherId, text: input.text, image_url, ...(audio_url ? { audio_url } : {}) });
+  const { error } = await supabase.from("messages").insert({ recipient_id: otherId, text: input.text, image_url, ...(audio_url ? { audio_url } : {}), ...(input.replyTo ? { reply_to: input.replyTo } : {}) });
   if (error && !flashRefusal(error.message)) console.error("Message could not be sent:", error.message);
   await refreshMessages();
 }
 export async function removeRemoteMessage(id: string) {
   if (!supabase) return;
   await supabase.from("messages").delete().eq("id", id);
+  await refreshMessages();
+}
+
+// "Delete for me": the messages disappear for this player only (mine or theirs). Needs paket-FE.sql.
+export async function hideRemoteMessages(ids: string[]) {
+  if (!supabase || !ids.length) return;
+  const { error } = await supabase.rpc("message_hide", { p_ids: ids });
+  if (error) console.error("Messages could not be hidden:", error.message);
+  await refreshMessages();
+}
+// "Delete for everyone": only my own messages go, for both sides. Needs paket-FE.sql.
+export async function deleteRemoteMessages(ids: string[]) {
+  if (!supabase || !ids.length) return;
+  const { error } = await supabase.rpc("message_delete_all", { p_ids: ids });
+  if (error) console.error("Messages could not be deleted:", error.message);
   await refreshMessages();
 }
 

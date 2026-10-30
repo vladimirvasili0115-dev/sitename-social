@@ -11,7 +11,7 @@ import { useFriends } from "@/components/friends/useFriends";
 
 export default function MessagesPage() {
   const { t } = useTranslation();
-  const { chats, open, send, removeMessage, clear } = useMessages();
+  const { chats, open, send, hideMessages, deleteMessages, clear } = useMessages();
   const { friends } = useFriends();
   const [picking, setPicking] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -36,7 +36,7 @@ export default function MessagesPage() {
     <Card className="flex h-[calc(100dvh-196px)] min-h-[420px] overflow-hidden lg:h-[calc(100dvh-136px)]">
       <ConversationList chats={chats} activeId={activeId} onOpen={openChat} onNew={() => setPicking(true)} className={active ? "hidden md:flex" : "flex"} />
       {active ? (
-        <ChatPane chat={active} onBack={() => setActiveId(null)} onSend={(input) => send(active.userId, input)} onDelete={(id) => removeMessage(active.userId, id)} onClear={() => void clear(active.userId).then((ok) => { if (ok) setActiveId(null); })} className="flex" />
+        <ChatPane chat={active} onBack={() => setActiveId(null)} onSend={(input) => send(active.userId, input)} onHide={(ids) => hideMessages(active.userId, ids)} onDeleteAll={(ids) => deleteMessages(active.userId, ids)} onClear={() => void clear(active.userId).then((ok) => { if (ok) setActiveId(null); })} className="flex" />
       ) : (
         <div className="hidden flex-1 flex-col items-center justify-center px-6 text-center md:flex">
           <span className="flex h-14 w-14 items-center justify-center rounded-2xl border border-border bg-surface-2 text-accent"><MessagesSquare size={24} /></span>
