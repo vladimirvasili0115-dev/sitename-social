@@ -3957,7 +3957,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           {full && wide ? <button onClick={onLeave} aria-label={t("photos.close")} title={t("photos.close")} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#B4B9C2] text-white hover:bg-[#9AA3AE]"><X size={15} strokeWidth={3} /></button> : null}
         </div>
         {picked !== null || dedicate ? (
-          <div className="flex min-h-0 flex-1 flex-col">
+          <div className="z-30 flex min-h-0 flex-1 flex-col">
             {dedicate ? (
               <div className="flex items-center gap-2 bg-white px-3 py-2">
                 <p className="min-w-0 flex-1 truncate text-[13px] text-[#B4B9C2]">{t("bottle.pickReceivers")}{chosen.length ? <b className="ml-1 text-[#5CC93B]">· {chosen.length}</b> : null}</p>
