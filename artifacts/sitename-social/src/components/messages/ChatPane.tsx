@@ -20,6 +20,7 @@ import { lastSeenText } from "@/lib/lastSeen";
 import type { Chat, MessageInput } from "./useMessages";
 import { VoiceRecorder } from "./VoiceRecorder";
 import { ImageViewer } from "@/components/ui/ImageViewer";
+import { ChatBackdrop, ChatThemeButton, useChatTheme } from "./ChatTheme";
 
 type Props = { chat: Chat; onBack: () => void; onSend: (input: MessageInput) => void; onDelete: (id: string) => void; onClear?: () => void; className?: string };
 const tool = "flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-xl text-muted hover:bg-surface-2 hover:text-text";
@@ -44,6 +45,8 @@ export function ChatPane({ chat, onBack, onSend, onDelete, onClear, className }:
   const [recording, setRecording] = useState(false);
   const [viewing, setViewing] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const theme = useChatTheme();
+  const themed = theme.look !== "plain";
   const { user } = chat.person;
   const count = chat.messages.length;
   const ready = Boolean(text.trim() || image);
@@ -110,6 +113,7 @@ export function ChatPane({ chat, onBack, onSend, onDelete, onClear, className }:
           <div className={cn("text-xs", typing || user.online ? "text-accent" : "text-muted")}>{typing ? t("messages.typing") : user.online ? t("common.onlineNow") : lastSeenText(user.lastSeen, t)}</div>
         </div>
         <div className="ml-auto flex shrink-0 items-center gap-1">
+          <ChatThemeButton theme={theme} />
           {onClear && count > 0 ? <IconButton aria-label={t("messages.clear")} title={t("messages.clear")} onClick={() => { if (window.confirm(t("messages.clearConfirm"))) onClear(); }}><Trash2 size={17} /></IconButton> : null}
           {supabase ? <>
             <IconButton aria-label={t("call.voice")} title={t("call.voice")} onClick={() => void startCall({ id: user.id, name: user.name, avatar: user.avatar }, false)}><Phone size={18} /></IconButton>
@@ -117,7 +121,9 @@ export function ChatPane({ chat, onBack, onSend, onDelete, onClear, className }:
           </> : null}
         </div>
       </div>
-      <div ref={listRef} className="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 py-4 sm:px-5">
+      <div className="relative min-h-0 flex-1 overflow-hidden">
+      <ChatBackdrop look={theme.look} />
+      <div ref={listRef} className="absolute inset-0 space-y-2 overflow-y-auto px-3 py-4 sm:px-5">
         {count ? chat.messages.map((message, index) => {
           const previous = chat.messages[index - 1];
           const newDay = !previous || dayDiff(previous.at, message.at) !== 0;
@@ -129,13 +135,13 @@ export function ChatPane({ chat, onBack, onSend, onDelete, onClear, className }:
             const Icon = call.kind === "missed" && !mine ? PhoneMissed : mine ? PhoneOutgoing : PhoneIncoming;
             return (
               <div key={message.id}>
-                {newDay ? <div className="my-3 text-center text-[11px] text-muted">{dayLabel(message.at)}</div> : null}
+                {newDay ? <div className={cn("my-3 text-center text-[11px]", themed ? "text-white/90 [text-shadow:0_1px_2px_rgba(0,0,0,.55)]" : "text-muted")}>{dayLabel(message.at)}</div> : null}
                 <div className={cn("flex", mine ? "justify-end" : "justify-start")}>
-                  <div className={cn("flex items-center gap-2.5 rounded-2xl bg-surface-2 px-3.5 py-2.5 text-sm", mine ? "rounded-br-md" : "rounded-bl-md")}>
+                  <div className={cn("flex items-center gap-2.5 rounded-2xl px-3.5 py-2.5 text-sm", themed ? "bg-white/90 shadow-sm" : "bg-surface-2", mine ? "rounded-br-md" : "rounded-bl-md")}>
                     <span className={cn("flex h-8 w-8 items-center justify-center rounded-full", missed ? "bg-[#E53935]/15 text-[#E53935]" : "bg-[#22C55E]/15 text-[#22C55E]")}><Icon size={16} /></span>
                     <span className="flex flex-col">
-                      <span className="font-semibold text-text">{t(`call.log_${call.kind === "missed" && mine ? "noanswer" : call.kind}` as "call.log_done")}</span>
-                      <span className="text-[11px] text-muted">{formatClock(message.at)}{call.kind === "done" ? ` · ${clock(call.secs)}` : ""}</span>
+                      <span className={cn("font-semibold", themed ? "text-slate-800" : "text-text")}>{t(`call.log_${call.kind === "missed" && mine ? "noanswer" : call.kind}` as "call.log_done")}</span>
+                      <span className={cn("text-[11px]", themed ? "text-slate-500" : "text-muted")}>{formatClock(message.at)}{call.kind === "done" ? ` · ${clock(call.secs)}` : ""}</span>
                     </span>
                   </div>
                 </div>
@@ -144,21 +150,22 @@ export function ChatPane({ chat, onBack, onSend, onDelete, onClear, className }:
           }
           return (
             <div key={message.id}>
-              {newDay ? <div className="my-3 text-center text-[11px] text-muted">{dayLabel(message.at)}</div> : null}
+              {newDay ? <div className={cn("my-3 text-center text-[11px]", themed ? "text-white/90 [text-shadow:0_1px_2px_rgba(0,0,0,.55)]" : "text-muted")}>{dayLabel(message.at)}</div> : null}
               <div className={cn("flex items-center gap-2", mine ? "justify-end" : "justify-start")}>
                 {mine && active ? <button onClick={() => { onDelete(message.id); setSelected(null); }} className="flex h-8 items-center gap-1.5 rounded-lg border border-border px-2.5 text-xs font-medium text-danger hover:bg-surface-2"><Trash2 size={13} />{t("post.delete")}</button> : null}
-                <div onClick={mine ? () => setSelected(active ? null : message.id) : undefined} className={cn("max-w-[78%] overflow-hidden rounded-2xl", mine ? "cursor-pointer rounded-br-md bg-accent text-bg" : "rounded-bl-md bg-surface-2 text-text", active && "opacity-80")}>
+                <div onClick={mine ? () => setSelected(active ? null : message.id) : undefined} className={cn("max-w-[78%] overflow-hidden rounded-2xl", themed && "shadow-md", mine ? "cursor-pointer rounded-br-md bg-accent text-bg" : cn("rounded-bl-md", themed ? "bg-white/90 text-slate-800" : "bg-surface-2 text-text"), active && "opacity-80")}>
                   {message.image ? <button type="button" onClick={(event) => { event.stopPropagation(); setViewing(message.image ?? null); }} aria-label={t("photos.view")} className="block w-full cursor-zoom-in"><img src={message.image} alt="" className="max-h-[260px] w-full object-cover" /></button> : null}
                   {message.audio ? <audio src={message.audio} controls preload="metadata" onClick={(event) => event.stopPropagation()} className="mx-2 mt-2 h-10 w-[230px] max-w-full" /> : null}
                   <div className="px-3.5 py-2">
                     {message.text ? <p className="whitespace-pre-wrap break-words text-sm leading-5">{linkParts(message.text)}</p> : null}
-                    <p className={cn("mt-0.5 flex items-center justify-end gap-1 text-[10px]", mine ? "text-bg" : "text-muted")}>{formatClock(message.at)}{mine && message.read !== undefined ? (message.read ? <CheckCheck size={15} strokeWidth={2.4} aria-label={t("messages.read")} className="text-[#34B7F1]" /> : message.delivered ? <CheckCheck size={15} strokeWidth={2.4} aria-label={t("messages.delivered")} className="opacity-80" /> : <Check size={15} strokeWidth={2.4} aria-label={t("messages.sent")} className="opacity-80" />) : null}</p>
+                    <p className={cn("mt-0.5 flex items-center justify-end gap-1 text-[10px]", mine ? "text-bg" : themed ? "text-slate-500" : "text-muted")}>{formatClock(message.at)}{mine && message.read !== undefined ? (message.read ? <CheckCheck size={15} strokeWidth={2.4} aria-label={t("messages.read")} className="text-[#34B7F1]" /> : message.delivered ? <CheckCheck size={15} strokeWidth={2.4} aria-label={t("messages.delivered")} className="opacity-80" /> : <Check size={15} strokeWidth={2.4} aria-label={t("messages.sent")} className="opacity-80" />) : null}</p>
                   </div>
                 </div>
               </div>
             </div>
           );
-        }) : <p className="flex h-full items-center justify-center text-sm text-muted">{t("messages.noMessages")}</p>}
+        }) : <p className={cn("flex h-full items-center justify-center text-sm", themed ? "text-white/90 [text-shadow:0_1px_2px_rgba(0,0,0,.5)]" : "text-muted")}>{t("messages.noMessages")}</p>}
+      </div>
       </div>
       {image ? (
         <div className="flex items-center gap-3 border-t border-border px-3 pt-3">
