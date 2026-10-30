@@ -265,6 +265,12 @@ export const giftFileName = (id: string): string => (id.startsWith("e:") ? Array
 // Song titles from YouTube often end with hashtags (#shorts ...): those are dropped. A leading "♫ " marks a song
 // from the MP3 tab, "♪ " an own MP3 file (5 hearts); everything else is a YouTube song (9 hearts).
 const cleanSong = (raw: string) => raw.replace(/#[^\s#]+/g, "").replace(/\s{2,}/g, " ").trim();
+// The ring around the round photo of whoever put the song on: light grey track, darker grey part that fills as the song plays.
+function SongRing({ frac, className, children }: { frac: number; className?: string; children: ReactNode }) {
+  const deg = Math.round(Math.min(1, Math.max(0, frac)) * 360);
+  return <span className={cn("inline-flex shrink-0 rounded-full p-[3px]", className)} style={{ background: `conic-gradient(#4B5563 ${deg}deg, #D1D5DB ${deg}deg)` }}>{children}</span>;
+}
+
 export function songInfo(raw: string) {
   const own = raw.startsWith("♪ ");
   return { title: cleanSong(raw.replace(/^[♫♪] /, "")) || "♪", price: own ? 5 : 9 };
@@ -1241,6 +1247,14 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     // Still shown when the one who put the song on has left the table: the picture comes from the profile.
     return seat?.avatar || players.find((player) => player.id === by)?.avatar || names.current[by]?.avatar || djPics[by] || NO_PHOTO;
   })();
+  // The ring around that photo fills as the song goes. Every screen takes the song's place from the same server start time, so all see the same.
+  const [, setRingTick] = useState(0);
+  useEffect(() => {
+    if (!track) return;
+    const timer = window.setInterval(() => setRingTick((n) => n + 1), 500);
+    return () => window.clearInterval(timer);
+  }, [track?.at]); // eslint-disable-line react-hooks/exhaustive-deps
+  const songFrac = tune.dur > 0 ? Math.min(1, Math.max(0, songNow() / tune.dur)) : 0;
   useEffect(() => {
     const by = track?.by;
     if (!by || by === net?.me || djPics[by] || net?.seats.some((item) => item.id === by) || names.current[by]?.avatar) return;
@@ -3882,13 +3896,13 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           <div className={cn("relative w-full shrink-0 bg-black", picked !== null || dedicate ? "h-0 overflow-hidden" : "aspect-video max-h-[42%]")}>
             <iframe ref={frameRef} onLoad={() => { window.setTimeout(pushMusic, 800); frameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: "listening", id: 1 }), "*"); }} src={ytSrc(video)} title="YouTube" referrerPolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen className="h-full w-full" />
             {soundPill}
-            {track ? <img src={songByAvatar} alt="" title={t("bottle.musicNow")} className="pointer-events-none absolute left-1.5 top-1.5 h-8 w-8 select-none rounded-full border-2 border-white/80 object-cover shadow" draggable={false} /> : null}
+            {track ? <SongRing frac={songFrac} className="pointer-events-none absolute left-1.5 top-1.5"><img src={songByAvatar} alt="" title={t("bottle.musicNow")} className="h-8 w-8 select-none rounded-full border-2 border-white/80 object-cover shadow" draggable={false} /></SongRing> : null}
           </div>
         ) : null}
         {video && !wide && !musicMode ? (
           <div ref={miniRef} style={mini.x === null ? { right: 0, top: mini.y, width: MINI_VIDEO_W } : { left: mini.x, top: mini.y, width: MINI_VIDEO_W }} className={cn("absolute z-20 overflow-hidden border shadow-lg", musicMode ? "border-[#4C1D95] bg-[linear-gradient(160deg,#1E1B3A,#4C1D95_65%,#BE185D)] text-white" : "border-border bg-surface", mini.x === null ? "rounded-l-2xl border-r-0" : "rounded-2xl")}>
             <div className="flex items-center">
-              <img src={songByAvatar} alt="" title={t("bottle.miniMove")} onPointerDown={(event) => startMini(event, "move")} className="mx-1 h-7 w-7 shrink-0 cursor-move touch-none select-none rounded-full border-2 border-border object-cover" draggable={false} />
+              <SongRing frac={songFrac} className="mx-1"><img src={songByAvatar} alt="" title={t("bottle.miniMove")} onPointerDown={(event) => startMini(event, "move")} className="h-7 w-7 shrink-0 cursor-move touch-none select-none rounded-full border-2 border-border object-cover" draggable={false} /></SongRing>
               <div className={cn(musicMode ? "my-1 mr-1 h-[200px] w-[200px] shrink-0 overflow-hidden rounded-xl" : "aspect-video min-w-0 flex-1", "bg-black", miniBusy && "pointer-events-none")}><iframe ref={frameRef} onLoad={() => { window.setTimeout(pushMusic, 800); frameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: "listening", id: 1 }), "*"); }} src={ytSrc(video)} title="YouTube" referrerPolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen className="h-full w-full" /></div>
             </div>
             {musicMode ? <div className="flex items-center gap-2 px-2 pt-0.5"><Equalizer className="h-4 shrink-0" /><p className="min-w-0 flex-1 truncate text-xs font-bold">{videoTitle}</p></div> : null}
@@ -3899,7 +3913,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         {audio || (video && musicMode) ? (
           // PC: a bar above the chat. Phone: a small square window like the video one, which can be moved and resized.
           <div ref={wide ? undefined : miniRef} style={wide ? undefined : mini.x === null ? { right: 4, top: mini.y, width: MINI_MUSIC_W } : { left: mini.x, top: mini.y, width: MINI_MUSIC_W }} className={cn("overflow-hidden bg-[linear-gradient(120deg,#1E1B3A,#4C1D95_60%,#BE185D)] text-white", wide ? "relative shrink-0 p-2.5" : "absolute z-20 rounded-2xl border border-white/15 p-1.5 pt-6 shadow-xl", miniBusy && !wide && "select-none")}>
-            {track ? <img src={songByAvatar} alt="" title={t("bottle.musicNow")} className={cn("pointer-events-none absolute z-[1] select-none rounded-full border-2 border-white/70 object-cover shadow", wide ? "bottom-1.5 left-1.5 h-6 w-6" : "left-1.5 top-1.5 h-6 w-6")} draggable={false} /> : null}
+            {track ? <SongRing frac={songFrac} className={cn("pointer-events-none absolute z-[1]", wide ? "bottom-1.5 left-1.5" : "left-1.5 top-1.5")}><img src={songByAvatar} alt="" title={t("bottle.musicNow")} className="h-6 w-6 select-none rounded-full border-2 border-white/70 object-cover shadow" draggable={false} /></SongRing> : null}
             {audio ? <audio src={audio.url} muted={queued} autoPlay playsInline ref={(node) => { audioRef.current = node; if (node) node.volume = music / 100; }} onPlay={() => setTune((v) => ({ ...v, playing: true }))} onPause={() => setTune((v) => ({ ...v, playing: false }))} onEnded={() => setAudio(null)} onLoadedMetadata={(event) => { const node = event.currentTarget; const dur = node.duration || 0; const at = songNow(); if (at > 2 && at < dur) node.currentTime = at; setTune((v) => ({ ...v, dur })); }} onTimeUpdate={(event) => { const cur = event.currentTarget.currentTime; setTune((v) => ({ ...v, cur })); }} className="hidden" /> : null}
             {/* Songs from the MP3 tab: the YouTube player plays behind the card, only the music player is seen. */}
             {!audio && video ? <iframe ref={frameRef} onLoad={() => { window.setTimeout(pushMusic, 800); frameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: "listening", id: 1 }), "*"); }} src={ytSrc(video)} title="YouTube" referrerPolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media" tabIndex={-1} aria-hidden="true" className="pointer-events-none absolute left-0 top-0 h-[200px] w-[200px] opacity-0" /> : null}
