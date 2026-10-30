@@ -1,6 +1,6 @@
 "use client";
+import Link from "next/link";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import type { Game } from "@/types";
 import { games } from "@/data/games";
 import { useTranslation } from "@/i18n/useTranslation";
@@ -31,8 +31,8 @@ const row = "flex w-full items-center gap-4 rounded-2xl p-2.5 text-left";
 const icon = "flex h-[88px] w-[88px] shrink-0 items-center justify-center overflow-hidden rounded-[22px] shadow-md sm:h-24 sm:w-24";
 
 export default function GamesPage() {
-  const { t } = useTranslation();
-  const router = useRouter();
+  const { t, locale } = useTranslation();
+  const mafiaText = locale === "az" ? "Gecə düşür, mafiya kimdir? Səsli və yazışmalı masalar." : "Night falls. Who is the mafia? Voice and text tables.";
   const [playing, setPlaying] = useState(false);
   const soon = (game: Game) => {
     const tile = tiles[game.id];
@@ -54,7 +54,7 @@ export default function GamesPage() {
         <h1 className="mb-3 px-2 pt-1 text-[22px] font-bold tracking-[-0.03em]">{t("nav.games")}</h1>
         <ul className="space-y-1">
           <li>
-            <button onClick={() => router.push("/bottle/")} className={`${row} bg-surface-2 hover:brightness-110`}>
+            <button onClick={() => setPlaying(true)} className={`${row} bg-surface-2 hover:brightness-110`}>
               <span aria-hidden="true" className={icon}><BottleTile /></span>
               <span className="min-w-0 flex-1">
                 <span className="block text-base font-bold text-text">{t("bottle.title")}</span>
@@ -62,6 +62,16 @@ export default function GamesPage() {
               </span>
               <span className="hidden shrink-0 rounded-full bg-accent px-4 py-2 text-xs font-bold text-bg sm:block">{t("games.play")}</span>
             </button>
+          </li>
+          <li>
+            <Link href="/mafia" className={`${row} bg-surface-2 hover:brightness-110`}>
+              <span aria-hidden="true" className={icon}><img src="/games/mafia.png" alt="" className="h-full w-full object-cover" /></span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-base font-bold text-text">{locale === "az" ? "Mafiya" : "Mafia"}</span>
+                <span className="mt-1 block text-[13px] leading-5 text-muted">{mafiaText}</span>
+              </span>
+              <span className="hidden shrink-0 rounded-full bg-accent px-4 py-2 text-xs font-bold text-bg sm:block">{t("games.play")}</span>
+            </Link>
           </li>
           {games.map(soon)}
         </ul>
