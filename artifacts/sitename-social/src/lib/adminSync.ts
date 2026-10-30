@@ -51,6 +51,10 @@ export const gesturesOpenGet = () => call<boolean>("bottle_gestures_open");
 export const gesturesOpenSet = (on: boolean) => call<boolean>("admin_gestures_open_set", { p_on: on });
 export const setNameColor = (id: string, color: string) => call<boolean>("admin_name_color_set", { target: id, p_color: color });
 export const vipCount = () => call<{ vip: number; total: number }>("admin_vip_count");
+// Private (VIP) bottle rooms: the old password cannot be read (only a hash is stored); the admin sets a new one, or an empty one to open the room. Needs paket-FF.sql.
+export type AdminRoom = { id: number; name: string | null; capacity: number; locked: boolean; owner: string | null; seated: number };
+export const adminRooms = () => call<AdminRoom[]>("admin_bottle_rooms");
+export const adminRoomPass = (room: number, password: string) => call<boolean>("admin_bottle_room_pass", { p_room: room, p_password: password });
 export const setModerator = async (id: string, enabled: boolean) => (await call("admin_set_moderator", { target: id, enabled })) !== null;
 export async function grantCoins(id: string, amount: number): Promise<number | null> {
   const total = await call<number>("admin_grant_coins", { target: id, amount });

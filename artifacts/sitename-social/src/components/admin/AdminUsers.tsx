@@ -7,7 +7,7 @@ import { Palette, Eye, EyeOff, KeyRound, Award, HeartOff, Lock, LockOpen, Wine, 
 import { useSyncExternalStore } from "react";
 import { refreshVerified, verifiedStore } from "@/lib/verifiedSync";
 import { setUserPassword, banUser, deleteUser, fetchAdminUsers, fetchUserDetail, grantCoins, grantHearts, setModerator, setVerified, vipAll, vipCount, gesturesOpenGet, gesturesOpenSet, setNameColor, gameState, gameGrant, gameFlags, statFreezeGet, statFreezeSet, pageAllowGet, pageAllowSet, type PageAllow, giftAllowGet, giftAllowSet, type GiftAllow, type StatKind, type StatFreeze, type GameFlags, type GameState, type AdminUser, type UserDetail } from "@/lib/adminSync";
-import { broadcastCount, broadcastSend } from "@/lib/adminSync";
+import { adminRoomPass, adminRooms, broadcastCount, broadcastSend, type AdminRoom } from "@/lib/adminSync";
 import type { TranslationKey } from "@/i18n/LanguageProvider";
 import { initialsAvatar } from "@/lib/avatar";
 import { formatDay } from "@/lib/datetime";
@@ -151,6 +151,7 @@ export function AdminUsers({ owner }: { owner: boolean }) {
     <>
       <VipAllCard />
       <GesturesOpenCard />
+      <RoomPassCard />
       {owner ? <BroadcastCard /> : null}
       <SearchInput value={query} onChange={setQuery} label={t(owner ? "admin.searchUsers" : "admin.searchUsersMod")} className="mb-4" />
       {failed ? <p role="alert" className="mb-3 rounded-xl border border-danger px-4 py-2.5 text-sm text-danger">{t("report.failed")}</p> : null}
@@ -418,6 +419,62 @@ function VipAllCard() {
       <div className="mt-3 flex flex-wrap items-center gap-2">
         {[1, 7, 30, 365].map((n) => <button key={n} type="button" aria-pressed={days === n} onClick={() => { setDays(n); setSure(false); }} className={cn("h-9 rounded-full border px-3.5 text-xs font-semibold", days === n ? "border-[#D97706] bg-surface-2 text-[#D97706]" : "border-border text-muted hover:text-text")}>{t("admin.vipDays").replace("{n}", String(n))}</button>)}
         <button type="button" disabled={busy} onClick={() => void give()} className={cn("ml-auto inline-flex h-9 items-center gap-1.5 rounded-xl px-3.5 text-xs font-semibold text-white disabled:opacity-50", sure ? "bg-danger" : "bg-[#D97706] hover:brightness-110")}><Crown size={14} />{sure ? t("admin.vipSure").replace("{n}", String(days)) : t("admin.vipGive")}</button>
+      </div>
+      {note ? <p role="status" className={cn("mt-2 text-xs font-semibold", note.ok ? "text-accent" : "text-danger")}>{note.text}</p> : null}
+    </Card>
+  );
+}
+
+// VIP rooms of the bottle game: the old password cannot be shown (only a hash is stored); here the admin sets a new one, or opens the room.
+const roomWords = {
+  az: { title: "VIP otaqların parolu", text: "Köhnə parolu görmək olmur. Yeni parol yaz və Qoy bas, ya da Parolu götür ilə otağı açıq et.", none: "Şəxsi otaq yoxdur.", set: "Qoy", clear: "Parolu götür", ph: "Yeni parol", locked: "parollu", open: "açıq", owner: "Sahib", seats: "oturur", saved: "Parol dəyişdi.", opened: "Otaq açıq edildi.", fail: "Alınmadı.", refresh: "Yenilə" },
+  en: { title: "VIP room passwords", text: "The old password cannot be shown. Type a new one and press Set, or press Remove password to open the room.", none: "No private rooms.", set: "Set", clear: "Remove password", ph: "New password", locked: "locked", open: "open", owner: "Owner", seats: "seated", saved: "Password changed.", opened: "Room opened.", fail: "Failed.", refresh: "Refresh" },
+} as const;
+
+function RoomPassCard() {
+  const { locale } = useTranslation();
+  const w = locale === "az" ? roomWords.az : roomWords.en;
+  const [rooms, setRooms] = useState<AdminRoom[] | null>(null);
+  const [drafts, setDrafts] = useState<Record<number, string>>({});
+  const [busy, setBusy] = useState<number | null>(null);
+  const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
+  const load = useCallback(() => void adminRooms().then((value) => { if (Array.isArray(value)) setRooms(value); }), []);
+  useEffect(() => { load(); }, [load]);
+  async function save(room: AdminRoom, password: string) {
+    setBusy(room.id);
+    const done = await adminRoomPass(room.id, password);
+    setBusy(null);
+    setNote(done === true ? { ok: true, text: password ? w.saved : w.opened } : { ok: false, text: w.fail });
+    setDrafts((value) => ({ ...value, [room.id]: "" }));
+    load();
+  }
+  return (
+    <Card className="mb-4 p-4">
+      <div className="flex items-start gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-2 text-accent"><KeyRound size={20} /></span>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold">{w.title}</p>
+          <p className="mt-0.5 text-xs leading-5 text-muted">{w.text}</p>
+        </div>
+        <button type="button" onClick={load} className="h-8 shrink-0 rounded-lg border border-border px-2.5 text-xs font-medium text-muted hover:text-text">{w.refresh}</button>
+      </div>
+      {rooms && !rooms.length ? <p className="mt-3 text-xs text-muted">{w.none}</p> : null}
+      <div className="mt-3 space-y-2">
+        {(rooms ?? []).map((room) => (
+          <div key={room.id} className="rounded-xl border border-border p-3">
+            <div className="flex items-center gap-2 text-sm">
+              {room.locked ? <Lock size={14} className="shrink-0 text-muted" /> : <LockOpen size={14} className="shrink-0 text-muted" />}
+              <span className="min-w-0 flex-1 truncate font-semibold">{room.name || `#${room.id}`}</span>
+              <span className="shrink-0 text-[11px] text-muted">{room.locked ? w.locked : w.open} · {room.seated}/{room.capacity} {w.seats}</span>
+            </div>
+            <p className="mt-0.5 truncate text-[11px] text-muted">{w.owner}: {room.owner ?? "—"}</p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <input value={drafts[room.id] ?? ""} onChange={(event) => setDrafts((value) => ({ ...value, [room.id]: event.target.value.slice(0, 30) }))} placeholder={w.ph} autoComplete="off" className="h-9 min-w-0 flex-1 rounded-lg border border-border bg-surface-2 px-3 text-xs text-text outline-none placeholder:text-muted focus:border-accent" />
+              <button type="button" disabled={busy === room.id || !(drafts[room.id] ?? "").trim()} onClick={() => void save(room, (drafts[room.id] ?? "").trim())} className="h-9 rounded-lg bg-accent px-3.5 text-xs font-semibold text-bg disabled:opacity-40">{w.set}</button>
+              {room.locked ? <button type="button" disabled={busy === room.id} onClick={() => void save(room, "")} className="h-9 rounded-lg border border-border px-3 text-xs font-semibold text-danger hover:bg-surface-2 disabled:opacity-40">{w.clear}</button> : null}
+            </div>
+          </div>
+        ))}
       </div>
       {note ? <p role="status" className={cn("mt-2 text-xs font-semibold", note.ok ? "text-accent" : "text-danger")}>{note.text}</p> : null}
     </Card>
