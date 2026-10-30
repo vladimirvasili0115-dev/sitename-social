@@ -17,6 +17,7 @@ const tiles = [
   { emoji: "🁫", name: "Domino", href: "/games" },
   { emoji: "🎲", name: "Nərd", href: "/games" },
   { emoji: "🎱", name: "Loto", href: "/games" },
+  { emoji: "🕴️", name: "Mafiya", href: "/mafia" },
 ];
 
 export function NeonHome({ name }: { name: string }) {
@@ -45,8 +46,8 @@ export function NeonHome({ name }: { name: string }) {
           : <Link href="/games" className="rounded-full bg-white/20 px-4 py-2 text-xs font-bold text-white">{w.all}</Link>}
       </div>
     </section>
-    <div className="mb-4 grid grid-cols-4 gap-2">
-      {tiles.map((tile) => <Link key={tile.name} href={tile.href} className="flex items-center gap-2 rounded-2xl border border-border bg-surface p-2 hover:brightness-110">
+    <div className="mb-4 grid grid-cols-4 gap-2 sm:grid-cols-5">
+      {tiles.map((tile) => <Link key={tile.name} href={tile.href} className={`${tile.name === "Mafiya" ? "col-span-4 sm:col-span-1 " : ""}flex items-center gap-2 rounded-2xl border border-border bg-surface p-2 hover:brightness-110`}>
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(135deg,rgba(124,58,237,.35),rgba(236,72,153,.35))] text-xl">{tile.emoji}</span>
         <span className="min-w-0 truncate text-xs font-bold text-text">{tile.name}</span>
       </Link>)}
