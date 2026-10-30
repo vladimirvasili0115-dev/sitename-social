@@ -221,6 +221,19 @@ export function ChatPane({ chat, onBack, onSend, onHide, onDeleteAll, onClear, c
           return (
             <div key={message.id} data-mid={message.id}>
               {newDay ? <div className={cn("my-3 text-center text-[11px]", themed ? "text-white/90 [text-shadow:0_1px_2px_rgba(0,0,0,.55)]" : "text-muted")}>{dayLabel(message.at)}</div> : null}
+              {menu === message.id && !selecting ? (
+                <>
+                  <button type="button" aria-label={w.cancel} onClick={() => setMenu(null)} className="fixed inset-0 z-10 cursor-default bg-transparent" />
+                  <div className={cn("relative z-20 mb-1.5 flex", mine ? "justify-end" : "justify-start")}>
+                    <div className="flex overflow-hidden rounded-xl border border-border bg-surface text-text shadow-lg">
+                      <button type="button" onClick={() => startReply(message.id)} className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium hover:bg-surface-2"><Reply size={14} />{w.reply}</button>
+                      {message.text ? <button type="button" onClick={() => copyText(message.text)} className="flex items-center gap-1.5 border-l border-border px-3 py-2 text-xs font-medium hover:bg-surface-2"><Copy size={14} />{w.copy}</button> : null}
+                      <button type="button" onClick={() => { setMenu(null); setConfirm([message.id]); }} className="flex items-center gap-1.5 border-l border-border px-3 py-2 text-xs font-medium text-danger hover:bg-surface-2"><Trash2 size={14} />{w.del}</button>
+                      <button type="button" onClick={() => { setMenu(null); setSelecting(true); setPicked([message.id]); }} className="flex items-center gap-1.5 border-l border-border px-3 py-2 text-xs font-medium hover:bg-surface-2"><Check size={14} />{w.select}</button>
+                    </div>
+                  </div>
+                </>
+              ) : null}
               <div onClick={selecting ? () => toggle(message.id) : undefined} className={cn("flex items-center gap-2 rounded-xl", mine ? "justify-end" : "justify-start", selecting && "cursor-pointer", on && "bg-accent/15")}>
                 {selecting ? <span className={cn("flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2", mine && "mr-auto", on ? "border-accent bg-accent text-bg" : themed ? "border-white/80 bg-white/20" : "border-muted")}>{on ? <Check size={12} strokeWidth={3} /> : null}</span> : null}
                 <div onPointerDown={(event) => startPress(message.id, event)} onPointerMove={movePress} onPointerUp={endPress} onPointerCancel={endPress} onPointerLeave={endPress} onContextMenu={(event) => { event.preventDefault(); if (!selecting) setMenu(message.id); }} className={cn("max-w-[78%] overflow-hidden rounded-2xl [-webkit-touch-callout:none] [@media(pointer:coarse)]:select-none", themed && "shadow-md", mine ? "rounded-br-md bg-accent text-bg" : cn("rounded-bl-md", themed ? "bg-white/90 text-slate-800" : "bg-surface-2 text-text"), (flash === message.id || replyTo === message.id) && "ring-2 ring-accent/70 ring-offset-1")}>
@@ -238,19 +251,6 @@ export function ChatPane({ chat, onBack, onSend, onHide, onDeleteAll, onClear, c
                   </div>
                 </div>
               </div>
-              {menu === message.id && !selecting ? (
-                <>
-                  <button type="button" aria-label={w.cancel} onClick={() => setMenu(null)} className="fixed inset-0 z-10 cursor-default bg-transparent" />
-                  <div className={cn("relative z-20 mt-1.5 flex", mine ? "justify-end" : "justify-start")}>
-                    <div className="flex overflow-hidden rounded-xl border border-border bg-surface text-text shadow-lg">
-                      <button type="button" onClick={() => startReply(message.id)} className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium hover:bg-surface-2"><Reply size={14} />{w.reply}</button>
-                      {message.text ? <button type="button" onClick={() => copyText(message.text)} className="flex items-center gap-1.5 border-l border-border px-3 py-2 text-xs font-medium hover:bg-surface-2"><Copy size={14} />{w.copy}</button> : null}
-                      <button type="button" onClick={() => { setMenu(null); setConfirm([message.id]); }} className="flex items-center gap-1.5 border-l border-border px-3 py-2 text-xs font-medium text-danger hover:bg-surface-2"><Trash2 size={14} />{w.del}</button>
-                      <button type="button" onClick={() => { setMenu(null); setSelecting(true); setPicked([message.id]); }} className="flex items-center gap-1.5 border-l border-border px-3 py-2 text-xs font-medium hover:bg-surface-2"><Check size={14} />{w.select}</button>
-                    </div>
-                  </div>
-                </>
-              ) : null}
             </div>
           );
         }) : <p className={cn("flex h-full items-center justify-center text-sm", themed ? "text-white/90 [text-shadow:0_1px_2px_rgba(0,0,0,.5)]" : "text-muted")}>{t("messages.noMessages")}</p>}
