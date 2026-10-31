@@ -6,6 +6,7 @@ import { looksLikePhone, normalizePhone, phoneEmail } from "@/lib/phoneAuth";
 import { writeProfileEdits } from "@/lib/profile";
 import { loadProfile } from "@/lib/profileSync";
 import { supabase } from "@/lib/supabase";
+import { getDeviceId } from "@/lib/device";
 import { resetRemotePosts } from "@/lib/postsSync";
 import { resetRemotePhotos } from "@/lib/photosSync";
 import { resetRemoteFriends, sendHeartbeat } from "@/lib/friendsSync";
@@ -116,7 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return null;
   }, []);
 
-  const register = useCallback(async ({ password, ...input }: RegisterInput): Promise<AuthResult> => {
+  const registerNow = useCallback(async ({ password, ...input }: RegisterInput): Promise<AuthResult> => {
     if (!supabase) {
       writeProfileEdits({ ...input, handle: input.email.split("@")[0].toLowerCase(), status: "", bio: "", work: "", education: "", languages: [], interests: [], followers: 0, joined: new Date().toISOString().slice(0, 10) });
       writeSession({ name: input.name, email: input.email }, true);
@@ -142,6 +143,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) return toKey(error.message);
     return data.session ? null : "auth.confirmEmail";
   }, []);
+
+  // Device limit: one device may open at most 2 accounts in 24 hours. If the check itself fails (SQL not installed, network), sign-up goes on as before.
+  const register = useCallback(async (input: RegisterInput): Promise<AuthResult> => {
+    if (!supabase) return registerNow(input);
+    const device = getDeviceId();
+    let claimed = false;
+    try {
+      const claim = await supabase.rpc("signup_claim", { p_device: device });
+      if (!claim.error && claim.data === false) return "auth.errDeviceLimit";
+      claimed = !claim.error && claim.data === true;
+    } catch { /* check unavailable: continue */ }
+    const result = await registerNow(input);
+    // A failed attempt (wrong data, e-mail already used) does not use up the device's allowance.
+    if (result !== null && result !== "auth.confirmEmail" && claimed) {
+      try { await supabase.rpc("signup_release", { p_device: device }); } catch { /* ignore */ }
+    }
+    return result;
+  }, [registerNow]);
 
   const requestReset = useCallback(async (email: string): Promise<AuthResult> => {
     if (!supabase) return null;
