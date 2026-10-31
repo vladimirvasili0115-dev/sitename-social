@@ -1,5 +1,6 @@
 import { supabase } from "./supabase";
 import { rpcEnd, rpcStart } from "./rpcTiming";
+import { flashRefusal } from "./flash";
 
 // Live tables of the bottle game. The database owns the game: seats, turns, where the bottle stops, answers and kisses.
 export type BottleSeat = { seat: number; id: string; name: string | null; avatar: string | null; gender: string | null; kisses: number; total?: number; smiles?: number; songs?: number; zodiac?: number | null; age: number | null; status?: string | null; frame?: number; pass?: boolean; top?: boolean; vip_badge?: boolean; kicked?: { by: string; at: number } | null; admirer?: { id: string; name: string | null; avatar: string | null; amount: number } | null };
@@ -35,7 +36,13 @@ export const bottleTableGifts = (upto: number) => call<BottleSeatGift[]>("bottle
 export const bottleSync = (after: number) => call<BottleState>("bottle_sync", { p_after: after });
 export const bottleSpin = () => call<boolean>("bottle_spin");
 export const bottleAnswer = (kiss: boolean) => call<null>("bottle_answer", { p_kiss: kiss });
-export const bottleSay = (text: string) => call<null>("bottle_say", { p_text: text });
+// A line in the table chat. A refused line (for example one with a website address) shows the short notice at the bottom.
+export async function bottleSay(text: string): Promise<null> {
+  if (!supabase) return null;
+  const { error } = await supabase.rpc("bottle_say", { p_text: text });
+  if (error) flashRefusal(error.message);
+  return null;
+}
 export const bottleSpend = (amount: number) => call<number>("bottle_spend", { p_amount: amount });
 export const bottleCocktail = (to: string) => call<number>("bottle_cocktail", { p_to: to });
 export const bottleBuyChances = (pack: number) => call<{ hearts: number; chances: number }>("bottle_buy_chances", { p_pack: pack });
