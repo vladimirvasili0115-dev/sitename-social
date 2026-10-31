@@ -1358,6 +1358,17 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     return () => window.clearTimeout(timer);
   }, [dmToast]);
   const dmLines = dm ? (online ? (chats.find((chat) => chat.userId === dm.id)?.messages ?? []).map((item) => ({ mine: item.from === "me", text: item.text })) : dms[dm.id] ?? []) : [];
+  // The private chat box opens at its newest message and follows new ones; a small arrow shows when it was scrolled up to read.
+  const dmListRef = useRef<HTMLDivElement>(null);
+  const [dmAway, setDmAway] = useState(false);
+  useEffect(() => {
+    const box = dmListRef.current;
+    if (!dm || !box) return;
+    const down = () => { box.scrollTo({ top: box.scrollHeight }); setDmAway(false); };
+    const frame = window.requestAnimationFrame(down);
+    const later = window.setTimeout(down, 150); // rows that are drawn a moment later change the height
+    return () => { window.cancelAnimationFrame(frame); window.clearTimeout(later); };
+  }, [dm?.id, dmLines.length]); // eslint-disable-line react-hooks/exhaustive-deps
   const myTurnLive = online && phase === "waiting" && turn === meIndex;
   useEffect(() => {
     if (!online) return;
@@ -4380,7 +4391,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             {online ? <button onClick={() => void startCall({ id: dm.id, name: dm.name, avatar: dm.avatar }, false)} aria-label={t("call.voice")} title={t("call.voice")} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full hover:bg-white/20"><Phone size={16} /></button> : null}
             <button onClick={() => setDm(null)} aria-label={t("photos.close")} title={t("photos.close")} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full hover:bg-white/20"><X size={17} /></button>
           </div>
-          <div className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto p-2">
+          <div ref={dmListRef} onScroll={(event) => { const el = event.currentTarget; setDmAway(el.scrollHeight - el.scrollTop - el.clientHeight > 80); }} className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto p-2">
             {dmLines.map((item, index) => { const call = parseCallLog(item.text); return <p key={index} className={cn("max-w-[80%] break-words rounded-2xl px-3 py-1.5 text-sm", item.mine ? "self-end bg-[#3B9EDD] text-white" : "self-start bg-surface-2 text-text")}>{call ? `📞 ${t(`call.log_${call.kind === "missed" && item.mine ? "noanswer" : call.kind}` as "call.log_done")}${call.kind === "done" ? ` · ${callClock(call.secs)}` : ""}` : item.text}</p>; })}
           </div>
           {dmNote ? <button onClick={() => { setPayNote(false); setPanel("vip"); }} className="border-t border-border bg-[#FEF3C7] px-2 py-1.5 text-left text-xs font-semibold text-[#92400E]">👑 {t("bottle.dmVipWrite")}</button> : null}
@@ -4388,6 +4399,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             <input value={dmDraft} onChange={(event) => { setDmDraft(event.target.value); setDmNote(false); }} maxLength={300} aria-label={t("messages.placeholder")} placeholder={t("messages.placeholder")} autoComplete="off" className="h-9 min-w-0 flex-1 rounded-full border border-border bg-surface-2 px-3 text-sm text-text outline-none placeholder:text-muted focus:border-accent" />
             <button type="submit" disabled={!dmDraft.trim()} aria-label={t("messages.send")} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#3B9EDD] text-white disabled:opacity-40"><SendHorizontal size={15} /></button>
           </form>
+          {dmAway ? <button type="button" onClick={() => dmListRef.current?.scrollTo({ top: dmListRef.current.scrollHeight, behavior: "smooth" })} aria-label={locale === "az" ? "Ən sonuncu mesaja get" : "Go to the newest message"} title={locale === "az" ? "Ən sonuncu mesaja get" : "Go to the newest message"} className="absolute bottom-14 right-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-[#3B9EDD] text-white shadow-lg"><ChevronDown size={18} /></button> : null}
         </div>
       ) : null}
       {wide ? cardView : null}
