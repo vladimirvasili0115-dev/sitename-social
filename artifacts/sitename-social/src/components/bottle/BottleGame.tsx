@@ -607,6 +607,21 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [mini, setMini] = useState<{ x: number | null; y: number; w: number }>({ x: null, y: wide ? 8 : 23, w: 127 }) /* on a phone the video starts about 4 mm lower, so the smiley shop at the top stays visible */;
   const [miniBusy, setMiniBusy] = useState(false);
   const miniRef = useRef<HTMLDivElement>(null);
+  // VIP rooms on a phone: the YouTube window can be made bigger or smaller with the - / + buttons (remembered on this device).
+  const VID_SIZES = [120, 170, 230, 300];
+  const [vidStep, setVidStep] = useState(1);
+  useEffect(() => { try { const saved = Number(window.localStorage.getItem("bottle-vid-step")); if (Number.isInteger(saved) && saved >= 0 && saved < VID_SIZES.length) setVidStep(saved); } catch { /* storage blocked */ } }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const vipSizing = !wide && Boolean(net?.room); // phone + VIP room only
+  const videoW = vipSizing ? VID_SIZES[vidStep] : MINI_VIDEO_W;
+  function stepVideo(delta: number) {
+    const next = Math.min(Math.max(vidStep + delta, 0), VID_SIZES.length - 1);
+    if (next === vidStep) return;
+    setVidStep(next);
+    try { window.localStorage.setItem("bottle-vid-step", String(next)); } catch { /* storage blocked */ }
+    const outer = miniRef.current?.parentElement?.getBoundingClientRect();
+    // keep the window inside the table area after it grows
+    if (outer) setMini((value) => value.x === null ? value : { ...value, x: Math.max(0, Math.min(value.x, outer.width - VID_SIZES[next])) });
+  }
   function startMini(event: ReactPointerEvent, mode: "move" | "size") {
     const box = miniRef.current;
     const area = box?.parentElement;
@@ -3923,14 +3938,19 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           </div>
         ) : null}
         {video && !wide && !musicMode ? (
-          <div ref={miniRef} style={mini.x === null ? { right: 0, top: mini.y, width: MINI_VIDEO_W } : { left: mini.x, top: mini.y, width: MINI_VIDEO_W }} className={cn("absolute z-20 overflow-hidden border shadow-lg", musicMode ? "border-[#4C1D95] bg-[linear-gradient(160deg,#1E1B3A,#4C1D95_65%,#BE185D)] text-white" : "border-border bg-surface", mini.x === null ? "rounded-l-2xl border-r-0" : "rounded-2xl")}>
+          <div ref={miniRef} style={mini.x === null ? { right: 0, top: mini.y, width: videoW } : { left: mini.x, top: mini.y, width: videoW }} className={cn("absolute z-20 overflow-hidden border shadow-lg", musicMode ? "border-[#4C1D95] bg-[linear-gradient(160deg,#1E1B3A,#4C1D95_65%,#BE185D)] text-white" : "border-border bg-surface", mini.x === null ? "rounded-l-2xl border-r-0" : "rounded-2xl")}>
             <div className="flex items-center">
               <SongRing frac={songFrac} className="mx-1"><img src={songByAvatar} alt="" title={t("bottle.miniMove")} onPointerDown={(event) => startMini(event, "move")} className="h-7 w-7 shrink-0 cursor-move touch-none select-none rounded-full border-2 border-border object-cover" draggable={false} /></SongRing>
               <div className={cn(musicMode ? "my-1 mr-1 h-[200px] w-[200px] shrink-0 overflow-hidden rounded-xl" : "aspect-video min-w-0 flex-1", "bg-black", miniBusy && "pointer-events-none")}><iframe ref={frameRef} onLoad={() => { window.setTimeout(pushMusic, 800); frameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: "listening", id: 1 }), "*"); }} src={ytSrc(video)} title="YouTube" referrerPolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen className="h-full w-full" /></div>
             </div>
             {musicMode ? <div className="flex items-center gap-2 px-2 pt-0.5"><Equalizer className="h-4 shrink-0" /><p className="min-w-0 flex-1 truncate text-xs font-bold">{videoTitle}</p></div> : null}
             {soundPill}
-            
+            {vipSizing && !musicMode ? (
+              <div className="flex items-center justify-end gap-1 border-t border-border px-1.5 py-1">
+                <button type="button" aria-label={lang === "az" ? "Kiçilt" : "Smaller"} title={lang === "az" ? "Kiçilt" : "Smaller"} disabled={vidStep === 0} onClick={() => stepVideo(-1)} className="flex h-6 w-8 items-center justify-center rounded-md border border-border text-base font-bold leading-none text-text disabled:opacity-30">−</button>
+                <button type="button" aria-label={lang === "az" ? "Böyüt" : "Bigger"} title={lang === "az" ? "Böyüt" : "Bigger"} disabled={vidStep === VID_SIZES.length - 1} onClick={() => stepVideo(1)} className="flex h-6 w-8 items-center justify-center rounded-md border border-border text-base font-bold leading-none text-text disabled:opacity-30">+</button>
+              </div>
+            ) : null}
           </div>
         ) : null}
         {audio || (video && musicMode) ? (
