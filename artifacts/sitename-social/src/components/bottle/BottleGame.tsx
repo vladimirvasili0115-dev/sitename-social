@@ -607,20 +607,40 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [mini, setMini] = useState<{ x: number | null; y: number; w: number }>({ x: null, y: wide ? 8 : 23, w: 127 }) /* on a phone the video starts about 4 mm lower, so the smiley shop at the top stays visible */;
   const [miniBusy, setMiniBusy] = useState(false);
   const miniRef = useRef<HTMLDivElement>(null);
-  // VIP rooms on a phone: the YouTube window can be made bigger or smaller with the - / + buttons (remembered on this device).
-  const VID_SIZES = [120, 170, 230, 300];
-  const [vidStep, setVidStep] = useState(1);
-  useEffect(() => { try { const saved = Number(window.localStorage.getItem("bottle-vid-step")); if (Number.isInteger(saved) && saved >= 0 && saved < VID_SIZES.length) setVidStep(saved); } catch { /* storage blocked */ } }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // VIP rooms on a phone: the YouTube window is stretched by dragging its top or bottom edge (any size up to the full width; remembered on this device).
+  const [vidW, setVidW] = useState(MINI_VIDEO_W);
+  const vidWRef = useRef(MINI_VIDEO_W);
+  useEffect(() => { try { const saved = Number(window.localStorage.getItem("bottle-vid-w")); if (Number.isFinite(saved) && saved >= 100 && saved <= 2000) { setVidW(saved); vidWRef.current = saved; } } catch { /* storage blocked */ } }, []);
   const vipSizing = !wide && Boolean(net?.room); // phone + VIP room only
-  const videoW = vipSizing ? VID_SIZES[vidStep] : MINI_VIDEO_W;
-  function stepVideo(delta: number) {
-    const next = Math.min(Math.max(vidStep + delta, 0), VID_SIZES.length - 1);
-    if (next === vidStep) return;
-    setVidStep(next);
-    try { window.localStorage.setItem("bottle-vid-step", String(next)); } catch { /* storage blocked */ }
-    const outer = miniRef.current?.parentElement?.getBoundingClientRect();
-    // keep the window inside the table area after it grows
-    if (outer) setMini((value) => value.x === null ? value : { ...value, x: Math.max(0, Math.min(value.x, outer.width - VID_SIZES[next])) });
+  const videoW = vipSizing ? vidW : MINI_VIDEO_W;
+  function startVid(event: ReactPointerEvent, edge: "top" | "bottom") {
+    const box = miniRef.current;
+    const area = box?.parentElement;
+    if (!box || !area) return;
+    event.preventDefault();
+    const outer = area.getBoundingClientRect();
+    const rect = box.getBoundingClientRect();
+    const start = { py: event.clientY, x: rect.left - outer.left, y: rect.top - outer.top, w: rect.width, h: rect.height };
+    const maxW = Math.max(100, outer.width - (mini.x === null ? 0 : start.x));
+    setMiniBusy(true);
+    const move = (next: PointerEvent) => {
+      const dy = next.clientY - start.py;
+      const room = edge === "top" ? start.y : outer.height - (start.y + start.h); // free space in the stretching direction
+      const grow = Math.min(edge === "top" ? -dy : dy, room);
+      const w = Math.min(Math.max(100, start.w + grow * (16 / 9)), maxW);
+      const used = (w - start.w) * (9 / 16); // the height really gained or lost
+      vidWRef.current = w;
+      setVidW(w);
+      if (edge === "top") setMini((value) => ({ ...value, y: Math.max(0, start.y - used) }));
+    };
+    const stop = () => {
+      setMiniBusy(false);
+      window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", stop); window.removeEventListener("pointercancel", stop);
+      try { window.localStorage.setItem("bottle-vid-w", String(Math.round(vidWRef.current))); } catch { /* storage blocked */ }
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", stop);
+    window.addEventListener("pointercancel", stop);
   }
   function startMini(event: ReactPointerEvent, mode: "move" | "size") {
     const box = miniRef.current;
@@ -3939,6 +3959,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         ) : null}
         {video && !wide && !musicMode ? (
           <div ref={miniRef} style={mini.x === null ? { right: 0, top: mini.y, width: videoW } : { left: mini.x, top: mini.y, width: videoW }} className={cn("absolute z-20 overflow-hidden border shadow-lg", musicMode ? "border-[#4C1D95] bg-[linear-gradient(160deg,#1E1B3A,#4C1D95_65%,#BE185D)] text-white" : "border-border bg-surface", mini.x === null ? "rounded-l-2xl border-r-0" : "rounded-2xl")}>
+            {vipSizing && !musicMode ? (
+              <div onPointerDown={(event) => startVid(event, "top")} title={lang === "az" ? "Yuxarı dart: böyüt/kiçilt" : "Drag to resize"} className="flex h-4 w-full cursor-ns-resize touch-none select-none items-center justify-center border-b border-border"><span className="h-1 w-10 rounded-full bg-border" /></div>
+            ) : null}
             <div className="flex items-center">
               <SongRing frac={songFrac} className="mx-1"><img src={songByAvatar} alt="" title={t("bottle.miniMove")} onPointerDown={(event) => startMini(event, "move")} className="h-7 w-7 shrink-0 cursor-move touch-none select-none rounded-full border-2 border-border object-cover" draggable={false} /></SongRing>
               <div className={cn(musicMode ? "my-1 mr-1 h-[200px] w-[200px] shrink-0 overflow-hidden rounded-xl" : "aspect-video min-w-0 flex-1", "bg-black", miniBusy && "pointer-events-none")}><iframe ref={frameRef} onLoad={() => { window.setTimeout(pushMusic, 800); frameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: "listening", id: 1 }), "*"); }} src={ytSrc(video)} title="YouTube" referrerPolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen className="h-full w-full" /></div>
@@ -3946,10 +3969,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             {musicMode ? <div className="flex items-center gap-2 px-2 pt-0.5"><Equalizer className="h-4 shrink-0" /><p className="min-w-0 flex-1 truncate text-xs font-bold">{videoTitle}</p></div> : null}
             {soundPill}
             {vipSizing && !musicMode ? (
-              <div className="flex items-center justify-end gap-1 border-t border-border px-1.5 py-1">
-                <button type="button" aria-label={lang === "az" ? "Kiçilt" : "Smaller"} title={lang === "az" ? "Kiçilt" : "Smaller"} disabled={vidStep === 0} onClick={() => stepVideo(-1)} className="flex h-6 w-8 items-center justify-center rounded-md border border-border text-base font-bold leading-none text-text disabled:opacity-30">−</button>
-                <button type="button" aria-label={lang === "az" ? "Böyüt" : "Bigger"} title={lang === "az" ? "Böyüt" : "Bigger"} disabled={vidStep === VID_SIZES.length - 1} onClick={() => stepVideo(1)} className="flex h-6 w-8 items-center justify-center rounded-md border border-border text-base font-bold leading-none text-text disabled:opacity-30">+</button>
-              </div>
+              <div onPointerDown={(event) => startVid(event, "bottom")} title={lang === "az" ? "Aşağı dart: böyüt/kiçilt" : "Drag to resize"} className="flex h-4 w-full cursor-ns-resize touch-none select-none items-center justify-center border-t border-border"><span className="h-1 w-10 rounded-full bg-border" /></div>
             ) : null}
           </div>
         ) : null}
