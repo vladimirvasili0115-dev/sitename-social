@@ -55,6 +55,15 @@ export const vipCount = () => call<{ vip: number; total: number }>("admin_vip_co
 export type AdminRoom = { id: number; name: string | null; capacity: number; locked: boolean; owner: string | null; seated: number };
 export const adminRooms = () => call<AdminRoom[]>("admin_bottle_rooms");
 export const adminRoomPass = (room: number, password: string) => call<boolean>("admin_bottle_room_pass", { p_room: room, p_password: password });
+export type SpendRow = { id: string; name: string | null; bonus: number; gifts: number; giftPeople: number; admires: number; admirePeople: number };
+export type SpendDetail = {
+  gifts: { to: string | null; gift: string; n: number }[];
+  admires: { to: string | null; n: number; amount: number }[];
+  amount: number;
+  admiredBy: { from: string | null; n: number }[];
+};
+export const adminSpendOverview = () => call<SpendRow[]>("admin_spend_overview");
+export const adminSpendUser = (user: string) => call<SpendDetail>("admin_spend_user", { p_user: user });
 export const setModerator = async (id: string, enabled: boolean) => (await call("admin_set_moderator", { target: id, enabled })) !== null;
 export async function grantCoins(id: string, amount: number): Promise<number | null> {
   const total = await call<number>("admin_grant_coins", { target: id, amount });
