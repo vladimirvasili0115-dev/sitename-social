@@ -491,66 +491,80 @@ const spendWords = {
 function SpendCard() {
   const { locale } = useTranslation();
   const w = locale === "az" ? spendWords.az : spendWords.en;
+  const [shownCard, setShownCard] = useState(false);
   const [rows, setRows] = useState<SpendRow[] | null>(null);
   const [open, setOpen] = useState<string | null>(null);
   const [detail, setDetail] = useState<Record<string, SpendDetail | null>>({});
   const [query, setQuery] = useState("");
   const load = useCallback(() => void adminSpendOverview().then((value) => { if (Array.isArray(value)) setRows(value); }), []);
-  useEffect(() => { load(); }, [load]);
+  // The list is fetched only when the card is opened.
+  useEffect(() => { if (shownCard) load(); }, [shownCard, load]);
   function toggle(id: string) {
     if (open === id) return setOpen(null);
     setOpen(id);
     void adminSpendUser(id).then((value) => setDetail((cur) => ({ ...cur, [id]: value && typeof value === "object" ? value : null })));
   }
   const shown = (rows ?? []).filter((row) => !query.trim() || (row.name ?? "").toLowerCase().includes(query.trim().toLowerCase()));
-  const line = "flex items-center justify-between gap-2 text-xs";
+  const line = "flex items-center justify-between gap-3 py-1 text-xs";
+  const chip = "rounded-full bg-surface-2 px-2 py-0.5 text-[11px] font-medium text-muted";
+  const section = (title: string, items: { key: string; left: string; right: string }[]) => (
+    <div>
+      <p className="mb-1 text-xs font-bold">{title}</p>
+      {items.length ? <ul className="divide-y divide-border rounded-lg border border-border px-2.5">{items.map((item) => <li key={item.key} className={line}><span className="min-w-0 flex-1 truncate">{item.left}</span><span className="shrink-0 font-semibold">{item.right}</span></li>)}</ul> : <p className="text-xs text-muted">{w.empty}</p>}
+    </div>
+  );
   return (
     <Card className="mb-4 p-4">
-      <div className="flex items-start gap-3">
+      <button type="button" onClick={() => setShownCard((value) => !value)} aria-expanded={shownCard} className="flex w-full items-center gap-3 text-left">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-2 text-accent"><Coins size={20} /></span>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold">{w.title}</p>
-          <p className="mt-0.5 text-xs leading-5 text-muted">{w.text}</p>
-        </div>
-        <button type="button" onClick={load} className="h-8 shrink-0 rounded-lg border border-border px-2.5 text-xs font-medium text-muted hover:text-text">{w.refresh}</button>
-      </div>
-      <input value={query} onChange={(event) => setQuery(event.target.value.slice(0, 40))} placeholder={w.search} autoComplete="off" className="mt-3 h-9 w-full rounded-lg border border-border bg-surface px-3 text-sm outline-none focus:border-accent" />
-      {rows && !rows.length ? <p className="mt-3 text-xs text-muted">{w.none}</p> : null}
-      <div className="mt-3 space-y-2">
-        {shown.map((row) => {
-          const data = detail[row.id];
-          const isOpen = open === row.id;
-          return (
-            <div key={row.id} className="rounded-xl border border-border">
-              <button type="button" onClick={() => toggle(row.id)} className="flex w-full items-center gap-2 p-3 text-left">
-                <span className="min-w-0 flex-1 truncate text-sm font-semibold">{row.name || row.id.slice(0, 8)}</span>
-                <span className="shrink-0 text-[11px] text-muted">{w.bonus}: {row.bonus} · {w.gifts}: {row.gifts} ({row.giftPeople} {w.people}) · {w.admires}: {row.admires}</span>
-                <ChevronDown size={16} className={cn("shrink-0 text-muted transition-transform", isOpen && "rotate-180")} />
-              </button>
-              {isOpen ? (
-                <div className="space-y-3 border-t border-border p-3">
-                  {data === undefined ? <p className="text-xs text-muted">{w.loading}</p> : data === null ? <p className="text-xs text-danger">—</p> : (
-                    <>
-                      <div>
-                        <p className="mb-1 text-xs font-bold">{w.giftsTo}</p>
-                        {data.gifts.length ? <ul className="space-y-0.5">{data.gifts.map((item, index) => <li key={`g${index}`} className={line}><span className="min-w-0 flex-1 truncate">{item.to ?? "—"}</span><span className="shrink-0">{item.gift} × {item.n}</span></li>)}</ul> : <p className="text-xs text-muted">{w.empty}</p>}
-                      </div>
-                      <div>
-                        <p className="mb-1 text-xs font-bold">{w.admiresTo}</p>
-                        {data.admires.length ? <ul className="space-y-0.5">{data.admires.map((item, index) => <li key={`a${index}`} className={line}><span className="min-w-0 flex-1 truncate">{item.to ?? "—"}</span><span className="shrink-0">{item.n} {w.times} · {item.amount}</span></li>)}</ul> : <p className="text-xs text-muted">{w.empty}</p>}
-                      </div>
-                      <div>
-                        <p className="mb-1 text-xs font-bold">{w.by} · {w.amount}: {data.amount}</p>
-                        {data.admiredBy.length ? <ul className="space-y-0.5">{data.admiredBy.map((item, index) => <li key={`b${index}`} className={line}><span className="min-w-0 flex-1 truncate">{item.from ?? "—"}</span><span className="shrink-0">{item.n} {w.times}</span></li>)}</ul> : <p className="text-xs text-muted">{w.empty}</p>}
-                      </div>
-                    </>
-                  )}
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold">{w.title}</span>
+          <span className="mt-0.5 block text-xs leading-5 text-muted">{w.text}</span>
+        </span>
+        <ChevronDown size={18} className={cn("shrink-0 text-muted transition-transform", shownCard && "rotate-180")} />
+      </button>
+      {shownCard ? (
+        <div className="mt-3">
+          <div className="flex items-center gap-2">
+            <input value={query} onChange={(event) => setQuery(event.target.value.slice(0, 40))} placeholder={w.search} autoComplete="off" className="h-9 min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 text-sm outline-none focus:border-accent" />
+            <button type="button" onClick={load} className="h-9 shrink-0 rounded-lg border border-border px-3 text-xs font-medium text-muted hover:text-text">{w.refresh}</button>
+          </div>
+          {rows === null ? <p className="mt-3 text-xs text-muted">{w.loading}</p> : null}
+          {rows && !rows.length ? <p className="mt-3 text-xs text-muted">{w.none}</p> : null}
+          <div className="mt-3 space-y-2">
+            {shown.map((row) => {
+              const data = detail[row.id];
+              const isOpen = open === row.id;
+              return (
+                <div key={row.id} className="rounded-xl border border-border">
+                  <button type="button" onClick={() => toggle(row.id)} aria-expanded={isOpen} className="w-full p-3 text-left">
+                    <span className="flex items-center gap-2">
+                      <span className="min-w-0 flex-1 truncate text-sm font-semibold">{row.name || row.id.slice(0, 8)}</span>
+                      <ChevronDown size={16} className={cn("shrink-0 text-muted transition-transform", isOpen && "rotate-180")} />
+                    </span>
+                    <span className="mt-1.5 flex flex-wrap gap-1.5">
+                      <span className={chip}>{w.bonus}: <b className="text-text">{row.bonus}</b></span>
+                      <span className={chip}>{w.gifts}: <b className="text-text">{row.gifts}</b> ({row.giftPeople} {w.people})</span>
+                      <span className={chip}>{w.admires}: <b className="text-text">{row.admires}</b></span>
+                    </span>
+                  </button>
+                  {isOpen ? (
+                    <div className="space-y-3 border-t border-border p-3">
+                      {data === undefined ? <p className="text-xs text-muted">{w.loading}</p> : data === null ? <p className="text-xs text-danger">—</p> : (
+                        <>
+                          {section(w.giftsTo, data.gifts.map((item, index) => ({ key: `g${index}`, left: item.to ?? "—", right: `${item.gift} × ${item.n}` })))}
+                          {section(w.admiresTo, data.admires.map((item, index) => ({ key: `a${index}`, left: item.to ?? "—", right: `${item.n} ${w.times} · ${item.amount}` })))}
+                          {section(`${w.by} · ${w.amount}: ${data.amount}`, data.admiredBy.map((item, index) => ({ key: `b${index}`, left: item.from ?? "—", right: `${item.n} ${w.times}` })))}
+                        </>
+                      )}
+                    </div>
+                  ) : null}
                 </div>
-              ) : null}
-            </div>
-          );
-        })}
-      </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
     </Card>
   );
 }
