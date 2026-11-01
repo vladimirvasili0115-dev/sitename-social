@@ -642,6 +642,17 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     window.addEventListener("pointerup", stop);
     window.addEventListener("pointercancel", stop);
   }
+  // The same size change with the - / + buttons (easier on a phone than dragging): 40 px per tap.
+  function resizeVid(delta: number) {
+    const outer = miniRef.current?.parentElement?.getBoundingClientRect();
+    const rect = miniRef.current?.getBoundingClientRect();
+    if (!outer || !rect) return;
+    const maxW = Math.max(100, outer.width - (mini.x === null ? 0 : rect.left - outer.left));
+    const w = Math.min(Math.max(100, vidWRef.current + delta), maxW);
+    vidWRef.current = w;
+    setVidW(w);
+    try { window.localStorage.setItem("bottle-vid-w", String(Math.round(w))); } catch { /* storage blocked */ }
+  }
   function startMini(event: ReactPointerEvent, mode: "move" | "size") {
     const box = miniRef.current;
     const area = box?.parentElement;
@@ -3989,6 +4000,12 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             {musicMode ? <div className="flex items-center gap-2 px-2 pt-0.5"><Equalizer className="h-4 shrink-0" /><p className="min-w-0 flex-1 truncate text-xs font-bold">{videoTitle}</p></div> : null}
             {soundPill}
             {seekButtons ? <div className="border-t border-border py-1">{seekButtons}</div> : null}
+            {vipSizing && !musicMode ? (
+              <div className="flex items-center justify-center gap-2 border-t border-border py-1">
+                <button type="button" aria-label={lang === "az" ? "Kiçilt" : "Smaller"} title={lang === "az" ? "Kiçilt" : "Smaller"} onClick={() => resizeVid(-40)} className="flex h-8 w-11 items-center justify-center rounded-md border border-border bg-surface text-lg font-bold leading-none text-text active:bg-surface-2">−</button>
+                <button type="button" aria-label={lang === "az" ? "Böyüt" : "Bigger"} title={lang === "az" ? "Böyüt" : "Bigger"} onClick={() => resizeVid(40)} className="flex h-8 w-11 items-center justify-center rounded-md border border-border bg-surface text-lg font-bold leading-none text-text active:bg-surface-2">+</button>
+              </div>
+            ) : null}
             {vipSizing && !musicMode ? (
               <div onPointerDown={(event) => startVid(event, "bottom")} title={lang === "az" ? "Aşağı dart: böyüt/kiçilt" : "Drag to resize"} className="flex h-4 w-full cursor-ns-resize touch-none select-none items-center justify-center border-t border-border"><span className="h-1 w-10 rounded-full bg-border" /></div>
             ) : null}
