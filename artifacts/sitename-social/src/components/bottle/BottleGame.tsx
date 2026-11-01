@@ -39,7 +39,7 @@ import { refreshFriends } from "@/lib/friendsSync";
 import { ensureMessagesLoaded, openRemoteChat, remoteChats, sendRemoteMessage } from "@/lib/messagesSync";
 import { uploadBlob } from "@/lib/media";
 import { refreshGifts } from "@/lib/giftsSync";
-import { bottleLogIp, bottleAdminIpLookup, type BottleIpRow, bottleAnswer, bottleAchSync, bottleAchView, bottleGesture, bottleSmiles, bottleBuyHearts, bottleGiftAllow, bottleBuySmiles, bottleProgress, bottleGesturesOpen, bottleSkin, bottleBadges, bottleGetAccept, bottleSetAccept, bottleBuyChances, bottleJoin, bottleMove, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleProfile, type BottleProfile, bottleDaily, bottleItems, bottleItemBuy, bottleBooster, bottleTutorial, bottleAdminIds, type BottleItems, bottleLeagueInfo, bottleLeagueClaim, type BottleLeague, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleKickPrice, bottleGift, bottleGiftMany, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, bottleClaim, type BottleState, type BottleSeat, bottleEffectOf, bottleYtGet, bottleYtPut, bottleTableGifts, type BottleSeatGift } from "@/lib/bottleSync";
+import { bottleSeek, bottleLogIp, bottleAdminIpLookup, type BottleIpRow, bottleAnswer, bottleAchSync, bottleAchView, bottleGesture, bottleSmiles, bottleBuyHearts, bottleGiftAllow, bottleBuySmiles, bottleProgress, bottleGesturesOpen, bottleSkin, bottleBadges, bottleGetAccept, bottleSetAccept, bottleBuyChances, bottleJoin, bottleMove, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleProfile, type BottleProfile, bottleDaily, bottleItems, bottleItemBuy, bottleBooster, bottleTutorial, bottleAdminIds, type BottleItems, bottleLeagueInfo, bottleLeagueClaim, type BottleLeague, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleKickPrice, bottleGift, bottleGiftMany, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, bottleClaim, type BottleState, type BottleSeat, bottleEffectOf, bottleYtGet, bottleYtPut, bottleTableGifts, type BottleSeatGift } from "@/lib/bottleSync";
 import { ytHint, ytReason } from "./ytHints";
 import { WeeklyPanel, WeekPrizePopup } from "./WeeklyTop";
 import { BonusMarket, EnigmaEffect, arrivalLabel, marketLabel } from "./BonusMarket";
@@ -1274,6 +1274,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   }, [online]);
   // A song someone put on plays for the whole table (a song older than 5 minutes is not started for newcomers).
   const trackAt = useRef(0);
+  const prevTrack = useRef<{ ref: string; by: string | null } | null>(null);
   // The "no connection" screen is up (another page took the game over, idle, or the net is down): the song stops here too, no hidden video keeps loading.
   useEffect(() => {
     if (!gone && !offline) return;
@@ -1320,8 +1321,18 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   useEffect(() => {
     if (!track || !net || track.at === trackAt.current || (track.by !== net.me && !net.seats.some((seat) => seat.id === net.me))) return;
     const first = trackAt.current === 0;
+    const movedBy = Math.abs(track.at - trackAt.current);
+    const before = prevTrack.current;
+    prevTrack.current = { ref: track.ref, by: track.by };
     trackAt.current = track.at;
     if (first && net.now - track.at > 5 * 60 * 1000) return;
+    // VIP room: the owner (or an admin) moved the same YouTube song forward/back, so the start time shifted by up to a minute: jump to the new place.
+    if (!first && track.kind === "youtube" && before && before.ref === track.ref && before.by === track.by && movedBy <= 60_000) {
+      const pos = Math.max(0, (net.now - track.at) / 1000);
+      songClock.current = { pos, at: Date.now() };
+      ytCall("seekTo", [pos, true]);
+      return;
+    }
     songClock.current = { pos: track.by === net.me ? 0 : Math.max(0, (net.now - track.at) / 1000), at: Date.now() };
     if (track.kind === "youtube") { setAudio(null); setVideo(track.ref); setMusicMode((track.title ?? "").startsWith("♫ ")); setVideoTitle(songInfo(track.title ?? "").title); }
     else if (track.by !== net.me) { setVideo(null); setAudio({ url: track.ref, name: songInfo(track.title ?? "MP3").title }); }
@@ -1461,6 +1472,14 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // The first tap gives the sound: jump to where the song is for everybody else.
   useEffect(() => { if (touched && video && startMuted) ytCall("seekTo", [songNow(), true]); }, [touched]); // eslint-disable-line react-hooks/exhaustive-deps
   // A newcomer's video starts silent (browsers allow sound only after a tap): a big, lively "turn the sound on" cover invites the tap.
+  const canSeek = Boolean(net?.room && (net.room.owner === net.me || iAmAdmin)) && track?.kind === "youtube" && !musicMode;
+  const seekBy = (delta: number) => { void Promise.resolve(bottleSeek(delta)).then(() => pullRef.current()); };
+  const seekButtons = canSeek ? (
+    <div className="flex items-center justify-center gap-1.5">
+      <button type="button" aria-label={lang === "az" ? "10 saniyə geri" : "Back 10 s"} title={lang === "az" ? "10 saniyə geri" : "Back 10 s"} onClick={() => seekBy(-10)} className="h-6 rounded-md border border-border bg-surface/90 px-2 text-[11px] font-bold text-text">⏪ 10</button>
+      <button type="button" aria-label={lang === "az" ? "10 saniyə irəli" : "Forward 10 s"} title={lang === "az" ? "10 saniyə irəli" : "Forward 10 s"} onClick={() => seekBy(10)} className="h-6 rounded-md border border-border bg-surface/90 px-2 text-[11px] font-bold text-text">10 ⏩</button>
+    </div>
+  ) : null;
   const soundPill = !touched && startMuted ? (
     <button onClick={(event) => { event.stopPropagation(); setTouched(true); }} aria-label={t("videos.unmute")} className="group absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-[radial-gradient(circle,rgba(0,0,0,0.25),rgba(0,0,0,0.6))] text-white">
       <span className="relative flex h-14 w-14 items-center justify-center">
@@ -3954,6 +3973,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           <div className={cn("relative w-full shrink-0 bg-black", picked !== null || dedicate ? "h-0 overflow-hidden" : "aspect-video max-h-[42%]")}>
             <iframe ref={frameRef} onLoad={() => { window.setTimeout(pushMusic, 800); frameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: "listening", id: 1 }), "*"); }} src={ytSrc(video)} title="YouTube" referrerPolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen className="h-full w-full" />
             {soundPill}
+            {seekButtons ? <div className="absolute bottom-1.5 right-1.5 z-10">{seekButtons}</div> : null}
             {track ? <SongRing frac={songFrac} className="pointer-events-none absolute left-1.5 top-1.5"><img src={songByAvatar} alt="" title={t("bottle.musicNow")} className="h-8 w-8 select-none rounded-full border-2 border-white/80 object-cover shadow" draggable={false} /></SongRing> : null}
           </div>
         ) : null}
@@ -3968,6 +3988,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             </div>
             {musicMode ? <div className="flex items-center gap-2 px-2 pt-0.5"><Equalizer className="h-4 shrink-0" /><p className="min-w-0 flex-1 truncate text-xs font-bold">{videoTitle}</p></div> : null}
             {soundPill}
+            {seekButtons ? <div className="border-t border-border py-1">{seekButtons}</div> : null}
             {vipSizing && !musicMode ? (
               <div onPointerDown={(event) => startVid(event, "bottom")} title={lang === "az" ? "Aşağı dart: böyüt/kiçilt" : "Drag to resize"} className="flex h-4 w-full cursor-ns-resize touch-none select-none items-center justify-center border-t border-border"><span className="h-1 w-10 rounded-full bg-border" /></div>
             ) : null}
