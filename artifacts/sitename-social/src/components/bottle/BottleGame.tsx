@@ -2155,9 +2155,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     const cacheKey = `bottle-yt:${norm}`;
     const staleList = (): Track[] => { try { return (JSON.parse(window.localStorage.getItem(cacheKey) ?? "null") as { list?: Track[] } | null)?.list ?? []; } catch { return []; } };
     try {
-      // Kept for 7 days on this device: every YouTube search spends a big share of the daily quota.
+      // Kept for 30 days on this device: every YouTube search spends a big share of the daily quota.
       const cached = JSON.parse(window.localStorage.getItem(cacheKey) ?? "null") as { at: number; list: Track[] } | null;
-      if (cached?.list?.length && Date.now() - cached.at < 7 * 86400_000) { setTracks(cached.list); return setTrackState("idle"); }
+      if (cached?.list?.length && Date.now() - cached.at < 30 * 86400_000) { setTracks(cached.list); return setTrackState("idle"); }
     } catch { /* no cache */ }
     setTrackState("loading");
     if (search && online) {
