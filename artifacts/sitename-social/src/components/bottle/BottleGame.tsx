@@ -3020,7 +3020,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                         {statRow("statSongs", "dj.svg", "rgb(180,93,140)", stats[1].value, info?.songs_rank)}
                         {statRow("statSmiles", "gesture.svg", "rgb(252,131,0)", stats[2].value, info?.smiles_rank)}
                       </div>
-                      {cup !== null ? <button onClick={() => { setCard(false); setPanel("league"); }} title={leagueName(locale, cup)} className="relative ml-2 block w-[80px] shrink-0 self-stretch"><LeagueBadge league={cup} className="absolute inset-x-0 top-1 h-[calc(100%-22px)] w-full" /></button> : null}
+                      {cup !== null ? <button onClick={() => { setCard(false); setPanel("league"); }} title={leagueName(locale, cup)} className="ml-2 shrink-0 self-center"><LeagueBadge league={cup} className="h-[78px] w-[80px]" /></button> : null}
                     </div>
                     <div className="flex shrink-0 py-[10px]">
                       {by && !by.self ? <button type="button" onClick={() => openAdmirerCard(by)} aria-label={by.name} title={by.name} className="mr-[11px] h-16 w-16 shrink-0 overflow-hidden rounded-[10px] active:brightness-75"><img src={by.avatar || NO_PHOTO} alt="" className="h-full w-full object-cover object-top" /></button> : <span aria-hidden="true" className="mr-[11px] flex h-16 w-16 shrink-0 items-end justify-center overflow-hidden rounded-[10px] bg-[#EEF1F5]"><UserRound size={56} className="-mb-2 text-[#C3CAD4]" fill="#DDE2E9" strokeWidth={1.2} /></span>}
