@@ -20,11 +20,10 @@ export const marketLabel = (locale: string) => wordsFor(locale).title;
 export const enigmaLabel = (locale: string) => wordsFor(locale).label;
 
 // The entrance effect itself: dark smoke, flashes of lightning, rings of light and a glitching title, about 3.6 seconds, over a seat photo.
-// "ENİGMA GƏLDİ" -> "<NAME> GƏLDİ": the player's own name replaces the first word of the sentence.
+// Only the player's own name is shown (no "arrived" word). With no name, the first word of the old title ("ENİGMA") is shown.
 export const arrivalLabel = (locale: string, name: string) => {
-  const rest = wordsFor(locale).label.split(" ").slice(1).join(" ");
   const who = (name || "").trim().replace(/\s+/g, " ").slice(0, 20); // the whole game name (a name like "P ə b a h" is not cut to its first letter)
-  return who ? `${who} ${rest}` : wordsFor(locale).label;
+  return who || wordsFor(locale).label.split(" ")[0];
 };
 
 export function EnigmaEffect({ label }: { label: string }) {
