@@ -384,12 +384,12 @@ function LeagueBadge({ league, className }: { league: number; className?: string
     </svg>
   );
 }
-// Daily bonus hearts for day 1–7 in a row (the server uses the same numbers, see bottle_daily_claim).
+// Daily bonus hearts for day 1–5 in a row (the server uses the same numbers, see bottle_daily).
 // Shown for players who have no photo (the original shows a "NO PHOTO" silhouette).
 const NO_PHOTO = "/custom/profile/nophoto.svg";
 // Table 21 is shown as "021" everywhere the table number is written (the real number in the database stays 21).
 const tableLabel = (n: number | string | null | undefined) => (Number(n) === 21 ? "021" : String(n ?? ""));
-const DAILY_PRIZES = [300, 600, 1200, 2400, 4800];
+const DAILY_PRIZES = [200, 400, 600, 800, 1000];
 // Lite mode (switched on by the game when the phone cannot keep up with a gift storm): gifts stay still pictures instead of animated ones.
 let liteGifts = false;
 function Gift({ id, className, anim, once, lazy }: { id: string; className?: string; anim?: boolean; once?: string | number; lazy?: boolean }) {
