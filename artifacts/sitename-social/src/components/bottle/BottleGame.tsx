@@ -371,18 +371,22 @@ function HintHand({ target, label, angle }: { target: string; label: string; ang
     </div>
   );
 }
-// League colours (header gradient) and badge: Bronze, Silver, Gold, Platinum, Diamond.
-const LEAGUE_COLORS: [string, string][] = [["#D08A52", "#9C5A2B"], ["#B8C2CC", "#7D8A96"], ["#F7C948", "#D49B0A"], ["#7FD3E6", "#3A9AB3"], ["#A78BFA", "#6D28D9"]];
+// 17 leagues, lowest first (the server numbers them 0-16). The trophy pictures are in /custom/league/<slug>.png.
+const LEAGUE_SLUGS = ["agac", "dash", "demir", "polad", "tunc", "mermer", "gumus", "qizil", "platin", "kehreba", "ametist", "topaz", "miravari", "sapfir", "yaqut", "zumrud", "brilyant"];
+const LEAGUE_TOP = LEAGUE_SLUGS.length - 1;
+const LEAGUE_NAMES: Record<string, string[]> = {
+  az: ["Ağac", "Daş", "Dəmir", "Polad", "Tunc", "Mərmər", "Gümüş", "Qızıl", "Platin", "Kəhrəba", "Ametist", "Topaz", "Miravari", "Sapfir", "Yaqut", "Zümrüd", "Brilyant"],
+  en: ["Wood", "Stone", "Iron", "Steel", "Bronze", "Marble", "Silver", "Gold", "Platinum", "Amber", "Amethyst", "Topaz", "Pearl", "Sapphire", "Ruby", "Emerald", "Diamond"],
+  tr: ["Ağaç", "Taş", "Demir", "Çelik", "Bronz", "Mermer", "Gümüş", "Altın", "Platin", "Kehribar", "Ametist", "Topaz", "İnci", "Safir", "Yakut", "Zümrüt", "Elmas"],
+  ru: ["Дерево", "Камень", "Железо", "Сталь", "Бронза", "Мрамор", "Серебро", "Золото", "Платина", "Янтарь", "Аметист", "Топаз", "Жемчуг", "Сапфир", "Рубин", "Изумруд", "Бриллиант"],
+  ka: ["ხე", "ქვა", "რკინა", "ფოლადი", "ბრინჯაო", "მარმარილო", "ვერცხლი", "ოქრო", "პლატინა", "ქარვა", "ამეთვისტო", "ტოპაზი", "მარგალიტი", "საფირონი", "ლალი", "ზურმუხტი", "ბრილიანტი"],
+};
+const leagueName = (locale: string, level: number) => (LEAGUE_NAMES[locale] ?? LEAGUE_NAMES.en)[Math.min(Math.max(level, 0), LEAGUE_TOP)];
+// Hearts for 1st place in each league (the server uses the same numbers, see bottle_league_prize); 2nd = 70%, 3rd = 50%, 4-5th = 30%, 6-10th = 15%.
+const LEAGUE_FIRST = [30, 35, 40, 45, 55, 60, 70, 80, 95, 110, 125, 145, 170, 195, 225, 260, 300];
+const leaguePrizeFor = (level: number, place: number) => Math.round(LEAGUE_FIRST[Math.min(Math.max(level, 0), LEAGUE_TOP)] * (place === 1 ? 1 : place === 2 ? 0.7 : place === 3 ? 0.5 : place <= 5 ? 0.3 : place <= 10 ? 0.15 : 0));
 function LeagueBadge({ league, className }: { league: number; className?: string }) {
-  const [light, dark] = LEAGUE_COLORS[league] ?? LEAGUE_COLORS[0];
-  return (
-    <svg viewBox="0 0 64 64" className={className} aria-hidden="true">
-      <defs><linearGradient id={`lg-${league}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={light} /><stop offset="1" stopColor={dark} /></linearGradient></defs>
-      <path d="M32 3 8 11v17c0 15 10 27 24 33 14-6 24-18 24-33V11L32 3Z" fill={`url(#lg-${league})`} stroke="#FFFFFF" strokeWidth="3" />
-      <path d="m32 17 4.2 8.6 9.4 1.3-6.8 6.6 1.6 9.4L32 38.5l-8.4 4.4 1.6-9.4-6.8-6.6 9.4-1.3L32 17Z" fill="#FFFFFF" opacity="0.95" />
-      {league === 4 ? <path d="M22 50h20l-3 5H25l-3-5Z" fill="#FFFFFF" opacity="0.8" /> : null}
-    </svg>
-  );
+  return <img src={`/custom/league/${LEAGUE_SLUGS[Math.min(Math.max(league, 0), LEAGUE_TOP)]}.png`} alt="" aria-hidden="true" draggable={false} className={cn("object-contain", className)} />;
 }
 // Daily bonus hearts for day 1–5 in a row (the server uses the same numbers, see bottle_daily).
 // Shown for players who have no photo (the original shows a "NO PHOTO" silhouette).
@@ -2026,13 +2030,14 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [leagueResult, setLeagueResult] = useState<{ place: number | null; reward: number; league: number; next: number } | null>(null);
   const [leagueTick, setLeagueTick] = useState(0);
   const [ladder, setLadder] = useState(false);
+  const [leagueInfo, setLeagueInfo] = useState<number | null>(null);
   const [leagueHead, setLeagueHead] = useState<"up" | "stay" | "down">("up");
   const [leagueHelp, setLeagueHelp] = useState(false);
   const [leaguePrize, setLeaguePrize] = useState<{ place: number; prize: number } | null>(null);
   const leagueBoxRef = useRef<HTMLDivElement>(null);
   const leagueUpRef = useRef<HTMLDivElement>(null);
   const leagueStayRef = useRef<HTMLDivElement>(null);
-  useEffect(() => { if (panel === "league") { setLeagueHead("up"); setLadder(false); setLeagueHelp(false); setLeaguePrize(null); } }, [panel]);
+  useEffect(() => { if (panel === "league") { setLeagueHead("up"); setLadder(false); setLeagueInfo(null); setLeagueHelp(false); setLeaguePrize(null); } }, [panel]);
   const leagueOpen = panel === "league";
   useEffect(() => {
     if (!leagueOpen) return;
@@ -3015,7 +3020,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                         {statRow("statSongs", "dj.svg", "rgb(180,93,140)", stats[1].value, info?.songs_rank)}
                         {statRow("statSmiles", "gesture.svg", "rgb(252,131,0)", stats[2].value, info?.smiles_rank)}
                       </div>
-                      {cup !== null ? <button onClick={() => { setCard(false); setPanel("league"); }} title={t(`bottle.league${cup}` as "bottle.league0")} className="shrink-0 self-center"><LeagueBadge league={cup} className="h-[48px] w-[46px]" /></button> : null}
+                      {cup !== null ? <button onClick={() => { setCard(false); setPanel("league"); }} title={leagueName(locale, cup)} className="shrink-0 self-center"><LeagueBadge league={cup} className="h-[48px] w-[46px]" /></button> : null}
                     </div>
                     <div className="flex shrink-0 py-[10px]">
                       {by && !by.self ? <button type="button" onClick={() => openAdmirerCard(by)} aria-label={by.name} title={by.name} className="mr-[11px] h-16 w-16 shrink-0 overflow-hidden rounded-[10px] active:brightness-75"><img src={by.avatar || NO_PHOTO} alt="" className="h-full w-full object-cover object-top" /></button> : <span aria-hidden="true" className="mr-[11px] flex h-16 w-16 shrink-0 items-end justify-center overflow-hidden rounded-[10px] bg-[#EEF1F5]"><UserRound size={56} className="-mb-2 text-[#C3CAD4]" fill="#DDE2E9" strokeWidth={1.2} /></span>}
@@ -3757,7 +3762,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 const left = Math.max(0, league.ends_ms - league.now_ms - (Date.now() - league.at));
                 const days = Math.floor(left / 86400000), hours = Math.floor((left % 86400000) / 3600000), minutes = Math.floor((left % 3600000) / 60000);
                 const size = league.users.length;
-                const zone = (place: number) => (place <= league.move && league.league < 4 ? "up" : place > Math.max(size - league.move, league.move) && league.league > 0 ? "down" : "stay");
+                const zone = (place: number) => (place <= league.move && league.league < LEAGUE_TOP ? "up" : place > Math.max(size - league.move, league.move) && league.league > 0 ? "down" : "stay");
                 const meId = online ? net?.me : "me";
                 const groups = { up: league.users.filter((user) => zone(user.place) === "up"), stay: league.users.filter((user) => zone(user.place) === "stay"), down: league.users.filter((user) => zone(user.place) === "down") };
                 const head = leagueHead;
@@ -3787,7 +3792,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[17px] bg-white text-black">
                     <div className={cn("relative flex h-11 shrink-0 items-center justify-center rounded-t-[17px] px-10 transition-colors duration-[250ms]", head === "up" ? "bg-[#4EB0FF] shadow-[0_1px_0_#4EB0FF]" : head === "down" ? "bg-[#FF7482] shadow-[0_1px_0_#FF7482]" : "bg-white")}>
                       <button onClick={() => setLeagueHelp(true)} aria-label={t("bottle.leagueManualTitle")} title={t("bottle.leagueManualTitle")} className="absolute left-0 top-0 h-[33px] w-[38px]"><span aria-hidden="true" className="absolute left-3.5 top-[9px] h-[15px] w-[11px] bg-contain bg-no-repeat" style={{ backgroundImage: `url(${O}${head === "stay" ? "league_manual_icon" : "league_manual_icon_up_down"}.svg)` }} /></button>
-                      <p className={cn("truncate text-[14px] font-bold transition-colors duration-[250ms]", head === "stay" ? "text-[#CFCFCF]" : "text-white")}>{t(`bottle.league${league.league}` as "bottle.league0")}</p>
+                      <p className={cn("truncate text-[14px] font-bold transition-colors duration-[250ms]", head === "stay" ? "text-[#CFCFCF]" : "text-white")}>{leagueName(locale, league.league)}</p>
                     </div>
                     <div ref={leagueBoxRef} className="flex min-h-0 flex-1 flex-col overflow-y-auto rounded-b-[17px] [scrollbar-width:none]" onScroll={(event) => { const box = event.currentTarget; const up = leagueUpRef.current?.clientHeight ?? 0; const stay = leagueStayRef.current?.clientHeight ?? 0; setLeagueHead(box.scrollTop < up + 1 ? "up" : box.scrollTop > up + stay ? "down" : "stay"); }}>
                       <div ref={leagueUpRef} className="flex flex-col bg-[#4EB0FF] shadow-[0_1px_0_#4EB0FF]">
@@ -3826,21 +3831,38 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                           <span aria-hidden="true" className="h-[58px] w-20 shrink-0 bg-contain bg-no-repeat" style={{ backgroundImage: `url(${O}league_ladder_info_icon.svg)` }} />
                         </div>
                         <div className="-mx-[15px] -mb-[15px] bg-[#F2F2F2] px-[15px] pb-[15px] pt-2">
-                          {[4, 3, 2, 1, 0].map((level) => {
+                          {Array.from({ length: LEAGUE_TOP + 1 }, (_, i) => LEAGUE_TOP - i).map((level) => {
                             const state = level === league.league ? "current" : level > league.league ? "locked" : "done";
                             return (
                               <div key={level} className={cn("mb-2 flex h-[58px] items-center justify-between rounded-lg pl-1.5 pr-3.5 last:mb-0", state === "current" ? "bg-[#4EB0FF] text-white" : "bg-white")}>
                                 <div className={cn("flex items-center", state === "locked" && "opacity-50")}>
                                   <LeagueBadge league={level} className="h-[50px] w-[51px] shrink-0" />
                                   <div className="ml-2 flex flex-col justify-center">
-                                    <p className={cn("text-[14px]", state === "current" && "font-bold")}>{t(`bottle.league${level}` as "bottle.league0")}</p>
+                                    <p className={cn("text-[14px]", state === "current" && "font-bold")}>{leagueName(locale, level)}</p>
                                     {state === "current" ? <p className="text-[13px]">{t("bottle.leagueHere")}</p> : null}
                                   </div>
                                 </div>
-                                <span aria-hidden="true" className={cn("shrink-0 bg-contain bg-no-repeat", state === "locked" ? "h-7 w-[22px]" : "h-6 w-6 drop-shadow-[0_1px_3px_rgba(0,0,0,0.22)]")} style={{ backgroundImage: `url(${O}${state === "locked" ? "league_ladder_icon_locked" : state === "current" ? "league_ladder_icon_white" : "league_ladder_icon_blue"}.svg)` }} />
+                                <button type="button" onClick={() => setLeagueInfo(level)} aria-label={`${leagueName(locale, level)} i`} title="i" className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[15px] font-black italic leading-none", state === "current" ? "bg-white text-[#4EB0FF]" : "bg-[#4EB0FF] text-white")}>i</button>
                               </div>
                             );
                           })}
+                        </div>
+                      </OrigPopup>
+                    ) : null}
+                    {ladder && leagueInfo !== null ? (
+                      <OrigPopup z="z-[80]" title={leagueName(locale, leagueInfo)} onClose={() => setLeagueInfo(null)} buttons={<OrigButton onClick={() => setLeagueInfo(null)}>{t("bottle.lockOk")}</OrigButton>}>
+                        <div className="flex flex-col items-center gap-2">
+                          <LeagueBadge league={leagueInfo} className="h-[72px] w-[76px]" />
+                          <p className="text-center text-[13px] text-[#424242]">{locale === "az" ? "Həftə sonunda qrupda yerinə görə ürək mükafatı:" : "Hearts for your place in the group at the end of the week:"}</p>
+                          <ul className="w-full max-w-[220px] space-y-0.5 text-[14px]">
+                            {[1, 2, 3, 4, 6].map((place) => (
+                              <li key={place} className="flex items-center justify-between rounded-md bg-[#F7F7F7] px-2.5 py-1">
+                                <span>{place === 4 ? "4–5" : place === 6 ? "6–10" : place}{locale === "az" ? "-ci yer" : ""}</span>
+                                <b className="text-[rgb(255,62,0)]">{leaguePrizeFor(leagueInfo, place)} ❤</b>
+                              </li>
+                            ))}
+                          </ul>
+                          <p className="text-center text-[12px] text-[#6B7280]">{leagueInfo >= LEAGUE_TOP ? (locale === "az" ? "Ən yüksək liqa." : "The highest league.") : (locale === "az" ? `Qrupda ilk ${league.move} nəfər yuxarı liqaya keçir.` : `The top ${league.move} of the group move up.`)}</p>
                         </div>
                       </OrigPopup>
                     ) : null}
@@ -4299,7 +4321,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             <LeagueBadge league={leagueResult.next} className="mx-auto mt-2 h-20 w-20 drop-shadow" />
             <p className="mt-1 text-sm">{t("bottle.leaguePlace").replace("{n}", String(leagueResult.place ?? "—"))}</p>
             <p className={cn("mt-1 text-base font-black", leagueResult.next > leagueResult.league ? "text-[#16A34A]" : leagueResult.next < leagueResult.league ? "text-[#DC2626]" : "text-[#6B7280]")}>
-              {leagueResult.next > leagueResult.league ? `▲ ${t("bottle.leagueMovedUp")}` : leagueResult.next < leagueResult.league ? `▼ ${t("bottle.leagueMovedDown")}` : t("bottle.leagueStayed")} {t(`bottle.league${leagueResult.next}` as "bottle.league0")}
+              {leagueResult.next > leagueResult.league ? `▲ ${t("bottle.leagueMovedUp")}` : leagueResult.next < leagueResult.league ? `▼ ${t("bottle.leagueMovedDown")}` : t("bottle.leagueStayed")} {leagueName(locale, leagueResult.next)}
             </p>
             {leagueResult.reward > 0 ? <p className="mt-2 flex items-center justify-center gap-1.5 text-2xl font-black text-[#E8203A]">+{leagueResult.reward}<Heart size={24} fill="#E8352B" stroke="none" /></p> : null}
             <button onClick={() => { setLeagueResult(null); setPanel("league"); }} className="mt-4 h-10 min-w-[140px] rounded-lg bg-[#F2B705] px-4 text-sm font-bold text-white hover:brightness-105">{t("bottle.leagueOpen")}</button>
