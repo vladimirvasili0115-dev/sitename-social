@@ -3196,7 +3196,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           {!wide ? <button onClick={() => chooseMode(!dedicate)} aria-pressed={dedicate} aria-label={t("bottle.dedicate")} title={t("bottle.dedicate")} className={cn(tool, dedicate && "bg-[#8CC63F]", !full && "sm:hidden")}><Plus size={19} strokeWidth={3} /></button> : null}
           <button onClick={openPrivate} aria-label={t("bottle.rooms")} title={t("bottle.rooms")} className={tool}><DoorOpen size={19} /></button>
           {online && net && !net.wheel ? null : <button onClick={() => { setWheelPrize(null); setPayNote(false); setPanel("wheel"); }} aria-label={t("bottle.wheel")} title={t("bottle.wheel")} className={tool}><LifeBuoy size={19} /></button>}
-          <button onClick={() => { setTopKind("kisses"); setPanel("top"); }} aria-label={t("bottle.top")} title={t("bottle.top")} className={tool}><Trophy size={18} /></button>
+          <button onClick={() => setPanel("league")} aria-label={t("bottle.league")} title={t("bottle.league")} className={tool}><Trophy size={18} /></button>
           <span className="relative flex">
             <button onClick={() => setMenuOpen(!menuOpen)} aria-expanded={menuOpen} aria-label={t("bottle.menu")} title={t("bottle.menu")} className={tool}><Menu size={18} /></button>
             {menuOpen ? (
