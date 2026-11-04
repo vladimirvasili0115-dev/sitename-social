@@ -1761,7 +1761,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const flightUrl = (id: string): string | null => {
     if (id.startsWith("song:")) return `/custom/orig/${id === "song:video" ? "audio_video_icon" : "audio_music_icon"}.svg`;
     const name = id.startsWith("c:") ? id.slice(2) : giftFileName(id);
-    const custom = customFile(art, `gifts/${name}`) || customFile(art, `anim/${name}`);
+    const custom = (name === "tea" ? customFile(art, "anim/tea_flight") : null) || customFile(art, `gifts/${name}`) || customFile(art, `anim/${name}`); // the tea glass: the small list picture is a cropped cup, so it flies as the full cup (the last frame of its animation) that lands on the photo
     if (custom) return custom;
     const emoji = giftEmoji[id] ? giftEmoji[id] : id.startsWith("e:") ? id.slice(2) : null;
     return emoji ? giftSrc(emoji) : null;
