@@ -289,7 +289,7 @@ function planLanding(gift: string, seed: number = Math.random() * 1e9) {
     const pinned = name ? artBox(name, true) : null; // the visible art ends exactly on the bottom line of the frame
     spot = edge ? at(edge.s, edge.x, edge.y, "corner") : at(size, 100 - size * 0.72, pinned ? 100 - size * pinned.b : 100 - size * 0.76, /^baloon\d$/.test(name) ? "balloon" : "corner");
     const flushed = size === 76 && Boolean(name) && Boolean(edge); // these stand exactly on the right edge of the frame, so they need no extra shift
-    if (name !== "catdress") spot = { ...spot, x: spot.x - (flushed ? 0 : CORNER_SHIFT_LEFT) - (/^(makarov|revolver)$/.test(name) ? 4 : 0) + (HEART_TRIO.test(name) ? HEART_SHIFT_RIGHT : 0) + (name === "surprizebox" ? SURPRISE_SHIFT_RIGHT : 0) }; // the pistol: another 2 mm (4%) to the left // flightTo reads this same spot, so the flight ends exactly where the gift stays
+    if (name !== "catdress") spot = { ...spot, x: spot.x - (flushed ? 0 : CORNER_SHIFT_LEFT) - (/^(makarov|revolver)$/.test(name) ? 4 : 0) + (HEART_TRIO.test(name) ? HEART_SHIFT_RIGHT : 0) + (name === "surprizebox" ? SURPRISE_SHIFT_RIGHT : name === "teddybear" ? 6 : 0) }; // the teddy bear stands 3 mm (6%) further right (the flight reads this same spot) // the pistol: another 2 mm (4%) to the left // flightTo reads this same spot, so the flight ends exactly where the gift stays
     }
   }
   return { land, spot, scatter };
