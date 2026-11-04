@@ -16,7 +16,8 @@ export const shopPacks: { hearts: number; price: number; bonus?: number; tag?: "
   { hearts: 30000, price: 45, bonus: 33, tag: "hit", art: "🍯" }, { hearts: 15000, price: 25, art: "👝" }, { hearts: 7500, price: 15, art: "💕" },
 ];
 // Active play rewards: minutes of play today → hearts.
-export const activeLevels: [number, number][] = [[240, 1000], [480, 2000], [720, 3000]];
+// [minutes, hearts, level number sent to the server]. The 1 hour level is number 4 (bit 8) so the claims already made today by the 4/8/12 hour levels (bits 1, 2, 4) stay valid.
+export const activeLevels: [number, number, number][] = [[60, 350, 4], [240, 1000, 1], [480, 2000, 2], [720, 3000, 3]];
 export const formatActive = (secs: number, t: (key: TranslationKey) => string) => `${Math.floor(secs / 3600)}${t("bottle.hourShort")} ${Math.floor((secs % 3600) / 60)}${t("bottle.minShort")}`;
 
 // The original bank (bottle-html5 BankDialog + bank CSS): a pink window with the heart pattern on top and
@@ -76,15 +77,15 @@ export function ActivePanel({ secs, claimed, live, onClaim }: { secs: number; cl
       <div className="flex flex-col items-center"><Pic e="⏰" className="h-16 w-16" /><p className="mt-1 text-sm text-[#6B7280]">{t("bottle.activeToday")}</p><p className="text-2xl font-black tabular-nums text-[#7C3AED]">{formatActive(secs, t)}</p></div>
       <div className="my-3 h-2.5 overflow-hidden rounded-full bg-[#EDE9FE]"><span className="block h-full rounded-full bg-[linear-gradient(90deg,#A16BFF,#7C3AED)]" style={{ width: `${Math.min(100, (secs / 43200) * 100)}%` }} /></div>
       <ul className="space-y-2">
-        {activeLevels.map(([minutes, prize], n) => {
-          const got = (claimed & (1 << n)) !== 0;
+        {activeLevels.map(([minutes, prize, level]) => {
+          const got = (claimed & (1 << (level - 1))) !== 0;
           const ready = secs >= minutes * 60;
           return (
             <li key={minutes} className={cn("flex items-center gap-3 rounded-xl border p-2.5", got ? "border-[#BBF7D0] bg-[#F0FDF4]" : "border-[#E5E7EB] bg-white")}>
               <span className="w-16 shrink-0 text-sm font-bold">{minutes >= 60 ? `${minutes / 60} ${t("bottle.hourLong")}` : `${minutes} ${t("bottle.minLong")}`}</span>
               <span className="flex flex-1 items-center gap-1 text-base font-black text-[#E8352B]"><H size={16} />{prize}</span>
               {got ? <span className="flex items-center gap-1 text-xs font-bold text-[#16A34A]"><Check size={15} strokeWidth={3} />{t("bottle.claimed")}</span>
-                : <button disabled={!ready || !live} onClick={() => onClaim(n + 1)} className="flex h-8 items-center gap-1 rounded-lg bg-[linear-gradient(180deg,#9BD65A,#6DB33F)] px-3 text-xs font-bold text-white shadow disabled:bg-none disabled:bg-[#E5E7EB] disabled:text-[#9CA3AF] disabled:shadow-none">{ready ? t("bottle.claim") : <><Lock size={12} />{formatActive(minutes * 60 - secs, t)}</>}</button>}
+                : <button disabled={!ready || !live} onClick={() => onClaim(level)} className="flex h-8 items-center gap-1 rounded-lg bg-[linear-gradient(180deg,#9BD65A,#6DB33F)] px-3 text-xs font-bold text-white shadow disabled:bg-none disabled:bg-[#E5E7EB] disabled:text-[#9CA3AF] disabled:shadow-none">{ready ? t("bottle.claim") : <><Lock size={12} />{formatActive(minutes * 60 - secs, t)}</>}</button>}
             </li>
           );
         })}
