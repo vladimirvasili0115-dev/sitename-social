@@ -233,6 +233,11 @@ const GIFT_BUCKET = 120;
 const BIGGER_CORNER = /^(cherry|makarov|revolver)$/;
 const BIGGER_BY = 1.2;
 const CORNER_ALL_BY = 1.7; // every other gift on the bottom-right corner is 1.7x bigger (they looked tiny next to the photo)
+// The red heart and the flaming heart stand together: both 1.5x smaller than the other corner gifts, 4 mm (8% of the photo width) further right than the frame edge line.
+// Their picture boxes differ (the flaming heart is a small drawing in a big box), so the size follows the visible art; the flight reads the same spot, so it goes straight to where the gift stays.
+const HEART_PAIR = /^(heart1|heart2)$/;
+const HEART_SHRINK = 1.5;
+const HEART_SHIFT_RIGHT = 8;
 // flush: the visible art's right edge sits exactly on the right edge of the photo frame (every gift the same, whatever its width).
 function cornerSpot(name: string, maxH: number = CORNER_ART_H, maxW: number = CORNER_ART_W, grow: number = 1, flush: boolean = false): { x: number; y: number; s: number } | null {
   const box = artBox(name, true);
@@ -265,11 +270,11 @@ function planLanding(gift: string, seed: number = Math.random() * 1e9) {
     else {
     const size = /^(catdress|donkey|flagaz|eiffeltower|amurchik)$/.test(name) ? 92 : /^baloon\d$/.test(name) ? 64 : 76;
     // The cat in the dress used to fill almost the whole photo (89% high): now its visible art is at most 55% high.
-    const edge = size === 76 && name ? cornerSpot(name, undefined, undefined, BIGGER_CORNER.test(name) ? (/^(makarov|revolver)$/.test(name) ? BIGGER_BY * 1.2 : BIGGER_BY) : SMALL_CORNER.test(name) ? (CORNER_ALL_BY * 2) / 3 : CORNER_ALL_BY, true) : name === "donkey" ? cornerSpot(name, 40, 34) : name === "catdress" ? (() => { const spot = cornerSpot(name, 55, 40); return spot ? { ...spot, x: spot.x - CAT_SHIFT_LEFT } : null; })() : null;
+    const edge = size === 76 && name ? cornerSpot(name, undefined, undefined, BIGGER_CORNER.test(name) ? (/^(makarov|revolver)$/.test(name) ? BIGGER_BY * 1.2 : BIGGER_BY) : SMALL_CORNER.test(name) ? (CORNER_ALL_BY * 2) / 3 : HEART_PAIR.test(name) ? CORNER_ALL_BY / HEART_SHRINK : CORNER_ALL_BY, true) : name === "donkey" ? cornerSpot(name, 40, 34) : name === "catdress" ? (() => { const spot = cornerSpot(name, 55, 40); return spot ? { ...spot, x: spot.x - CAT_SHIFT_LEFT } : null; })() : null;
     const pinned = name ? artBox(name, true) : null; // the visible art ends exactly on the bottom line of the frame
     spot = edge ? at(edge.s, edge.x, edge.y, "corner") : at(size, 100 - size * 0.72, pinned ? 100 - size * pinned.b : 100 - size * 0.76, /^baloon\d$/.test(name) ? "balloon" : "corner");
     const flushed = size === 76 && Boolean(name) && Boolean(edge); // these stand exactly on the right edge of the frame, so they need no extra shift
-    if (name !== "catdress") spot = { ...spot, x: spot.x - (flushed ? 0 : CORNER_SHIFT_LEFT) - (/^(makarov|revolver)$/.test(name) ? 4 : 0) }; // the pistol: another 2 mm (4%) to the left // flightTo reads this same spot, so the flight ends exactly where the gift stays
+    if (name !== "catdress") spot = { ...spot, x: spot.x - (flushed ? 0 : CORNER_SHIFT_LEFT) - (/^(makarov|revolver)$/.test(name) ? 4 : 0) + (HEART_PAIR.test(name) ? HEART_SHIFT_RIGHT : 0) }; // the pistol: another 2 mm (4%) to the left // flightTo reads this same spot, so the flight ends exactly where the gift stays
     }
   }
   return { land, spot, scatter };
