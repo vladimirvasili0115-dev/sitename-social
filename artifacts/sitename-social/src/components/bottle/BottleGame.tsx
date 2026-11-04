@@ -190,8 +190,8 @@ const HAT_SIZE = 48 * HAT_SCALE;
 const HAT_BIGGER: Record<string, number> = { cowboy: 1.3, ushanka: 1.3 }; // these two hats are another 1.3x bigger (on top of HAT_SCALE)
 // The pharaoh headdress is drawn already tilted about 30° clockwise, so it is turned 30° more the other way to sit symmetric on the corner diagonal, its opening facing the middle of the photo.
 const HAT_TURN: Record<string, number> = { pharaoh2: -30 };
-// The spring wreath sits 7% (about 3.5 mm) of the photo further in, toward the middle (right and down).
-const HAT_NUDGE: Record<string, [number, number]> = { springwreath: [7, 7] };
+// The spring wreath and the pharaoh headdress sit further in, toward the middle of the photo (right and down): 7% is about 3.5 mm.
+const HAT_NUDGE: Record<string, [number, number]> = { springwreath: [14, 14], pharaoh2: [7, 7] };
 function hatSpot(name: string): { x: number; y: number; s: number; a: number } {
   const size = HAT_SIZE * (HAT_BIGGER[name] ?? 1);
   const box = artBox(name, false);
