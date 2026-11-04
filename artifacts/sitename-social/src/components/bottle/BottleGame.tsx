@@ -246,7 +246,7 @@ function planLanding(gift: string, seed: number = Math.random() * 1e9) {
   if (name && (HAT_SPOT.test(name) || /^(ears|bow_)/.test(name))) { const hat = hatSpot(name); const near = /^bow_/.test(name) ? 4 : 0; spot = at(hat.s, hat.x + near, hat.y + near, "hatL"); } // bows sit 4% (about 2 mm) closer to the photo, so they do not hang over the frame // the original "hat": sitting right on the top-left (90°) corner, turned -45°
   else if (name && (RANDOM_SPOT.test(name) || onPhoto(name) || name === "fairy")) {
     // The original "ava": a random point anywhere on the photo and a random angle (0–360°), the same on every screen.
-    const size = name === "handcuffs" ? 80 : 40; // handcuffs: twice as big (the centre stays at the same random point)
+    const size = name === "handcuffs" ? 80 : name === "blackrose" ? 56 : 40; // handcuffs: twice as big; the black rose 1.4x (the centre stays at the same random point; it flies at this same size)
     const x = rnd() * 100 - size / 2, y = rnd() * 100 - size / 2;
     spot = { ...at(size, x, y, "rand"), r: Math.round(rnd() * 360) }; }
   else if (land === "e:🐓") spot = at(100, 0, 0, "corner"); // the rooster covers the whole photo
