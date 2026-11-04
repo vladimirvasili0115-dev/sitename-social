@@ -187,7 +187,7 @@ function artBox(name: string, pinned: boolean) {
 // Hats sit on the top-left corner of the frame: the middle of the hat is on the corner itself, the hat turned -45°.
 const HAT_SCALE = 1.4; // every gift on the top-left corner is 1.4x bigger; the middle of the art stays on the corner itself (hatSpot works from the size)
 const HAT_SIZE = 48 * HAT_SCALE;
-const HAT_BIGGER: Record<string, number> = { clown: 1.2, cowboy: 1.3 / 1.2 / 1.1, ushanka: (1.3 * 1.2) / 1.1, crown1: 1 / 1.2, crown4: 1 / 1.2 }; // cowboy is 1.3x/1.2 = 1.083x bigger (was 1.3x, made 1.2x smaller); the star fur hat is another 1.3x bigger (on top of HAT_SCALE; the fur hat 1.2x more, then 1.1x smaller again); two crowns (hearts, blue stone) are 1.2x smaller
+const HAT_BIGGER: Record<string, number> = { colander: 1.7, clown: 1.2, cowboy: 1.3 / 1.2 / 1.1, ushanka: (1.3 * 1.2) / 1.1, crown1: 1 / 1.2, crown4: 1 / 1.2 }; // cowboy is 1.3x/1.2 = 1.083x bigger (was 1.3x, made 1.2x smaller); the star fur hat is another 1.3x bigger (on top of HAT_SCALE; the fur hat 1.2x more, then 1.1x smaller again); two crowns (hearts, blue stone) are 1.2x smaller
 // The pharaoh headdress is drawn already tilted about 30° clockwise, so it is turned 30° more the other way to sit symmetric on the corner diagonal, its opening facing the middle of the photo.
 const HAT_TURN: Record<string, number> = { pharaoh2: -30 };
 // The spring wreath and the pharaoh headdress sit further in, toward the middle of the photo (right and down): 7% is about 3.5 mm.
@@ -275,7 +275,7 @@ function planLanding(gift: string, seed: number = Math.random() * 1e9) {
   if (name && (HAT_SPOT.test(name) || /^(ears|bow_)/.test(name))) { const hat = hatSpot(name); const near = /^bow_/.test(name) ? 4 : 0; spot = at(hat.s, hat.x + near, hat.y + near, "hatL"); } // bows sit 4% (about 2 mm) closer to the photo, so they do not hang over the frame // the original "hat": sitting right on the top-left (90°) corner, turned -45°
   else if (name && (RANDOM_SPOT.test(name) || onPhoto(name) || name === "fairy")) {
     // The original "ava": a random point anywhere on the photo and a random angle (0–360°), the same on every screen.
-    const size = name === "handcuffs" ? 80 : name === "blackrose" ? 56 : 40; // handcuffs: twice as big; the black rose 1.4x (the centre stays at the same random point; it flies at this same size)
+    const size = name === "handcuffs" ? 80 : name === "blackrose" ? 56 : name === "voodoo" ? 68 : 40; // handcuffs: twice as big; the black rose 1.4x, the voodoo doll 1.7x (the centre stays at the same random point; it flies at this same size)
     const x = rnd() * 100 - size / 2, y = rnd() * 100 - size / 2;
     spot = { ...at(size, x, y, "rand"), r: Math.round(rnd() * 360) }; }
   else if (land === "e:🐓") spot = at(100, 0, 0, "corner"); // the rooster covers the whole photo
