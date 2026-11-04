@@ -28,6 +28,14 @@ export async function fetchAdminUsers(search: string): Promise<AdminUser[] | nul
     lastSeen: row.last_seen ? Date.parse(row.last_seen) : null, banned: row.banned, moderator: row.moderator, owner: row.owner, balance: Number(row.balance),
   }));
 }
+// Players ordered by bonus (hearts) balance, highest first; rank is the real place even when a name search is typed. Needs paket-GG.sql.
+export type PlayerRow = { id: string; name: string; handle: string; avatar: string | null; hearts: number; rank: number };
+type PlayerDb = { id: string; name: string | null; handle: string | null; avatar_url: string | null; hearts: number; rank: number };
+export async function fetchPlayers(search: string, off: number, lim = 50): Promise<PlayerRow[] | null> {
+  const rows = await call<PlayerDb[]>("admin_players", { p_search: search.trim(), p_lim: lim, p_off: off });
+  if (!Array.isArray(rows)) return null;
+  return rows.map((row) => ({ id: row.id, name: row.name ?? "", handle: row.handle ?? "", avatar: row.avatar_url, hearts: Number(row.hearts), rank: Number(row.rank) }));
+}
 export async function fetchIsOwner(): Promise<boolean> {
   return (await call<boolean>("is_owner")) === true;
 }

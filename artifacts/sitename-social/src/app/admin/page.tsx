@@ -8,11 +8,12 @@ import { AdminContent } from "@/components/admin/AdminContent";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
 import { AdminReports } from "@/components/admin/AdminReports";
 import { AdminUsers } from "@/components/admin/AdminUsers";
+import { AdminBalances, AdminPlayers } from "@/components/admin/AdminPlayers";
 import { AdminSettings } from "@/components/admin/AdminSettings";
 import { AdminLog } from "@/components/admin/AdminLog";
 import { useIsAdmin } from "@/components/report/useIsAdmin";
 
-type AdminTab = "overview" | "reports" | "users" | "content" | "settings" | "log";
+type AdminTab = "overview" | "reports" | "users" | "players" | "balances" | "content" | "settings" | "log";
 
 export default function AdminPage() {
   const { t } = useTranslation();
@@ -29,12 +30,14 @@ export default function AdminPage() {
       <h1 className="mb-4 flex flex-wrap items-center gap-2 px-1 text-[23px] font-semibold tracking-[-0.035em]">{t("nav.admin")}<span className="rounded-full border border-accent px-2 py-0.5 text-[11px] font-semibold tracking-normal text-accent">{t(owner ? "admin.roleOwner" : "admin.roleModerator")}</span></h1>
       <Tabs<AdminTab> active={tab} onChange={setTab} tabs={[
         { id: "overview", label: t("admin.tabOverview") }, { id: "reports", label: t("admin.tabReports") },
-        { id: "users", label: t("admin.tabUsers") }, { id: "content", label: t("admin.tabContent") },
+        { id: "users", label: t("admin.tabUsers") }, { id: "players", label: "Oyunçular" }, { id: "balances", label: "Balanslar" }, { id: "content", label: t("admin.tabContent") },
         ...(owner ? [{ id: "settings" as const, label: t("admin.tabSettings") }, { id: "log" as const, label: t("admin.tabLog") }] : []),
       ]} />
       {tab === "overview" ? <AdminDashboard /> : null}
       {tab === "reports" ? <AdminReports /> : null}
       {tab === "users" ? <AdminUsers owner={owner} /> : null}
+      {tab === "players" ? <AdminPlayers owner={owner} /> : null}
+      {tab === "balances" ? <AdminBalances /> : null}
       {tab === "content" ? <AdminContent /> : null}
       {tab === "settings" && owner ? <AdminSettings /> : null}
       {tab === "log" && owner ? <AdminLog /> : null}

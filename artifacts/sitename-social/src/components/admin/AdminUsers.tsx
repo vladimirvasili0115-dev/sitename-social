@@ -571,7 +571,7 @@ function SpendCard() {
 }
 
 // Game grants for one player: hearts, VIP and TOP (days), DJ score, chances and boosters. Owner and moderators.
-function GamePanel({ id }: { id: string }) {
+export function GamePanel({ id }: { id: string }) {
   const { t } = useTranslation();
   const [data, setData] = useState<GameState | null>(null);
   const [busy, setBusy] = useState(false);
