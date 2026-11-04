@@ -187,14 +187,14 @@ function artBox(name: string, pinned: boolean) {
 // Hats sit on the top-left corner of the frame: the middle of the hat is on the corner itself, the hat turned -45°.
 const HAT_SCALE = 1.4; // every gift on the top-left corner is 1.4x bigger; the middle of the art stays on the corner itself (hatSpot works from the size)
 const HAT_SIZE = 48 * HAT_SCALE;
-const HAT_BIGGER: Record<string, number> = { cowboy: 1.3 / 1.2, ushanka: (1.3 * 1.2) / 1.1, crown1: 1 / 1.2, crown4: 1 / 1.2 }; // cowboy is 1.3x/1.2 = 1.083x bigger (was 1.3x, made 1.2x smaller); the star fur hat is another 1.3x bigger (on top of HAT_SCALE; the fur hat 1.2x more, then 1.1x smaller again); two crowns (hearts, blue stone) are 1.2x smaller
+const HAT_BIGGER: Record<string, number> = { cowboy: 1.3 / 1.2 / 1.1, ushanka: (1.3 * 1.2) / 1.1, crown1: 1 / 1.2, crown4: 1 / 1.2 }; // cowboy is 1.3x/1.2 = 1.083x bigger (was 1.3x, made 1.2x smaller); the star fur hat is another 1.3x bigger (on top of HAT_SCALE; the fur hat 1.2x more, then 1.1x smaller again); two crowns (hearts, blue stone) are 1.2x smaller
 // The pharaoh headdress is drawn already tilted about 30° clockwise, so it is turned 30° more the other way to sit symmetric on the corner diagonal, its opening facing the middle of the photo.
 const HAT_TURN: Record<string, number> = { pharaoh2: -30 };
 // The spring wreath and the pharaoh headdress sit further in, toward the middle of the photo (right and down): 7% is about 3.5 mm.
 // Every cap (supermecap, kingcap, bosscap ... and the two baseball caps) sits 10% (about 5 mm) further in, so it sits on the corner of the photo and not mostly beside it.
 const CAP_NAME = /^(\w*cap|baseballa\w)$/;
 const CAP_NUDGE = 10;
-const HAT_NUDGE: Record<string, [number, number]> = { springwreath: [14, 14], pharaoh2: [7, 7], ushanka: [8, 8], noteshatw: [8, 8], noteshatb: [8, 8], rabbitcap: [5, 5] }; // the rabbit cap: its first place (centre on the corner) was almost right, so only 5% (about 2.5 mm) instead of the 10% of the other caps
+const HAT_NUDGE: Record<string, [number, number]> = { cowboy: [6, 6], springwreath: [14, 14], pharaoh2: [7, 7], ushanka: [8, 8], noteshatw: [8, 8], noteshatb: [8, 8], rabbitcap: [5, 5] }; // the rabbit cap: its first place (centre on the corner) was almost right, so only 5% (about 2.5 mm) instead of the 10% of the other caps
 function hatSpot(name: string): { x: number; y: number; s: number; a: number } {
   const size = HAT_SIZE * (HAT_BIGGER[name] ?? 1);
   const box = artBox(name, false);
