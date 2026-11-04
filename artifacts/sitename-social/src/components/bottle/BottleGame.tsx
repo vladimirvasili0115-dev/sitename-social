@@ -185,7 +185,8 @@ function artBox(name: string, pinned: boolean) {
   return { l: (ox + l) / m, t: (oy + t) / m, r: (ox + r) / m, b: (oy + b) / m };
 }
 // Hats sit on the top-left corner of the frame: the middle of the hat is on the corner itself, the hat turned -45°.
-const HAT_SIZE = 48;
+const HAT_SCALE = 1.4; // every gift on the top-left corner is 1.4x bigger; the middle of the art stays on the corner itself (hatSpot works from the size)
+const HAT_SIZE = 48 * HAT_SCALE;
 function hatSpot(name: string): { x: number; y: number; s: number } {
   const box = artBox(name, false);
   const dx = box ? ((box.l + box.r) / 2 - 0.5) * HAT_SIZE : 0, dy = box ? ((box.t + box.b) / 2 - 0.5) * HAT_SIZE : 0;
@@ -3270,7 +3271,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   return <>
                     {(piles[player.id] ?? []).filter((item) => !canvasUrl(item.gift)).map((item) => <span key={item.key} className="pointer-events-none absolute z-[2] animate-[gift-drop_0.35s_ease-out] transition-opacity duration-[2000ms]" style={{ left: `${item.x}%`, top: `${item.y}%`, width: `${item.s}%`, height: `${item.s}%`, transform: `rotate(${item.r}deg)`, opacity: pileNow - item.at > PILE_MS - 3000 ? 0 : 1 }}><Gift anim id={item.gift} className="h-full w-full drop-shadow-[0_2px_2px_rgba(0,0,0,0.35)]" /></span>)}
                     {face ? <Gift id={face} className="absolute left-[8%] top-[10%] z-[2] h-[84%] w-[84%] animate-[gift-drop_0.35s_ease-out]" /> : null}
-                    {ears ? <Gift anim id={ears} className="pointer-events-none absolute -left-[34%] -top-[22%] z-[2] h-[58%] w-[104%] -rotate-45 animate-[gift-drop_0.35s_ease-out] drop-shadow" /> : null}
+                    {ears ? <Gift anim id={ears} className="pointer-events-none absolute -left-[54.8%] -top-[33.6%] z-[2] h-[81.2%] w-[145.6%] -rotate-45 animate-[gift-drop_0.35s_ease-out] drop-shadow" /> : null}
                     {head && hat ? <span key={head} className="pointer-events-none absolute z-[5]" style={{ left: `${hat.x}%`, top: `${hat.y}%`, width: `${hat.s}%`, height: `${hat.s}%`, transform: "rotate(-45deg)" }}><Gift anim id={head} className="h-full w-full animate-[gift-drop_0.35s_ease-out] drop-shadow" /></span> : null}
                     {spots[player.id]?.length ? spots[player.id].filter((spot) => !canvasCorners(spot)).map((spot) => <span key={spot.key} className={cn("pointer-events-none absolute", spot.kind === "behind" ? "-z-[1]" : spot.kind === "hatL" || spot.kind === "hatR" ? "z-[5]" : "z-[2]")} style={{ left: `${spot.x}%`, top: `${spot.y}%`, width: `${spot.s}%`, height: `${spot.s}%`, transform: spot.kind === "hatL" ? "rotate(-45deg)" : spot.kind === "hatR" ? "rotate(45deg)" : spot.r ? `rotate(${spot.r}deg)` : undefined }}><Gift anim once={spot.kind === "corner" || spot.kind === "balloon" ? spot.key : undefined} id={spot.gift} className={cn("h-full w-full drop-shadow", spot.x + spot.s / 2 < 45 ? "origin-bottom-left" : "origin-bottom-right", (spot.kind === "corner" || spot.kind === "balloon") && (spot.x + spot.s / 2 < 45 ? "object-left-bottom" : "object-right-bottom"), spot.kind === "balloon" ? "animate-[gift-grow_0.7s_ease-out_forwards]" : "animate-[gift-drop_0.35s_ease-out]")} /></span>)
                       : rest.map((gift) => <Gift anim key={`${gift}-${mine.length}`} id={gift} className="absolute bottom-0 right-0 z-[2] h-[58%] w-[58%] animate-[gift-drop_0.35s_ease-out] drop-shadow" />)}
