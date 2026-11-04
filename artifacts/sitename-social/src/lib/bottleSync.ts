@@ -54,7 +54,7 @@ export const bottleSmiles = () => call<number>("bottle_smiles");
 export const bottleBuySmiles = (pack: number) => call<{ hearts: number; smiles: number } | null>("bottle_buy_smiles", { p_pack: pack });
 export const bottleWheel = () => call<{ sector: number; hearts: number; chances: number }>("bottle_wheel_spin");
 export const bottleSong = (to: string, kind: "video" | "mp3") => call<number>("bottle_song", { p_to: to, p_kind: kind });
-export type BottleTables = { tables: { id: number; boys: number; girls: number }[]; friends: { id: string; name: string | null; avatar: string | null; table: number; friend?: boolean }[] };
+export type BottleTables = { tables: { id: number; boys: number; girls: number; ban?: number | null }[]; friends: { id: string; name: string | null; avatar: string | null; table: number; friend?: boolean }[] };
 export type BottleMove = { table?: number; full?: boolean; position?: number; gone?: boolean; banned?: boolean };
 export const bottleTables = () => call<BottleTables>("bottle_tables_list");
 export const bottleMove = (table: number | null) => call<BottleMove>("bottle_move", { p_table: table });
@@ -103,7 +103,10 @@ export const bottleAchSync = () => call<{ values: Record<string, number>; gained
 export const bottleStatBump = (metric: string, by: number, max: boolean) => call<null>("bottle_stat_bump", { p_metric: metric, p_by: by, p_max: max });
 export const bottleStatsMerge = (stats: Record<string, number>) => call<Record<string, number>>("bottle_stats_merge", { p_stats: stats });
 export const bottleKick = (to: string) => call<"ok" | "vip" | "bad" | "hearts">("bottle_kick", { p_to: to });
-export const bottleKickPrice = () => call<number>("bottle_kick_price");
+// The kick price belongs to the player who would be kicked (10 at first, 2x after every kick, back to 10 every Baku day).
+export const bottleKickPrice = (user?: string) => call<number>("bottle_kick_price", user ? { p_user: user } : undefined);
+// What the kicked player pays to defend himself: the price of the kick that hit him.
+export const bottleKickDefendPrice = (to: string) => call<number>("bottle_kick_defend_price", { p_to: to });
 export const bottleSave = (to: string) => call<boolean>("bottle_save", { p_to: to });
 export const bottleCompliment = (to: string, kind: number) => call<{ count?: number; hearts?: number; bonus?: boolean; error?: "bad" | "again" }>("bottle_compliment", { p_to: to, p_kind: kind });
 export const bottleActiveClaim = (level: number) => call<number>("bottle_active_claim", { p_level: level });

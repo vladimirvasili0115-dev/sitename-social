@@ -39,7 +39,7 @@ import { refreshFriends } from "@/lib/friendsSync";
 import { ensureMessagesLoaded, openRemoteChat, remoteChats, sendRemoteMessage } from "@/lib/messagesSync";
 import { uploadBlob } from "@/lib/media";
 import { refreshGifts } from "@/lib/giftsSync";
-import { bottleSeek, bottleLogIp, bottleAdminIpLookup, type BottleIpRow, bottleAnswer, bottleAchSync, bottleAchView, bottleGesture, bottleSmiles, bottleBuyHearts, bottleGiftAllow, bottleBuySmiles, bottleProgress, bottleGesturesOpen, bottleSkin, bottleBadges, bottleGetAccept, bottleSetAccept, bottleBuyChances, bottleJoin, bottleMove, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleProfile, type BottleProfile, bottleDaily, bottleItems, bottleItemBuy, bottleBooster, bottleTutorial, bottleAdminIds, type BottleItems, bottleLeagueInfo, bottleLeagueClaim, type BottleLeague, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleKickPrice, bottleGift, bottleGiftMany, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, bottleClaim, type BottleState, type BottleSeat, bottleEffectOf, bottleYtGet, bottleYtPut, bottleTableGifts, type BottleSeatGift } from "@/lib/bottleSync";
+import { bottleSeek, bottleLogIp, bottleAdminIpLookup, type BottleIpRow, bottleAnswer, bottleAchSync, bottleAchView, bottleGesture, bottleSmiles, bottleBuyHearts, bottleGiftAllow, bottleBuySmiles, bottleProgress, bottleGesturesOpen, bottleSkin, bottleBadges, bottleGetAccept, bottleSetAccept, bottleBuyChances, bottleJoin, bottleMove, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleProfile, type BottleProfile, bottleDaily, bottleItems, bottleItemBuy, bottleBooster, bottleTutorial, bottleAdminIds, type BottleItems, bottleLeagueInfo, bottleLeagueClaim, type BottleLeague, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleKickPrice, bottleKickDefendPrice, bottleGift, bottleGiftMany, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, bottleClaim, type BottleState, type BottleSeat, bottleEffectOf, bottleYtGet, bottleYtPut, bottleTableGifts, type BottleSeatGift } from "@/lib/bottleSync";
 import { ytHint, ytReason } from "./ytHints";
 import { WeeklyPanel, WeekPrizePopup } from "./WeeklyTop";
 import { BonusMarket, EnigmaEffect, arrivalLabel, marketLabel } from "./BonusMarket";
@@ -855,7 +855,10 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [kickHelp, setKickHelp] = useState(false);
   // Kicking costs hearts; the kicked player can buy themselves free for the same price.
   const [kickPrice, setKickPrice] = useState(10);
+  const [defendPrice, setDefendPrice] = useState<number | null>(null); // what I pay to defend myself while I am kicked
   useEffect(() => { if (online) void bottleKickPrice().then((value) => { if (typeof value === "number" && value >= 0) setKickPrice(value); }); }, [online]);
+  const meKicked = Boolean(online && net && net.seats.find((seat) => seat.id === net.me)?.kicked);
+  useEffect(() => { if (!meKicked || !net) { setDefendPrice(null); return; } void bottleKickDefendPrice(net.me).then((value) => { if (typeof value === "number" && value >= 0) setDefendPrice(value); }); }, [meKicked]); // eslint-disable-line react-hooks/exhaustive-deps
   const [complimentIn, setComplimentIn] = useState<{ name: string; avatar: string; kind: number } | null>(null);
   const [kickedToast, setKickedToast] = useState(false);
   const [refInfo, setRefInfo] = useState<{ invited: number; done: number }>({ invited: 0, done: 0 });
@@ -1709,8 +1712,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     pullRef.current();
     return result.bonus ? "bonus" : null;
   }
-  function askKick(player: Player) {
+  async function askKick(player: Player) {
     setKickNote(null);
+    if (online) { const price = await bottleKickPrice(player.id); if (typeof price === "number" && price >= 0) setKickPrice(price); } // this player's own price (it doubles after every kick on him)
     setKickFor({ id: player.id, name: player.name, avatar: player.avatar });
     setCard(false);
     setPanel("kick");
@@ -3319,7 +3323,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   <div className="absolute left-0 top-0 z-[3] flex aspect-square w-full flex-col items-center justify-center rounded-[14%] bg-[#7F1D1D]/60 ring-[0.6cqmin] ring-[#EF4444]">
                     <img src={emojiSrc("🦶")} alt="" className="h-[42%] w-[42%] animate-pulse" />
                     <span className="text-[3.4cqmin] font-black tabular-nums text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.7)]">{left}</span>
-                    {canSave ? <button onClick={(event) => { event.stopPropagation(); if (self && heartsRef.current < kickPrice) { setCardNote(`${t("bottle.noHearts")} (${kickPrice})`); return; } void bottleSave(self ? net.me : player.id).then(pullRef.current); }} className="absolute -bottom-[2.4cqmin] flex items-center gap-[0.6cqmin] whitespace-nowrap rounded-full bg-[linear-gradient(180deg,#9BD65A,#5DB13A)] px-[1.6cqmin] py-[0.5cqmin] text-[2.4cqmin] font-bold text-white shadow-lg"><img src={emojiSrc("🛟")} alt="" className="h-[3cqmin] w-[3cqmin]" />{self ? <>{t("bottle.kickDefend")} ❤{kickPrice}</> : t("bottle.saveBtn")}</button> : null}
+                    {canSave ? <button onClick={(event) => { event.stopPropagation(); if (self && heartsRef.current < (defendPrice ?? kickPrice)) { setCardNote(`${t("bottle.noHearts")} (${defendPrice ?? kickPrice})`); return; } void bottleSave(self ? net.me : player.id).then(pullRef.current); }} className="absolute -bottom-[2.4cqmin] flex items-center gap-[0.6cqmin] whitespace-nowrap rounded-full bg-[linear-gradient(180deg,#9BD65A,#5DB13A)] px-[1.6cqmin] py-[0.5cqmin] text-[2.4cqmin] font-bold text-white shadow-lg"><img src={emojiSrc("🛟")} alt="" className="h-[3cqmin] w-[3cqmin]" />{self ? <>{t("bottle.kickDefend")} ❤{defendPrice ?? kickPrice}</> : t("bottle.saveBtn")}</button> : null}
                   </div>
                 );
               })()}
@@ -3569,7 +3573,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                     <ul>
                       {ordered.map((room) => (
                         <li key={room.id}><button onClick={() => void moveTo(room.id)} className="flex min-h-11 w-full items-center gap-2 rounded-lg px-1 text-left text-sm hover:bg-black/5 disabled:opacity-50">
-                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-[#E9A957]"><BottleSvg className="h-7 rotate-[28deg]" /></span><span className="min-w-0 flex-1 font-semibold tabular-nums">#{tableLabel(room.id)}{room.id === net?.table ? ` · ${t("bottle.roomHere")}` : room.boys + room.girls >= 12 ? ` · ${t("bottle.roomFullTag")}` : ""}</span>{counts(room.id)}
+                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-[#E9A957]"><BottleSvg className="h-7 rotate-[28deg]" /></span><span className="min-w-0 flex-1 font-semibold tabular-nums">#{tableLabel(room.id)}{room.id === net?.table ? ` · ${t("bottle.roomHere")}` : room.boys + room.girls >= 12 ? ` · ${t("bottle.roomFullTag")}` : ""}{room.ban && room.ban > 0 ? <span className="mt-0.5 block text-[11px] font-semibold text-[#DC2626]">{t("bottle.banLeft").replace("{n}", String(Math.ceil(room.ban / 60)))}</span> : null}</span>{counts(room.id)}
                         </button></li>
                       ))}
                     </ul>
