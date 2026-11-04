@@ -187,11 +187,13 @@ function artBox(name: string, pinned: boolean) {
 // Hats sit on the top-left corner of the frame: the middle of the hat is on the corner itself, the hat turned -45°.
 const HAT_SCALE = 1.4; // every gift on the top-left corner is 1.4x bigger; the middle of the art stays on the corner itself (hatSpot works from the size)
 const HAT_SIZE = 48 * HAT_SCALE;
+const HAT_BIGGER: Record<string, number> = { cowboy: 1.3, ushanka: 1.3 }; // these two hats are another 1.3x bigger (on top of HAT_SCALE)
 function hatSpot(name: string): { x: number; y: number; s: number } {
+  const size = HAT_SIZE * (HAT_BIGGER[name] ?? 1);
   const box = artBox(name, false);
-  const dx = box ? ((box.l + box.r) / 2 - 0.5) * HAT_SIZE : 0, dy = box ? ((box.t + box.b) / 2 - 0.5) * HAT_SIZE : 0;
+  const dx = box ? ((box.l + box.r) / 2 - 0.5) * size : 0, dy = box ? ((box.t + box.b) / 2 - 0.5) * size : 0;
   const rx = Math.SQRT1_2 * (dx + dy), ry = Math.SQRT1_2 * (dy - dx); // where that middle ends up after the -45° turn
-  return { x: -rx - HAT_SIZE / 2, y: -ry - HAT_SIZE / 2, s: HAT_SIZE };
+  return { x: -rx - size / 2, y: -ry - size / 2, s: size };
 }
 // Drinks and other corner gifts stand on the bottom-right edge of the frame: the picture's left edge is 10% inside the frame, its bottom just below it.
 // The visible art is at most CORNER_ART_H% of the photo high and CORNER_ART_W% wide (not the empty picture box), so big pictures stay small on the corner.
