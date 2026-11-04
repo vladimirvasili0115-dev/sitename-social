@@ -73,15 +73,15 @@ export function ShopPanel({ hearts, activeSecs, payNote, onActive, onTelegram, o
 export function ActivePanel({ secs, claimed, live, onClaim }: { secs: number; claimed: number; live: boolean; onClaim: (level: number) => void }) {
   const { t } = useTranslation();
   return (
-    <div className="text-[#1F2937]">
-      <div className="flex flex-col items-center"><Pic e="⏰" className="h-16 w-16" /><p className="mt-1 text-sm text-[#6B7280]">{t("bottle.activeToday")}</p><p className="text-2xl font-black tabular-nums text-[#7C3AED]">{formatActive(secs, t)}</p></div>
-      <div className="my-3 h-2.5 overflow-hidden rounded-full bg-[#EDE9FE]"><span className="block h-full rounded-full bg-[linear-gradient(90deg,#A16BFF,#7C3AED)]" style={{ width: `${Math.min(100, (secs / 43200) * 100)}%` }} /></div>
-      <ul className="space-y-2">
+    <div className="max-h-[calc(100cqh-56px)] overflow-y-auto overscroll-contain text-[#1F2937] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="flex flex-col items-center"><Pic e="⏰" className="h-11 w-11" /><p className="text-sm text-[#6B7280]">{t("bottle.activeToday")}</p><p className="text-2xl font-black tabular-nums text-[#7C3AED]">{formatActive(secs, t)}</p></div>
+      <div className="my-2 h-2.5 overflow-hidden rounded-full bg-[#EDE9FE]"><span className="block h-full rounded-full bg-[linear-gradient(90deg,#A16BFF,#7C3AED)]" style={{ width: `${Math.min(100, (secs / 43200) * 100)}%` }} /></div>
+      <ul className="space-y-1.5">
         {activeLevels.map(([minutes, prize, level]) => {
           const got = (claimed & (1 << (level - 1))) !== 0;
           const ready = secs >= minutes * 60;
           return (
-            <li key={minutes} className={cn("flex items-center gap-3 rounded-xl border p-2.5", got ? "border-[#BBF7D0] bg-[#F0FDF4]" : "border-[#E5E7EB] bg-white")}>
+            <li key={minutes} className={cn("flex items-center gap-3 rounded-xl border p-2", got ? "border-[#BBF7D0] bg-[#F0FDF4]" : "border-[#E5E7EB] bg-white")}>
               <span className="w-16 shrink-0 text-sm font-bold">{minutes >= 60 ? `${minutes / 60} ${t("bottle.hourLong")}` : `${minutes} ${t("bottle.minLong")}`}</span>
               <span className="flex flex-1 items-center gap-1 text-base font-black text-[#E8352B]"><H size={16} />{prize}</span>
               {got ? <span className="flex items-center gap-1 text-xs font-bold text-[#16A34A]"><Check size={15} strokeWidth={3} />{t("bottle.claimed")}</span>
@@ -90,7 +90,7 @@ export function ActivePanel({ secs, claimed, live, onClaim }: { secs: number; cl
           );
         })}
       </ul>
-      <p className="mt-3 text-center text-[11px] text-[#6B7280]">{t(live ? "bottle.activeHint" : "bottle.liveOnly")}</p>
+      <p className="mt-2 text-center text-[11px] text-[#6B7280]">{t(live ? "bottle.activeHint" : "bottle.liveOnly")}</p>
     </div>
   );
 }
