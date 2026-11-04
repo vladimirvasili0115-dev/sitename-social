@@ -187,7 +187,7 @@ function artBox(name: string, pinned: boolean) {
 // Hats sit on the top-left corner of the frame: the middle of the hat is on the corner itself, the hat turned -45°.
 const HAT_SCALE = 1.4; // every gift on the top-left corner is 1.4x bigger; the middle of the art stays on the corner itself (hatSpot works from the size)
 const HAT_SIZE = 48 * HAT_SCALE;
-const HAT_BIGGER: Record<string, number> = { cowboy: 1.3 / 1.2 / 1.1, ushanka: (1.3 * 1.2) / 1.1, crown1: 1 / 1.2, crown4: 1 / 1.2 }; // cowboy is 1.3x/1.2 = 1.083x bigger (was 1.3x, made 1.2x smaller); the star fur hat is another 1.3x bigger (on top of HAT_SCALE; the fur hat 1.2x more, then 1.1x smaller again); two crowns (hearts, blue stone) are 1.2x smaller
+const HAT_BIGGER: Record<string, number> = { clown: 1.2, cowboy: 1.3 / 1.2 / 1.1, ushanka: (1.3 * 1.2) / 1.1, crown1: 1 / 1.2, crown4: 1 / 1.2 }; // cowboy is 1.3x/1.2 = 1.083x bigger (was 1.3x, made 1.2x smaller); the star fur hat is another 1.3x bigger (on top of HAT_SCALE; the fur hat 1.2x more, then 1.1x smaller again); two crowns (hearts, blue stone) are 1.2x smaller
 // The pharaoh headdress is drawn already tilted about 30° clockwise, so it is turned 30° more the other way to sit symmetric on the corner diagonal, its opening facing the middle of the photo.
 const HAT_TURN: Record<string, number> = { pharaoh2: -30 };
 // The spring wreath and the pharaoh headdress sit further in, toward the middle of the photo (right and down): 7% is about 3.5 mm.
@@ -239,7 +239,7 @@ const CORNER_ALL_BY = 1.7; // every other gift on the bottom-right corner is 1.7
 // The pink-white, the red and the flaming heart stand together: all three have the visible art of the flaming heart (1.5x smaller than the other corner gifts) in the very same place,
 // 4 mm (8% of the photo width) further right than the frame edge line. Their picture boxes differ (the flaming heart is a small drawing in a big box), so size and place follow the visible art.
 // The flight reads the same spot, so it goes straight to where the gift stays.
-const SURPRISE_SHRINK = 1.8; // the clown in the box is 1.8x smaller than the other corner gifts and 3 mm (6% of the photo width) further right
+const SURPRISE_SHRINK = 1.8 / 1.2; // the clown in the box is 1.5x smaller (1.8x, then 1.2x bigger again) than the other corner gifts and 3 mm (6% of the photo width) further right
 const SURPRISE_SHIFT_RIGHT = 6;
 const HEART_TRIO = /^(heart1|heart2|heart3)$/;
 const HEART_SHRINK = 1.5;
