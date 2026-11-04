@@ -64,6 +64,10 @@ export type SpendDetail = {
 };
 export const adminSpendOverview = () => call<SpendRow[]>("admin_spend_overview");
 export const adminSpendUser = (user: string) => call<SpendDetail>("admin_spend_user", { p_user: user });
+export type DeletedAccount = { id: string; name: string; email: string; at: string; by: "self" | "admin"; byName: string };
+export type BannedAccount = { id: string; name: string; email: string; reason: string; until: string | null; at: string; byName: string };
+export const adminDeletedList = () => call<DeletedAccount[]>("admin_deleted_list");
+export const adminBannedList = () => call<BannedAccount[]>("admin_banned_list");
 export const setModerator = async (id: string, enabled: boolean) => (await call("admin_set_moderator", { target: id, enabled })) !== null;
 export async function grantCoins(id: string, amount: number): Promise<number | null> {
   const total = await call<number>("admin_grant_coins", { target: id, amount });

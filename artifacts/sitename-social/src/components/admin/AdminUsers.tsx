@@ -7,7 +7,7 @@ import { Palette, Eye, EyeOff, KeyRound, Award, HeartOff, Lock, LockOpen, Wine, 
 import { useSyncExternalStore } from "react";
 import { refreshVerified, verifiedStore } from "@/lib/verifiedSync";
 import { setUserPassword, banUser, deleteUser, fetchAdminUsers, fetchUserDetail, grantCoins, grantHearts, setModerator, setVerified, vipAll, vipCount, gesturesOpenGet, gesturesOpenSet, setNameColor, gameState, gameGrant, gameFlags, statFreezeGet, statFreezeSet, pageAllowGet, pageAllowSet, type PageAllow, giftAllowGet, giftAllowSet, type GiftAllow, type StatKind, type StatFreeze, type GameFlags, type GameState, type AdminUser, type UserDetail } from "@/lib/adminSync";
-import { adminRoomPass, adminRooms, adminSpendOverview, adminSpendUser, broadcastCount, broadcastSend, type AdminRoom, type SpendDetail, type SpendRow } from "@/lib/adminSync";
+import { adminBannedList, adminDeletedList, adminRoomPass, adminRooms, adminSpendOverview, adminSpendUser, broadcastCount, broadcastSend, type AdminRoom, type BannedAccount, type DeletedAccount, type SpendDetail, type SpendRow } from "@/lib/adminSync";
 import type { TranslationKey } from "@/i18n/LanguageProvider";
 import { initialsAvatar } from "@/lib/avatar";
 import { formatDay } from "@/lib/datetime";
@@ -153,6 +153,8 @@ export function AdminUsers({ owner }: { owner: boolean }) {
       <GesturesOpenCard />
       <RoomPassCard />
       <SpendCard />
+      <DeletedCard />
+      <BannedCard />
       {owner ? <BroadcastCard /> : null}
       <SearchInput value={query} onChange={setQuery} label={t(owner ? "admin.searchUsers" : "admin.searchUsersMod")} className="mb-4" />
       {failed ? <p role="alert" className="mb-3 rounded-xl border border-danger px-4 py-2.5 text-sm text-danger">{t("report.failed")}</p> : null}
@@ -617,5 +619,128 @@ function GamePanel({ id }: { id: string }) {
       <p className="text-[11px] leading-4 text-muted">{t("admin.gameHint")}</p>
       {note ? <p role="status" className={cn("text-xs font-semibold", note.ok ? "text-accent" : "text-danger")}>{note.text}</p> : null}
     </div>
+  );
+}
+
+const accountWords = {
+  az: {
+    delTitle: "Silinən hesablar", delText: "Admin tərəfindən və sahibi özü tərəfindən silinən profillər (ən son silinən yuxarıda).",
+    banTitle: "Bloklanan hesablar", banText: "Hazırda blokda olan profillər.",
+    all: "Hamısı", byAdmin: "Admin sildi", bySelf: "Özü sildi", search: "Ad və ya e-poçt", refresh: "Yenilə", loading: "Yüklənir…",
+    noDel: "Silinmiş hesab yoxdur.", noBan: "Blokda olan hesab yoxdur.", forever: "müddətsiz", until: "bitir", reason: "Səbəb", by: "Qoyan", admin: "Admin", self: "Özü", noName: "(adsız)", total: "Cəmi",
+  },
+  en: {
+    delTitle: "Deleted accounts", delText: "Profiles deleted by an admin or by the owner (latest first).",
+    banTitle: "Blocked accounts", banText: "Profiles that are blocked right now.",
+    all: "All", byAdmin: "Deleted by admin", bySelf: "Deleted by owner", search: "Name or e-mail", refresh: "Refresh", loading: "Loading…",
+    noDel: "No deleted accounts.", noBan: "No blocked accounts.", forever: "forever", until: "ends", reason: "Reason", by: "By", admin: "Admin", self: "Owner", noName: "(no name)", total: "Total",
+  },
+} as const;
+
+function formatWhen(value: string | null, locale: string): string {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleString(locale === "az" ? "az-AZ" : "en-GB", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
+function DeletedCard() {
+  const { locale } = useTranslation();
+  const w = locale === "az" ? accountWords.az : accountWords.en;
+  const [shownCard, setShownCard] = useState(false);
+  const [rows, setRows] = useState<DeletedAccount[] | null>(null);
+  const [kind, setKind] = useState<"all" | "admin" | "self">("all");
+  const [query, setQuery] = useState("");
+  const load = useCallback(() => void adminDeletedList().then((value) => { if (Array.isArray(value)) setRows(value); }), []);
+  // The list is fetched only when the card is opened.
+  useEffect(() => { if (shownCard) load(); }, [shownCard, load]);
+  const needle = query.trim().toLowerCase();
+  const shown = (rows ?? []).filter((row) => (kind === "all" || row.by === kind) && (!needle || `${row.name} ${row.email}`.toLowerCase().includes(needle)));
+  const tab = (value: "all" | "admin" | "self", label: string) => (
+    <button key={value} type="button" onClick={() => setKind(value)} className={cn("rounded-full border px-3 py-1 text-xs font-medium", kind === value ? "border-accent bg-accent text-white" : "border-border text-muted hover:text-text")}>{label}</button>
+  );
+  return (
+    <Card className="mb-4 p-4">
+      <button type="button" onClick={() => setShownCard((value) => !value)} aria-expanded={shownCard} className="flex w-full items-center gap-3 text-left">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-2 text-accent"><Trash2 size={20} /></span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold">{w.delTitle}</span>
+          <span className="mt-0.5 block text-xs leading-5 text-muted">{w.delText}</span>
+        </span>
+        <ChevronDown size={18} className={cn("shrink-0 text-muted transition-transform", shownCard && "rotate-180")} />
+      </button>
+      {shownCard ? (
+        <div className="mt-3">
+          <div className="flex flex-wrap gap-1.5">{tab("all", w.all)}{tab("admin", w.byAdmin)}{tab("self", w.bySelf)}</div>
+          <div className="mt-2 flex items-center gap-2">
+            <input value={query} onChange={(event) => setQuery(event.target.value.slice(0, 60))} placeholder={w.search} autoComplete="off" className="h-9 min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 text-sm outline-none focus:border-accent" />
+            <button type="button" onClick={load} className="h-9 shrink-0 rounded-lg border border-border px-3 text-xs font-medium text-muted hover:text-text">{w.refresh}</button>
+          </div>
+          {rows === null ? <p className="mt-3 text-xs text-muted">{w.loading}</p> : <p className="mt-3 text-xs text-muted">{w.total}: <b className="text-text">{shown.length}</b></p>}
+          {rows && !shown.length ? <p className="mt-2 text-xs text-muted">{w.noDel}</p> : null}
+          <ul className="mt-2 divide-y divide-border rounded-xl border border-border">
+            {shown.map((row) => (
+              <li key={row.id} className="px-3 py-2.5">
+                <div className="flex items-center gap-2">
+                  <span className="min-w-0 flex-1 truncate text-sm font-semibold">{row.name || w.noName}</span>
+                  <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium", row.by === "admin" ? "border border-danger text-danger" : "bg-surface-2 text-muted")}>
+                    {row.by === "admin" ? `${w.admin}${row.byName ? `: ${row.byName}` : ""}` : w.self}
+                  </span>
+                </div>
+                <p className="mt-0.5 truncate text-xs text-muted">{row.email || "—"}</p>
+                <p className="mt-0.5 text-[11px] text-muted">{formatWhen(row.at, locale)}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+    </Card>
+  );
+}
+
+function BannedCard() {
+  const { locale } = useTranslation();
+  const w = locale === "az" ? accountWords.az : accountWords.en;
+  const [shownCard, setShownCard] = useState(false);
+  const [rows, setRows] = useState<BannedAccount[] | null>(null);
+  const [query, setQuery] = useState("");
+  const load = useCallback(() => void adminBannedList().then((value) => { if (Array.isArray(value)) setRows(value); }), []);
+  useEffect(() => { if (shownCard) load(); }, [shownCard, load]);
+  const needle = query.trim().toLowerCase();
+  const shown = (rows ?? []).filter((row) => !needle || `${row.name} ${row.email}`.toLowerCase().includes(needle));
+  return (
+    <Card className="mb-4 p-4">
+      <button type="button" onClick={() => setShownCard((value) => !value)} aria-expanded={shownCard} className="flex w-full items-center gap-3 text-left">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-2 text-accent"><Ban size={20} /></span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold">{w.banTitle}</span>
+          <span className="mt-0.5 block text-xs leading-5 text-muted">{w.banText}</span>
+        </span>
+        <ChevronDown size={18} className={cn("shrink-0 text-muted transition-transform", shownCard && "rotate-180")} />
+      </button>
+      {shownCard ? (
+        <div className="mt-3">
+          <div className="flex items-center gap-2">
+            <input value={query} onChange={(event) => setQuery(event.target.value.slice(0, 60))} placeholder={w.search} autoComplete="off" className="h-9 min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 text-sm outline-none focus:border-accent" />
+            <button type="button" onClick={load} className="h-9 shrink-0 rounded-lg border border-border px-3 text-xs font-medium text-muted hover:text-text">{w.refresh}</button>
+          </div>
+          {rows === null ? <p className="mt-3 text-xs text-muted">{w.loading}</p> : <p className="mt-3 text-xs text-muted">{w.total}: <b className="text-text">{shown.length}</b></p>}
+          {rows && !shown.length ? <p className="mt-2 text-xs text-muted">{w.noBan}</p> : null}
+          <ul className="mt-2 divide-y divide-border rounded-xl border border-border">
+            {shown.map((row) => (
+              <li key={row.id} className="px-3 py-2.5">
+                <div className="flex items-center gap-2">
+                  <span className="min-w-0 flex-1 truncate text-sm font-semibold">{row.name || w.noName}</span>
+                  <span className="shrink-0 rounded-full border border-danger px-2 py-0.5 text-[11px] font-medium text-danger">{row.until ? `${w.until}: ${formatWhen(row.until, locale)}` : w.forever}</span>
+                </div>
+                <p className="mt-0.5 truncate text-xs text-muted">{row.email || "—"}</p>
+                {row.reason ? <p className="mt-0.5 text-xs">{w.reason}: <span className="text-muted">{row.reason}</span></p> : null}
+                <p className="mt-0.5 text-[11px] text-muted">{row.byName ? `${w.by}: ${row.byName} · ` : ""}{formatWhen(row.at, locale)}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+    </Card>
   );
 }
