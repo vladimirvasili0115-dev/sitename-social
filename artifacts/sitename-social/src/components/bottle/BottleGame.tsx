@@ -100,7 +100,7 @@ const bots: Omit<Player, "avatar">[] = [
 ];
 const smallTalk = ["Salam hamıya 👋", "Bu gün bəxtim gətirir 😄", "Kim fırladır?", "Çay içən var? ☕", "Hahaha", "Bir də fırlat!", "Bakıdan kim var?", "Gecəniz xeyrə 🌙"];
 const giftChoices: [string, number][] = [
-  ["song:video", 9], ["song:mp3", 5], ["e:🤴", 3], ["e:👸", 3], ["e:🧸", 1], ["e:🦋", 5], ["e:🎀", 5], ["e:🌸", 5],
+  ["song:video", 9], ["song:mp3", 5], ["e:🎀", 5], ["e:🌸", 5],
 ];
 // The wheel of fortune: 16 sectors clockwise from the top. The database does the real draw with its own odds; the weights here are only used by the offline demo.
 const wheelSectors: { hearts?: number; chances?: number; kisses?: number; smiles?: number; weight: number }[] = [
@@ -141,7 +141,7 @@ const GIFT_PINNED_RANK = new Map<string, number>([
   "c:eggplant", "c:labubu2", "c:labubu3", "c:peach", "c:pepper2", "c:pepper3", "c:polaroid1",
 ].map((id, index) => [id, index - 500] as [string, number]));
 const lockedGifts: [string, number, number][] = [
-  ["e:👒", 5, 1000], ["e:🗿", 5, 7000], ["e:🪭", 5, 23000], ["e:🧿", 5, 23000], ["e:🦚", 5, 23000], ["e:💌", 5, 40000], ["e:🐓", 5, -1],
+  ["e:👒", 5, 1000], ["e:🗿", 5, 7000], ["e:🪭", 5, 23000],
 ];
 // Gifts that are worn on the head sit tilted on the top corner of the photo; everything else stands at the bottom.
 // Drinks pay the receiver +1 heart (the server does it); the receiver's photo shows a "+1" burst.
