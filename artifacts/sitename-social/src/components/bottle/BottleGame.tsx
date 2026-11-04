@@ -194,7 +194,7 @@ const HAT_TURN: Record<string, number> = { pharaoh2: -30 };
 // Every cap (supermecap, kingcap, bosscap ... and the two baseball caps) sits 10% (about 5 mm) further in, so it sits on the corner of the photo and not mostly beside it.
 const CAP_NAME = /^(\w*cap|baseballa\w)$/;
 const CAP_NUDGE = 10;
-const HAT_NUDGE: Record<string, [number, number]> = { springwreath: [14, 14], pharaoh2: [7, 7], ushanka: [8, 8] };
+const HAT_NUDGE: Record<string, [number, number]> = { springwreath: [14, 14], pharaoh2: [7, 7], ushanka: [8, 8], noteshatw: [8, 8], noteshatb: [8, 8] };
 function hatSpot(name: string): { x: number; y: number; s: number; a: number } {
   const size = HAT_SIZE * (HAT_BIGGER[name] ?? 1);
   const box = artBox(name, false);
