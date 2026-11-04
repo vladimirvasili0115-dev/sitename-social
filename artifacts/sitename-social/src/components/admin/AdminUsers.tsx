@@ -3,7 +3,7 @@ import { formatManat } from "@/components/gifts/Price";
 import { VerifiedMark } from "@/components/ui/VerifiedMark";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { Palette, Eye, EyeOff, KeyRound, Award, HeartOff, Lock, LockOpen, Wine, FileText, BadgeCheck, Ban, ChevronDown, Coins, Crown, Gamepad2, Heart, ShieldCheck, ShieldOff, Trash2, Undo2 } from "lucide-react";
+import { Palette, Eye, EyeOff, KeyRound, HeartOff, Lock, LockOpen, Wine, FileText, BadgeCheck, Ban, ChevronDown, Coins, Crown, Gamepad2, Heart, ShieldCheck, ShieldOff, Trash2, Undo2 } from "lucide-react";
 import { useSyncExternalStore } from "react";
 import { refreshVerified, verifiedStore } from "@/lib/verifiedSync";
 import { setUserPassword, banUser, deleteUser, fetchAdminUsers, fetchUserDetail, grantCoins, grantHearts, setModerator, setVerified, vipAll, vipCount, gesturesOpenGet, gesturesOpenSet, setNameColor, gameState, gameGrant, gameFlags, statFreezeGet, statFreezeSet, pageAllowGet, pageAllowSet, type PageAllow, giftAllowGet, giftAllowSet, type GiftAllow, type StatKind, type StatFreeze, type GameFlags, type GameState, type AdminUser, type UserDetail } from "@/lib/adminSync";
@@ -183,7 +183,6 @@ export function AdminUsers({ owner }: { owner: boolean }) {
                   <div className="mt-3 flex flex-wrap gap-2">
                     {owner ? <button disabled={locked} onClick={() => { setGrantKind("coins"); setCoinsFor(coinsFor === user.id && grantKind === "coins" ? null : user.id); setAmount("1"); }} className={action}><Coins size={14} />{t("admin.coins")}</button> : null}
                     <button disabled={locked} onClick={() => void toggleGame(user.id, "vip", Boolean(flags[user.id]?.vip))} className={cn(action, flags[user.id]?.vip ? "border-[#D97706] text-[#D97706]" : "")}><Crown size={14} />{t(flags[user.id]?.vip ? "admin.vipOff" : "admin.vipOn")}</button>
-                    <button disabled={locked} onClick={() => void toggleGame(user.id, "top", Boolean(flags[user.id]?.top))} className={cn(action, flags[user.id]?.top ? "border-[#CA8A04] text-[#CA8A04]" : "")}><Award size={14} />{t(flags[user.id]?.top ? "admin.topOff" : "admin.topOn")}</button>
                     <button disabled={locked} onClick={() => void run(user.id, async () => (await gameGrant(user.id, "admire_block", flags[user.id]?.block ? 0 : 1)) !== null)} className={cn(action, flags[user.id]?.block ? "border-danger text-danger" : "")}><HeartOff size={14} />{t(flags[user.id]?.block ? "admin.admireUnblock" : "admin.admireBlock")}</button>
                     {([["kisses", "Öpüş"], ["songs", "Musiqi"], ["smiles", "Smayl"], ["admire", "Uxaj"]] as [StatKind, string][]).map(([kind, label]) => { const on = Boolean(frozen[user.id]?.[kind]); return <button key={kind} disabled={locked} onClick={() => void toggleFreeze(user.id, kind, on)} className={cn(action, on ? "border-danger text-danger" : "")}>{on ? <LockOpen size={14} /> : <Lock size={14} />}{`${label} ${on ? "dondurulub (aç)" : "dondur"}`}</button>; })}
                     {(() => { const on = Boolean(pageOk[user.id]); return <button disabled={locked} onClick={() => void togglePage(user.id, on)} className={cn(action, on ? "border-accent text-accent" : "")}><FileText size={14} />{on ? "Səhifə icazəli (al)" : "Səhifə açmağa icazə ver"}</button>; })()}
@@ -612,7 +611,6 @@ function GamePanel({ id }: { id: string }) {
       {amountRow("smiles", t("admin.bonus_smiles"), data?.smiles, "#FC8300")}
       {days("vip", [1, 7, 30, 365], data?.vip_until ?? null, "#D97706")}
       {days("plus", [1, 7, 30, 365], data?.plus_until ?? null, "#7C3AED")}
-      {days("top", [1, 7, 30], data?.top_until ?? null, "#CA8A04")}
       {amountRow("dj", t("admin.gameDj"), data?.dj, "#B45D8C")}
       {amountRow("chances", t("admin.gameChances"), data?.chances, "#12998C")}
       {amountRow("kiss_fire", t("admin.gameFire"), data?.kiss_fire, "#E2401F")}

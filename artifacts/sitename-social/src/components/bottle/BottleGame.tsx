@@ -1768,9 +1768,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     return () => { alive = false; window.clearInterval(timer); };
   }, [online]);
   const topIds = new Set(seated.map((player) => ({ id: player.id, count: kisses[player.id] ?? 0 })).filter((item) => item.count > 0).sort((a, b) => b.count - a.count).slice(0, 3).map((item) => item.id));
-  // A TOP badge given in the admin panel shows as well.
-  // Online the TOP and VIP ribbons are the ones given in the admin panel; taking them back removes them.
-  if (online) { topIds.clear(); for (const player of seated) if (net?.seats.find((seat) => seat.id === (player.me ? net.me : player.id))?.top || autoTop.has(player.me ? net?.me ?? "" : player.id)) topIds.add(player.id); }
+  // Online the TOP ribbon is automatic only: the first 10 of the all-time ratings (kisses, music, hearts, harem, smiles). The admin panel cannot give it any more.
+  if (online) { topIds.clear(); for (const player of seated) if (autoTop.has(player.me ? net?.me ?? "" : player.id)) topIds.add(player.id); }
   const skinFilter = (n: number) => (n % 15 ? `hue-rotate(${(n % 15) * 24}deg) saturate(${n % 3 === 0 ? 1.4 : 1.1})` : undefined);
   const art = useCustomArt();
   // Picture of a flying gift for the canvas (null: drawn as before, e.g. the few vector gifts).
@@ -3029,7 +3028,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
               <span className="sr-only">{t(`bottle.${key}` as "bottle.price")}</span>
             </div>
           );
-          const outTop = outside && online && (autoTop.has(player.id) || (outBadges?.id === player.id && outBadges.top));
+          const outTop = outside && online && autoTop.has(player.id);
           const outVip = outside && online && outBadges?.id === player.id && outBadges.vip;
           const showTop = topIds.has(player.id) || outTop;
           const labels = [showTop ? "label_top_gold.svg" : null, !showTop && ((online ? seat?.vip_badge : player.me && vip) || outVip) ? "label_vip.svg" : null].filter((item): item is string => Boolean(item));
