@@ -3,7 +3,7 @@ import { rpcEnd, rpcStart } from "./rpcTiming";
 import { flashRefusal } from "./flash";
 
 // Live tables of the bottle game. The database owns the game: seats, turns, where the bottle stops, answers and kisses.
-export type BottleSeat = { seat: number; id: string; name: string | null; avatar: string | null; gender: string | null; kisses: number; total?: number; smiles?: number; songs?: number; zodiac?: number | null; age: number | null; status?: string | null; frame?: number; pass?: boolean; top?: boolean; vip_badge?: boolean; kicked?: { by: string; at: number } | null; admirer?: { id: string; name: string | null; avatar: string | null; amount: number } | null };
+export type BottleSeat = { seat: number; id: string; name: string | null; avatar: string | null; gender: string | null; kisses: number; total?: number; smiles?: number; songs?: number; zodiac?: number | null; age: number | null; status?: string | null; frame?: number; pass?: boolean; top?: boolean; vip_badge?: boolean; kicked?: { by: string; at: number }; muted?: boolean | null; admirer?: { id: string; name: string | null; avatar: string | null; amount: number } | null };
 export type BottleChat = { id: number; from: string | null; to: string | null; kind: "text" | "kiss" | "wheel" | "song" | "gift" | "admire" | "admire_lost" | "kick" | "saved" | "kicked" | "compliment" | "bottle" | "gesture" | "booster"; body: string | null; seed?: number | null };
 export type BottleState = {
   session?: string | null;
@@ -11,7 +11,7 @@ export type BottleState = {
   phase: "waiting" | "spinning" | "choice" | "result"; phase_at: number;
   turn: string | null; target: string | null; spinner_answer: boolean | null; target_answer: boolean | null; round: number;
   seats: BottleSeat[]; chat: BottleChat[];
-  wheel?: boolean; skin?: number; track?: BottleTrack | null; vip?: boolean; frames?: number[]; active?: { secs: number; claimed: number } | null; compliments?: number; room?: { name: string; capacity: number; owner: string } | null;
+  wheel?: boolean; skin?: number; track?: BottleTrack | null; vip?: boolean; frames?: number[]; active?: { secs: number; claimed: number } | null; compliments?: number; room?: { name: string; capacity: number; owner: string }; plus?: { owner: string; color: string | null; locked: boolean } | null; is_plus?: boolean; muted?: boolean | null;
 };
 export type BottleTrack = { kind: "youtube" | "mp3"; ref: string; title: string | null; by: string | null; to: string | null; at: number };
 async function call<T>(name: string, args?: Record<string, unknown>): Promise<T | null> {
@@ -54,10 +54,18 @@ export const bottleSmiles = () => call<number>("bottle_smiles");
 export const bottleBuySmiles = (pack: number) => call<{ hearts: number; smiles: number } | null>("bottle_buy_smiles", { p_pack: pack });
 export const bottleWheel = () => call<{ sector: number; hearts: number; chances: number }>("bottle_wheel_spin");
 export const bottleSong = (to: string, kind: "video" | "mp3") => call<number>("bottle_song", { p_to: to, p_kind: kind });
-export type BottleTables = { tables: { id: number; boys: number; girls: number; ban?: number | null }[]; friends: { id: string; name: string | null; avatar: string | null; table: number; friend?: boolean }[] };
-export type BottleMove = { table?: number; full?: boolean; position?: number; gone?: boolean; banned?: boolean };
+export type BottleTables = { tables: { id: number; boys: number; girls: number; ban?: number | null; plus?: boolean; color?: string | null; lock?: boolean }[]; friends: { id: string; name: string | null; avatar: string | null; table: number; friend?: boolean }[] };
+export type BottleMove = { table?: number; full?: boolean; position?: number; gone?: boolean; banned?: boolean; password?: boolean };
 export const bottleTables = () => call<BottleTables>("bottle_tables_list");
-export const bottleMove = (table: number | null) => call<BottleMove>("bottle_move", { p_table: table });
+export const bottleMove = (table: number | null, password?: string) => call<BottleMove>("bottle_move", password ? { p_table: table, p_password: password } : { p_table: table });
+// VIP+: own tables (own number, password, number colour), muting players in own table, own name colour. Needs paket-GC.sql.
+export type PlusCreate = { table?: number; error?: "plus" | "num" | "has" | "taken" };
+export const bottlePlusCreate = (num: number, password: string) => call<PlusCreate>("bottle_plus_create", { p_num: num, p_password: password });
+export const bottlePlusPass = (password: string) => call<boolean>("bottle_plus_pass", { p_password: password });
+export const bottlePlusNumColor = (color: string) => call<boolean>("bottle_plus_numcolor", { p_color: color });
+export const bottlePlusNameColor = (color: string) => call<boolean>("bottle_plus_name_color", { p_color: color });
+export const bottlePlusMute = (user: string, on: boolean) => call<boolean>("bottle_plus_mute", { p_user: user, p_on: on });
+export const bottleUnmuteSelf = () => call<"ok" | "bad" | "plus" | "hearts">("bottle_unmute_self");
 // After a dropped connection: back to the last table (or its queue) for 5 minutes.
 export const bottleRejoin = () => call<BottleMove | null>("bottle_rejoin");
 export const bottleQueueLeave = () => call<null>("bottle_queue_leave");

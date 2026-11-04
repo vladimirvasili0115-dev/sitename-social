@@ -32,7 +32,7 @@ export async function fetchIsOwner(): Promise<boolean> {
   return (await call<boolean>("is_owner")) === true;
 }
 // One player's game state and grants (owner and moderators): hearts, VIP and TOP days, DJ score, chances, boosters.
-export type GameState = { hearts: number; kisses?: number; smiles?: number; dj: number; chances: number; vip_until: string | null; top_until: string | null; kiss_fire: number; refuse_slap: number };
+export type GameState = { plus_until?: string | null; hearts: number; kisses?: number; smiles?: number; dj: number; chances: number; vip_until: string | null; top_until: string | null; kiss_fire: number; refuse_slap: number };
 export type GameFlags = { vip: boolean; top: boolean; block?: boolean; price?: number; influence?: number; hearts?: number; kisses?: number; songs?: number; smiles?: number };
 export const gameFlags = (ids: string[]) => call<Record<string, GameFlags>>("admin_game_flags", { ids });
 export type StatKind = "songs" | "kisses" | "smiles" | "admire";
@@ -43,14 +43,14 @@ export type GiftAllow = Record<string, Record<string, boolean>>;
 export const giftAllowGet = (ids: string[]) => call<GiftAllow>("admin_gift_allow_get", { ids });
 export const giftAllowSet = (id: string, gift: string, on: boolean) => call<boolean>("admin_gift_allow", { target: id, p_gift: gift, p_on: on });
 export const gameState = (id: string) => call<GameState>("admin_game_state", { target: id });
-export const gameGrant = (id: string, kind: "vip" | "top" | "price" | "influence" | "admire_block" | "dj" | "kisses" | "smiles" | "chances" | "kiss_fire" | "refuse_slap", amount: number) => call<GameState>("admin_game_grant", { target: id, p_kind: kind, amount });
+export const gameGrant = (id: string, kind: "vip" | "top" | "plus" | "price" | "influence" | "admire_block" | "dj" | "kisses" | "smiles" | "chances" | "kiss_fire" | "refuse_slap", amount: number) => call<GameState>("admin_game_grant", { target: id, p_kind: kind, amount });
 // VIP for every player at once (owner and moderators); days are added on top of any VIP someone already has.
 export const vipAll = (days: number) => call<number>("admin_vip_all", { p_days: days });
 // All smileys unlocked for everyone (on) or back to the normal unlock rules (off).
 export const gesturesOpenGet = () => call<boolean>("bottle_gestures_open");
 export const gesturesOpenSet = (on: boolean) => call<boolean>("admin_gestures_open_set", { p_on: on });
 export const setNameColor = (id: string, color: string) => call<boolean>("admin_name_color_set", { target: id, p_color: color });
-export const vipCount = () => call<{ vip: number; total: number }>("admin_vip_count");
+export const vipCount = () => call<{ vip: number; plus?: number; total: number }>("admin_vip_count");
 // Private (VIP) bottle rooms: the old password cannot be read (only a hash is stored); the admin sets a new one, or an empty one to open the room. Needs paket-FF.sql.
 export type AdminRoom = { id: number; name: string | null; capacity: number; locked: boolean; owner: string | null; seated: number };
 export const adminRooms = () => call<AdminRoom[]>("admin_bottle_rooms");

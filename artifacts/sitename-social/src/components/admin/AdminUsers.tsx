@@ -397,7 +397,7 @@ function VipAllCard() {
   const [sure, setSure] = useState(false);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
-  const [count, setCount] = useState<{ vip: number; total: number } | null>(null);
+  const [count, setCount] = useState<{ vip: number; plus?: number; total: number } | null>(null);
   const loadCount = useCallback(() => void vipCount().then((value) => { if (value && typeof value === "object") setCount(value); }), []);
   useEffect(() => { loadCount(); }, [loadCount]);
   async function give() {
@@ -416,7 +416,7 @@ function VipAllCard() {
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold">{t("admin.vipAllTitle")}</p>
           <p className="mt-0.5 text-xs leading-5 text-muted">{t("admin.vipAllText")}</p>
-          {count ? <p className="mt-1 text-xs text-muted">{t("admin.vipNow").replace("{vip}", String(count.vip)).replace("{total}", String(count.total))}</p> : null}
+          {count ? <p className="mt-1 text-xs text-muted">{t("admin.vipNow").replace("{vip}", String(count.vip)).replace("{total}", String(count.total))}{typeof count.plus === "number" ? ` · VIP+: ${count.plus}` : ""}</p> : null}
         </div>
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -588,9 +588,9 @@ function GamePanel({ id }: { id: string }) {
     if (fresh && typeof fresh === "object") setData(fresh);
   }
   const day = (value: string | null) => (value ? new Date(value).toLocaleDateString() : null);
-  const days = (kind: "vip" | "top", list: number[], until: string | null, color: string) => (
+  const days = (kind: "vip" | "top" | "plus", list: number[], until: string | null, color: string) => (
     <div className="flex flex-wrap items-center gap-1.5">
-      <span className="w-20 shrink-0 text-xs font-semibold" style={{ color }}>{kind === "vip" ? "VIP" : "TOP"}</span>
+      <span className="w-20 shrink-0 text-xs font-semibold" style={{ color }}>{kind === "vip" ? "VIP" : kind === "plus" ? "VIP+" : "TOP"}</span>
       <span className="min-w-[110px] text-[11px] text-muted">{until ? t("admin.gameUntil").replace("{d}", day(until) ?? "") : t("admin.gameNone")}</span>
       {list.map((n) => <button key={n} type="button" disabled={busy} onClick={() => void apply(() => gameGrant(id, kind, n))} className="h-8 rounded-full border border-border px-2.5 text-[11px] font-semibold text-text hover:bg-surface-2 disabled:opacity-50">+{t("admin.vipDays").replace("{n}", String(n))}</button>)}
       {until ? <button type="button" disabled={busy} onClick={() => void apply(() => gameGrant(id, kind, 0))} className="h-8 rounded-full border border-danger px-2.5 text-[11px] font-semibold text-danger hover:bg-surface-2 disabled:opacity-50">{t("admin.gameRemove")}</button> : null}
@@ -611,6 +611,7 @@ function GamePanel({ id }: { id: string }) {
       {amountRow("kisses", t("admin.bonus_kisses"), data?.kisses, "#DB3100")}
       {amountRow("smiles", t("admin.bonus_smiles"), data?.smiles, "#FC8300")}
       {days("vip", [1, 7, 30, 365], data?.vip_until ?? null, "#D97706")}
+      {days("plus", [1, 7, 30, 365], data?.plus_until ?? null, "#7C3AED")}
       {days("top", [1, 7, 30], data?.top_until ?? null, "#CA8A04")}
       {amountRow("dj", t("admin.gameDj"), data?.dj, "#B45D8C")}
       {amountRow("chances", t("admin.gameChances"), data?.chances, "#12998C")}
