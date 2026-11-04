@@ -191,6 +191,9 @@ const HAT_BIGGER: Record<string, number> = { cowboy: 1.3, ushanka: (1.3 * 1.2) /
 // The pharaoh headdress is drawn already tilted about 30° clockwise, so it is turned 30° more the other way to sit symmetric on the corner diagonal, its opening facing the middle of the photo.
 const HAT_TURN: Record<string, number> = { pharaoh2: -30 };
 // The spring wreath and the pharaoh headdress sit further in, toward the middle of the photo (right and down): 7% is about 3.5 mm.
+// Every cap (supermecap, kingcap, bosscap ... and the two baseball caps) sits 10% (about 5 mm) further in, so it sits on the corner of the photo and not mostly beside it.
+const CAP_NAME = /^(\w*cap|baseballa\w)$/;
+const CAP_NUDGE = 10;
 const HAT_NUDGE: Record<string, [number, number]> = { springwreath: [14, 14], pharaoh2: [7, 7], ushanka: [8, 8] };
 function hatSpot(name: string): { x: number; y: number; s: number; a: number } {
   const size = HAT_SIZE * (HAT_BIGGER[name] ?? 1);
@@ -198,7 +201,7 @@ function hatSpot(name: string): { x: number; y: number; s: number; a: number } {
   const dx = box ? ((box.l + box.r) / 2 - 0.5) * size : 0, dy = box ? ((box.t + box.b) / 2 - 0.5) * size : 0;
   const a = -45 + (HAT_TURN[name] ?? 0), rad = (a * Math.PI) / 180;
   const rx = dx * Math.cos(rad) - dy * Math.sin(rad), ry = dx * Math.sin(rad) + dy * Math.cos(rad); // where that middle ends up after the turn (-45° for the other hats)
-  const nudge = HAT_NUDGE[name] ?? [0, 0];
+  const nudge = HAT_NUDGE[name] ?? (CAP_NAME.test(name) ? [CAP_NUDGE, CAP_NUDGE] : [0, 0]);
   return { x: -rx - size / 2 + nudge[0], y: -ry - size / 2 + nudge[1], s: size, a };
 }
 // Drinks and other corner gifts stand on the bottom-right edge of the frame: the picture's left edge is 10% inside the frame, its bottom just below it.
