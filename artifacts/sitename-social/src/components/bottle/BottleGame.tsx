@@ -40,7 +40,7 @@ import { refreshFriends } from "@/lib/friendsSync";
 import { ensureMessagesLoaded, openRemoteChat, remoteChats, sendRemoteMessage } from "@/lib/messagesSync";
 import { uploadBlob } from "@/lib/media";
 import { refreshGifts } from "@/lib/giftsSync";
-import { bottleSeek, bottleLogIp, bottleAdminIpLookup, type BottleIpRow, bottleAnswer, bottleAchSync, bottleAchView, bottleGesture, bottleSmiles, bottleBuyHearts, bottleGiftAllow, bottleBuySmiles, bottleProgress, bottleGesturesOpen, bottleSkin, bottleBadges, bottleGetAccept, bottleSetAccept, bottleBuyChances, bottleJoin, bottleMove, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleProfile, type BottleProfile, bottleDaily, bottleItems, bottleItemBuy, bottleBooster, bottleTutorial, bottleAdminIds, type BottleItems, bottleLeagueInfo, bottleLeagueClaim, type BottleLeague, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleKickPrice, bottleKickDefendPrice, bottlePlusCreate, bottlePlusPass, bottlePlusNumColor, bottlePlusNameColor, bottlePlusMute, bottleUnmuteSelf, bottleGift, bottleGiftMany, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, bottleClaim, type BottleState, type BottleSeat, bottleEffectOf, bottleYtGet, bottleYtPut, bottleTableGifts, type BottleSeatGift } from "@/lib/bottleSync";
+import { bottleSeek, bottleLogIp, bottleAdminIpLookup, type BottleIpRow, bottleAnswer, bottleAchSync, bottleAchView, bottleGesture, bottleSmiles, bottleBuyHearts, bottleGiftAllow, bottleBuySmiles, bottleProgress, bottleGesturesOpen, bottleSkin, bottleBadges, bottleGetAccept, bottleSetAccept, bottleBuyChances, bottleJoin, bottleMove, bottleMoveWaitStart, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleProfile, type BottleProfile, bottleDaily, bottleItems, bottleItemBuy, bottleBooster, bottleTutorial, bottleAdminIds, type BottleItems, bottleLeagueInfo, bottleLeagueClaim, type BottleLeague, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleKickPrice, bottleKickDefendPrice, bottlePlusCreate, bottlePlusPass, bottlePlusNumColor, bottlePlusNameColor, bottlePlusMute, bottleUnmuteSelf, bottleGift, bottleGiftMany, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, bottleClaim, type BottleState, type BottleSeat, bottleEffectOf, bottleYtGet, bottleYtPut, bottleTableGifts, type BottleSeatGift } from "@/lib/bottleSync";
 import { ytHint, ytReason } from "./ytHints";
 import { WeeklyPanel, WeekPrizePopup } from "./WeeklyTop";
 import { BonusMarket, EnigmaEffect, arrivalLabel, marketLabel } from "./BonusMarket";
@@ -1259,6 +1259,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         // Coming (back) into a room — first load, another table, a re-join or a long pause — starts clean:
         // gifts sent before you came in do not fly in and do not sit on the photos.
         const entered = !primed.current || syncTable.current !== data.table;
+        // Coming into the game or into another table: the 8-second wait before the next table change starts (unless it is already running).
+        if (entered && !iAmAdmin && Date.now() >= moveUntil.current) void bottleMoveWaitStart().then((left) => { if (typeof left === "number" && left > 0 && Date.now() >= moveUntil.current) startMoveWait(Math.min(8, left)); });
         const first = entered || rejoined || Date.now() - lastPullAt.current > 15000;
         primed.current = true;
         syncTable.current = data.table;
@@ -3587,7 +3589,6 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                       </div>
                     ) : null}
                     {roomNote ? <p role="status" className="mb-2 rounded-lg bg-[#FEE2E2] p-2 text-center text-xs font-semibold text-[#991B1B]">{t("bottle.roomGone")}</p> : null}
-                    {moveLeft > 0 ? <div role="status" aria-label={`${moveLeft}`} className="mb-2 flex justify-center rounded-xl bg-[#FEF3C7] p-2"><span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#EE8A2B] text-xl font-black tabular-nums text-white">{moveLeft}</span></div> : null}
                     {passAsk ? (
                       <form onSubmit={(event) => { event.preventDefault(); if (passTry) void moveTo(passAsk.table, passTry); }} className="mb-2 rounded-xl border border-[#F5C451] bg-[#FEF3C7] p-2.5 text-[#92400E]">
                         <p className="text-xs font-semibold">🔒 {t("bottle.plusPassAsk").replace("{n}", tableLabel(passAsk.table))}{passAsk.wrong ? <span className="block text-[#B91C1C]">{t("bottle.plusPassWrong")}</span> : null}</p>
