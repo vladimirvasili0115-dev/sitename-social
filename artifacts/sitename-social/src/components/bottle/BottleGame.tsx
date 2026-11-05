@@ -895,7 +895,11 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [roomTab, setRoomTab] = useState<"list" | "create">("list");
   const [showPass, setShowPass] = useState(false);
   const [rooms, setRooms] = useState<BottleTables | null>(null);
-  const [stayed, setStayed] = useState<number[]>([]); // empty tables where I sat at least 3 minutes in this visit: they stay in my table list
+  // Empty tables where I sat at least 3 minutes stay in my table list for 6 hours (table id -> time it expires), kept on this device.
+  const [stayed, setStayed] = useState<Record<number, number>>(() => {
+    try { const saved = JSON.parse(window.localStorage.getItem("bottle-stayed") ?? "{}") as Record<string, number>; return Object.fromEntries(Object.entries(saved).filter(([, until]) => until > Date.now()).map(([id, until]) => [Number(id), until])); } catch { return {}; }
+  });
+  const randomSeen = useRef<Set<number>>(new Set()); // tables the "random table" button already took me to in this visit
   const [waitFor, setWaitFor] = useState<{ table: number; position: number; back?: boolean } | null>(null);
   // While I stand in the queue of another (full) table I am in no table at all: the sync finds no seat, and this must not throw me back into some table.
   const queueing = useRef(false);
@@ -1589,6 +1593,21 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     return () => window.clearInterval(timer);
   }, [panel, online]);
   function leaveRoom() { void moveTo(null); }
+  // "Random table": first the tables with people I have not been to yet, then the empty tables that are not in my list, one after another; with none left, the server picks (or makes) a table as before.
+  function randomTable() {
+    const all = rooms?.tables ?? [];
+    if (!all.length || (online && !iAmAdmin && Date.now() < moveUntil.current)) return void moveTo(null);
+    const seen = randomSeen.current;
+    if (net?.table) seen.add(net.table);
+    const free = all.filter((room) => !room.lock && !room.ban && !seen.has(room.id));
+    const people = (room: (typeof all)[number]) => room.boys + room.girls;
+    const busy = free.filter((room) => people(room) > 0 && people(room) < 12);
+    const hidden = free.filter((room) => people(room) === 0 && !room.plus && !((stayed[room.id] ?? 0) > Date.now())).sort((a, b) => shownTable(a.id) - shownTable(b.id) || a.id - b.id);
+    const next = busy.length ? busy[Math.floor(Math.random() * busy.length)] : hidden[0];
+    if (!next) { seen.clear(); return void moveTo(null); }
+    seen.add(next.id);
+    void moveTo(next.id);
+  }
   async function deleteRoom() {
     if (!window.confirm(t("bottle.roomDeleteAsk"))) return;
     const result = await bottleRoomDelete();
@@ -1676,7 +1695,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   }, [waitTable]);
   useEffect(() => { if (online) void bottleGiftShare().then((share) => { if (share && typeof share.pct === "number") giftShare.current = share; }); }, [online]);
   const liveTable = net?.table;
-  useEffect(() => { if (!liveTable) return; const id = liveTable; const timer = window.setTimeout(() => setStayed((list) => (list.includes(id) ? list : [...list, id])), 180000); return () => window.clearTimeout(timer); }, [liveTable]);
+  useEffect(() => { if (!liveTable) return; const id = liveTable; const timer = window.setTimeout(() => setStayed((list) => { const next = { ...list, [id]: Date.now() + 6 * 3600 * 1000 }; try { window.localStorage.setItem("bottle-stayed", JSON.stringify(next)); } catch { /* storage is blocked */ } return next; }), 180000); return () => window.clearTimeout(timer); }, [liveTable]);
   // A new table or room starts clean: gifts that sat on the photos at the old table do not come along.
   // Every table has its own music: moving to another table stops the song of the old one and plays the new table's song (if any).
   useEffect(() => { tableGen.current += 1; setFlying([]); setBursts([]); setShows([]); setStickers({}); setSpots({}); setPiles({}); setScatters([]); setVideo(null); setAudio(null); trackAt.current = 0; }, [liveTable]);
@@ -3596,7 +3615,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 let recent: number[] = [];
                 try { recent = JSON.parse(window.localStorage.getItem("bottle-tables") ?? "[]") as number[]; } catch { /* storage is blocked */ }
                 const list = rooms?.tables ?? [];
-                const ordered = list.filter((room) => room.boys + room.girls > 0 || room.plus || room.id === net?.table || stayed.includes(room.id)).sort((a, b) => (recent.indexOf(a.id) < 0 ? 99 : recent.indexOf(a.id)) - (recent.indexOf(b.id) < 0 ? 99 : recent.indexOf(b.id)) || shownTable(a.id) - shownTable(b.id) || a.id - b.id);
+                const ordered = list.filter((room) => room.boys + room.girls > 0 || room.plus || room.id === net?.table || (stayed[room.id] ?? 0) > Date.now()).sort((a, b) => (recent.indexOf(a.id) < 0 ? 99 : recent.indexOf(a.id)) - (recent.indexOf(b.id) < 0 ? 99 : recent.indexOf(b.id)) || shownTable(a.id) - shownTable(b.id) || a.id - b.id);
                 const counts = (id: number) => { const room = list.find((item) => item.id === id); return room ? <span className="flex shrink-0 items-center gap-2 text-xs tabular-nums text-[#6B7280]"><span title={t("auth.male")} className="flex items-center gap-1"><img src="/custom/ui/sex-male.webp" alt="" aria-hidden="true" draggable={false} className="h-[15px] w-auto" />{room.boys}</span><span title={t("auth.female")} className="flex items-center gap-1"><img src="/custom/ui/sex-female.webp" alt="" aria-hidden="true" draggable={false} className="h-[15px] w-auto" />{room.girls}</span></span> : null; };
                 return (
                   <div className="max-h-[80cqmin] overflow-y-auto text-[#1F2937]">
@@ -3616,7 +3635,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                         </div>
                       </form>
                     ) : null}
-                    <button onClick={() => void moveTo(null)} className="h-11 w-full rounded-xl bg-[#EE8A2B] text-sm font-bold text-white hover:brightness-110">{t("bottle.roomRandom")}</button>
+                    <button onClick={randomTable} className="h-11 w-full rounded-xl bg-[#EE8A2B] text-sm font-bold text-white hover:brightness-110">{t("bottle.roomRandom")}</button>
                     {net?.is_plus ? <button onClick={() => { setPlusNote(null); setPanel("plus"); }} className="mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-xl border-2 border-[#7C3AED] bg-white text-sm font-bold text-[#7C3AED] hover:bg-[#F5F3FF]">👑 {net.plus?.owner === net.me ? t("bottle.plusManage") : t("bottle.plusNew")}</button> : null}
                     <p className="mb-1 mt-3 text-xs font-semibold text-[#9CA3AF]">{t("bottle.roomFriendsKnown")}</p>
                     {rooms && !rooms.friends.length ? <p className="py-1 text-xs text-[#6B7280]">{t("bottle.roomNoFriends")}</p> : null}
