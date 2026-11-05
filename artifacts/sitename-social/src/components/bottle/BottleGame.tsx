@@ -895,6 +895,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [roomTab, setRoomTab] = useState<"list" | "create">("list");
   const [showPass, setShowPass] = useState(false);
   const [rooms, setRooms] = useState<BottleTables | null>(null);
+  const [stayed, setStayed] = useState<number[]>([]); // empty tables where I sat at least 3 minutes in this visit: they stay in my table list
   const [waitFor, setWaitFor] = useState<{ table: number; position: number; back?: boolean } | null>(null);
   // While I stand in the queue of another (full) table I am in no table at all: the sync finds no seat, and this must not throw me back into some table.
   const queueing = useRef(false);
@@ -1675,6 +1676,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   }, [waitTable]);
   useEffect(() => { if (online) void bottleGiftShare().then((share) => { if (share && typeof share.pct === "number") giftShare.current = share; }); }, [online]);
   const liveTable = net?.table;
+  useEffect(() => { if (!liveTable) return; const id = liveTable; const timer = window.setTimeout(() => setStayed((list) => (list.includes(id) ? list : [...list, id])), 180000); return () => window.clearTimeout(timer); }, [liveTable]);
   // A new table or room starts clean: gifts that sat on the photos at the old table do not come along.
   // Every table has its own music: moving to another table stops the song of the old one and plays the new table's song (if any).
   useEffect(() => { tableGen.current += 1; setFlying([]); setBursts([]); setShows([]); setStickers({}); setSpots({}); setPiles({}); setScatters([]); setVideo(null); setAudio(null); trackAt.current = 0; }, [liveTable]);
@@ -3594,7 +3596,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 let recent: number[] = [];
                 try { recent = JSON.parse(window.localStorage.getItem("bottle-tables") ?? "[]") as number[]; } catch { /* storage is blocked */ }
                 const list = rooms?.tables ?? [];
-                const ordered = [...list].sort((a, b) => (recent.indexOf(a.id) < 0 ? 99 : recent.indexOf(a.id)) - (recent.indexOf(b.id) < 0 ? 99 : recent.indexOf(b.id)) || shownTable(a.id) - shownTable(b.id) || a.id - b.id);
+                const ordered = list.filter((room) => room.boys + room.girls > 0 || room.plus || room.id === net?.table || stayed.includes(room.id)).sort((a, b) => (recent.indexOf(a.id) < 0 ? 99 : recent.indexOf(a.id)) - (recent.indexOf(b.id) < 0 ? 99 : recent.indexOf(b.id)) || shownTable(a.id) - shownTable(b.id) || a.id - b.id);
                 const counts = (id: number) => { const room = list.find((item) => item.id === id); return room ? <span className="flex shrink-0 items-center gap-2 text-xs tabular-nums text-[#6B7280]"><span title={t("auth.male")} className="flex items-center gap-1"><img src="/custom/ui/sex-male.webp" alt="" aria-hidden="true" draggable={false} className="h-[15px] w-auto" />{room.boys}</span><span title={t("auth.female")} className="flex items-center gap-1"><img src="/custom/ui/sex-female.webp" alt="" aria-hidden="true" draggable={false} className="h-[15px] w-auto" />{room.girls}</span></span> : null; };
                 return (
                   <div className="max-h-[80cqmin] overflow-y-auto text-[#1F2937]">
