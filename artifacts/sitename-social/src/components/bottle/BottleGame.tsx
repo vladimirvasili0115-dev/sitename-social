@@ -239,6 +239,7 @@ function PackNote({ note, locale }: { note: { kind: "wait" | "ok" | "balance" | 
 }
 // Auto-clicker guard: at most this many gifts a second from one device (enough for fast tapping at a full table of 12).
 const GIFT_BUCKET = 120;
+const WHISKEY_SHRINK = 1.4; // the whiskey glass is 1.4x smaller than the other corner gifts; it still stands on the right frame line (flush) and the bottom line
 const BIGGER_CORNER = /^(cherry|makarov|revolver)$/;
 const BIGGER_BY = 1.2;
 const CORNER_ALL_BY = 1.7; // every other gift on the bottom-right corner is 1.7x bigger (they looked tiny next to the photo)
@@ -293,7 +294,7 @@ function planLanding(gift: string, seed: number = Math.random() * 1e9) {
     else {
     const size = /^(catdress|donkey|flagaz|eiffeltower|amurchik)$/.test(name) ? 92 : /^baloon\d$/.test(name) ? 64 : 76;
     // The cat in the dress used to fill almost the whole photo (89% high): now its visible art is at most 55% high.
-    const edge = size === 76 && name ? (HEART_TRIO.test(name) ? heartTrioSpot(name) : cornerSpot(name, undefined, undefined, BIGGER_CORNER.test(name) ? (/^(makarov|revolver)$/.test(name) ? BIGGER_BY * 1.2 : BIGGER_BY) : name === "surprizebox" ? CORNER_ALL_BY / SURPRISE_SHRINK : SMALL_CORNER.test(name) ? (CORNER_ALL_BY * 2) / 3 : CORNER_ALL_BY, true)) : name === "donkey" ? cornerSpot(name, 40, 34) : name === "catdress" ? (() => { const spot = cornerSpot(name, 55, 40); return spot ? { ...spot, x: spot.x - CAT_SHIFT_LEFT } : null; })() : null;
+    const edge = size === 76 && name ? (HEART_TRIO.test(name) ? heartTrioSpot(name) : cornerSpot(name, undefined, undefined, BIGGER_CORNER.test(name) ? (/^(makarov|revolver)$/.test(name) ? BIGGER_BY * 1.2 : BIGGER_BY) : name === "surprizebox" ? CORNER_ALL_BY / SURPRISE_SHRINK : name === "whiskey" ? CORNER_ALL_BY / WHISKEY_SHRINK : SMALL_CORNER.test(name) ? (CORNER_ALL_BY * 2) / 3 : CORNER_ALL_BY, true)) : name === "donkey" ? cornerSpot(name, 40, 34) : name === "catdress" ? (() => { const spot = cornerSpot(name, 55, 40); return spot ? { ...spot, x: spot.x - CAT_SHIFT_LEFT } : null; })() : null;
     const pinned = name ? artBox(name, true) : null; // the visible art ends exactly on the bottom line of the frame
     spot = edge ? at(edge.s, edge.x, edge.y, "corner") : at(size, 100 - size * 0.72, pinned ? 100 - size * pinned.b : 100 - size * 0.76, /^baloon\d$/.test(name) ? "balloon" : "corner");
     const flushed = size === 76 && Boolean(name) && Boolean(edge); // these stand exactly on the right edge of the frame, so they need no extra shift
