@@ -171,14 +171,19 @@ const RANDOM_SPOT = /^(air_kiss\d|gem\d|flower\d+|loveis\d|iloveyou|bear\d+|egg\
 const HAT_SPOT = /^(\w*cap|cappy|cowboy|cylinderw?|indianhat|napoleon|musketeer|nurse|bezkoz|monomachhat|noteshat\w|partyhat\d|clown|carnivalmask\d|horseheadhat2|baseballa\w)$/;
 // These spin a full turn on the way; kisses and gems fly a little smaller.
 const SPIN_FLIGHT = /^c:(bear\d+|labubu1|wholeegg)$/;
+// Gifts that sound like another gift (the yellow SUV has the engine sound of the Bugatti).
+const SOUND_LIKE: Record<string, string> = { "c:hummer": "c:bugatti" };
 const SMALL_FLIGHT = new Set(["c:air_kiss1", "c:gem1"]);
 const SCATTER = new Set(["c:wholeegg"]);
 // These gifts fly as the whole picture (egg, tomato) and only break when they reach the photo.
 const WHOLE_FLIGHT = new Set(["c:wholeegg", "c:tomato1"]);
 const SMALL_CORNER = /^(b52|drink[a-z]{2})$/; // the B-52 shot and the country glasses (drinkam, drinkaz ...) stood far too big on the photo: two thirds of the usual corner size
 // The visible part of a gift picture as fractions of its square box on the photo (the picture is centred, or pinned bottom-right for corner gifts).
+// Gifts whose picture is not in giftBounds.ts yet: [left, top, right, bottom, file width, file height] of the visible part.
+const EXTRA_BOUNDS: Record<string, [number, number, number, number, number, number]> = { hummer: [0, 0, 299, 183, 300, 184] };
+const boundsOf = (name: string) => giftBounds[name] ?? EXTRA_BOUNDS[name];
 function artBox(name: string, pinned: boolean) {
-  const e = giftBounds[name];
+  const e = boundsOf(name);
   if (!e) return null;
   const [l, t, r, b, w, h] = e;
   const m = Math.max(w, h);
@@ -1921,10 +1926,10 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [gesOpen, setGesOpen] = useState(false);
   pullProgress.current = () => { if (online) { void bottleProgress().then((value) => { if (value) setServerProgress(value); }); void bottleGesturesOpen().then((value) => setGesOpen(value === true)); } };
   useEffect(() => { pullProgress.current(); const timer = window.setInterval(() => pullProgress.current(), 15000); return () => window.clearInterval(timer); }, [online]);
-  const progress: Progress = iAmAdmin ? { kisses: 1e9, friends: 1e9, dj: 1e9, gestures: 1e9, vip: true } : online && serverProgress ? serverProgress : { kisses: kisses.me ?? 0, friends: 0, dj: readStats().songsSent ?? 0, gestures: readStats().gestures ?? 0, vip };
+  const progress: Progress = iAmAdmin ? { kisses: 1e9, friends: 1e9, dj: 1e9, gestures: 1e9, vip: true, plus: true } : online && serverProgress ? { ...serverProgress, plus: Boolean(net?.is_plus) } : { kisses: kisses.me ?? 0, friends: 0, dj: readStats().songsSent ?? 0, gestures: readStats().gestures ?? 0, vip };
   const gesProgress: Progress = gesOpen ? { kisses: 1e9, friends: 1e9, dj: 1e9, gestures: 1e9, vip: true } : progress;
   const progressReady = !online || Boolean(serverProgress);
-  const openKey = progressReady ? [...Object.entries(GIFT_RULES).filter(([, rule]) => rule[0] !== "vip" && rule[1] > 0 && missing(rule, progress) === 0).map(([gift]) => gift),
+  const openKey = progressReady ? [...Object.entries(GIFT_RULES).filter(([, rule]) => rule[0] !== "vip" && rule[0] !== "plus" && rule[1] > 0 && missing(rule, progress) === 0).map(([gift]) => gift),
     ...GESTURES.filter(([, , kind, amount]) => kind !== "vip" && amount > 0 && missing([kind, amount], progress) === 0).map(([id]) => `g:${id}`)].sort().join(",") : "";
   useEffect(() => {
     if (!openKey && !progressReady) return;
@@ -2538,7 +2543,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     // where it will really stand, not at the middle of the empty box (otherwise a narrow can lands on the left and then jumps over).
     let cx = x + size / 2, cy = y + size / 2;
     if (plan.spot.kind === "corner" || plan.spot.kind === "balloon") {
-      const file = plan.land.startsWith("c:") ? giftBounds[plan.land.slice(2)] : undefined;
+      const file = plan.land.startsWith("c:") ? boundsOf(plan.land.slice(2)) : undefined;
       if (file) {
         const longest = Math.max(file[4], file[5]);
         const dw = (size * file[4]) / longest, dh = (size * file[5]) / longest;
@@ -2744,7 +2749,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     return true;
   }
   const soundAt = useRef(0);
-  const giftSound = (gift: string, moment: "send" | "land") => { if (silentRef.current) return; const now = performance.now(); if (now - soundAt.current < 70) return; soundAt.current = now; playGiftSound(gift, moment); };
+  const giftSound = (gift: string, moment: "send" | "land") => { if (silentRef.current) return; const now = performance.now(); if (now - soundAt.current < 70) return; soundAt.current = now; playGiftSound(SOUND_LIKE[gift] ?? gift, moment); };
   function sendGift(index: number, gift: string, price: number, ms = 5200) {
     if (!groupPaid.current && !takeGiftTokens(1)) return true; // too fast: skipped without stopping a hold-to-send stream
     const seed = 1 + Math.floor(Math.random() * 2e9); // goes to the server with the gift, so every screen puts it in the same spot
@@ -2922,6 +2927,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (gift === "c:cherry" && giftHidden("cherry")) return false;
     if (gift.startsWith("song:")) { openSong(index); if (gift === "song:mp3") { setSongTab("mp3"); if (!tracks.length) void loadTracks(""); } return false; }
     if (need === -1 && !vip) { openLock("vip", 1, { gift }); return false; }
+    if (need === -2) { openLock("plus", 1, { gift }); return false; }
     if (need && need > 0) { const rule = GIFT_RULES[gift] ?? ["kisses", lockedGifts.find(([id]) => id === gift)?.[2] ?? need]; openLock(rule[0], rule[1], { gift }); return false; }
     setGiftNote(null);
     if (!sendGift(index, gift, price)) { setGiftNote(t("bottle.noHearts")); return false; }
@@ -4240,21 +4246,21 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 // (by kisses, from the nearest to the farthest, and the VIP ones last). Locked gifts are grey with a lock.
                 const all = [...(iAmAdmin ? [["c:heart1000", 1000, 0] as [string, number, number]] : []), ...giftChoices.slice(0, 2), ...customGiftNames(art).filter((name) => !name.startsWith("ges_") && name !== "heart1000" && !giftHidden(name)).map((name) => [`c:${name}`, GIFT_PRICES[name] ?? customPrice(name), missing(GIFT_RULES[`c:${name}`], progress)] as [string, number, number]), ...giftChoices.slice(2), ...lockedGifts.map(([gift, price, need]) => [gift, price, Math.max(0, need - progress.kisses)] as [string, number, number])]
                   .map(([gift, price, need]) => [gift, price, need ?? 0] as [string, number, number]);
-                const isLocked = (need: number) => (need === -1 ? !vip : need > 0);
+                const isLocked = (need: number) => (need === -1 ? !vip : need === -2 ? true : need > 0);
                 const rankOf = (id: string, index: number) => GIFT_PINNED_RANK.get(id) ?? GIFT_SHOP_RANK[id] ?? (id === "c:heart1000" || giftChoices.slice(0, 2).some(([g]) => g === id) ? index - 1e3 : 1e6 + index);
                 const byShop = (list: [string, number, number][]) => list.map((item, index) => ({ item, index })).sort((x, y) => rankOf(x.item[0], x.index) - rankOf(y.item[0], y.index)).map(({ item }) => item);
                 const open = byShop(all.filter(([, , need]) => !isLocked(need)));
-                const locked = byShop(all.filter(([, , need]) => isLocked(need)).sort((x, y) => (x[2] === -1 ? 1e12 : x[2]) - (y[2] === -1 ? 1e12 : y[2])));
+                const locked = byShop(all.filter(([, , need]) => isLocked(need)).sort((x, y) => (x[2] === -2 ? 2e12 : x[2] === -1 ? 1e12 : x[2]) - (y[2] === -2 ? 2e12 : y[2] === -1 ? 1e12 : y[2])));
                 const tile = ([gift, price, need]: [string, number, number], order: number) => {
                   const shut = isLocked(need);
-                  const note = shut ? (need === -1 ? t("bottle.vipOnly") : lockNote("kisses", need)) : undefined;
+                  const note = shut ? (need === -2 ? t("bottle.plusOnly") : need === -1 ? t("bottle.vipOnly") : lockNote("kisses", need)) : undefined;
                   return (
                     <button key={`${gift}-${order}`} role="menuitem" aria-disabled={shut} onPointerDown={(event) => pressGift(giftTargets, gift, price, need, event.clientX, event.clientY)} onPointerMove={(event) => { const state = pressed.current; if (state && !state.started && Math.hypot(event.clientX - state.x, event.clientY - state.y) > 8) cancelPress(); }} onPointerUp={() => releaseGift(giftTargets, gift, price, need)} onPointerLeave={cancelPress} onPointerCancel={cancelPress} onContextMenu={(event) => event.preventDefault()} onKeyDown={(event) => { if (event.key === "Enter" && !event.repeat) giveMany(giftTargets, gift, price, need); }} aria-label={note ?? `${t("gifts.send")} ${price}`} title={note} className={cn("group flex [content-visibility:auto] [contain-intrinsic-size:auto_92px] touch-pan-y select-none flex-col items-center justify-around rounded-[9px] transition-colors duration-500 hover:bg-[#F2F2F2] active:bg-[#D1D1D1]", wide ? "h-[95px]" : "h-[84px]")}>
                       <span className={cn("relative flex items-center", wide ? "h-[60px]" : "h-[52px]")}>
                         <Gift lazy id={gift} className={cn("transition-transform duration-150 group-hover:scale-110", wide ? "h-[60px] w-[60px]" : "h-[50px] w-[50px]", shut && "grayscale")} />
                       </span>
                       {shut
-                        ? <span aria-hidden="true" className={cn("bg-contain bg-center bg-no-repeat", need === -1 ? "h-[18px] w-[39px]" : "h-[18px] w-[15px]")} style={{ backgroundImage: `url(/custom/orig/${need === -1 ? "store_lock_vip" : "store_lock"}.svg)` }} />
+                        ? <span aria-hidden="true" className={cn("bg-contain bg-center bg-no-repeat", need < 0 ? "h-[18px] w-[39px]" : "h-[18px] w-[15px]", need === -2 && "[filter:hue-rotate(225deg)]")} style={{ backgroundImage: `url(/custom/orig/${need < 0 ? "store_lock_vip" : "store_lock"}.svg)` }} />
                         : <span className="flex items-center"><span aria-hidden="true" className="h-[13px] w-[16px] bg-contain bg-center bg-no-repeat" style={{ backgroundImage: "url(/custom/orig/bank_heart.svg)" }} /><b className="ml-[3px] text-[14px] tabular-nums text-[#1F2937]">{price}</b></span>}
                     </button>
                   );
@@ -4507,9 +4513,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       ) : null}
       {lock ? (() => {
         // The original GiftLockedDialog: grey picture, why it is locked, a thin progress bar with "have/need" and two buttons.
-        const have = lock.kind === "vip" ? 0 : Math.min(lock.total, progress[lock.kind as "kisses"] ?? 0);
+        const have = lock.kind === "vip" || lock.kind === "plus" ? 0 : Math.min(lock.total, progress[lock.kind as "kisses"] ?? 0);
         const icon = lock.kind === "dj" ? "ic_top_dj_score" : lock.kind === "friends" ? "profile_icon_unlock" : lock.kind === "gestures" ? "token" : "ic_top_total_kisses";
-        const more = () => { setLock(null); if (lock.kind === "friends") openInvite(); else if (lock.kind === "vip") { setPayNote(false); setPanel("shop"); } else if (lock.kind === "kisses" || lock.kind === "dj" || lock.kind === "gestures") { setPicked(null); setCard(false); setTopPeriod("all"); setTopKind(lock.kind === "dj" ? "songs" : lock.kind === "gestures" ? "smiles" : "kisses"); setPanel("top"); } else setPanel("rules"); };
+        const more = () => { setLock(null); if (lock.kind === "friends") openInvite(); else if (lock.kind === "plus") { setPayNote(false); setPanel("plusbuy"); } else if (lock.kind === "vip") { setPayNote(false); setPanel("shop"); } else if (lock.kind === "kisses" || lock.kind === "dj" || lock.kind === "gestures") { setPicked(null); setCard(false); setTopPeriod("all"); setTopKind(lock.kind === "dj" ? "songs" : lock.kind === "gestures" ? "smiles" : "kisses"); setPanel("top"); } else setPanel("rules"); };
         const text = lock.gesture && lock.kind === "kisses" ? t("bottle.lockGestureKiss") : lock.gesture && lock.kind === "vip" ? t("bottle.lockGestureVip") : t(`bottle.lockText_${lock.kind}` as "bottle.lockText_kisses");
         return (
           <OrigPopup title={t(`bottle.lockTitle_${lock.kind}` as "bottle.lockTitle_kisses")} onClose={() => setLock(null)} buttons={<>
@@ -4519,7 +4525,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             <div className="flex flex-col items-center">
               <div className={cn("mb-[22px] mt-2 flex items-center justify-center grayscale", lock.gesture ? "mb-2.5 mt-0 h-[90px] w-[90px]" : "h-[60px] w-[60px]")}>{lock.gesture ? <img src={`/custom/anim/ges_${lock.gesture}.webp`} alt="" className="h-full w-full object-contain" /> : lock.gift ? <Gift id={lock.gift} className="h-full w-full" /> : null}</div>
               <p className="whitespace-pre-line text-center text-[14px]">{text}</p>
-              {lock.kind === "vip" ? null : (
+              {lock.kind === "vip" || lock.kind === "plus" ? null : (
                 <>
                   <div className="mb-2.5 mt-[15px] w-[200px] rounded-[3px] bg-[#EBEBEB]"><div className="h-1.5 bg-[#9E9E9E] transition-[width]" style={{ width: `${Math.min(100, (have / Math.max(1, lock.total)) * 100)}%` }} /></div>
                   <div className="mb-[5px] flex items-center text-[15px]">
