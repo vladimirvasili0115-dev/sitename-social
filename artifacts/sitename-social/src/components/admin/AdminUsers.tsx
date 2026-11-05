@@ -18,6 +18,7 @@ import { SearchInput } from "@/components/ui/SearchInput";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import { NAME_COLORS, nameColorClass, refreshNameColors, useNameColors } from "@/components/bottle/nameColors";
+import { PlusTablesCard } from "@/components/admin/AdminPlusTables";
 
 // E-mail is hidden until the eye is pressed (a@b.com → a•••@b.com).
 const maskEmail = (email: string) => { const [name, domain = ""] = email.split("@"); return `${name.slice(0, 1)}•••@${domain}`; };
@@ -152,6 +153,7 @@ export function AdminUsers({ owner }: { owner: boolean }) {
       <VipAllCard />
       <GesturesOpenCard />
       <RoomPassCard />
+      <PlusTablesCard />
       <SpendCard />
       <DeletedCard />
       <BannedCard />

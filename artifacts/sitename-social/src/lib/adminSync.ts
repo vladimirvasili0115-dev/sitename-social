@@ -63,6 +63,11 @@ export const vipCount = () => call<{ vip: number; plus?: number; total: number }
 export type AdminRoom = { id: number; name: string | null; capacity: number; locked: boolean; owner: string | null; seated: number };
 export const adminRooms = () => call<AdminRoom[]>("admin_bottle_rooms");
 export const adminRoomPass = (room: number, password: string) => call<boolean>("admin_bottle_room_pass", { p_room: room, p_password: password });
+// VIP+ tables (a player opens one with VIP+): the admin can see them, put a new password or delete one. Needs paket-GM.sql.
+export type AdminPlusTable = { id: number; owner: string | null; owner_name: string | null; until: string | null; seated: number; locked: boolean };
+export const adminPlusTables = () => call<AdminPlusTable[]>("admin_plus_tables");
+export const adminPlusTableDelete = (table: number) => call<boolean>("admin_plus_table_delete", { p_table: table });
+export const adminPlusTablePass = (table: number, password: string) => call<boolean>("admin_plus_table_pass", { p_table: table, p_password: password });
 export type SpendRow = { id: string; name: string | null; bonus: number; gifts: number; giftPeople: number; admires: number; admirePeople: number };
 export type SpendDetail = {
   gifts: { to: string | null; gift: string; n: number }[];
