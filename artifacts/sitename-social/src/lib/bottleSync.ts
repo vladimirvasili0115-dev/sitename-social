@@ -55,7 +55,7 @@ export const bottleBuySmiles = (pack: number) => call<{ hearts: number; smiles: 
 export const bottleWheel = () => call<{ sector: number; hearts: number; chances: number }>("bottle_wheel_spin");
 export const bottleSong = (to: string, kind: "video" | "mp3") => call<number>("bottle_song", { p_to: to, p_kind: kind });
 export type BottleTables = { tables: { id: number; boys: number; girls: number; ban?: number | null; plus?: boolean; color?: string | null; lock?: boolean }[]; friends: { id: string; name: string | null; avatar: string | null; table: number; friend?: boolean }[] };
-export type BottleMove = { table?: number; full?: boolean; position?: number; gone?: boolean; banned?: boolean; password?: boolean };
+export type BottleMove = { table?: number; full?: boolean; position?: number; gone?: boolean; banned?: boolean; password?: boolean; wait?: number }; // wait: seconds left before the next table change is allowed (paket-GN.sql)
 export const bottleTables = () => call<BottleTables>("bottle_tables_list");
 export const bottleMove = (table: number | null, password?: string) => call<BottleMove>("bottle_move", password ? { p_table: table, p_password: password } : { p_table: table });
 // VIP+: own tables (own number, password, number colour), muting players in own table, own name colour. Needs paket-GC.sql.

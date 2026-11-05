@@ -1611,16 +1611,28 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     bumpStat("roomsCreated");
     enteredRoom();
   }
+  // After a table change the next change waits 8 seconds (the server checks it too); the number counts down from 8. Admins and moderators are not held.
+  const [moveLeft, setMoveLeft] = useState(0);
+  const moveUntil = useRef(0);
+  const startMoveWait = (seconds = 8) => { moveUntil.current = Date.now() + seconds * 1000; setMoveLeft(seconds); };
+  useEffect(() => {
+    if (moveLeft <= 0) return;
+    const timer = window.setInterval(() => setMoveLeft(Math.max(0, Math.ceil((moveUntil.current - Date.now()) / 1000))), 250);
+    return () => window.clearInterval(timer);
+  }, [moveLeft > 0]); // eslint-disable-line react-hooks/exhaustive-deps
   async function moveTo(table: number | null, password?: string) {
+    if (online && !iAmAdmin && Date.now() < moveUntil.current) return setMoveLeft(Math.max(1, Math.ceil((moveUntil.current - Date.now()) / 1000)));
     const pass = table !== null ? password ?? movePass.current[table] : undefined;
     const result = await bottleMove(table, pass);
     if (!result) return;
+    if (result.wait) return startMoveWait(Math.max(1, Math.min(8, result.wait)));
     if (result.password && table !== null) { setPassAsk({ table, wrong: Boolean(pass) }); setPassTry(""); return; }
     if (table !== null && pass && result.table) movePass.current[table] = pass;
     setPassAsk(null);
     if (result.gone || result.banned) { setWaitFor(null); setRoomNote(true); return void bottleTables().then(setRooms); }
     if (result.full && result.table) return setWaitFor({ table: result.table, position: result.position ?? 1 });
     setWaitFor(null);
+    if (net?.table && !iAmAdmin) startMoveWait();
     const same = result.table === net?.table; // the same table again: only the seat changes, the chat stays
     if (!same) bumpStat("tables");
     setPicked(null);
@@ -3270,7 +3282,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           <span className={cn("text-center text-[max(8px,1.55cqmin)] font-bold leading-tight text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.7)]", wide && "order-last mt-1")}>{net?.room ? <><span aria-hidden="true">🔒</span><br /><span className="line-clamp-2 block max-w-[64px] break-words">{net.room.name}</span><button onClick={leaveRoom} aria-label={t("bottle.roomLeave")} title={t("bottle.roomLeave")} className="mx-auto mt-1 flex items-center gap-1 rounded-full bg-[#E5484D] px-2 py-0.5 text-[11px] font-bold text-white shadow hover:bg-[#D13438] [text-shadow:none]"><X size={12} strokeWidth={3} />{t("bottle.roomLeaveShort")}</button>{canDeleteRoom ? <button onClick={() => void deleteRoom()} aria-label={t("bottle.roomDelete")} title={t("bottle.roomDelete")} className="mx-auto mt-1 flex items-center gap-1 rounded-full bg-[#7C2D12] px-2 py-0.5 text-[11px] font-bold text-white shadow hover:bg-[#9A3412] [text-shadow:none]"><Trash2 size={12} strokeWidth={2.6} />{t("bottle.roomDeleteShort")}</button> : null}</> : <>{t("bottle.table")}<br />{online ? (net?.table != null ? tableLabel(net.table) : "…") : tableLabel(tableNo)}</>}</span>
           {myTurn
             ? <span aria-label={`${seconds}`} className={cn(tool, "text-[max(14px,3cqmin)] font-bold tabular-nums")}>{seconds}</span>
-            : <button onClick={changeTable} aria-label={t("bottle.changeTable")} title={t("bottle.changeTable")} className={tool}><RefreshCw size={17} /></button>}
+            : <button onClick={changeTable} aria-label={moveLeft > 0 ? `${moveLeft}` : t("bottle.changeTable")} title={t("bottle.changeTable")} className={tool}>{moveLeft > 0 ? <b className="text-[max(14px,3cqmin)] font-bold tabular-nums">{moveLeft}</b> : <RefreshCw size={17} />}</button>}
           {!wide && !full ? <button onClick={onLeave} aria-label={t("photos.close")} title={t("photos.close")} className={cn(tool, "bg-[#E5484D]/90 hover:bg-[#E5484D] sm:hidden")}><X size={19} strokeWidth={3} /></button> : null}
         </div>
 
@@ -3575,6 +3587,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                       </div>
                     ) : null}
                     {roomNote ? <p role="status" className="mb-2 rounded-lg bg-[#FEE2E2] p-2 text-center text-xs font-semibold text-[#991B1B]">{t("bottle.roomGone")}</p> : null}
+                    {moveLeft > 0 ? <div role="status" aria-label={`${moveLeft}`} className="mb-2 flex justify-center rounded-xl bg-[#FEF3C7] p-2"><span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#EE8A2B] text-xl font-black tabular-nums text-white">{moveLeft}</span></div> : null}
                     {passAsk ? (
                       <form onSubmit={(event) => { event.preventDefault(); if (passTry) void moveTo(passAsk.table, passTry); }} className="mb-2 rounded-xl border border-[#F5C451] bg-[#FEF3C7] p-2.5 text-[#92400E]">
                         <p className="text-xs font-semibold">🔒 {t("bottle.plusPassAsk").replace("{n}", tableLabel(passAsk.table))}{passAsk.wrong ? <span className="block text-[#B91C1C]">{t("bottle.plusPassWrong")}</span> : null}</p>
