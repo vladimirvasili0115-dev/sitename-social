@@ -240,7 +240,7 @@ function PackNote({ note, locale }: { note: { kind: "wait" | "ok" | "balance" | 
 // Auto-clicker guard: at most this many gifts a second from one device (enough for fast tapping at a full table of 12).
 const GIFT_BUCKET = 120;
 // These corner gifts are smaller than the other ones (whiskey glass 1.4x, wine glass 1.3x, joystick 1.4x); they still stand on the right frame line (flush) and the bottom line.
-const CORNER_SHRINK: Record<string, number> = { whiskey: 1.4, wine: 1.3, joystick: 1.4 };
+const CORNER_SHRINK: Record<string, number> = { whiskey: 1.4, wine: 1.3, joystick: 1.4, martini: 1.3, mobile: 1.3, nokia: 1.3, heartlock: 1.3 };
 const BIGGER_CORNER = /^(cherry|makarov|revolver)$/;
 const BIGGER_BY = 1.2;
 const CORNER_ALL_BY = 1.7; // every other gift on the bottom-right corner is 1.7x bigger (they looked tiny next to the photo)
@@ -283,7 +283,7 @@ function planLanding(gift: string, seed: number = Math.random() * 1e9) {
   if (name && (HAT_SPOT.test(name) || /^(ears|bow_)/.test(name))) { const hat = hatSpot(name); const near = /^bow_/.test(name) ? 4 : 0; spot = at(hat.s, hat.x + near, hat.y + near, "hatL"); } // bows sit 4% (about 2 mm) closer to the photo, so they do not hang over the frame // the original "hat": sitting right on the top-left (90°) corner, turned -45°
   else if (name && (RANDOM_SPOT.test(name) || onPhoto(name) || name === "fairy")) {
     // The original "ava": a random point anywhere on the photo and a random angle (0–360°), the same on every screen.
-    const size = name === "handcuffs" ? 80 : name === "blackrose" ? 56 : name === "voodoo" ? 68 * 1.4 : /^valentine\d$/.test(name) ? 40 * 1.6 : name === "frog" ? 40 * 1.3 : /^valenok\d*$/.test(name) ? 40 * 2 : /^notes\d$/.test(name) ? 40 * 1.9 : /^sponge_(green|violet)$/.test(name) ? 40 * 1.8 : 40; // handcuffs: twice as big; the black rose 1.4x, the voodoo doll 1.7x then 1.4x more, the winged love letters (valentine2-5) 1.6x, the frog 1.3x, the felt boots (valenok*) 2x, the music notes (notes1-4) 1.9x, the green and violet sponges 1.8x (the centre stays at the same random point; it flies at this same size)
+    const size = name === "handcuffs" ? 80 : name === "blackrose" ? 56 : name === "voodoo" ? 68 * 1.4 : /^valentine\d$/.test(name) ? 40 * 1.6 : name === "frog" ? 40 * 1.3 : /^valenok\d*$/.test(name) ? 40 * 2 : /^notes\d$/.test(name) ? 40 * 1.9 : /^sponge_(green|violet)$/.test(name) ? 40 * 1.8 : /^gem[1-4]$/.test(name) ? 40 / 1.4 : name === "gem5" ? 40 / 1.3 : 40; // gems 1-4 are 1.4x and gem5 (the ruby heart) 1.3x smaller, in flight and on the photo (a random gift flies at the size it lands at) // handcuffs: twice as big; the black rose 1.4x, the voodoo doll 1.7x then 1.4x more, the winged love letters (valentine2-5) 1.6x, the frog 1.3x, the felt boots (valenok*) 2x, the music notes (notes1-4) 1.9x, the green and violet sponges 1.8x (the centre stays at the same random point; it flies at this same size)
     const x = rnd() * 100 - size / 2, y = rnd() * 100 - size / 2;
     spot = { ...at(size, x, y, "rand"), r: Math.round(rnd() * 360) }; }
   else if (land === "e:🐓") spot = at(100, 0, 0, "corner"); // the rooster covers the whole photo
@@ -2542,7 +2542,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // The flight goes straight to where the gift will sit (offset from the seat centre in cqmin, and its final size).
   const flightTo = (plan: ReturnType<typeof planLanding>, gift: string) => {
     const w = wide ? 18.5 : 17.5;
-    const base = SMALL_FLIGHT.has(gift) ? 7 : 11;
+    const base = (SMALL_FLIGHT.has(gift) ? 7 : 11) / (plan.land === "c:martini" ? 1.3 : 1); // the cocktail also starts 1.3x smaller in flight (it still lands at its corner size)
     if (!plan.spot) return { tx: -0.38 * w, ty: -0.38 * w, end: (0.56 * w) / base, base };
     const { x, y, s: size } = plan.spot;
     // Corner gifts stand pinned to the bottom-right (or bottom-left) of their square box, so the flight aims at the middle of the picture
