@@ -5,6 +5,8 @@ import { Card } from "@/components/ui/Card";
 import { adminPlusTableDelete, adminPlusTablePass, adminPlusTables, type AdminPlusTable } from "@/lib/adminSync";
 import { formatDay } from "@/lib/datetime";
 import { cn } from "@/lib/utils";
+// VIP+ tables are stored as 1 000 000 + number: the admin sees the number only.
+const shown = (id: number) => (id >= 1000000 ? id - 1000000 : id);
 
 // VIP+ tables stay on the server while the owner has VIP+ (even when nobody sits there). Here the admin sees them, sets a new password (a forgotten one) or deletes one.
 export function PlusTablesCard() {
@@ -29,7 +31,7 @@ export function PlusTablesCard() {
     setBusy(table.id);
     const done = await adminPlusTableDelete(table.id);
     setBusy(null);
-    setNote(done === true ? { ok: true, text: `Masa ${table.id} silindi.` } : { ok: false, text: "Silinmədi." });
+    setNote(done === true ? { ok: true, text: `Masa ${shown(table.id)} silindi.` } : { ok: false, text: "Silinmədi." });
     load();
   }
   return (
@@ -48,7 +50,7 @@ export function PlusTablesCard() {
           <div key={table.id} className="rounded-xl border border-border p-3">
             <div className="flex items-center gap-2 text-sm">
               {table.locked ? <Lock size={14} className="shrink-0 text-muted" /> : <LockOpen size={14} className="shrink-0 text-muted" />}
-              <span className="min-w-0 flex-1 truncate font-semibold">Masa {table.id}</span>
+              <span className="min-w-0 flex-1 truncate font-semibold">Masa {shown(table.id)}</span>
               <span className="shrink-0 text-[11px] text-muted">{table.seated}/12 nəfər</span>
             </div>
             <p className="mt-0.5 truncate text-[11px] text-muted">Sahib: {table.owner_name || "—"}{table.until ? ` · VIP+ bitir: ${formatDay(Date.parse(table.until))}` : " · VIP+ bitib"}</p>

@@ -439,7 +439,9 @@ function TableOwnerMark({ female, title }: { female: boolean; title: string }) {
 // Shown for players who have no photo (the original shows a "NO PHOTO" silhouette).
 const NO_PHOTO = "/custom/profile/nophoto.svg";
 // Table 21 is shown as "021" everywhere the table number is written (the real number in the database stays 21).
-const tableLabel = (n: number | string | null | undefined) => (Number(n) === 21 ? "021" : String(n ?? ""));
+// A VIP+ table has the internal id 1 000 000 + its number, so a VIP+ table can share a number with a normal table; everywhere the number is written without the million.
+const shownTable = (n: number) => (n >= 1000000 ? n - 1000000 : n);
+const tableLabel = (n: number | string | null | undefined) => (n != null && Number(n) >= 1000000 ? String(Number(n) - 1000000) : Number(n) === 21 ? "021" : String(n ?? ""));
 const DAILY_PRIZES = [200, 400, 600, 800, 1000];
 // Lite mode (switched on by the game when the phone cannot keep up with a gift storm): gifts stay still pictures instead of animated ones.
 let liteGifts = false;
@@ -3590,7 +3592,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 let recent: number[] = [];
                 try { recent = JSON.parse(window.localStorage.getItem("bottle-tables") ?? "[]") as number[]; } catch { /* storage is blocked */ }
                 const list = rooms?.tables ?? [];
-                const ordered = [...list].sort((a, b) => (recent.indexOf(a.id) < 0 ? 99 : recent.indexOf(a.id)) - (recent.indexOf(b.id) < 0 ? 99 : recent.indexOf(b.id)) || a.id - b.id);
+                const ordered = [...list].sort((a, b) => (recent.indexOf(a.id) < 0 ? 99 : recent.indexOf(a.id)) - (recent.indexOf(b.id) < 0 ? 99 : recent.indexOf(b.id)) || shownTable(a.id) - shownTable(b.id) || a.id - b.id);
                 const counts = (id: number) => { const room = list.find((item) => item.id === id); return room ? <span className="flex shrink-0 items-center gap-2 text-xs tabular-nums text-[#6B7280]"><span title={t("auth.male")}>👦 {room.boys}</span><span title={t("auth.female")}>👧 {room.girls}</span></span> : null; };
                 return (
                   <div className="max-h-[80cqmin] overflow-y-auto text-[#1F2937]">
@@ -3617,7 +3619,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                     <ul>
                       {(rooms?.friends ?? []).map((friend) => (
                         <li key={friend.id}><button onClick={() => void moveTo(friend.table)} className="flex min-h-11 w-full items-center gap-2 rounded-lg px-1 text-left text-sm hover:bg-black/5 disabled:opacity-50">
-                          <img src={friend.avatar || NO_PHOTO} alt="" className="h-9 w-9 shrink-0 rounded-md object-cover" /><span className="min-w-0 flex-1 truncate font-semibold">{gameName(friend.name)}</span>{friend.friend === false ? <span title={t("bottle.roomKnown")} className="shrink-0 text-sm">🎁</span> : null}<span className="shrink-0 text-xs text-[#9CA3AF]">#{friend.table}</span>{counts(friend.table)}
+                          <img src={friend.avatar || NO_PHOTO} alt="" className="h-9 w-9 shrink-0 rounded-md object-cover" /><span className="min-w-0 flex-1 truncate font-semibold">{gameName(friend.name)}</span>{friend.friend === false ? <span title={t("bottle.roomKnown")} className="shrink-0 text-sm">🎁</span> : null}<span className="shrink-0 text-xs text-[#9CA3AF]">#{tableLabel(friend.table)}</span>{counts(friend.table)}
                         </button></li>
                       ))}
                     </ul>
@@ -3626,7 +3628,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                     <ul>
                       {ordered.map((room) => (
                         <li key={room.id}><button onClick={() => void moveTo(room.id)} className="flex min-h-11 w-full items-center gap-2 rounded-lg px-1 text-left text-sm hover:bg-black/5 disabled:opacity-50">
-                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-[#E9A957]"><BottleSvg className="h-7 rotate-[28deg]" /></span><span className={cn("min-w-0 flex-1 font-semibold tabular-nums", room.plus && room.color ? nameColorClass(room.color) : "")}>#{tableLabel(room.id)}{room.lock ? " 🔒" : ""}{room.id === net?.table ? ` · ${t("bottle.roomHere")}` : room.boys + room.girls >= 12 ? ` · ${t("bottle.roomFullTag")}` : ""}{room.ban && room.ban > 0 ? <span className="mt-0.5 block text-[11px] font-semibold text-[#DC2626]">{t("bottle.banLeft").replace("{n}", String(Math.ceil(room.ban / 60)))}</span> : null}</span>{counts(room.id)}
+                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-[#E9A957]"><BottleSvg className="h-7 rotate-[28deg]" /></span><span className={cn("min-w-0 flex-1 font-semibold tabular-nums", room.plus && room.color ? nameColorClass(room.color) : "")}>{room.plus ? <span className="mr-1 rounded bg-[#7C3AED] px-1 py-px align-[1px] text-[10px] font-extrabold text-white">VIP+</span> : null}#{tableLabel(room.id)}{room.lock ? " 🔒" : ""}{room.id === net?.table ? ` · ${t("bottle.roomHere")}` : room.boys + room.girls >= 12 ? ` · ${t("bottle.roomFullTag")}` : ""}{room.ban && room.ban > 0 ? <span className="mt-0.5 block text-[11px] font-semibold text-[#DC2626]">{t("bottle.banLeft").replace("{n}", String(Math.ceil(room.ban / 60)))}</span> : null}</span>{counts(room.id)}
                         </button></li>
                       ))}
                     </ul>
