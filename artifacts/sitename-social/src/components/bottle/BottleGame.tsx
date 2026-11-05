@@ -112,7 +112,9 @@ const prizeText = (item: (typeof wheelSectors)[number]) => (item.hearts ? `❤�
 const chancePacks: [number, number][] = [[300, 900], [50, 150], [15, 45], [5, 20], [1, 5]];
 // Smiley packs: [smileys, price in hearts]. The server (bottle_buy_smiles) has the same list.
 const smilePacks: [number, number][] = [[300, 120], [100, 45], [40, 20], [15, 8], [5, 3]];
-const vipPlans: [number, number][] = [[7, 300], [30, 900], [90, 2200]];
+const vipPlans: [number, number][] = [[7, 3], [30, 6], [90, 14]];
+// VIP+ plans (days, price in manat); there is no 7-day plan.
+const plusPlans: [number, number][] = [[30, 16], [90, 40]];
 // Put the channel link here (for example "https://t.me/kanal_adi"); while empty, the settings row says it is not set yet.
 const TELEGRAM_URL = "";
 // Zodiac signs in calendar order starting from Capricorn (22 December).
@@ -846,7 +848,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     acceptLoaded.current = true;
     void bottleGetAccept().then((value) => { if (typeof value === "boolean") setAccept(value); });
   }, [online, net]);
-  const [panel, setPanel] = useState<"gestures" | "settings" | "top" | "rules" | "shop" | "menu" | "vip" | "bottles" | "frames" | "achievements" | "boosters" | "wheel" | "chances" | "tables" | "rooms" | "active" | "invite" | "compliments" | "kick" | "pass" | "league" | "market" | "smiles" | "plus" | null>(null);
+  const [panel, setPanel] = useState<"gestures" | "settings" | "top" | "rules" | "shop" | "menu" | "vip" | "bottles" | "frames" | "achievements" | "boosters" | "wheel" | "chances" | "tables" | "rooms" | "active" | "invite" | "compliments" | "kick" | "pass" | "league" | "market" | "smiles" | "plus" | "plusbuy" | null>(null);
   // Panels drop down from the top like a hanging sign and go back up when closed.
   const [closing, setClosing] = useState(false);
   const [weekOpen, setWeekOpen] = useState(false);
@@ -3710,7 +3712,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   <button onClick={() => setPanel("wheel")} className="mt-2 w-full text-center text-xs font-bold text-white underline">{t("bottle.wheelBack")}</button>
                 </div>
               ) : panel === "shop" ? (
-                <ShopPanel hearts={hearts} activeSecs={activeSecs} payNote={payNote} onActive={() => setPanel("active")} onTelegram={() => (TELEGRAM_URL ? window.open(TELEGRAM_URL, "_blank", "noopener") : setPayNote(true))} onVip={() => { setPayNote(false); setPanel("vip"); }} onInvite={openInvite} onCompliments={() => setPanel("compliments")} onPack={(pack) => void buyHeartPack(pack)} packNote={packNote && packNote.kind !== "ok" ? <PackNote note={packNote} locale={locale} /> : null} onPass={openPass} />
+                <ShopPanel hearts={hearts} activeSecs={activeSecs} payNote={payNote} onActive={() => setPanel("active")} onVip={() => { setPayNote(false); setPanel("vip"); }} onPlus={() => { setPayNote(false); setPanel("plusbuy"); }} onInvite={openInvite} onCompliments={() => setPanel("compliments")} onPack={(pack) => void buyHeartPack(pack)} packNote={packNote && packNote.kind !== "ok" ? <PackNote note={packNote} locale={locale} /> : null} onPass={openPass} />
               ) : panel === "pass" ? (
                 <>
                   <PassPanel data={online ? passData : null} hearts={hearts} now={net?.now ?? Date.now()} onBuy={() => void passAction("buy")} onClaim={(level, premium) => void passAction({ level, premium })} onChest={() => void passAction("chest")} />
@@ -4007,6 +4009,14 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                     {vipPlans.map(([days, price]) => <button key={days} onClick={() => setPayNote(true)} className="rounded-xl border border-[#FCD34D] bg-[#FFFBEB] p-2 text-center hover:brightness-95"><span className="block text-sm font-black text-[#B45309]">{days} {t("bottle.days")}</span><span className="mt-1 block rounded-md bg-[#8CC63F] py-1 text-[11px] font-bold tabular-nums text-white">{price} ₼</span></button>)}
                   </div>
                   {payNote ? <p role="status" className="mt-2 rounded-lg bg-[#FEF3C7] p-2 text-center text-xs font-semibold text-[#92400E]">{t("bottle.paySoon")}</p> : null}
+                </div>
+              ) : panel === "plusbuy" ? (
+                <div className="max-h-[78cqmin] overflow-y-auto text-[#1F2937]">
+                  <ul className="space-y-1 text-sm">{[1, 2, 3, 4, 5].map((n) => <li key={n} className="flex gap-2"><span aria-hidden="true">👑</span>{t(`bottle.plusInfo${n}` as "bottle.plusInfo1")}</li>)}</ul>
+                  <div className="mt-3 grid grid-cols-2 gap-1.5">
+                    {plusPlans.map(([days, price]) => <button key={days} onClick={() => setPayNote(true)} className="rounded-xl border border-[#C4B5FD] bg-[#F5F3FF] p-2 text-center hover:brightness-95"><span className="block text-sm font-black text-[#6D28D9]">{days} {t("bottle.days")}</span><span className="mt-1 block rounded-md bg-[#8CC63F] py-1 text-[11px] font-bold tabular-nums text-white">{price} ₼</span></button>)}
+                  </div>
+                  {payNote ? <p role="status" className="mt-2 rounded-lg bg-[#EDE9FE] p-2 text-center text-xs font-semibold text-[#5B21B6]">{t("bottle.paySoon")}</p> : null}
                 </div>
               ) : panel === "market" ? (
                 <BonusMarket locale={locale} online={online} hearts={hearts} onHearts={(value) => { heartsRef.current = value; setHearts(value); }} onPreview={previewEnigma} />

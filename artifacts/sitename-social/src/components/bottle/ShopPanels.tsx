@@ -23,8 +23,8 @@ export const formatActive = (secs: number, t: (key: TranslationKey) => string) =
 // The original bank (bottle-html5 BankDialog + bank CSS): a pink window with the heart pattern on top and
 // 90×146 white cards, each with a coloured stripe, a picture and a small button. Our own cards (active play,
 // season pass, channel, VIP, friends, compliments) are drawn the same way as the original's.
-export function ShopPanel({ hearts, activeSecs, payNote, onActive, onTelegram, onVip, onInvite, onCompliments, onPack, onPass, packNote }: {
-  hearts: number; activeSecs: number; payNote: boolean; packNote?: ReactNode; onActive: () => void; onTelegram: () => void; onVip: () => void; onInvite: () => void; onCompliments: () => void; onPack: (pack: { hearts: number; price: number }) => void; onPass: () => void;
+export function ShopPanel({ hearts, activeSecs, payNote, onActive, onVip, onPlus, onInvite, onCompliments, onPack, onPass, packNote }: {
+  hearts: number; activeSecs: number; payNote: boolean; packNote?: ReactNode; onActive: () => void; onVip: () => void; onPlus: () => void; onInvite: () => void; onCompliments: () => void; onPack: (pack: { hearts: number; price: number }) => void; onPass: () => void;
 }) {
   const { t } = useTranslation();
   const O = "/custom/orig/";
@@ -54,6 +54,7 @@ export function ShopPanel({ hearts, activeSecs, payNote, onActive, onTelegram, o
       <ul className="relative grid min-h-0 grid-cols-3 gap-[5px] overflow-y-auto px-2.5 pb-2.5 pt-[3px] [scrollbar-width:none] [@media(min-width:700px)]:grid-cols-4">
         {card("pass", "bank_gold_bg", <span className="text-center text-[10px] font-bold uppercase text-[rgb(255,144,0)]">{t("bottle.bankPremium")}</span>, icon("bank_premium_pass", 62, 39), btn(blue, onPass, t("bottle.details")))}
         {card("vip", "bank_gold_bg", <><span className="font-bold text-[rgb(255,144,0)]">VIP</span><span className="-mt-[3px] text-[11px] text-[rgb(255,144,0)]">{t("bottle.bankStatus")}</span></>, icon("bank_vip", 55, 37), btn(blue, onVip, t("bottle.details")))}
+        {card("plus", "bank_violet_bg", <><span className="font-bold text-[#7C3AED]">VIP+</span><span className="-mt-[3px] text-[11px] text-[#7C3AED]">{t("bottle.bankStatus")}</span></>, <span aria-hidden="true" className="block bg-contain bg-center bg-no-repeat [filter:hue-rotate(225deg)]" style={{ ...bg("bank_vip"), width: 55, height: 37 }} />, btn(blue, onPlus, t("bottle.details")))}
         {card("friends", "bank_violet_bg", <span className={small}>{withHeart(t("bottle.bankInvite"), 3000)}</span>, icon("bank_friends", 68, 40), btn(blue, onInvite, t("bottle.details")))}
         {card("compliments", "bank_cyan_bg", <span className={small}>{withHeart(t("bottle.bankCompliment"), 10)}</span>, icon("bank_compliment", 70, 47), btn(blue, onCompliments, t("bottle.details")))}
         {shopPacks.map((pack, i) => card(`p${pack.hearts}`, "bank_gold_bg",
@@ -62,7 +63,6 @@ export function ShopPanel({ hearts, activeSecs, payNote, onActive, onTelegram, o
           btn(green, () => onPack(pack), <span className="tabular-nums">{pack.price.toLocaleString("ru-RU")} ₼</span>),
           pack.tag ? <span className="absolute -left-1 -right-1 -top-1 z-[1] mx-auto flex h-[18px] w-fit min-w-16 max-w-[98px] justify-center rounded-[3px] px-1.5 text-[8.5px] font-bold text-white shadow-[0_1px_2px_rgba(0,0,0,0.25)]" style={{ backgroundColor: pack.tag === "best" ? "#E6007E" : "#A24DC2" }}><span className="mt-[2px] whitespace-nowrap">{t(pack.tag === "best" ? "bottle.bankProfit" : "bottle.bankHit")}</span></span> : undefined))}
         {card("active", "bank_blue_bg", <span className={small}>{t("bottle.activeTitle")}<b className="mt-0.5 block text-[rgb(47,137,233)]">{formatActive(activeSecs, t)}</b></span>, <Pic e="⏰" className="h-10 w-10" />, btn(cyan, onActive, t("bottle.details")))}
-        {card("channel", "bank_blue_bg", <span className={small}>{t("bottle.channelJoin")}</span>, <Pic e="🔔" className="h-10 w-10" />, btn(cyan, onTelegram, t("bottle.channelGo")))}
       </ul>
       {packNote ? <div role="status" className="relative mx-2.5 mb-2.5 rounded-[5px] border border-[rgb(239,102,102)] bg-[rgb(255,245,207)] px-2 py-1.5 text-center text-[12px] font-bold text-[#424242]">{packNote}</div> : null}
       {payNote ? <p role="status" className="relative mx-2.5 mb-2.5 rounded-[5px] border border-[rgb(239,102,102)] bg-[rgb(255,245,207)] px-2 py-1.5 text-center text-[12px] font-bold text-[#424242]">{t("bottle.paySoon")}</p> : null}
