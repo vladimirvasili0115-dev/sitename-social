@@ -2920,6 +2920,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // Open anyone's card (from the ratings and other lists): a player at the table or someone elsewhere.
   // VIP names: girls in a red-pink-purple gradient, boys in dark blue; everyone else stays light.
   const vipName = (player: Player) => {
+    const top = topNameClass(player.me ? net?.me ?? "" : player.id); // the TOP 10 yellow (first three: moving gold) wins over everything
+    if (top) return top.includes("gold-name") ? `${top} [filter:drop-shadow(0_1px_1px_rgba(0,0,0,0.6))] [text-shadow:none]` : top;
     const custom = nameColorClass(nameColors[player.me ? net?.me ?? "" : player.id]); // a colour given in the admin panel wins
     if (custom) return custom;
     const isVip = online ? Boolean(net?.seats.find((seat) => seat.id === (player.me ? net.me : player.id))?.vip_badge) : Boolean(player.me && vip);
