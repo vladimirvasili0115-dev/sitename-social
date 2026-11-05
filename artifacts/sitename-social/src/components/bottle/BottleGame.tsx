@@ -3595,7 +3595,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 try { recent = JSON.parse(window.localStorage.getItem("bottle-tables") ?? "[]") as number[]; } catch { /* storage is blocked */ }
                 const list = rooms?.tables ?? [];
                 const ordered = [...list].sort((a, b) => (recent.indexOf(a.id) < 0 ? 99 : recent.indexOf(a.id)) - (recent.indexOf(b.id) < 0 ? 99 : recent.indexOf(b.id)) || shownTable(a.id) - shownTable(b.id) || a.id - b.id);
-                const counts = (id: number) => { const room = list.find((item) => item.id === id); return room ? <span className="flex shrink-0 items-center gap-2 text-xs tabular-nums text-[#6B7280]"><span title={t("auth.male")}>👦 {room.boys}</span><span title={t("auth.female")}>👧 {room.girls}</span></span> : null; };
+                const counts = (id: number) => { const room = list.find((item) => item.id === id); return room ? <span className="flex shrink-0 items-center gap-2 text-xs tabular-nums text-[#6B7280]"><span title={t("auth.male")} className="flex items-center gap-1"><img src="/custom/ui/sex-male.webp" alt="" aria-hidden="true" draggable={false} className="h-[15px] w-auto" />{room.boys}</span><span title={t("auth.female")} className="flex items-center gap-1"><img src="/custom/ui/sex-female.webp" alt="" aria-hidden="true" draggable={false} className="h-[15px] w-auto" />{room.girls}</span></span> : null; };
                 return (
                   <div className="max-h-[80cqmin] overflow-y-auto text-[#1F2937]">
                     {waitFor ? (
@@ -3621,7 +3621,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                     <ul>
                       {(rooms?.friends ?? []).map((friend) => (
                         <li key={friend.id}><button onClick={() => void moveTo(friend.table)} className="flex min-h-11 w-full items-center gap-2 rounded-lg px-1 text-left text-sm hover:bg-black/5 disabled:opacity-50">
-                          <img src={friend.avatar || NO_PHOTO} alt="" className="h-9 w-9 shrink-0 rounded-md object-cover" /><span className="min-w-0 flex-1 truncate font-semibold">{gameName(friend.name)}</span>{friend.friend === false ? <span title={t("bottle.roomKnown")} className="shrink-0 text-sm">🎁</span> : null}<span className="shrink-0 text-xs text-[#9CA3AF]">#{tableLabel(friend.table)}</span>{counts(friend.table)}
+                          <img src={friend.avatar || NO_PHOTO} alt="" className="h-9 w-9 shrink-0 rounded-md object-cover" /><span className="min-w-0 flex-1 truncate font-semibold">{gameName(friend.name)}</span>{counts(friend.table)}
                         </button></li>
                       ))}
                     </ul>
