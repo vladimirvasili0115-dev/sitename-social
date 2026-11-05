@@ -4,7 +4,7 @@ import { flashRefusal } from "./flash";
 
 // Live tables of the bottle game. The database owns the game: seats, turns, where the bottle stops, answers and kisses.
 export type BottleSeat = { seat: number; id: string; name: string | null; avatar: string | null; gender: string | null; kisses: number; total?: number; smiles?: number; songs?: number; zodiac?: number | null; age: number | null; status?: string | null; frame?: number; pass?: boolean; top?: boolean; vip_badge?: boolean; kicked?: { by: string; at: number }; muted?: boolean | null; admirer?: { id: string; name: string | null; avatar: string | null; amount: number } | null };
-export type BottleChat = { id: number; from: string | null; to: string | null; kind: "text" | "kiss" | "wheel" | "song" | "gift" | "admire" | "admire_lost" | "kick" | "saved" | "kicked" | "compliment" | "bottle" | "gesture" | "booster"; body: string | null; seed?: number | null };
+export type BottleChat = { id: number; from: string | null; to: string | null; kind: "text" | "kiss" | "wheel" | "song" | "gift" | "admire" | "admire_lost" | "kick" | "saved" | "kicked" | "compliment" | "bottle" | "gesture" | "booster" | "muted" | "unmuted"; body: string | null; seed?: number | null };
 export type BottleState = {
   session?: string | null;
   table: number; me: string; now: number; hearts: number; chances?: number; winner?: { name: string | null; amount: number } | null;
