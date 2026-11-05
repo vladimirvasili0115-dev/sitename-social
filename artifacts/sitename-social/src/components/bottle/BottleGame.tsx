@@ -406,6 +406,8 @@ function HintHand({ target, label, angle }: { target: string; label: string; ang
 // 17 leagues, lowest first (the server numbers them 0-16). The trophy pictures are in /custom/league/<slug>.png.
 const LEAGUE_SLUGS = ["agac", "dash", "demir", "polad", "tunc", "mermer", "gumus", "qizil", "platin", "kehreba", "ametist", "topaz", "miravari", "sapfir", "yaqut", "zumrud", "brilyant"];
 const LEAGUE_TOP = LEAGUE_SLUGS.length - 1;
+// Every player card at the table shows the Emerald (Zümrüd) cup, whatever the real league is; the league window itself still shows the real one.
+const CARD_LEAGUE = LEAGUE_SLUGS.indexOf("zumrud");
 const LEAGUE_NAMES: Record<string, string[]> = {
   az: ["Ağac", "Daş", "Dəmir", "Polad", "Tunc", "Mərmər", "Gümüş", "Qızıl", "Platin", "Kəhrəba", "Ametist", "Topaz", "Miravari", "Sapfir", "Yaqut", "Zümrüd", "Brilyant"],
   en: ["Wood", "Stone", "Iron", "Steel", "Bronze", "Marble", "Silver", "Gold", "Platinum", "Amber", "Amethyst", "Topaz", "Pearl", "Sapphire", "Ruby", "Emerald", "Diamond"],
@@ -3068,7 +3070,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                         {statRow("statSongs", "dj.svg", "rgb(180,93,140)", stats[1].value, info?.songs_rank)}
                         {statRow("statSmiles", "gesture.svg", "rgb(252,131,0)", stats[2].value, info?.smiles_rank)}
                       </div>
-                      {cup !== null ? <button onClick={() => { setCard(false); setPanel("league"); }} title={leagueName(locale, cup)} className="ml-2 shrink-0 self-center"><LeagueBadge league={cup} className="h-[78px] w-[80px]" /></button> : null}
+                      {cup !== null ? <button onClick={() => { setCard(false); setPanel("league"); }} title={leagueName(locale, CARD_LEAGUE)} className="ml-2 shrink-0 self-center"><LeagueBadge league={CARD_LEAGUE} className="h-[78px] w-[80px]" /></button> : null}
                     </div>
                     <div className="flex shrink-0 py-[10px]">
                       {by && !by.self ? <button type="button" onClick={() => openAdmirerCard(by)} aria-label={by.name} title={by.name} className="mr-[11px] h-16 w-16 shrink-0 overflow-hidden rounded-[10px] active:brightness-75"><img src={by.avatar || NO_PHOTO} alt="" className="h-full w-full object-cover object-top" /></button> : <span aria-hidden="true" className="mr-[11px] flex h-16 w-16 shrink-0 items-end justify-center overflow-hidden rounded-[10px] bg-[#EEF1F5]"><UserRound size={56} className="-mb-2 text-[#C3CAD4]" fill="#DDE2E9" strokeWidth={1.2} /></span>}
