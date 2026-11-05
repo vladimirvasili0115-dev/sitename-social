@@ -438,10 +438,10 @@ function TableOwnerMark({ female, title }: { female: boolean; title: string }) {
 // Daily bonus hearts for day 1–5 in a row (the server uses the same numbers, see bottle_daily).
 // Shown for players who have no photo (the original shows a "NO PHOTO" silhouette).
 const NO_PHOTO = "/custom/profile/nophoto.svg";
-// Table 21 is shown as "021" everywhere the table number is written (the real number in the database stays 21).
+// Table 21 is shown as "021" and table 14 as "014" everywhere the table number is written (the real number in the database stays 21 / 14).
 // A VIP+ table has the internal id 1 000 000 + its number, so a VIP+ table can share a number with a normal table; everywhere the number is written without the million.
 const shownTable = (n: number) => (n >= 1000000 ? n - 1000000 : n);
-const tableLabel = (n: number | string | null | undefined) => (n != null && Number(n) >= 1000000 ? String(Number(n) - 1000000) : Number(n) === 21 ? "021" : String(n ?? ""));
+const tableLabel = (n: number | string | null | undefined) => (n != null && Number(n) >= 1000000 ? String(Number(n) - 1000000) : Number(n) === 21 ? "021" : Number(n) === 14 ? "014" : String(n ?? ""));
 const DAILY_PRIZES = [200, 400, 600, 800, 1000];
 // Lite mode (switched on by the game when the phone cannot keep up with a gift storm): gifts stay still pictures instead of animated ones.
 let liteGifts = false;
