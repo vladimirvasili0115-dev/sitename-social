@@ -11,7 +11,6 @@ export type SeatGiftData = {
   ids: string[]; seats: readonly (readonly [number, number])[]; box: number;
   cx: number; cy: number; staged: boolean; turn: number | null; target: number | null;
   url: (gift: string) => string | null; pileMs: number; version: number;
-  spinning?: boolean; // the bottle spins: the spinner's photo wobbles (seat-wobble 0.4 s) and its gifts must turn with it
 };
 
 const images = new Map<string, HTMLImageElement>();
@@ -28,7 +27,7 @@ export function SeatGiftCanvas({ data }: { data: MutableRefObject<SeatGiftData> 
     const node = canvas.current;
     const ctx = node?.getContext("2d");
     if (!node || !ctx) return;
-    let raf = 0, w = 0, h = 0, dpr = 1, lastVersion = -1, busyUntil = 0, drawn = false, spinSince = 0;
+    let raf = 0, w = 0, h = 0, dpr = 1, lastVersion = -1, busyUntil = 0, drawn = false;
     const shown = new Map<string, { x: number; y: number; fx: number; fy: number; tx: number; ty: number; t0: number }>();
     const fit = () => {
       const rect = node.parentElement?.getBoundingClientRect();
@@ -47,9 +46,6 @@ export function SeatGiftCanvas({ data }: { data: MutableRefObject<SeatGiftData> 
       const now = performance.now();
       const wall = Date.now();
       if (d.version !== lastVersion) { lastVersion = d.version; busyUntil = Math.max(busyUntil, now + 1300); }
-      if (d.spinning) { if (!spinSince) spinSince = now; } else spinSince = 0;
-      const wobbling = spinSince > 0 && now - spinSince < 700; // the wobble is 0.4 s; a little extra so it surely ends at 0 degrees
-      if (wobbling) busyUntil = Math.max(busyUntil, now + 50);
       let any = false;
       for (const id of d.ids) if (d.piles[id]?.length || d.spots[id]?.length) { any = true; break; }
       if (!any) { if (drawn) { ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, node.width, node.height); drawn = false; } return; }
@@ -70,19 +66,6 @@ export function SeatGiftCanvas({ data }: { data: MutableRefObject<SeatGiftData> 
       drawn = true;
       const unit = Math.min(w, h) / 100;
       const side = d.box * unit;
-      let waiting = false;
-      // The middle of a player's photo (the seat button, data-seat) on this canvas, read from the page while the photo moves.
-      let host: { left: number; top: number } | null = null;
-      const livePlace = (id: string): [number, number] | null => {
-        const parent = node.parentElement;
-        if (!parent) return null;
-        const el = parent.querySelector(`[data-seat="${CSS.escape(id)}"]`);
-        if (!el) return null;
-        if (!host) { const box = parent.getBoundingClientRect(); host = { left: box.left + parent.clientLeft, top: box.top + parent.clientTop }; }
-        const r = el.getBoundingClientRect();
-        if (!r.width) return null;
-        return [r.left + r.width / 2 - host.left, r.top + r.height / 2 - host.top];
-      };
       d.ids.forEach((id, index) => {
         const piles = d.piles[id] ?? [], spots = d.spots[id] ?? [];
         if (!piles.length && !spots.length) return;
@@ -92,34 +75,16 @@ export function SeatGiftCanvas({ data }: { data: MutableRefObject<SeatGiftData> 
         let cur = shown.get(id);
         if (!cur) { cur = { x: tx, y: ty, fx: tx, fy: ty, tx, ty, t0: now - 2000 }; shown.set(id, cur); }
         if (Math.abs(cur.tx - tx) > 0.5 || Math.abs(cur.ty - ty) > 0.5) { cur.fx = cur.x; cur.fy = cur.y; cur.tx = tx; cur.ty = ty; cur.t0 = now; }
-        // While the photo glides (its CSS move takes 1.1 s), the gifts follow the photo's real place on the screen, so they stay glued to it
-        // instead of trailing behind; only when the photo cannot be found they glide on their own.
-        const moving = now - cur.t0 < 1300;
-        const photo = moving ? livePlace(id) : null;
-        if (photo) { cur.x = photo[0]; cur.y = photo[1]; }
-        else {
-          const k = Math.min(1, (now - cur.t0) / 1100);
-          const e = inOut(k);
-          cur.x = cur.fx + (cur.tx - cur.fx) * e; cur.y = cur.fy + (cur.ty - cur.fy) * e;
-        }
-        if (moving) busyUntil = Math.max(busyUntil, now + 50);
+        const k = Math.min(1, (now - cur.t0) / 1100);
+        const e = inOut(k);
+        cur.x = cur.fx + (cur.tx - cur.fx) * e; cur.y = cur.fy + (cur.ty - cur.fy) * e;
+        if (k < 1) busyUntil = Math.max(busyUntil, now + 50);
         const left = cur.x - side / 2, top = cur.y - side / 2;
-        // The spinner's photo wobbles (a CSS rotation around its middle): its gifts take the same live angle, so they stay inside the frame.
-        let tilt = 0;
-        if (wobbling && index === d.turn) {
-          const el = node.parentElement?.querySelector(`[data-seat="${CSS.escape(id)}"]`);
-          const m = el ? getComputedStyle(el).transform : "none";
-          const parts = m.startsWith("matrix(") ? m.slice(7, -1).split(",").map(Number) : null;
-          if (parts && parts.length >= 2) tilt = Math.atan2(parts[1], parts[0]);
-        }
-        ctx.save();
-        if (tilt) { ctx.translate(cur.x, cur.y); ctx.rotate(tilt); ctx.translate(-cur.x, -cur.y); }
         const put = (gift: string, x: number, y: number, s: number, rot: number, alpha: number, scale: number, corner: "l" | "r" | null) => {
           const url = d.url(gift);
           if (!url) return;
           const img = picture(url);
-          if (!img.complete) { waiting = true; return; } // still loading: draw again on the next frames until it is there
-          if (!img.naturalWidth) return; // a broken picture: skipped for good
+          if (!img.complete || !img.naturalWidth) return;
           const box = (s / 100) * side;
           const ratio = img.naturalWidth / img.naturalHeight;
           let dw = ratio >= 1 ? box : box * ratio, dh = ratio >= 1 ? box / ratio : box;
@@ -153,14 +118,10 @@ export function SeatGiftCanvas({ data }: { data: MutableRefObject<SeatGiftData> 
           const grow = s.kind === "balloon" ? (age < 700 ? 0.6 + 0.6 * (age / 700) : 1.2) : age < 350 ? 1.12 - 0.12 * (age / 350) : 1;
           put(s.gift, s.x, s.y, s.s, rot, 1, grow, s.kind === "corner" || s.kind === "balloon" ? corner : null);
         }
-        ctx.restore();
       });
-      // A gift whose picture was not loaded yet is drawn as soon as it arrives (before, it stayed invisible until something else changed).
-      if (waiting) busyUntil = Math.max(busyUntil, now + 100);
     };
     raf = requestAnimationFrame(frame);
     return () => { cancelAnimationFrame(raf); watch.disconnect(); };
   }, [data]);
-  // z-30 and placed after the seats: above the raised photos (the spinner z-10, the kissing pair z-30), below the names (z-31) and the kiss arrows/buttons that come later.
-  return <canvas ref={canvas} aria-hidden="true" className="pointer-events-none absolute inset-0 z-30 h-full w-full" />;
+  return <canvas ref={canvas} aria-hidden="true" className="pointer-events-none absolute inset-0 z-[8] h-full w-full" />;
 }

@@ -26,7 +26,6 @@ import { flashRefusal } from "@/lib/flash";
 import { startCall } from "@/lib/callSync";
 import { clock as callClock, parseCallLog } from "@/lib/callLog";
 import { SeatGiftCanvas, type SeatGiftData } from "./SeatGiftCanvas";
-import { EffectsCanvas, type EffectsData } from "./EffectsCanvas";
 import { FlightCanvas, type CanvasFlight, type FlightGeometry } from "./FlightCanvas";
 import { FIRST_ORIGINAL, FRAME_PRICE, FrameArt, ORIGINAL_FRAMES, frameLooks, frameStone } from "./FrameArt";
 import { PassPanel, type PassData } from "./PassPanel";
@@ -214,10 +213,6 @@ function hatSpot(name: string): { x: number; y: number; s: number; a: number } {
 // Drinks and other corner gifts stand on the bottom-right edge of the frame: the picture's left edge is 10% inside the frame, its bottom just below it.
 // The visible art is at most CORNER_ART_H% of the photo high and CORNER_ART_W% wide (not the empty picture box), so big pictures stay small on the corner.
 const CORNER_SIZE = 80;
-// The last step for every bottom-right corner gift (planLanding): 1.2x smaller, 2 mm up from the bottom line, 2 mm out past the right line (1 mm = 2% of the photo).
-const CORNER_FINAL_SHRINK = 1.2;
-const CORNER_UP = 4;
-const CORNER_OUT_RIGHT = 4;
 const CORNER_SHIFT_LEFT = 7; // gifts on the bottom-right corner (hearts, drinks, balloons...) hang over the frame: they sit 3.5 mm (7% of the photo width) further left, in flight and when landed
 const CAT_SHIFT_LEFT = 12; // the cat in the dress sits about 6 mm (12% of the photo width) further left (3 mm, then 3 mm more)
 const CORNER_ART_H = 38;
@@ -245,7 +240,7 @@ function PackNote({ note, locale }: { note: { kind: "wait" | "ok" | "balance" | 
 // Auto-clicker guard: at most this many gifts a second from one device (enough for fast tapping at a full table of 12).
 const GIFT_BUCKET = 120;
 // These corner gifts are smaller than the other ones (whiskey glass 1.4x, wine glass 1.3x, joystick 1.4x); they still stand on the right frame line (flush) and the bottom line.
-const CORNER_SHRINK: Record<string, number> = { whiskey: 1.4, wine: 1.3, joystick: 1.4, martini: 1.3, mobile: 1.3, nokia: 1.3, heartlock: 1.3, goldenapple: 1.6 }; // the golden apple is 1.6x smaller, its right edge on the frame line
+const CORNER_SHRINK: Record<string, number> = { whiskey: 1.4, wine: 1.3, joystick: 1.4, martini: 1.3, mobile: 1.3, nokia: 1.3, heartlock: 1.3 };
 const BIGGER_CORNER = /^(cherry|makarov|revolver)$/;
 const BIGGER_BY = 1.2;
 const CORNER_ALL_BY = 1.7; // every other gift on the bottom-right corner is 1.7x bigger (they looked tiny next to the photo)
@@ -307,14 +302,6 @@ function planLanding(gift: string, seed: number = Math.random() * 1e9) {
     if (name !== "catdress") spot = { ...spot, x: spot.x - (flushed ? 0 : CORNER_SHIFT_LEFT) - (/^(makarov|revolver)$/.test(name) ? 4 : 0) + (HEART_TRIO.test(name) ? HEART_SHIFT_RIGHT : 0) + (name === "surprizebox" ? SURPRISE_SHIFT_RIGHT : name === "teddybear" ? 6 : 0) }; // the teddy bear stands 3 mm (6%) further right (the flight reads this same spot) // the pistol: another 2 mm (4%) to the left // flightTo reads this same spot, so the flight ends exactly where the gift stays
     }
   }
-  // Every gift on the bottom-right corner (also the hearts, the clown box, the teddy bear, the big gifts, balloons, Red Bull) is 1.2x smaller,
-  // and its visible picture stands the same way on every photo: the bottom edge 2 mm (4% of the photo) above the bottom line (never below it),
-  // the right edge 2 mm (4%) out past the right line. The flight reads this same spot. (The rooster that covers the whole photo is not a corner gift.)
-  if (spot && (spot.kind === "corner" || spot.kind === "balloon") && spot.x + spot.s / 2 >= 45 && land !== "e:🐓") {
-    const box = name ? artBox(name, true) : null;
-    const size = spot.s / CORNER_FINAL_SHRINK;
-    spot = { ...spot, s: size, x: 100 + CORNER_OUT_RIGHT - size * (box ? box.r : 1), y: 100 - CORNER_UP - size * (box ? box.b : 1) };
-  }
   return { land, spot, scatter };
 }
 // While flying, a family gift changes colour through its members.
@@ -332,11 +319,8 @@ export const giftFileName = (id: string): string => (id.startsWith("e:") ? Array
 // from the MP3 tab, "♪ " an own MP3 file (5 hearts); everything else is a YouTube song (9 hearts).
 const cleanSong = (raw: string) => raw.replace(/#[^\s#]+/g, "").replace(/\s{2,}/g, " ").trim();
 // The ring around the round photo of whoever put the song on: light grey track, darker grey part that fills as the song plays.
-function SongRing({ frac, className, children }: { frac: () => number; className?: string; children: ReactNode }) {
-  // Only this small ring is redrawn every half second, not the whole game.
-  const [, setTick] = useState(0);
-  useEffect(() => { const timer = window.setInterval(() => setTick((n) => n + 1), 500); return () => window.clearInterval(timer); }, []);
-  const deg = Math.round(Math.min(1, Math.max(0, frac())) * 360);
+function SongRing({ frac, className, children }: { frac: number; className?: string; children: ReactNode }) {
+  const deg = Math.round(Math.min(1, Math.max(0, frac)) * 360);
   return <span className={cn("inline-flex shrink-0 rounded-full p-[3px]", className)} style={{ background: `conic-gradient(#4B5563 ${deg}deg, #D1D5DB ${deg}deg)` }}>{children}</span>;
 }
 
@@ -584,19 +568,6 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [stickers, setStickers] = useState<Record<string, string[]>>({ b2: ["tea"], b5: ["rose"] });
   const [spots, setSpots] = useState<Record<string, Spot[]>>({});
   const [scatters, setScatters] = useState<{ key: number; to: string; names: string[]; dirs: [number, number][] }[]>([]);
-  // Gift-stream updates (take-off, start of the move, landing, end of a burst) are gathered and put on screen together,
-  // at most once per 100 ms: a stream of gifts redraws the game a few times a second instead of several times per gift.
-  const giftBatch = useRef<{ jobs: (() => void)[]; timer: number }>({ jobs: [], timer: 0 });
-  const inGiftBatch = (job: () => void) => {
-    const batch = giftBatch.current;
-    batch.jobs.push(job);
-    if (batch.timer) return;
-    batch.timer = window.setTimeout(() => {
-      batch.timer = 0;
-      const jobs = batch.jobs.splice(0, batch.jobs.length);
-      for (const run of jobs) { try { run(); } catch (error) { console.error(error); } }
-    }, 100);
-  };
   // A gift lands: worn ones go on the head, the rest take their spot; family gifts first burst over the whole photo.
   const landGift = (key: number, toId: string, plan: ReturnType<typeof planLanding>) => startTransition(() => landGiftNow(key, toId, plan));
   const landGiftNow = (key: number, toId: string, plan: ReturnType<typeof planLanding>) => {
@@ -639,7 +610,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (plan.scatter) {
       const dirs = plan.scatter.map((_, n) => { const angle = (n / plan.scatter!.length) * Math.PI * 2 + Math.random() * 0.8; return [Math.cos(angle) * (30 + Math.random() * 14), Math.sin(angle) * (30 + Math.random() * 14)] as [number, number]; });
       setScatters((list) => [...list, { key, to: toId, names: plan.scatter!, dirs }]);
-      window.setTimeout(() => inGiftBatch(() => setScatters((list) => list.filter((item) => item.key !== key))), 1100);
+      window.setTimeout(() => setScatters((list) => list.filter((item) => item.key !== key)), 1100);
     }
   };
   // Coming (back) to a table: the gifts that sit on the others' photos are read from the server (not from the other screens) and put in place without flying.
@@ -765,7 +736,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // When a receiver leaves the table (or moves to another one), the gifts flying to them stop; they never land on an empty seat.
   const playersRef = useRef(players);
   playersRef.current = players;
-  useEffect(() => { setFlying((list) => { const next = list.filter((item) => !item.toId || players[item.to]?.id === item.toId); return next.length === list.length ? list : next; }); dropDirect((item) => players[item.f.to]?.id === item.toId); }, [players]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { setFlying((list) => { const next = list.filter((item) => !item.toId || players[item.to]?.id === item.toId); return next.length === list.length ? list : next; }); }, [players]);
   useEffect(() => { airborne.current = flying.length; }, [flying.length]);
   // Safety net: a gift that is still "in the air" long after its flight should have ended (tab was in the background, a timer was lost) is removed.
   useEffect(() => {
@@ -1330,7 +1301,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         // Gifts from other players fly across the table on every screen; my own gifts were already shown when I sent them.
         const gifts = all.filter((item) => item.kind === "gift" && item.from !== data!.me && !(item.seed && seenSeeds.current.has(item.seed)));
         for (const item of gifts) if (item.seed) seenSeeds.current.add(item.seed);
-        if (!first) gifts.forEach((item, order) => window.setTimeout(() => inGiftBatch(() => remoteGift.current(who(item.from), who(item.to), item.body ?? "", gifts.length > 1 ? 1800 : 3600, item.seed ?? item.id)), order * Math.min(150, 900 / gifts.length))); // a big batch still starts within a second
+        if (!first) gifts.forEach((item, order) => window.setTimeout(() => remoteGift.current(who(item.from), who(item.to), item.body ?? "", gifts.length > 1 ? 1800 : 3600, item.seed ?? item.id), order * Math.min(150, 900 / gifts.length))); // a big batch still starts within a second
         for (const seat of data.seats) names.current[seat.id] = { name: gameName(seat.name) || "?", avatar: seat.avatar ?? "" };
         const nameOf = (id: string | null) => names.current[id ?? ""]?.name ?? "?"; // own name too, not "you"
         if (!first) all.filter((item) => item.kind === "compliment" && item.to === data!.me).forEach((item) => setComplimentIn({ name: names.current[item.from ?? ""]?.name ?? "?", avatar: names.current[item.from ?? ""]?.avatar || NO_PHOTO, kind: Number(item.body) || 1 }));
@@ -1353,8 +1324,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         }
         // Nothing changed and nothing counts down: skip the full re-render (the clock is refreshed at least every 4 seconds).
         const sig = JSON.stringify({ ...data, now: 0 });
-        // A song counts only in its first 30 seconds (the "song is busy" countdown); after that the ring keeps time on its own.
-        const counting = data.phase !== "waiting" || Boolean(data.track && data.now - data.track.at < 30000) ||data.seats.some((seat) => Boolean((seat as { kicked?: unknown }).kicked));
+        const counting = data.phase !== "waiting" || Boolean(data.track) || data.seats.some((seat) => Boolean((seat as { kicked?: unknown }).kicked));
         if (entered || counting || sig !== netSig.current.sig || Date.now() - netSig.current.at > 4000) { netSig.current = { sig, at: Date.now() }; setNet(data); }
         if (entered) {
           const tableAtEntry = data.table;
@@ -1418,8 +1388,13 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     return seat?.avatar || players.find((player) => player.id === by)?.avatar || names.current[by]?.avatar || djPics[by] || NO_PHOTO;
   })();
   // The ring around that photo fills as the song goes. Every screen takes the song's place from the same server start time, so all see the same.
-  // The ring refreshes itself (SongRing), so a playing song no longer redraws the whole game twice a second.
-  const songFrac = () => (tune.dur > 0 ? Math.min(1, Math.max(0, songNow() / tune.dur)) : 0);
+  const [, setRingTick] = useState(0);
+  useEffect(() => {
+    if (!track) return;
+    const timer = window.setInterval(() => setRingTick((n) => n + 1), 500);
+    return () => window.clearInterval(timer);
+  }, [track?.at]); // eslint-disable-line react-hooks/exhaustive-deps
+  const songFrac = tune.dur > 0 ? Math.min(1, Math.max(0, songNow() / tune.dur)) : 0;
   useEffect(() => {
     const by = track?.by;
     if (!by || by === net?.me || djPics[by] || net?.seats.some((item) => item.id === by) || names.current[by]?.avatar) return;
@@ -1732,7 +1707,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   useEffect(() => { if (!liveTable) return; const id = liveTable; const timer = window.setTimeout(() => setStayed((list) => { const next = { ...list, [id]: Date.now() + 6 * 3600 * 1000 }; try { window.localStorage.setItem("bottle-stayed", JSON.stringify(next)); } catch { /* storage is blocked */ } return next; }), 180000); return () => window.clearTimeout(timer); }, [liveTable]);
   // A new table or room starts clean: gifts that sat on the photos at the old table do not come along.
   // Every table has its own music: moving to another table stops the song of the old one and plays the new table's song (if any).
-  useEffect(() => { tableGen.current += 1; setFlying([]); directFlights.current = []; pushCanvas(); setBursts([]); setShows([]); setStickers({}); setSpots({}); setPiles({}); setScatters([]); setVideo(null); setAudio(null); trackAt.current = 0; }, [liveTable]);
+  useEffect(() => { tableGen.current += 1; setFlying([]); setBursts([]); setShows([]); setStickers({}); setSpots({}); setPiles({}); setScatters([]); setVideo(null); setAudio(null); trackAt.current = 0; }, [liveTable]);
   useEffect(() => {
     if (!liveTable) return;
     try {
@@ -1874,7 +1849,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     const emoji = giftEmoji[id] ? giftEmoji[id] : id.startsWith("e:") ? id.slice(2) : null;
     return emoji ? giftSrc(emoji) : null;
   };
-  // Canvas layer (gifts on the photos, effects, flights without React updates): on for everybody; ?pixi=0 turns it off on a device (remembered), ?pixi=1 back on.
+  // Gifts lying on the photos sit on the photos as before (the old table). Open the game with ?pixi=1 (remembered) to try the canvas layer, ?pixi=0 to turn it off again.
   const [canvasSeats, setCanvasSeats] = useState(false);
   // Test switch: open the game as /bottle/?nochat=1 to run it without the chat list (to see how much the chat costs).
   const [noChat, setNoChat] = useState(false);
@@ -1908,8 +1883,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       frames += 1; last = now;
       if (now - since < 1000) return;
       const fps = (frames * 1000) / (now - since); frames = 0; since = now;
-      if (flyingCount.current + directFlights.current.length > 0 && fps < 28) { slow += 1; calm = 0; if (slow >= 2) set(true); }
-      else { slow = 0; if (flyingCount.current + directFlights.current.length === 0) { calm += 1; if (calm >= 5) set(false); } }
+      if (flyingCount.current > 0 && fps < 28) { slow += 1; calm = 0; if (slow >= 2) set(true); }
+      else { slow = 0; if (flyingCount.current === 0) { calm += 1; if (calm >= 5) set(false); } }
     };
     raf = requestAnimationFrame(loop);
     return () => { cancelAnimationFrame(raf); liteGifts = false; };
@@ -1918,42 +1893,18 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   useEffect(() => { try { setPerf(new URLSearchParams(window.location.search).get("perf") === "1"); } catch { /* no query */ } }, []);
   useEffect(() => {
     try {
-      // The canvas layer is on for everybody. ?pixi=0 turns it off on this device (remembered), ?pixi=1 turns it back on.
       const q = new URLSearchParams(window.location.search).get("pixi");
-      if (q === "0") window.localStorage.setItem("pixi-off", "1");
-      if (q === "1") window.localStorage.removeItem("pixi-off");
-      window.localStorage.removeItem("pixi-on"); // the old test switch is no longer needed
-      setCanvasSeats(window.localStorage.getItem("pixi-off") !== "1");
-    } catch { setCanvasSeats(true); /* storage blocked: on, like everybody */ }
+      if (q === "1") window.localStorage.setItem("pixi-on", "1");
+      if (q === "0") window.localStorage.removeItem("pixi-on");
+      setCanvasSeats(window.localStorage.getItem("pixi-on") === "1");
+    } catch { /* storage blocked: stays off */ }
   }, []);
   const seatGiftData = useRef<SeatGiftData>({ piles: {}, spots: {}, ids: [], seats: [], box: 17.5, cx: 50, cy: 50, staged: false, turn: null, target: null, url: () => null, pileMs: PILE_MS, version: 0 });
-  const effectsData = useRef<EffectsData>({ shows: [], bursts: [], seats: [] });
   const canvasUrl = (gift: string) => (canvasSeats ? flightUrl(gift) : null);
   const canvasCorners = (spot: Spot) => spot.kind !== "behind" && Boolean(canvasUrl(spot.gift));
   const canvasCount = useRef(0);
   const canvasLast = useRef<unknown[]>([]);
   const canvasFlights = useRef<CanvasFlight[]>([]);
-  // Canvas test switch (?pixi=1): a gift that flies on the canvas goes straight into the canvas list, without a React state change,
-  // so a fast gift stream no longer redraws the whole game for every gift (the canvas reads the list on each frame).
-  const directFlights = useRef<{ f: CanvasFlight; toId: string }[]>([]);
-  const stateFlights = useRef<CanvasFlight[]>([]);
-  const pushCanvas = () => { canvasFlights.current = directFlights.current.length ? stateFlights.current.concat(directFlights.current.map((item) => item.f)) : stateFlights.current; };
-  const dropDirect = (keep: (item: { f: CanvasFlight; toId: string }) => boolean) => {
-    const next = directFlights.current.filter(keep);
-    if (next.length !== directFlights.current.length) { directFlights.current = next; pushCanvas(); }
-  };
-  const flyDirect = (key: number, gift: string, plan: ReturnType<typeof planLanding>, from: number, to: number, toId: string, ms: number) => {
-    if (!canvasSeats) return false;
-    const url = flightUrl(WHOLE_FLIGHT.has(gift) ? gift : plan.land ?? gift);
-    if (!url) return false;
-    const now = performance.now();
-    const aim = flightTo(plan, gift);
-    const flight: CanvasFlight = { key, url, from, to, t0: now, ms, tx: aim.tx, ty: aim.ty, base: aim.base, end: aim.end, rot: plan.spot?.kind === "hatL" ? -45 : plan.spot?.kind === "hatR" ? 45 : plan.spot?.r ?? 0, fixed: plan.spot?.kind === "hatL" || plan.spot?.kind === "hatR", spin: SPIN_FLIGHT.test(gift) };
-    // safety net: a flight long past its landing time (a lost timer) is dropped
-    directFlights.current = [...directFlights.current.filter((item) => now - item.f.t0 < item.f.ms + 6000), { f: flight, toId }];
-    pushCanvas();
-    return true;
-  };
   const flightGeometry = useRef<FlightGeometry>({ seats: [], cx: 50, cy: 50, staged: false, turn: null, target: null });
   function chooseSkin(n: number) {
     if (!online && n !== skin) say({ from: "me", bottle: { a: skin, b: n } });
@@ -2620,7 +2571,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   }
   function heartBurst(key: number, to: number, amount = 1) {
     setBursts((list) => [...list, { key, to, amount }].slice(-4));
-    window.setTimeout(() => inGiftBatch(() => setBursts((list) => list.filter((item) => item.key !== key))), 1700);
+    window.setTimeout(() => setBursts((list) => list.filter((item) => item.key !== key)), 1700);
   }
   // A single gift glides for 3 seconds; gifts sent in a rapid series (press and hold) fly in about a second.
   // The flight goes straight to where the gift will sit (offset from the seat centre in cqmin, and its final size).
@@ -2653,20 +2604,17 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const seatXq = (index: number) => (staged && (index === turn || index === target) ? `(${CENTER_X}cqw ${index === turn ? "-" : "+"} 12.5cqmin)` : `${seats[index][0]}cqw`);
   const seatYq = (index: number) => (staged && (index === turn || index === target) ? `${STAGE_Y}cqh` : `${seats[index][1]}cqh`);
   flightGeometry.current = { seats, cx: CENTER_X, cy: STAGE_Y, staged, turn, target };
-  effectsData.current = { shows, bursts, seats };
   if (canvasSeats) {
     const last = canvasLast.current;
-    const spinning = phase === "spinning"; // the spinner's photo wobbles then: the canvas gifts wobble with it
-    if (last[0] !== piles || last[1] !== spots || last[2] !== staged || last[3] !== turn || last[4] !== target || last[5] !== wide || last[6] !== spinning) { canvasLast.current = [piles, spots, staged, turn, target, wide, spinning]; canvasCount.current += 1; }
-    seatGiftData.current = { piles, spots, ids: players.map((player) => player.id), seats, box: wide ? 18.5 : 17.5, cx: CENTER_X, cy: STAGE_Y, staged, turn, target, url: canvasUrl, pileMs: PILE_MS, version: canvasCount.current, spinning: phase === "spinning" };
+    if (last[0] !== piles || last[1] !== spots || last[2] !== staged || last[3] !== turn || last[4] !== target || last[5] !== wide) { canvasLast.current = [piles, spots, staged, turn, target, wide]; canvasCount.current += 1; }
+    seatGiftData.current = { piles, spots, ids: players.map((player) => player.id), seats, box: wide ? 18.5 : 17.5, cx: CENTER_X, cy: STAGE_Y, staged, turn, target, url: canvasUrl, pileMs: PILE_MS, version: canvasCount.current };
   }
   // The canvas draws every flight that has a picture; it reads this list on each frame.
   useEffect(() => {
-    stateFlights.current = flying.flatMap((item) => {
+    canvasFlights.current = flying.flatMap((item) => {
       const url = flightUrl(WHOLE_FLIGHT.has(item.gift) ? item.gift : item.look ?? item.gift);
       return url ? [{ key: item.key, url, from: item.from, to: item.to, t0: item.t0 ?? performance.now(), ms: item.ms, tx: item.tx, ty: item.ty, base: item.base, end: item.end, rot: item.rot ?? 0, fixed: item.fixed, spin: SPIN_FLIGHT.test(item.gift) }] : [];
     });
-    pushCanvas();
   }, [flying, art]); // eslint-disable-line react-hooks/exhaustive-deps
   // Realtime: every gift is also announced on the table's live channel at once, so everybody at the table sees it fly
   // within a fraction of a second (the database is not asked for it). The 1-second sync stays as the backup; a gift that
@@ -2690,7 +2638,6 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     setPiles(drop);
     setScatters((list) => list.filter((item) => item.to !== id));
     setFlying((list) => list.filter((item) => item.toId !== id));
-    dropDirect((item) => item.toId !== id);
   };
   const liveOut = useRef<{ from: string; to: string; gift: string; seed: number }[]>([]);
   const liveTimer = useRef(0);
@@ -2726,7 +2673,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       const who = (id: string) => (id === meId.current ? "me" : id);
       items.forEach((item, order) => {
         seenSeeds.current.add(item.seed);
-        window.setTimeout(() => inGiftBatch(() => remoteGift.current(who(item.from), who(item.to), item.gift, items.length > 1 ? 1800 : 3600, item.seed)), order * Math.min(120, 600 / items.length));
+        window.setTimeout(() => remoteGift.current(who(item.from), who(item.to), item.gift, items.length > 1 ? 1800 : 3600, item.seed), order * Math.min(120, 600 / items.length));
       });
     });
     channel.on("broadcast", { event: "fresh" }, (message: { payload?: { id?: string } }) => {
@@ -2863,26 +2810,25 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     // Drinks fly like every other gift (one by one); on landing the receiver gets the "+1 heart" burst.
     const pour = isDrink(gift) && index !== meIndex;
     const plan = planLanding(gift, seed);
-    if (!flyDirect(key, gift, plan, meIndex, index, player.id, ms)) {
+    {
       // My own gifts always fly on my screen: when the sky is full, the oldest gift from someone else makes room.
       // A gift already in the air is never removed before it arrives. When the sky is full, someone else's oldest gift makes room;
       // if all of them are mine, the new one simply lands without a flight.
       setFlying((list) => [...list, { key, gift, look: plan.land, t0: performance.now(), from: meIndex, to: index, toId: player.id, moved: false, ms, mine: true, still: liteRef.current || list.length >= 12, rot: plan.spot?.kind === "hatL" ? -45 : plan.spot?.kind === "hatR" ? 45 : plan.spot?.r ?? 0, fixed: plan.spot?.kind === "hatL" || plan.spot?.kind === "hatR", ...flightTo(plan, gift) }]); // no limit: every gift flies
-      window.setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(() => inGiftBatch(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item)))))), 20);
+      window.setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))))), 20);
     }
     say({ from: "me", to: player.id, gift }); // the chat line is written when the gift leaves, not when it lands
     const gen = tableGen.current;
     const startedAt = performance.now();
-    window.setTimeout(() => inGiftBatch(() => {
-      setFlying((list) => (list.some((item) => item.key === key) ? list.filter((item) => item.key !== key) : list));
-      dropDirect((item) => item.f.key !== key);
+    window.setTimeout(() => {
+      setFlying((list) => list.filter((item) => item.key !== key));
       if (gen !== tableGen.current || playersRef.current[index]?.id !== player.id || (freshAt.current[player.id] ?? 0) > startedAt) return;
       giftSound(gift, "land");
       if (pour) heartBurst(key, index);
       if (gift === "c:heart1000") heartBurst(key + 0.5, index, 1000);
       fireworks(key, index, price, meIndex, gift);
       landGift(key, player.id, plan);
-    }), ms + 100);
+    }, ms + 100);
     setSent((value) => ({ ...value, [player.id]: (value[player.id] ?? 0) + 1 }));
     bumpStat("giftsSent");
     bumpStat(`gift:${gift}`);
@@ -2903,23 +2849,22 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (busy) ms = 500;
     else giftSound(gift, "send");
     const plan = planLanding(gift, seed);
-    if (busy || !flyDirect(key, gift, plan, fromAt >= 0 ? fromAt : toAt, toAt, toId, ms)) {
+    {
       if (!busy) setFlying((list) => ([...list, { key, gift, look: plan.land, t0: performance.now(), from: fromAt >= 0 ? fromAt : toAt, to: toAt, toId, moved: false, ms, still: liteRef.current || list.length >= 12, rot: plan.spot?.kind === "hatL" ? -45 : plan.spot?.kind === "hatR" ? 45 : plan.spot?.r ?? 0, fixed: plan.spot?.kind === "hatL" || plan.spot?.kind === "hatR", ...flightTo(plan, gift) }]));
-      window.setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(() => inGiftBatch(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item)))))), 20);
+      window.setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))))), 20);
     }
     say({ from: fromId, to: toId, gift }); // the chat line is written when the gift leaves the sender
     const gen = tableGen.current;
     const startedAt = performance.now();
-    window.setTimeout(() => inGiftBatch(() => {
-      setFlying((list) => (list.some((item) => item.key === key) ? list.filter((item) => item.key !== key) : list));
-      dropDirect((item) => item.f.key !== key);
+    window.setTimeout(() => {
+      setFlying((list) => list.filter((item) => item.key !== key));
       if (gen !== tableGen.current || playersRef.current[toAt]?.id !== toId || (freshAt.current[toId] ?? 0) > startedAt) return;
       giftSound(gift, "land");
       if (pour) heartBurst(key, toAt);
       if (gift === "c:heart1000") heartBurst(key + 0.5, toAt, 1000);
       fireworks(key, toAt, priceOf(gift), fromAt, gift);
       landGift(key, toId, plan);
-    }), ms + 100);
+    }, ms + 100);
   };
   // Who admires this player: the server keeps it on a live table, the demo keeps it here.
   function admirerOf(player: Player) {
@@ -3492,11 +3437,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           );
         })}
 
-        {/* Canvas test switch (?pixi=1): the hearts burst and the fireworks are painted on one canvas instead of many DOM elements. */}
-        {canvasSeats ? <EffectsCanvas data={effectsData} /> : <>
-          {bursts.map((item) => <HeartBurst key={item.key} at={seats[item.to]} amount={item.amount} />)}
-          {shows.map((item) => <Fireworks key={`fw-${item.key}`} at={seats[item.to]} level={item.level} seed={item.key} />)}
-        </>}
+        {bursts.map((item) => <HeartBurst key={item.key} at={seats[item.to]} amount={item.amount} />)}
+        {shows.map((item) => <Fireworks key={`fw-${item.key}`} at={seats[item.to]} level={item.level} seed={item.key} />)}
         {tableVfx ? <TableShower key={tableVfx.key} emoji={tableVfx.emoji} seed={tableVfx.key % 1000} /> : null}
         {boostFx ? <BoostFx key={boostFx.key} kind={boostFx.kind} fromLeft={boostFx.fromLeft} x={CENTER_X} y={STAGE_Y} /> : null}
         {canvasSeats ? <SeatGiftCanvas data={seatGiftData} /> : null}
