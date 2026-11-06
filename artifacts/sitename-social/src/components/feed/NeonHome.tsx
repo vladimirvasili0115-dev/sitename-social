@@ -17,7 +17,7 @@ const tiles = [
   { emoji: "🕴️", name: "Mafiya", href: "/mafia", img: "/games/mafia.png" },
   { emoji: "🎲", name: "Nərd", href: "/games" },
   { emoji: "🎱", name: "Loto", href: "/games" },
-  { emoji: "🁫", name: "Domino", href: "/games" },
+  { emoji: "🁫", name: "Domino", href: "/domino", img: "/games/domino.png" },
 ];
 
 export function NeonHome({ name }: { name: string }) {
