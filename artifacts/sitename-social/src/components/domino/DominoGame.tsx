@@ -7,9 +7,9 @@ import { supabase } from "@/lib/supabase";
 import {
   dominoCreate, dominoDraw, dominoInvite, dominoInviteAnswer, dominoInvites, dominoJoin, dominoLeave, dominoMyTable, dominoPairsTop,
   dominoPass, dominoPlay, dominoProfile, dominoRooms, dominoSettings, dominoStart, dominoSync, dominoTop, findUserByHandle, tileHi, tileLo,
-  type DGame, type DInvite, type DMode, type DPairRow, type DProfile, type DRoom, type DSide, type DSync, type DTopRow,
+  type DGame, type DInvite, type DMode, type DPairRow, type DProfile, type DRoom, type DSeat, type DSide, type DSync, type DTopRow,
 } from "@/lib/dominoSync";
-import { DominoBoard, lastPieceKey } from "./DominoBoard";
+import { DominoBoard, lastPieceKey, useAnchor } from "./DominoBoard";
 import { DominoDefs, DominoTile } from "./DominoTile";
 
 type Dict = Record<string, string>;
@@ -18,6 +18,7 @@ const TX: Record<"az" | "en", Dict> = {
     back: "Geri", tables: "Masalar", rating: "Reytinq", medals: "Medallarım", rules: "Qaydalar",
     create: "Masa yarat", mode: "Rejim", target: "Hədəf", teams: "4 nəfərdə 2x2 komanda", noTeams: "komandasız", start: "Başlat", join: "Otur",
     noTables: "Hələ açıq masa yoxdur. Öz masanı yarat.", playing: "oyun gedir", waiting: "gözləyir", players: "nəfər",
+    quick: "TEZ OYUNA BAŞLA", atTables: "nəfər masada", liveTables: "CANLI MASALAR", d101: "Klassik Azərbaycan dominosu", d365: "Uclar 5-ə bölünsə xal",
     invites: "Dəvətlər", invitedYou: "səni masaya çağırır", accept: "Qəbul et", decline: "Rədd et",
     week: "Həftə", month: "Ay", all: "Ümumi", pairs: "Cütlər", games: "oyun", wins: "qələbə", points: "xal", empty: "Hələ heç kim yoxdur.",
     leave: "Çıx", leaveConfirm: "Oyun gedir. Çıxsan, komandan məğlub sayılacaq. Çıxırsan?", sitHere: "Bura otur", emptySeat: "Boş yer",
@@ -26,7 +27,7 @@ const TX: Record<"az" | "en", Dict> = {
     scores: "XALLAR", teamA: "Komanda A", teamB: "Komanda B", rule35: "35 xal birdəfəyə yazan komanda dərhal qalib olur",
     draw: "Çək", drawEmpty: "Çək (bazar yoxdur)", pass: "Pas", stock: "Bazar", yourTurn: "Sənin növbən", sec: "san",
     roundOver: "Raund bitdi", blocked: "Blok", won: "qazandı", nextRound: "Növbəti raund başlayır…", hands: "Əllərdə qalan",
-    matchOver: "OYUN BİTDİ", winner: "Qalib", again: "Yenidən başlat", left: "oyunu tərk etdi", instant: "Birdəfəyə 35 xal!",
+    matchOver: "OYUN BİTDİ", winner: "Qalib", again: "Yenidən başlat", left: "oyunu tərk etdi", somePlayer: "Bir oyunçu", instant: "Birdəfəyə 35 xal!",
     signIn: "Oynamaq üçün hesaba daxil ol.", demo: "Önizləmə (demo)", demoNote: "Bu önizləmədir: oyun serverə bağlı deyil.", tapTile: "Daşa toxun, sonra işıqlanan yerə qoy.",
     round: "Raund", failed: "Alınmadı, yenidən cəhd et.",
     e_not_your_turn: "Növbə səndə deyil.", e_illegal: "Bu daş ora qoyulmur.", e_has_move: "Gedişin var, bazardan çəkmək olmaz.", e_must_draw: "Əvvəl bazardan çək.",
@@ -41,6 +42,7 @@ const TX: Record<"az" | "en", Dict> = {
     back: "Back", tables: "Tables", rating: "Rating", medals: "My medals", rules: "Rules",
     create: "Create table", mode: "Mode", target: "Target", teams: "2x2 teams with 4 players", noTeams: "no teams", start: "Start", join: "Sit",
     noTables: "No open tables yet. Create your own.", playing: "playing", waiting: "waiting", players: "players",
+    quick: "QUICK PLAY", atTables: "at tables", liveTables: "LIVE TABLES", d101: "Classic Azerbaijani domino", d365: "Score when the ends add up to 5s",
     invites: "Invites", invitedYou: "invites you to a table", accept: "Accept", decline: "Decline",
     week: "Week", month: "Month", all: "All time", pairs: "Pairs", games: "games", wins: "wins", points: "pts", empty: "Nobody yet.",
     leave: "Leave", leaveConfirm: "A game is on. If you leave, your team loses. Leave?", sitHere: "Sit here", emptySeat: "Empty seat",
@@ -49,7 +51,7 @@ const TX: Record<"az" | "en", Dict> = {
     scores: "SCORES", teamA: "Team A", teamB: "Team B", rule35: "A team scoring 35 at once wins at once",
     draw: "Draw", drawEmpty: "Draw (stock empty)", pass: "Pass", stock: "Stock", yourTurn: "Your turn", sec: "s",
     roundOver: "Round over", blocked: "Blocked", won: "won", nextRound: "Next round is starting…", hands: "Left in hands",
-    matchOver: "GAME OVER", winner: "Winner", again: "Start again", left: "left the game", instant: "35 points at once!",
+    matchOver: "GAME OVER", winner: "Winner", again: "Start again", left: "left the game", somePlayer: "A player", instant: "35 points at once!",
     signIn: "Sign in to play.", demo: "Preview (demo)", demoNote: "This is a preview: not connected to the server.", tapTile: "Tap a tile, then the glowing spot.",
     round: "Round", failed: "Failed, try again.",
     e_not_your_turn: "It is not your turn.", e_illegal: "That tile does not go there.", e_has_move: "You have a move, you cannot draw.", e_must_draw: "Draw from the stock first.",
@@ -105,34 +107,43 @@ function Avatar({ name, src, turn = false, blue = false, size = 42 }: { name: st
 export function DominoGame() {
   const tx = useTx();
   const [tableId, setTableId] = useState<number | null>(null);
-  const [demo, setDemo] = useState(false);
+  const [demo, setDemo] = useState<string | null>(null);
   const [checked, setChecked] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get("demo") === "1") { setDemo(true); setChecked(true); return; }
+    const d = params.get("demo");
+    if (d === "1" || d === "101" || d === "365") { setDemo(d); setChecked(true); return; }
     if (!supabase) { setChecked(true); return; }
     dominoMyTable().then((r) => { if (r.data) setTableId(r.data); setChecked(true); });
   }, []);
 
   if (!checked) return <div className={shell}><DominoDefs /></div>;
-  if (demo) return <div className={shell}><DominoDefs /><DemoTable onExit={() => setDemo(false)} tx={tx} /></div>;
+  if (demo) return <div className={shell}><DominoDefs /><DemoTable key={demo} variant={demo} onExit={() => setDemo(null)} tx={tx} /></div>;
   if (tableId !== null) return <div className={shell}><DominoDefs /><DominoTable tableId={tableId} tx={tx} onExit={() => setTableId(null)} /></div>;
-  return <div className={`${shell} overflow-y-auto`}><DominoDefs /><Lobby tx={tx} onOpen={setTableId} onDemo={() => setDemo(true)} /></div>;
+  return <div className={`${shell} overflow-y-auto`}><DominoDefs /><Lobby tx={tx} onOpen={setTableId} onDemo={() => setDemo("1")} /></div>;
 }
 
 // ───────────────────────── Lobby ─────────────────────────
 
+const sampleSeat = (seat: number, name: string): DSeat => ({ seat, user_id: `s${seat}${name}`, name, avatar: null });
+const SAMPLE_ROOMS: DRoom[] = [
+  { id: 1, owner: null, mode: "365", target: 365, teams: true, status: "waiting", seats: [sampleSeat(0, "Elnur"), sampleSeat(1, "Aysel"), sampleSeat(2, "Rauf")] },
+  { id: 2, owner: null, mode: "101", target: 101, teams: true, status: "waiting", seats: [sampleSeat(1, "Nigar"), sampleSeat(2, "Kamran")] },
+  { id: 3, owner: null, mode: "365", target: 255, teams: false, status: "playing", seats: [sampleSeat(0, "Orxan"), sampleSeat(1, "Leyla"), sampleSeat(2, "Murad"), sampleSeat(3, "Səbinə")] },
+];
+
 function Lobby({ tx, onOpen, onDemo }: { tx: (k: string) => string; onOpen: (id: number) => void; onDemo: () => void }) {
   const [tab, setTab] = useState<"tables" | "rating" | "medals" | "rules">("tables");
-  const [rooms, setRooms] = useState<DRoom[]>([]);
+  const online = !!supabase;
+  // Without a server (local preview only) a few sample tables are shown so the screen can be judged.
+  const [rooms, setRooms] = useState<DRoom[]>(() => (online ? [] : SAMPLE_ROOMS));
   const [invites, setInvites] = useState<DInvite[]>([]);
   const [note, setNote] = useState<string | null>(null);
   const [mode, setMode] = useState<DMode>("101");
   const [target, setTarget] = useState(101);
   const [teams, setTeams] = useState(true);
   const [busy, setBusy] = useState(false);
-  const online = !!supabase;
 
   useEffect(() => {
     if (!online) return;
@@ -167,79 +178,138 @@ function Lobby({ tx, onOpen, onDemo }: { tx: (k: string) => string; onOpen: (id:
     if (ok && r.data) onOpen(r.data); else if (r.error) setNote(errText(tx, r.error));
   };
 
-  const tabBtn = (key: typeof tab) => (
-    <button type="button" onClick={() => setTab(key)} className={`rounded-full px-3 py-1.5 text-sm font-semibold ${tab === key ? gold : "bg-white/10"}`}>{tx(key)}</button>
-  );
+  // "Quick play": the fullest waiting table with a free seat, otherwise a new 101 table.
+  const quick = async () => {
+    const free = rooms
+      .filter((r) => r.status === "waiting" && (r.seats?.length ?? 0) < 4)
+      .sort((a, b) => (b.seats?.length ?? 0) - (a.seats?.length ?? 0))[0];
+    if (free) { await join(free.id); return; }
+    setBusy(true);
+    const r = await dominoCreate("101", 101, true);
+    setBusy(false);
+    if (r.data) onOpen(r.data); else setNote(errText(tx, r.error));
+  };
+  const [sheet, setSheet] = useState(false);
+  const openMode = (m: DMode) => { setMode(m); setTarget(TARGETS[m][0]); setSheet(true); };
+  const seated = rooms.reduce((sum, r) => sum + (r.seats?.length ?? 0), 0);
+
+  const TABS: { key: typeof tab; icon: string }[] = [
+    { key: "tables", icon: "🁫" }, { key: "rating", icon: "🏆" }, { key: "medals", icon: "🏅" }, { key: "rules", icon: "📖" },
+  ];
 
   return (
-    <div className="mx-auto w-full max-w-[520px] px-4 pb-10 pt-3">
-      <div className="flex items-center justify-between">
-        <Link href="/games" className="rounded-full bg-white/10 px-3 py-1.5 text-sm">← {tx("back")}</Link>
-        <button type="button" onClick={onDemo} className="rounded-full border border-[#c8973a88] px-3 py-1.5 text-xs text-[#ffd77a]">{tx("demo")}</button>
+    <div className="mx-auto min-h-full w-full max-w-[480px] bg-[#07051a] pb-[calc(env(safe-area-inset-bottom)+76px)]">
+      {/* hero: the neon table */}
+      <div className="relative h-[300px] overflow-hidden bg-[url(/domino/table.jpg)] bg-cover bg-center">
+        <div className="absolute inset-0 bg-[linear-gradient(#07051a00_30%,#07051a)]" />
+        <div className="absolute inset-x-3 top-3 z-10 flex items-center justify-between">
+          <Link href="/games" className="rounded-full bg-black/60 px-3 py-1.5 text-xs">← {tx("back")}</Link>
+          <span className="rounded-full border border-[#7dffa655] bg-black/60 px-2.5 py-1 text-[11px] text-[#7dffa6]">● {seated} {tx("atTables")}</span>
+        </div>
+        <div className="absolute inset-x-0 top-[58px] z-10 flex justify-center"><Logo /></div>
+        <button type="button" onClick={quick} disabled={busy || !online}
+          className={`absolute inset-x-5 top-[200px] z-10 flex h-[58px] items-center justify-center gap-2 rounded-[18px] text-[19px] font-black shadow-[0_0_30px_#ffd77a88] disabled:opacity-60 ${gold}`}>
+          ⚡ {tx("quick")}
+        </button>
       </div>
-      <div className="mt-4 flex justify-center"><Logo /></div>
-      {!online ? <p className="mt-4 rounded-xl bg-white/10 p-3 text-center text-sm">{tx("signIn")}</p> : null}
-      {note ? <p className="mt-3 rounded-xl bg-red-500/20 p-2.5 text-center text-sm" onClick={() => setNote(null)}>{note}</p> : null}
+
+      {!online ? <p className="mx-4 mt-2 rounded-xl bg-white/10 p-3 text-center text-sm">{tx("signIn")} <button type="button" onClick={onDemo} className="ml-1 text-[#ffd77a] underline">{tx("demo")}</button></p> : null}
+      {note ? <p className="mx-4 mt-2 rounded-xl bg-red-500/20 p-2.5 text-center text-sm" onClick={() => setNote(null)}>{note}</p> : null}
 
       {invites.length ? (
-        <div className="mt-4 space-y-2">
-          <h3 className="text-sm font-bold text-[#ffd77a]">{tx("invites")}</h3>
+        <div className="mx-4 mt-3 space-y-2">
           {invites.map((inv) => (
-            <div key={inv.id} className="flex items-center gap-3 rounded-2xl border border-[#c8973a88] bg-black/50 p-2.5">
-              <Avatar name={inv.name ?? "?"} src={inv.avatar} size={36} />
-              <div className="min-w-0 flex-1 text-sm"><b>{inv.name}</b> {tx("invitedYou")} <span className="text-white/60">· {inv.mode === "365" ? "Telefon 365" : "101"}</span></div>
-              <button type="button" onClick={() => answer(inv, true)} className={`rounded-full px-3 py-1.5 text-xs font-bold ${gold}`}>{tx("accept")}</button>
-              <button type="button" onClick={() => answer(inv, false)} className="rounded-full bg-white/10 px-3 py-1.5 text-xs">{tx("decline")}</button>
+            <div key={inv.id} className="flex items-center gap-3 rounded-2xl border border-[#ff4d6d66] bg-[linear-gradient(90deg,#ff4d6d33,#ffd77a22)] p-2.5">
+              <Avatar name={inv.name ?? "?"} src={inv.avatar} size={34} />
+              <div className="min-w-0 flex-1 text-xs"><b className="text-sm">{inv.name}</b> {tx("invitedYou")}<div className="text-white/60">{inv.mode === "365" ? `Telefon 365 · ${inv.target}` : "101"}</div></div>
+              <button type="button" onClick={() => answer(inv, true)} className={`rounded-xl px-3 py-1.5 text-xs font-bold ${gold}`}>{tx("accept")}</button>
+              <button type="button" onClick={() => answer(inv, false)} className="rounded-xl bg-white/10 px-2.5 py-1.5 text-xs">✕</button>
             </div>
           ))}
         </div>
       ) : null}
 
-      <div className="mt-5 flex flex-wrap gap-2">{tabBtn("tables")}{tabBtn("rating")}{tabBtn("medals")}{tabBtn("rules")}</div>
-
       {tab === "tables" ? (
         <>
-          <div className="mt-4 rounded-2xl border border-[#c8973a88] bg-black/50 p-3">
-            <div className="flex gap-2">
-              {(["101", "365"] as DMode[]).map((m) => (
-                <button key={m} type="button" onClick={() => { setMode(m); setTarget(TARGETS[m][0]); }}
-                  className={`flex-1 rounded-xl py-2 text-sm font-bold ${mode === m ? gold : "bg-white/10"}`}>{m === "101" ? "101" : "Telefon 365"}</button>
-              ))}
-            </div>
+          <div className="relative z-10 -mt-1.5 flex gap-3 px-4">
+            {(["101", "365"] as DMode[]).map((m) => (
+              <button key={m} type="button" onClick={() => openMode(m)}
+                className={`flex-1 rounded-[18px] border p-3 text-left ${m === "101"
+                  ? "border-[#5b7cff88] bg-[linear-gradient(160deg,#1c2a8a,#100b3a)] shadow-[0_0_18px_#4b5bff44]"
+                  : "border-[#c06bff88] bg-[linear-gradient(160deg,#5b1c8a,#1a0b3a)] shadow-[0_0_18px_#a04bff44]"}`}>
+                <DominoTile a={m === "101" ? 1 : 3} b={m === "101" ? 1 : 2} className="h-[44px] w-[22px]" />
+                <div className="mt-1.5 text-[17px] font-extrabold">{m === "101" ? "101" : "Telefon 365"}</div>
+                <div className="mt-0.5 text-[11px] text-white/65">{tx(m === "101" ? "d101" : "d365")}</div>
+              </button>
+            ))}
+          </div>
+          <h4 className="mx-4 mb-2 mt-5 text-[13px] font-bold tracking-[1px] text-[#ffd77a]">{tx("liveTables")}</h4>
+          <div className="space-y-2 px-4">
+            {rooms.length ? rooms.map((r) => {
+              const seats = r.seats ?? [];
+              const full = seats.length >= 4;
+              return (
+                <div key={r.id} className="flex items-center gap-2.5 rounded-2xl border border-white/[0.08] bg-white/[0.04] p-2.5">
+                  <div className="min-w-0 flex-1 text-xs text-white/65">
+                    <b className="block text-sm text-white">{r.mode === "365" ? "Telefon 365" : "101"}{r.teams ? " · 2×2" : ""}</b>
+                    {r.mode === "365" ? `${tx("target")} ${r.target} · ` : ""}{seats.length}/4 · {r.status === "playing" ? tx("playing") : tx("waiting")}
+                  </div>
+                  <div className="flex pl-1.5">
+                    {[0, 1, 2, 3].map((i) => {
+                      const s = seats.find((x) => x.seat === i);
+                      return s
+                        ? <span key={i} className="-ml-1.5"><Avatar name={s.name ?? "?"} src={s.avatar} size={24} blue={r.teams && i % 2 === 1} /></span>
+                        : <span key={i} className="-ml-1.5 grid h-6 w-6 place-items-center rounded-full border-2 border-dashed border-white/25 bg-white/5 text-[10px] text-white/40">+</span>;
+                    })}
+                  </div>
+                  <button type="button" disabled={busy || r.status === "playing" || full} onClick={() => join(r.id)}
+                    className={`rounded-[14px] px-3.5 py-2 text-xs font-extrabold disabled:opacity-40 ${gold}`}>{tx("join")}</button>
+                </div>
+              );
+            }) : <p className="rounded-2xl bg-white/[0.04] p-4 text-center text-sm text-white/60">{tx("noTables")}</p>}
+          </div>
+        </>
+      ) : null}
+      {tab !== "tables" ? (
+        <div className="px-4 pt-3">
+          {tab === "rating" ? <Rating tx={tx} /> : null}
+          {tab === "medals" ? <Medals tx={tx} /> : null}
+          {tab === "rules" ? <p className="mt-2 whitespace-pre-line rounded-2xl bg-white/[0.07] p-4 text-sm leading-6 text-white/85">{tx("rulesText")}</p> : null}
+        </div>
+      ) : null}
+
+      {/* bottom tabs */}
+      <nav className="fixed inset-x-0 bottom-0 z-20 mx-auto flex h-[calc(env(safe-area-inset-bottom)+62px)] max-w-[480px] items-start justify-around border-t border-white/[0.08] bg-[#0b0920ee] pt-2 backdrop-blur">
+        {TABS.map(({ key, icon }) => (
+          <button key={key} type="button" onClick={() => setTab(key)} className={`flex flex-col items-center gap-0.5 text-[10px] ${tab === key ? "text-[#ffd77a]" : "text-white/55"}`}>
+            <span className="text-lg leading-none">{icon}</span>{tx(key)}
+          </button>
+        ))}
+      </nav>
+
+      {/* create-table sheet (opens from a mode card) */}
+      {sheet ? (
+        <div className="fixed inset-0 z-30 flex items-end justify-center bg-black/60" onClick={() => setSheet(false)}>
+          <div className="w-full max-w-[480px] rounded-t-3xl border-t border-[#c8973a88] bg-[#110b2a] p-4 pb-[calc(env(safe-area-inset-bottom)+16px)]" onClick={(e) => e.stopPropagation()}>
+            <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-white/20" />
+            <div className="text-lg font-extrabold">{tx("create")} · {mode === "101" ? "101" : "Telefon 365"}</div>
             {mode === "365" ? (
-              <div className="mt-2 flex items-center gap-2 text-sm">
+              <div className="mt-3 flex items-center gap-2 text-sm">
                 <span className="text-white/70">{tx("target")}:</span>
                 {TARGETS["365"].map((v) => (
                   <button key={v} type="button" onClick={() => setTarget(v)} className={`rounded-full px-3 py-1 ${target === v ? gold : "bg-white/10"}`}>{v}</button>
                 ))}
               </div>
             ) : null}
-            <label className="mt-2 flex items-center gap-2 text-sm">
+            <label className="mt-3 flex items-center gap-2 text-sm">
               <input type="checkbox" checked={teams} onChange={(e) => setTeams(e.target.checked)} className="h-4 w-4 accent-[#c8973a]" />
               {tx("teams")}
             </label>
-            <button type="button" disabled={busy || !online} onClick={create} className={`mt-3 w-full rounded-xl py-2.5 font-extrabold disabled:opacity-50 ${gold}`}>{tx("create")}</button>
+            <button type="button" disabled={busy || !online} onClick={() => { setSheet(false); create(); }}
+              className={`mt-4 h-12 w-full rounded-2xl text-base font-extrabold disabled:opacity-50 ${gold}`}>{tx("create")}</button>
           </div>
-          <div className="mt-4 space-y-2">
-            {rooms.length ? rooms.map((r) => {
-              const seats = r.seats ?? [];
-              return (
-                <div key={r.id} className="flex items-center gap-3 rounded-2xl bg-white/[0.07] p-3">
-                  <div className="min-w-0 flex-1">
-                    <div className="text-sm font-bold">{r.mode === "365" ? `Telefon 365 · ${r.target}` : "101"} <span className="text-xs font-normal text-white/60">· {seats.length}/4 {tx("players")} · {r.status === "playing" ? tx("playing") : tx("waiting")}{r.teams ? "" : ` · ${tx("noTeams")}`}</span></div>
-                    <div className="mt-1 flex -space-x-2">{seats.map((s) => <Avatar key={s.seat} name={s.name ?? "?"} src={s.avatar} size={26} />)}</div>
-                  </div>
-                  <button type="button" disabled={busy || r.status === "playing" || seats.length >= 4} onClick={() => join(r.id)}
-                    className={`rounded-full px-4 py-2 text-xs font-bold disabled:opacity-40 ${gold}`}>{tx("join")}</button>
-                </div>
-              );
-            }) : <p className="rounded-xl bg-white/5 p-4 text-center text-sm text-white/70">{tx("noTables")}</p>}
-          </div>
-        </>
+        </div>
       ) : null}
-      {tab === "rating" ? <Rating tx={tx} /> : null}
-      {tab === "medals" ? <Medals tx={tx} /> : null}
-      {tab === "rules" ? <p className="mt-4 whitespace-pre-line rounded-2xl bg-white/[0.07] p-4 text-sm leading-6 text-white/85">{tx("rulesText")}</p> : null}
     </div>
   );
 }
@@ -406,6 +476,7 @@ function Stage({ tx, sync, myId, clockOffset, error, toast, onPlay, onDraw, onPa
   const myTurn = live && !!g && me !== null && g.turn === me && !g.over;
   const moves = useMemo(() => (myTurn ? sync.moves ?? [] : []), [myTurn, sync.moves]);
   useEffect(() => { setSelected(null); }, [g?.ver]);
+  const anchor = useAnchor(g, t.id);
 
   const nameOf = (uid: string) => sync.seats.find((s) => s.user_id === uid)?.name ?? "—";
   const avatarOf = (uid: string) => sync.seats.find((s) => s.user_id === uid)?.avatar ?? null;
@@ -495,7 +566,7 @@ function Stage({ tx, sync, myId, clockOffset, error, toast, onPlay, onDraw, onPa
       {/* board */}
       {g && (live || g.match_over) ? (
         <div className="absolute inset-x-[11%] bottom-[23%] top-[25%] z-10 sm:inset-x-[12%] sm:bottom-[24%] sm:top-[17%]">
-          <DominoBoard game={g} targets={targets} onTarget={(side) => { if (selected !== null) { onPlay(selected, side); setSelected(null); } }} lastKey={lastPieceKey(g)} maxUnit={46} />
+          <DominoBoard game={g} anchor={anchor} targets={targets} onTarget={(side) => { if (selected !== null) { onPlay(selected, side); setSelected(null); } }} lastKey={lastPieceKey(g)} maxUnit={46} />
         </div>
       ) : null}
 
@@ -576,6 +647,20 @@ function WaitingPanel({ tx, sync, myId, names, onStart, onSettings, onInvite }: 
   const [handle, setHandle] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
   const count = sync.seats.length;
+  // The player who left is no longer seated, so the name is read from the profile.
+  const leaver = g?.leaver ?? null;
+  const [leaverName, setLeaverName] = useState<string | null>(null);
+  useEffect(() => {
+    setLeaverName(null);
+    if (!leaver) return;
+    const seated = sync.seats.find((s) => s.user_id === leaver)?.name;
+    if (seated) { setLeaverName(seated); return; }
+    let alive = true;
+    supabase?.from("profiles").select("name").eq("id", leaver).maybeSingle()
+      .then(({ data }) => { if (alive && data?.name) setLeaverName(data.name as string); });
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leaver]);
   return (
     <div className="absolute left-1/2 top-1/2 z-30 w-[min(88vw,360px)] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-[#c8973a] bg-black/80 p-4 text-center">
       {g?.match_over ? (
@@ -583,7 +668,7 @@ function WaitingPanel({ tx, sync, myId, names, onStart, onSettings, onInvite }: 
           <div className="text-xl font-black text-[#ffd77a]">{tx("matchOver")}</div>
           {g.match_winner !== null ? <div className="mt-1 text-sm">🏆 {tx("winner")}: <b>{teamLabel(tx, g, g.match_winner, names)}</b></div> : null}
           {g.instant ? <div className="text-xs text-[#7dffa6]">{tx("instant")}</div> : null}
-          {g.leaver ? <div className="text-xs text-white/60">{sync.seats.find((s) => s.user_id === g.leaver)?.name ?? "—"} {tx("left")}</div> : null}
+          {g.leaver ? <div className="text-xs text-white/60">{leaverName ?? tx("somePlayer")} {tx("left")}</div> : null}
           <div className="mt-1 text-xs text-white/70">{g.scores.join(" : ")}</div>
         </div>
       ) : null}
@@ -622,19 +707,24 @@ function WaitingPanel({ tx, sync, myId, names, onStart, onSettings, onInvite }: 
 }
 
 // Shows "+N" when a move scored.
+// The timer depends only on the toast itself, so the 1.5 s polling cannot keep restarting it.
 function useScoreToast(g: DGame | undefined) {
   const [toast, setToast] = useState<string | null>(null);
   const lastVer = useRef<number | null>(null);
+  const ver = g?.ver;
+  const pts = g?.last_score?.pts ?? 0;
+  const matchOver = !!g?.match_over;
   useEffect(() => {
-    if (!g) return;
-    if (lastVer.current !== null && g.ver !== lastVer.current && g.last_score && g.last_score.pts > 0) {
-      setToast(`+${g.last_score.pts} xal`);
-      const id = setTimeout(() => setToast(null), 1800);
-      lastVer.current = g.ver;
-      return () => clearTimeout(id);
-    }
-    lastVer.current = g.ver;
-  }, [g]);
+    if (ver === undefined) return;
+    if (lastVer.current !== null && ver !== lastVer.current && pts > 0 && !matchOver) setToast(`+${pts} xal`);
+    lastVer.current = ver;
+  }, [ver, pts, matchOver]);
+  useEffect(() => {
+    if (!toast) return;
+    const id = setTimeout(() => setToast(null), 1800);
+    return () => clearTimeout(id);
+  }, [toast]);
+  useEffect(() => { if (matchOver) setToast(null); }, [matchOver]);
   return toast;
 }
 
@@ -731,18 +821,34 @@ function demoEnds(g: Pick<DGame, "ch_a" | "ch_b" | "spin_idx" | "up_a" | "up_b" 
   }
   return ends;
 }
-function demoSync(): DSync {
-  const base = { ch_a: [5, 2, 6, 6, 4, 4], ch_b: [2, 6, 6, 4, 4, 1], spin_idx: 2, up_a: [6], up_b: [4], dn_a: [6], dn_b: [0] };
+// ?demo=1: the design layout; ?demo=101 / ?demo=365: long lines to check how the snake turns.
+const DEMO_BOARDS: Record<string, Pick<DGame, "ch_a" | "ch_b" | "spin_idx" | "up_a" | "up_b" | "dn_a" | "dn_b">> = {
+  "1": { ch_a: [5, 2, 6, 6, 4, 4], ch_b: [2, 6, 6, 4, 4, 1], spin_idx: 2, up_a: [6], up_b: [4], dn_a: [6], dn_b: [0] },
+  "101": {
+    ch_a: [6, 5, 5, 4, 4, 3, 3, 2, 2, 1, 1, 0, 0, 6, 6, 4, 1, 3, 5, 2], ch_b: [5, 5, 4, 4, 3, 3, 2, 2, 1, 1, 0, 0, 6, 6, 4, 1, 3, 5, 2, 0],
+    spin_idx: null, up_a: [], up_b: [], dn_a: [], dn_b: [],
+  },
+  "365": {
+    ch_a: [3, 2, 4, 6, 6, 5, 5, 1, 1, 0, 3, 3, 4], ch_b: [2, 4, 6, 6, 5, 5, 1, 1, 0, 3, 3, 4, 4], spin_idx: 3,
+    up_a: [6, 2, 2, 0, 0], up_b: [2, 2, 0, 0, 5], dn_a: [6, 3, 1, 4], dn_b: [3, 1, 4, 5],
+  },
+};
+function demoSync(variant = "1"): DSync {
+  const base = DEMO_BOARDS[variant] ?? DEMO_BOARDS["1"];
+  const used = new Set([...base.ch_a.map((a, i) => Math.min(a, base.ch_b[i]) * 10 + Math.max(a, base.ch_b[i])),
+    ...base.up_a.map((a, i) => Math.min(a, base.up_b[i]) * 10 + Math.max(a, base.up_b[i])),
+    ...base.dn_a.map((a, i) => Math.min(a, base.dn_b[i]) * 10 + Math.max(a, base.dn_b[i]))]);
   const ends = demoEnds(base);
   const g: DGame = {
-    ...base, players: DEMO_IDS, n: 4, mode: "365", teams: [0, 1, 0, 1], team_count: 2, scores: [180, 135], target: 365,
+    ...base, players: DEMO_IDS, n: 4, mode: variant === "101" ? "101" : "365", teams: [0, 1, 0, 1], team_count: 2, scores: [180, 135], target: 365,
     turn: 0, starter: 0, passes: 0, over: false, winner: null, blocked: false, first_tile: null, match_over: false, match_winner: null, instant: false,
     last_score: null, round_no: 3, turn_at: new Date().toISOString(), over_at: null, last_move: null, leaver: null, ver: 1, stock_n: 0,
     ends_sum: ends.reduce((a, e) => a + e.v * (e.dbl ? 2 : 1), 0), ends, hand_n: [7, 7, 7, 7],
   };
-  const hand = [55, 36, 2, 13, 24, 11, 5];
+  const hand = [55, 36, 2, 13, 24, 11, 5, 15, 25, 35, 45, 56, 16, 26, 46, 0, 22, 44].filter((t) => !used.has(t)).slice(0, 7);
   return {
-    now: new Date().toISOString(), turn_secs: 30, table: { id: 0, owner: "me", mode: "365", target: 365, teams: true, status: "playing" },
+    now: new Date().toISOString(), turn_secs: 30,
+    table: { id: 0, owner: "me", mode: variant === "101" ? "101" : "365", target: variant === "101" ? 101 : 365, teams: true, status: "playing" },
     seats: [
       { seat: 0, user_id: "me", name: "Sən", avatar: null }, { seat: 1, user_id: "rauf", name: "Rauf", avatar: null },
       { seat: 2, user_id: "elnur", name: "Elnur", avatar: null }, { seat: 3, user_id: "aysel", name: "Aysel", avatar: null },
@@ -751,8 +857,8 @@ function demoSync(): DSync {
   };
 }
 
-function DemoTable({ tx, onExit }: { tx: (k: string) => string; onExit: () => void }) {
-  const [sync, setSync] = useState<DSync>(demoSync);
+function DemoTable({ tx, onExit, variant }: { tx: (k: string) => string; onExit: () => void; variant: string }) {
+  const [sync, setSync] = useState<DSync>(() => demoSync(variant));
   const toast = useScoreToast(sync.game);
   const play = (tile: number, side: DSide) => {
     setSync((s) => {
@@ -768,7 +874,7 @@ function DemoTable({ tx, onExit }: { tx: (k: string) => string; onExit: () => vo
       g.ends_sum = g.ends.reduce((a, e) => a + e.v * (e.dbl ? 2 : 1), 0);
       g.scores = [...g.scores];
       g.last_score = null;
-      if (g.ends_sum % 5 === 0) { g.scores[0] += g.ends_sum; g.last_score = { team: 0, pts: g.ends_sum, kind: "play" }; }
+      if (g.mode === "365" && g.ends_sum % 5 === 0) { g.scores[0] += g.ends_sum; g.last_score = { team: 0, pts: g.ends_sum, kind: "play" }; }
       g.last_move = { kind: "play", p: 0, t: tile, side };
       g.ver += 1;
       g.turn_at = new Date().toISOString();
@@ -779,6 +885,6 @@ function DemoTable({ tx, onExit }: { tx: (k: string) => string; onExit: () => vo
   };
   return (
     <Stage tx={tx} sync={sync} myId="me" clockOffset={0} error={null} toast={toast} banner={tx("demoNote")}
-      onPlay={play} onDraw={() => {}} onPass={() => setSync(demoSync())} onLeave={onExit} />
+      onPlay={play} onDraw={() => {}} onPass={() => setSync(demoSync(variant))} onLeave={onExit} />
   );
 }

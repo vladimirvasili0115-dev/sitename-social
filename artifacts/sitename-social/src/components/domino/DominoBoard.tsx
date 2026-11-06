@@ -4,50 +4,115 @@ import { useLayoutEffect, useRef, useState } from "react";
 import type { DGame, DSide } from "@/lib/dominoSync";
 import { DominoTile } from "./DominoTile";
 
-// Board layout in tile units: a horizontal tile is 2x1, a vertical tile 1x2.
-// The main line runs left→right (ch_a = left pip, ch_b = right pip); doubles stand across it.
-// The 365 spinner's arms grow up and down from it. The whole board is scaled to fit its box.
+// Board layout in tile units: a tile is 2x1 (a double lies across the line, 1 along it).
+// The line starts at an anchor tile (the 365 spinner, or the round's first tile) and grows both ways.
+// When an end reaches the edge of the board it turns 90° like a snake:
+//   right end: down, then back to the left;  left end: up, then back to the right.
+// 365 spinner arms: the up arm turns right at the top, the down arm turns left at the bottom.
+// The unit (tile size) is the largest that lets the whole layout fit the box.
 type Piece = { key: string; x: number; y: number; w: number; h: number; a: number; b: number; horizontal: boolean };
 type Spot = { side: DSide; x: number; y: number; w: number; h: number };
+type V = { x: number; y: number };
+type BoardGame = Pick<DGame, "ch_a" | "ch_b" | "spin_idx" | "up_a" | "up_b" | "dn_a" | "dn_b">;
 
 const GAP = 0.06;
+const EDGE = 0.25;
 
-export function layoutBoard(g: Pick<DGame, "ch_a" | "ch_b" | "spin_idx" | "up_a" | "up_b" | "dn_a" | "dn_b">) {
+const add = (p: V, d: V, k: number): V => ({ x: p.x + d.x * k, y: p.y + d.y * k });
+
+// Rectangle of a tile laid from point p in direction d (p = middle of its inner edge).
+function rectOf(p: V, d: V, dbl: boolean) {
+  const len = dbl ? 1 : 2, half = dbl ? 1 : 0.5;
+  if (d.x !== 0) return { x: d.x > 0 ? p.x : p.x - len, y: p.y - half, w: len, h: half * 2 };
+  return { x: p.x - half, y: d.y > 0 ? p.y : p.y - len, w: half * 2, h: len };
+}
+
+// Pips as drawn: vertical a = top, b = bottom; horizontal a = left, b = right.
+function facesOf(d: V, dbl: boolean, inner: number, outer: number) {
+  const horizontal = dbl ? d.y !== 0 : d.x !== 0;
+  if (dbl) return { horizontal, a: inner, b: inner };
+  const forward = d.x > 0 || d.y > 0; // drawn inner→outer in reading order
+  return { horizontal, a: forward ? inner : outer, b: forward ? outer : inner };
+}
+
+type Walk = { pieces: Piece[]; spot: Omit<Spot, "side"> };
+
+// Lays one branch of tiles. kind decides how it turns at the edge.
+function walk(
+  keyPrefix: string, keyIndex: (i: number) => number, tiles: { inner: number; outer: number }[],
+  start: V, dir: V, startHalf: number, kind: "right" | "left" | "up" | "down",
+  lim: { x0: number; x1: number; y0: number; y1: number; innerX: number | null },
+): Walk {
   const pieces: Piece[] = [];
-  let x = 0;
-  g.ch_a.forEach((a, i) => {
-    const b = g.ch_b[i];
-    const dbl = a === b;
-    const w = dbl ? 1 : 2, h = dbl ? 2 : 1;
-    pieces.push({ key: `c${i}`, x, y: -h / 2, w, h, a, b, horizontal: !dbl });
-    x += w + GAP;
+  let p = start, d = dir, half = startHalf;
+  let back: V | null = null; // after a corner tile: horizontal direction to go next
+  let down = 0;              // how far the corner has gone; rows need 2 units between them
+  const step = (dbl: boolean) => {
+    const len = dbl ? 1 : 2;
+    if (back) {
+      if (down < 2 - 1e-6) return; // a double in the corner is short: keep going down/up one more tile
+      p = add(add(p, d, -0.5), back, half + GAP);
+      d = back; back = null;
+      return;
+    }
+    const far = add(p, d, len);
+    if (kind === "right" || kind === "left") {
+      // horizontal runs: outer edge of the board, or the spinner column on the way back
+      const max = d.x > 0 ? (kind === "right" ? lim.x1 : lim.innerX ?? lim.x1) : null;
+      const min = d.x < 0 ? (kind === "left" ? lim.x0 : lim.innerX ?? lim.x0) : null;
+      if ((max !== null && far.x > max) || (min !== null && far.x < min)) {
+        const turn: V = kind === "right" ? { x: 0, y: 1 } : { x: 0, y: -1 };
+        back = { x: -d.x, y: 0 };
+        down = 0;
+        p = add(add(p, d, -0.5), turn, half + GAP);
+        d = turn;
+      }
+    } else if (d.y !== 0 && (far.y < lim.y0 || far.y > lim.y1)) {
+      const turn: V = kind === "up" ? { x: 1, y: 0 } : { x: -1, y: 0 };
+      p = add(add(p, d, -0.5), turn, half + GAP);
+      d = turn;
+    }
+  };
+  tiles.forEach((t, i) => {
+    const dbl = t.inner === t.outer;
+    step(dbl);
+    const r = rectOf(p, d, dbl);
+    const f = facesOf(d, dbl, t.inner, t.outer);
+    pieces.push({ key: `${keyPrefix}${keyIndex(i)}`, ...r, ...f });
+    p = add(p, d, (dbl ? 1 : 2) + GAP);
+    half = dbl ? 1 : 0.5;
+    if (back) down += dbl ? 1 : 2;
   });
-  const spots: Spot[] = [];
-  if (!pieces.length) return { pieces, spots: [{ side: "R" as DSide, x: -1, y: -0.5, w: 2, h: 1 }], box: { x0: -1, y0: -1, x1: 1, y1: 1 } };
-  const first = pieces[0];
-  const last = pieces[pieces.length - 1];
-  spots.push({ side: "L", x: first.x - 2 - GAP, y: -0.5, w: 2, h: 1 });
-  spots.push({ side: "R", x: last.x + last.w + GAP, y: -0.5, w: 2, h: 1 });
-  if (g.spin_idx !== null && g.spin_idx >= 0 && g.spin_idx < pieces.length) {
-    const sp = pieces[g.spin_idx];
-    const cx = sp.x + sp.w / 2;
-    let top = sp.y - GAP;
-    g.up_a.forEach((a, j) => {
-      const b = g.up_b[j];
-      const dbl = a === b;
-      // up arm: a is the inner (bottom) pip, b the outer (top) pip
-      if (dbl) { pieces.push({ key: `u${j}`, x: cx - 1, y: top - 1, w: 2, h: 1, a: b, b: a, horizontal: true }); top -= 1 + GAP; }
-      else { pieces.push({ key: `u${j}`, x: cx - 0.5, y: top - 2, w: 1, h: 2, a: b, b: a, horizontal: false }); top -= 2 + GAP; }
-    });
-    let bot = sp.y + sp.h + GAP;
-    g.dn_a.forEach((a, j) => {
-      const b = g.dn_b[j];
-      const dbl = a === b;
-      if (dbl) { pieces.push({ key: `d${j}`, x: cx - 1, y: bot, w: 2, h: 1, a, b, horizontal: true }); bot += 1 + GAP; }
-      else { pieces.push({ key: `d${j}`, x: cx - 0.5, y: bot, w: 1, h: 2, a, b, horizontal: false }); bot += 2 + GAP; }
-    });
-    spots.push({ side: "U", x: cx - 0.5, y: top - 2, w: 1, h: 2 });
-    spots.push({ side: "D", x: cx - 0.5, y: bot, w: 1, h: 2 });
+  step(false);
+  return { pieces, spot: rectOf(p, d, false) };
+}
+
+export function layoutBoard(g: BoardGame, anchor: number, W: number, H: number) {
+  const n = g.ch_a.length;
+  if (!n) return { pieces: [] as Piece[], spots: [{ side: "R" as DSide, x: -1, y: -0.5, w: 2, h: 1 }], box: { x0: -1, y0: -1, x1: 1, y1: 1 } };
+  const k = Math.min(Math.max(anchor, 0), n - 1);
+  const spin = g.spin_idx !== null && g.spin_idx === k;
+  const a0 = g.ch_a[k], b0 = g.ch_b[k];
+  const dbl0 = a0 === b0;
+  const pieces: Piece[] = [{ key: `c${k}`, x: dbl0 ? -0.5 : -1, y: dbl0 ? -1 : -0.5, w: dbl0 ? 1 : 2, h: dbl0 ? 2 : 1, a: a0, b: b0, horizontal: !dbl0 }];
+  const hx = dbl0 ? 0.5 : 1, half0 = dbl0 ? 1 : 0.5;
+  const lim = { x0: -W / 2 + EDGE, x1: W / 2 - EDGE, y0: -H / 2 + EDGE, y1: H / 2 - EDGE, innerX: null as number | null };
+  const right = walk("c", (i) => k + 1 + i,
+    g.ch_a.slice(k + 1).map((a, i) => ({ inner: a, outer: g.ch_b[k + 1 + i] })),
+    { x: hx + GAP, y: 0 }, { x: 1, y: 0 }, half0, "right", { ...lim, innerX: spin ? hx + 0.2 : null });
+  const leftIdx = Array.from({ length: k }, (_, i) => k - 1 - i);
+  const left = walk("c", (i) => k - 1 - i,
+    leftIdx.map((j) => ({ inner: g.ch_b[j], outer: g.ch_a[j] })),
+    { x: -hx - GAP, y: 0 }, { x: -1, y: 0 }, half0, "left", { ...lim, innerX: spin ? -(hx + 0.2) : null });
+  // With a spinner the returning rows stop at the spinner column (innerX), clear of the up/down arms.
+  pieces.push(...right.pieces, ...left.pieces);
+  const spots: Spot[] = [{ side: "R", ...right.spot }, { side: "L", ...left.spot }];
+  const arms = g.spin_idx !== null && g.spin_idx > 0 && g.spin_idx < n - 1;
+  if (spin && arms) {
+    const up = walk("u", (i) => i, g.up_a.map((a, i) => ({ inner: a, outer: g.up_b[i] })), { x: 0, y: -1 - GAP }, { x: 0, y: -1 }, 0.5, "up", lim);
+    const dn = walk("d", (i) => i, g.dn_a.map((a, i) => ({ inner: a, outer: g.dn_b[i] })), { x: 0, y: 1 + GAP }, { x: 0, y: 1 }, 0.5, "down", lim);
+    pieces.push(...up.pieces, ...dn.pieces);
+    spots.push({ side: "U", ...up.spot }, { side: "D", ...dn.spot });
   }
   const all = [...pieces, ...spots];
   const box = {
@@ -57,15 +122,30 @@ export function layoutBoard(g: Pick<DGame, "ch_a" | "ch_b" | "spin_idx" | "up_a"
   return { pieces, spots, box };
 }
 
+// Largest tile size (px per unit) at which the snake fits the box.
+export function fitBoard(g: BoardGame, anchor: number, pxW: number, pxH: number, maxUnit: number) {
+  // At least ~6 tiles per row (13 units across), so a phone turns after 5-6 tiles, not after 2.
+  let unit = Math.max(8, Math.min(maxUnit, pxW / 13));
+  for (let i = 0; i < 40; i++) {
+    const W = pxW / unit, H = pxH / unit;
+    const res = layoutBoard(g, anchor, Math.max(W, 6.5), Math.max(H, 6.5));
+    const bw = res.box.x1 - res.box.x0, bh = res.box.y1 - res.box.y0;
+    if ((bw <= W && bh <= H) || unit <= 8) return { ...res, unit };
+    unit = Math.max(8, unit * 0.93);
+  }
+  return { ...layoutBoard(g, anchor, pxW / unit, pxH / unit), unit };
+}
+
 type Props = {
-  game: Pick<DGame, "ch_a" | "ch_b" | "spin_idx" | "up_a" | "up_b" | "dn_a" | "dn_b">;
+  game: BoardGame;
+  anchor: number;                   // index in the line of the tile the layout grows from
   targets: DSide[];                 // sides where the selected tile can go
   onTarget: (side: DSide) => void;
   lastKey?: string | null;          // piece to highlight (last move)
   maxUnit?: number;
 };
 
-export function DominoBoard({ game, targets, onTarget, lastKey = null, maxUnit = 30 }: Props) {
+export function DominoBoard({ game, anchor, targets, onTarget, lastKey = null, maxUnit = 30 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
   // Measure before the first paint so the tiles do not slide in from a default size.
@@ -77,22 +157,20 @@ export function DominoBoard({ game, targets, onTarget, lastKey = null, maxUnit =
     setSize({ w: el.clientWidth, h: el.clientHeight });
     return () => ro.disconnect();
   }, []);
-  const { pieces, spots, box } = layoutBoard(game);
-  // Always keep room for the target spots so the board does not jump when a tile is selected.
-  const bw = box.x1 - box.x0, bh = box.y1 - box.y0;
-  const unit = Math.max(8, Math.min(maxUnit, size.w / (bw + 0.5), size.h / (bh + 0.5)));
+  if (!size.w) return <div ref={ref} className="relative h-full w-full" />;
+  const { pieces, spots, box, unit } = fitBoard(game, anchor, size.w, size.h, maxUnit);
   const ox = size.w / 2 - ((box.x0 + box.x1) / 2) * unit;
   const oy = size.h / 2 - ((box.y0 + box.y1) / 2) * unit;
   return (
     <div ref={ref} className="relative h-full w-full">
-      {size.w > 0 && pieces.map((p) => (
+      {pieces.map((p) => (
         <DominoTile
           key={p.key} a={p.a} b={p.b} horizontal={p.horizontal} glow={p.key === lastKey}
           className="absolute transition-all duration-300"
           style={{ left: ox + p.x * unit, top: oy + p.y * unit, width: p.w * unit, height: p.h * unit }}
         />
       ))}
-      {size.w > 0 && spots.filter((s) => targets.includes(s.side)).map((s) => (
+      {spots.filter((s) => targets.includes(s.side)).map((s) => (
         <button
           key={s.side} type="button" onClick={() => onTarget(s.side)} aria-label={s.side}
           className="absolute animate-pulse rounded-md border-2 border-dashed border-[#ffd77a] bg-[#ffd77a33] shadow-[0_0_18px_#ffd77a]"
@@ -111,4 +189,29 @@ export function lastPieceKey(g: DGame): string | null {
   if (m.side === "R") return `c${g.ch_a.length - 1}`;
   if (m.side === "U") return `u${g.up_a.length - 1}`;
   return `d${g.dn_a.length - 1}`;
+}
+
+// The tile the line grows from: the 365 spinner, else the round's first tile (remembered per table and round),
+// else the middle of the line (e.g. after a page reload in the middle of a 101 round).
+const tileCode = (a: number, b: number) => Math.min(a, b) * 10 + Math.max(a, b);
+export function useAnchor(g: DGame | undefined, tableId: number): number {
+  const key = g ? `domino-anchor-${tableId}-${g.round_no}` : null;
+  const [first, setFirst] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    if (!key) return;
+    let saved: number | null = null;
+    try { const v = window.sessionStorage.getItem(key); saved = v === null ? null : Number(v); } catch { /* storage blocked */ }
+    if (g && g.ch_a.length === 1) {
+      saved = tileCode(g.ch_a[0], g.ch_b[0]);
+      try { window.sessionStorage.setItem(key, String(saved)); } catch { /* storage blocked */ }
+    }
+    setFirst(saved);
+  }, [key, g?.ch_a.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!g || !g.ch_a.length) return 0;
+  if (g.spin_idx !== null) return g.spin_idx;
+  if (first !== null) {
+    const i = g.ch_a.findIndex((a, j) => tileCode(a, g.ch_b[j]) === first);
+    if (i >= 0) return i;
+  }
+  return Math.floor((g.ch_a.length - 1) / 2);
 }
