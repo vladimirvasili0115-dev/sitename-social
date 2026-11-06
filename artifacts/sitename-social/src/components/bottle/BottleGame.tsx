@@ -2644,8 +2644,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   effectsData.current = { shows, bursts, seats };
   if (canvasSeats) {
     const last = canvasLast.current;
-    if (last[0] !== piles || last[1] !== spots || last[2] !== staged || last[3] !== turn || last[4] !== target || last[5] !== wide) { canvasLast.current = [piles, spots, staged, turn, target, wide]; canvasCount.current += 1; }
-    seatGiftData.current = { piles, spots, ids: players.map((player) => player.id), seats, box: wide ? 18.5 : 17.5, cx: CENTER_X, cy: STAGE_Y, staged, turn, target, url: canvasUrl, pileMs: PILE_MS, version: canvasCount.current };
+    const spinning = phase === "spinning"; // the spinner's photo wobbles then: the canvas gifts wobble with it
+    if (last[0] !== piles || last[1] !== spots || last[2] !== staged || last[3] !== turn || last[4] !== target || last[5] !== wide || last[6] !== spinning) { canvasLast.current = [piles, spots, staged, turn, target, wide, spinning]; canvasCount.current += 1; }
+    seatGiftData.current = { piles, spots, ids: players.map((player) => player.id), seats, box: wide ? 18.5 : 17.5, cx: CENTER_X, cy: STAGE_Y, staged, turn, target, url: canvasUrl, pileMs: PILE_MS, version: canvasCount.current, spinning: phase === "spinning" };
   }
   // The canvas draws every flight that has a picture; it reads this list on each frame.
   useEffect(() => {
