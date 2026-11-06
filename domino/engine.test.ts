@@ -219,9 +219,10 @@ ok(E.newMatch(3, "101", E.mulberry32(1)).stock.length === 7, "3 nəfərdə bazar
   ok(r.ok, "hamlə qəbul edildi");
 }
 
-// 9b) 365: raund sonu bonusu (300-dən az olanda, 5-ə yuvarlaq)
+// 9b) 365: raund sonu bonusu (300-dən az olanda, həmişə yuxarı 5-ə yuvarlaq)
 {
-  ok(E.round5(22) === 20 && E.round5(23) === 25 && E.round5(14) === 15 && E.round5(1) === 0 && E.round5(3) === 5, "5-ə yuvarlaq");
+  const rr = [[0, 0], [1, 5], [4, 5], [5, 5], [6, 10], [9, 10], [10, 10], [11, 15], [14, 15], [22, 25], [23, 25]];
+  ok(rr.every(([x, y]) => E.round5(x) === y), `yuxarı 5-ə yuvarlaq (${rr.map(([x]) => `${x}→${E.round5(x)}`).join(" ")})`);
   // 0 oyunçusu son daşı qoyur: zəncir [1-1], əlində [1-2] → uclar 1+2 = 3 (xal yox). Rəqibdə 6-4 və 3-1 = 14 → 15.
   const mk = (sc: number[]) => base(2, "365", {
     hands: [[[1, 2]], [[6, 4], [3, 1]]], stock: [], chain: [P([1, 1], 1, 1)], spin: { idx: 0, up: [], down: [] },
@@ -237,13 +238,13 @@ ok(E.newMatch(3, "101", E.mulberry32(1)).stock.length === 7, "3 nəfərdə bazar
   const s255 = { ...mk([245, 0]), target: 255 };
   r = E.play(s255, 0, 0, "R");
   ok(r.ok && r.s.matchOver && r.s.matchWinner === 0 && r.s.scores[0] === 260, "365: bonus hədəfə çatdırır");
-  // blok: 0-da 1 xal, 1-də 6-6+5-5 = 22 → 0-a 20 yazılır (rəqiblərin cəmi)
+  // blok: 0-da 1 xal, 1-də 6-6+5-5 = 22 → 0-a 25 yazılır (rəqiblərin cəmi, yuxarı yuvarlaq)
   const blk = (sc: number[]) => base(2, "365", {
     hands: [[[0, 1]], [[6, 6], [5, 5]]], stock: [], chain: [P([2, 2], 2, 2), P([2, 3], 2, 3)], spin: { idx: 0, up: [], down: [] },
     turn: 0, firstTile: null, passes: 1, over: false, winner: null, blocked: false, scores: sc,
   });
   r = E.pass(blk([100, 0]), 0);
-  ok(r.ok && r.s.blocked && r.s.scores[0] === 120 && r.s.lastScore?.kind === "block", `365 blok: 100 → 120 (alındı ${r.ok && r.s.scores[0]})`);
+  ok(r.ok && r.s.blocked && r.s.scores[0] === 125 && r.s.lastScore?.kind === "block", `365 blok: 100 → 125 (alındı ${r.ok && r.s.scores[0]})`);
   r = E.pass(blk([300, 0]), 0);
   ok(r.ok && r.s.blocked && r.s.scores[0] === 300, "365 blok: 300-də bonus yoxdur");
   // blok bərabərlik: xal yoxdur

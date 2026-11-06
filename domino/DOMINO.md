@@ -38,7 +38,7 @@ Son nəticə: 3600 təsadüfi matç xətasız (yalnız mühərrik məntiqi; brau
   - Əl boşalanda: əli boşalanın komandasına rəqiblərin əlindəki daşların cəmi yazılır.
   - Blokda: əlində az qalan komandaya rəqiblərin cəmi yazılır. Bərabərlikdə xal yoxdur.
   - Yalnız komandanın xalı **300-dən az** olanda (bonusdan əvvəlki xala baxılır; 290 + 40 = 330 ola bilər). Bonus hədəfə çatdırırsa matç bitir.
-  - 5-ə yuvarlaq: 1-2 aşağı, 3-4 yuxarı (22 → 20, 23 → 25).
+  - Həmişə yuxarı 5-ə yuvarlaq (paket-HL): 1-4 → 5, 6-9 → 10, 11-14 → 15; 5-ə bölünən olduğu kimi qalır.
   - Kodda: `engine.ts` (`bonus365`, `round5`), SQL-də `domino__bonus365`.
 - 5 və 35 xal qaydası "ağ ağ ağ və 5" cümləsi: cəm 5-ə bölünmürsə xal yoxdur — bu qəbul edilib.
 

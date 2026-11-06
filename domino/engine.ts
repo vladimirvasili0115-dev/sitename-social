@@ -240,9 +240,10 @@ function addScore(s: State, team: number, pts: number, kind: LastScore["kind"]) 
   }
 }
 
-// 365 raund sonu bonusu: 5-ə yuvarlaq (1-2 aşağı, 3-4 yuxarı), yalnız komandanın xalı 300-dən az olanda.
+// 365 raund sonu bonusu: həmişə yuxarı, növbəti 5-ə (1-4 → 5, 6-9 → 10, 11 → 15; 10 → 10),
+// yalnız komandanın xalı 300-dən az olanda (istifadəçi təsdiqlədi).
 export const BONUS_LIMIT_365 = 300;
-export const round5 = (x: number) => Math.floor((x + 2) / 5) * 5;
+export const round5 = (x: number) => Math.ceil(x / 5) * 5;
 
 function bonus365(s: State, team: number, raw: number, kind: "round" | "block") {
   if (s.scores[team] >= BONUS_LIMIT_365) return;
