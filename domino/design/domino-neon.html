@@ -1,0 +1,60 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{width:1280px;height:800px;overflow:hidden;font-family:Segoe UI,Arial,sans-serif;background:#0b0f0c;color:#fff;position:relative}
+.room{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 40%,#2a1a10 0%,#120a06 60%,#050302 100%)}
+.table{position:absolute;left:150px;top:70px;width:980px;height:660px;border-radius:50%/48%;background:radial-gradient(ellipse at 50% 45%,#1f8a52 0%,#136b3c 55%,#0b4a2a 100%);border:22px solid #5a3519;box-shadow:0 0 0 4px #c8973a,0 0 0 8px #3a2210,0 30px 60px #000a,inset 0 0 90px #0008}
+.table:before{content:"";position:absolute;inset:0;border-radius:inherit;background:repeating-linear-gradient(45deg,#ffffff06 0 2px,transparent 2px 5px)}
+.tile{position:absolute;background:linear-gradient(145deg,#fffdf4,#e7dfc6);border-radius:7px;box-shadow:0 5px 8px #0009,inset 0 0 0 1px #b9ad8a,inset 0 2px 3px #fff;display:flex}
+.tile.h{width:80px;height:40px;flex-direction:row}.tile.v{width:40px;height:80px;flex-direction:column}
+.half{flex:1;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);padding:5px}
+.half i{display:block;border-radius:50%;margin:auto;width:7px;height:7px;background:radial-gradient(circle at 35% 30%,#555,#000)}
+.half i.r{background:radial-gradient(circle at 35% 30%,#ff6a5a,#a10f0f)}
+.tile.h:after{content:"";position:absolute;left:50%;top:5px;bottom:5px;width:2px;background:linear-gradient(#0000,#8a7a4a,#0000);transform:translateX(-1px)}
+.tile.v:after{content:"";position:absolute;top:50%;left:5px;right:5px;height:2px;background:linear-gradient(90deg,#0000,#8a7a4a,#0000)}
+.back{background:linear-gradient(145deg,#1b1b1f,#050507);box-shadow:0 4px 6px #0009,inset 0 0 0 1px #c8973a77}
+.back:after{background:#c8973a66!important}
+.seat{position:absolute;display:flex;align-items:center;gap:10px;background:#000b;border:1px solid #c8973a88;border-radius:30px;padding:6px 14px 6px 6px;font-size:14px}
+.av{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#c8973a,#7a4a14);display:grid;place-items:center;font-weight:800;font-size:18px;border:2px solid #ffd77a}
+.av.b{background:linear-gradient(135deg,#3a7bd5,#1b3a73);border-color:#9cc4ff}
+.mic{font-size:13px;color:#7dffa6}
+.turn{box-shadow:0 0 0 3px #ffd77a,0 0 24px #ffd77a99}
+.score{position:absolute;right:24px;top:24px;width:250px;background:#000c;border:1px solid #c8973a;border-radius:14px;padding:14px}
+.score h4{color:#ffd77a;font-size:13px;letter-spacing:2px;margin-bottom:10px}
+.team{margin-bottom:10px;font-size:13px}.bar{height:9px;border-radius:6px;background:#2a2a2a;margin-top:4px;overflow:hidden}.bar b{display:block;height:100%;background:linear-gradient(90deg,#c8973a,#ffe08a)}
+.logo{position:absolute;left:24px;top:20px}
+.logo .t{font-size:34px;font-weight:900;letter-spacing:3px;background:linear-gradient(#fff2b0,#c8973a 60%,#7a4a14);-webkit-background-clip:text;color:transparent;filter:drop-shadow(0 2px 0 #000)}
+.logo .s{font-size:11px;letter-spacing:5px;color:#c8973a;margin-top:-4px}
+.chat{position:absolute;left:24px;bottom:24px;width:300px;background:#000c;border:1px solid #ffffff22;border-radius:14px;padding:12px;font-size:13px}
+.chat p{margin-bottom:6px}.chat b{color:#ffd77a}
+.toast{position:absolute;left:470px;top:420px;transform:translateX(-50%);background:linear-gradient(#ffe08a,#c8973a);color:#2a1500;font-weight:900;font-size:22px;padding:6px 18px;border-radius:24px;box-shadow:0 0 30px #ffd77aaa}
+.mode{position:absolute;left:330px;top:30px;background:#000c;border:1px solid #c8973a;border-radius:20px;padding:6px 18px;font-size:13px;color:#ffd77a}
+.pill{position:absolute;right:24px;bottom:24px;display:flex;gap:10px}.pill div{background:#000c;border:1px solid #c8973a88;padding:10px 16px;border-radius:24px;font-size:13px}
+.pill .go{background:linear-gradient(#ffe08a,#c8973a);color:#2a1500;font-weight:800}
+.table{left:0;top:-26px;width:1280px;height:853px;border:none;border-radius:0;box-shadow:none;background:url(table3.png) center/100% 100%}.table:before{display:none}.room{background:#050302}</style></head><body><div class="room"></div><div class="table"></div>
+<div class="logo"><div class="t">DOMINO</div><div class="s">RAVETILL</div></div>
+<div class="mode">Telefon 365 · hədəf 365 · 2x2</div>
+<div class="score"><h4>XALLAR</h4>
+<div class="team">Komanda A (sən + Elnur)<b style="float:right;color:#ffd77a">180 / 365</b><div class="bar"><b style="width:49%"></b></div></div>
+<div class="team">Komanda B (Aysel + Rauf)<b style="float:right">135 / 365</b><div class="bar"><b style="width:37%"></b></div></div>
+<div style="font-size:11px;color:#aaa;margin-top:6px">35 xal birdəfəyə yazan komanda dərhal qalib olur</div></div>
+<div class="chat"><p><b>Aysel:</b> Ya Allah Bismillah</p><p><b>Rauf:</b> uğurlar hamıya 🎲</p><p><b>Elnur:</b> 10 yazdıq!</p></div>
+<div class="pill"><div>🎙 Səs: açıq</div><div>Çək (bazar yoxdur)</div><div class="go">Pas</div></div>
+<div class="toast">+10 xal</div>
+<script>
+const pos={1:[[1,1]],2:[[0,0],[2,2]],3:[[0,0],[1,1],[2,2]],4:[[0,0],[0,2],[2,0],[2,2]],5:[[0,0],[0,2],[1,1],[2,0],[2,2]],6:[[0,0],[0,2],[1,0],[1,2],[2,0],[2,2]]};
+function half(n){let h='<div class="half">';const s=new Set((pos[n]||[]).map(p=>p[0]*3+p[1]));for(let i=0;i<9;i++)h+=s.has(i)?'<i class="'+(n==1?'r':'')+'"></i>':'<i style="visibility:hidden"></i>';return h+'</div>'}
+function tile(a,b,o,x,y,back){const d=document.createElement('div');d.className='tile '+o+(back?' back':'');d.style.left=x+'px';d.style.top=y+'px';d.innerHTML=back?'':half(a)+half(b);document.body.appendChild(d)}
+const cx=640,cy=400;
+tile(6,6,'v',cx-20,cy-40);
+tile(6,4,'h',cx+20,cy-20);tile(4,4,'v',cx+100,cy-40);tile(4,1,'h',cx+140,cy-20);
+tile(2,6,'h',cx-100,cy-20);tile(5,2,'h',cx-180,cy-20);
+tile(4,6,'v',cx-20,cy-120);tile(6,0,'v',cx-20,cy+40);
+// my hand
+const hand=[[5,5],[6,3],[2,0],[3,1],[4,2],[1,1],[0,5]];hand.forEach((t,i)=>tile(t[0],t[1],'v',365+i*58,i==1?534:548));
+// partner hand (top)
+for(let i=0;i<7;i++)tile(0,0,'v',405+i*50,172,true);
+// left/right opponents
+for(let i=0;i<7;i++){tile(0,0,'h',215,210+i*46,true);tile(0,0,'h',985,210+i*46,true)}
+function seat(t,x,y,cls,av,turn){const d=document.createElement('div');d.className='seat';d.style.left=x+'px';d.style.top=y+'px';d.innerHTML='<div class="av '+cls+(turn?' turn':'')+'">'+av+'</div><div>'+t+'<div class="mic">🎙 danışır</div></div>';document.body.appendChild(d)}
+seat('Sən',560,742,'',"S",true);seat('Elnur (partnyor)',540,26,'',"E",false);seat('Aysel',20,300,'b',"A",false);seat('Rauf',1060,300,'b',"R",false);
+</script></body></html>

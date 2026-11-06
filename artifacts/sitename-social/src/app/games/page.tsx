@@ -16,6 +16,20 @@ function BottleTile() {
   return own ? <img src="/games/bottle.png" alt="" onError={() => setOwn(false)} className="h-full w-full object-cover" /> : <BottleCover className="h-full w-full" />;
 }
 
+// Domino picture: public/games/domino.png when it exists, otherwise a drawn neon tile.
+function DominoIcon() {
+  const [own, setOwn] = useState(true);
+  return own ? <img src="/games/domino.png" alt="" onError={() => setOwn(false)} className="h-full w-full object-cover" /> : (
+    <span className="flex h-full w-full items-center justify-center bg-[radial-gradient(circle_at_50%_40%,#1d3bb0,#110726)]">
+      <span className="flex h-[62px] w-[31px] flex-col rounded-md bg-[linear-gradient(145deg,#fffdf4,#e4dbc0)] p-[3px] shadow-[0_0_14px_#6d5bff]">
+        <span className="grid flex-1 place-items-center"><span className="h-[6px] w-[6px] rounded-full bg-red-700" /></span>
+        <span className="mx-1 h-px bg-[#8a7a4a]" />
+        <span className="grid flex-1 grid-cols-2 place-items-center"><span className="h-[5px] w-[5px] rounded-full bg-black" /><span className="h-[5px] w-[5px] rounded-full bg-black" /><span className="h-[5px] w-[5px] rounded-full bg-black" /><span className="h-[5px] w-[5px] rounded-full bg-black" /></span>
+      </span>
+    </span>
+  );
+}
+
 // Emoji tiles stand in for game covers until each game has its own artwork.
 const tiles: Record<string, { emoji: string; from: string; to: string; text: TranslationKey }> = {
   nard: { emoji: "🎲", from: "#8B4A1F", to: "#D99A4E", text: "games.descNard" },
@@ -73,7 +87,17 @@ export default function GamesPage() {
               <span className="hidden shrink-0 rounded-full bg-accent px-4 py-2 text-xs font-bold text-bg sm:block">{t("games.play")}</span>
             </Link>
           </li>
-          {games.map(soon)}
+          <li>
+            <Link href="/domino" className={`${row} bg-surface-2 hover:brightness-110`}>
+              <span aria-hidden="true" className={icon}><DominoIcon /></span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-base font-bold text-text">Domino</span>
+                <span className="mt-1 block text-[13px] leading-5 text-muted">{locale === "az" ? "101 və Telefon 365. 2-4 nəfər, komanda ilə, reytinq və medallar." : "101 and Phone 365. 2-4 players, teams, rating and medals."}</span>
+              </span>
+              <span className="hidden shrink-0 rounded-full bg-accent px-4 py-2 text-xs font-bold text-bg sm:block">{t("games.play")}</span>
+            </Link>
+          </li>
+          {games.filter((game) => game.id !== "domino").map(soon)}
         </ul>
       </Card>
       {playing ? <GameWindow onClose={() => setPlaying(false)} /> : null}
