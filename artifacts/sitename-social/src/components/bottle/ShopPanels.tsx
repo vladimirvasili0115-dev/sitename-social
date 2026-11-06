@@ -23,8 +23,8 @@ export const formatActive = (secs: number, t: (key: TranslationKey) => string) =
 // The original bank (bottle-html5 BankDialog + bank CSS): a pink window with the heart pattern on top and
 // 90×146 white cards, each with a coloured stripe, a picture and a small button. Our own cards (active play,
 // season pass, channel, VIP, friends, compliments) are drawn the same way as the original's.
-export function ShopPanel({ hearts, activeSecs, payNote, onActive, onVip, onPlus, onInvite, onCompliments, onPack, onPass, packNote }: {
-  hearts: number; activeSecs: number; payNote: boolean; packNote?: ReactNode; onActive: () => void; onVip: () => void; onPlus: () => void; onInvite: () => void; onCompliments: () => void; onPack: (pack: { hearts: number; price: number }) => void; onPass: () => void;
+export function ShopPanel({ hearts, coins, activeSecs, payNote, onActive, onVip, onPlus, onInvite, onCompliments, onPack, onPass, packNote }: {
+  hearts: number; coins?: number | null; activeSecs: number; payNote: boolean; packNote?: ReactNode; onActive: () => void; onVip: () => void; onPlus: () => void; onInvite: () => void; onCompliments: () => void; onPack: (pack: { hearts: number; price: number }) => void; onPass: () => void;
 }) {
   const { t } = useTranslation();
   const O = "/custom/orig/";
@@ -50,6 +50,7 @@ export function ShopPanel({ hearts, activeSecs, payNote, onActive, onVip, onPlus
       <div className="relative flex shrink-0 flex-col items-center">
         <p className="mb-1 mt-[15px] text-[14px] font-bold text-white">{t("bottle.bankTitle")}</p>
         <p className="mb-2.5 flex items-center gap-1 rounded-full bg-white/25 px-2.5 py-0.5 text-[12px] font-bold text-white">{t("bottle.balance")}: <span className="pl-[14px] bg-no-repeat [background-position:left_center] [background-size:12px_12px]" style={bg("bank_heart")}>{hearts.toLocaleString("ru-RU")}</span></p>
+        {coins == null ? null : <p className="-mt-1.5 mb-2.5 rounded-full bg-white/25 px-2.5 py-0.5 text-[12px] font-bold tabular-nums text-white">₼ {(coins / 100).toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>}
       </div>
       <ul className="relative grid min-h-0 grid-cols-3 gap-[5px] overflow-y-auto px-2.5 pb-2.5 pt-[3px] [scrollbar-width:none] [@media(min-width:700px)]:grid-cols-4">
         {card("pass", "bank_gold_bg", <span className="text-center text-[10px] font-bold uppercase text-[rgb(255,144,0)]">{t("bottle.bankPremium")}</span>, icon("bank_premium_pass", 62, 39), btn(blue, onPass, t("bottle.details")))}

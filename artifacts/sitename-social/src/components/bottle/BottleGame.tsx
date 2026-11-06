@@ -986,12 +986,21 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     const timer = window.setTimeout(closePackDone, 7000);
     return () => window.clearTimeout(timer);
   }, [packNote, closePackDone]);
+  // Money balance (in coins, 100 = 1 ₼) shown in the hearts shop; read when the shop opens and again after a purchase.
+  const [coins, setCoins] = useState<number | null>(null);
+  async function loadCoins() {
+    const me = net?.me;
+    if (!supabase || !me) return;
+    const { data } = await supabase.from("wallets").select("balance").eq("user_id", me).maybeSingle();
+    setCoins(typeof (data as { balance?: number } | null)?.balance === "number" ? (data as { balance: number }).balance : 0);
+  }
+  useEffect(() => { if (panel === "shop") void loadCoins(); }, [panel, net?.me]); // eslint-disable-line react-hooks/exhaustive-deps
   async function buyHeartPack(pack: { hearts: number; price: number }) {
     if (!online) return setPayNote(true);
     setPayNote(false);
     setPackNote({ kind: "wait" });
     const result = await bottleBuyHearts(pack.hearts);
-    if (result && typeof result.hearts === "number") { heartsRef.current = result.hearts; setHearts(result.hearts); setPackNote({ kind: "ok", n: pack.hearts }); }
+    if (result && typeof result.hearts === "number") { heartsRef.current = result.hearts; setHearts(result.hearts); setPackNote({ kind: "ok", n: pack.hearts }); void loadCoins(); }
     else if (result?.error === "balance") setPackNote({ kind: "balance", need: result.need });
     else setPackNote({ kind: "fail" });
   }
@@ -3770,7 +3779,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   <button onClick={() => setPanel("wheel")} className="mt-2 w-full text-center text-xs font-bold text-white underline">{t("bottle.wheelBack")}</button>
                 </div>
               ) : panel === "shop" ? (
-                <ShopPanel hearts={hearts} activeSecs={activeSecs} payNote={payNote} onActive={() => setPanel("active")} onVip={() => { setPayNote(false); setPanel("vip"); }} onPlus={() => { setPayNote(false); setPanel("plusbuy"); }} onInvite={openInvite} onCompliments={() => setPanel("compliments")} onPack={(pack) => void buyHeartPack(pack)} packNote={packNote && packNote.kind !== "ok" ? <PackNote note={packNote} locale={locale} /> : null} onPass={openPass} />
+                <ShopPanel hearts={hearts} coins={coins} activeSecs={activeSecs} payNote={payNote} onActive={() => setPanel("active")} onVip={() => { setPayNote(false); setPanel("vip"); }} onPlus={() => { setPayNote(false); setPanel("plusbuy"); }} onInvite={openInvite} onCompliments={() => setPanel("compliments")} onPack={(pack) => void buyHeartPack(pack)} packNote={packNote && packNote.kind !== "ok" ? <PackNote note={packNote} locale={locale} /> : null} onPass={openPass} />
               ) : panel === "pass" ? (
                 <>
                   <PassPanel data={online ? passData : null} hearts={hearts} now={net?.now ?? Date.now()} onBuy={() => void passAction("buy")} onClaim={(level, premium) => void passAction({ level, premium })} onChest={() => void passAction("chest")} />
