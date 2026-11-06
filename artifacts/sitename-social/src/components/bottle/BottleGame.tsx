@@ -26,6 +26,7 @@ import { flashRefusal } from "@/lib/flash";
 import { startCall } from "@/lib/callSync";
 import { clock as callClock, parseCallLog } from "@/lib/callLog";
 import { SeatGiftCanvas, type SeatGiftData } from "./SeatGiftCanvas";
+import { EffectsCanvas, type EffectsData } from "./EffectsCanvas";
 import { FlightCanvas, type CanvasFlight, type FlightGeometry } from "./FlightCanvas";
 import { FIRST_ORIGINAL, FRAME_PRICE, FrameArt, ORIGINAL_FRAMES, frameLooks, frameStone } from "./FrameArt";
 import { PassPanel, type PassData } from "./PassPanel";
@@ -1912,6 +1913,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     } catch { /* storage blocked: stays off */ }
   }, []);
   const seatGiftData = useRef<SeatGiftData>({ piles: {}, spots: {}, ids: [], seats: [], box: 17.5, cx: 50, cy: 50, staged: false, turn: null, target: null, url: () => null, pileMs: PILE_MS, version: 0 });
+  const effectsData = useRef<EffectsData>({ shows: [], bursts: [], seats: [] });
   const canvasUrl = (gift: string) => (canvasSeats ? flightUrl(gift) : null);
   const canvasCorners = (spot: Spot) => spot.kind !== "behind" && Boolean(canvasUrl(spot.gift));
   const canvasCount = useRef(0);
@@ -2616,6 +2618,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const seatXq = (index: number) => (staged && (index === turn || index === target) ? `(${CENTER_X}cqw ${index === turn ? "-" : "+"} 12.5cqmin)` : `${seats[index][0]}cqw`);
   const seatYq = (index: number) => (staged && (index === turn || index === target) ? `${STAGE_Y}cqh` : `${seats[index][1]}cqh`);
   flightGeometry.current = { seats, cx: CENTER_X, cy: STAGE_Y, staged, turn, target };
+  effectsData.current = { shows, bursts, seats };
   if (canvasSeats) {
     const last = canvasLast.current;
     if (last[0] !== piles || last[1] !== spots || last[2] !== staged || last[3] !== turn || last[4] !== target || last[5] !== wide) { canvasLast.current = [piles, spots, staged, turn, target, wide]; canvasCount.current += 1; }
@@ -3449,8 +3452,11 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           );
         })}
 
-        {bursts.map((item) => <HeartBurst key={item.key} at={seats[item.to]} amount={item.amount} />)}
-        {shows.map((item) => <Fireworks key={`fw-${item.key}`} at={seats[item.to]} level={item.level} seed={item.key} />)}
+        {/* Canvas test switch (?pixi=1): the hearts burst and the fireworks are painted on one canvas instead of many DOM elements. */}
+        {canvasSeats ? <EffectsCanvas data={effectsData} /> : <>
+          {bursts.map((item) => <HeartBurst key={item.key} at={seats[item.to]} amount={item.amount} />)}
+          {shows.map((item) => <Fireworks key={`fw-${item.key}`} at={seats[item.to]} level={item.level} seed={item.key} />)}
+        </>}
         {tableVfx ? <TableShower key={tableVfx.key} emoji={tableVfx.emoji} seed={tableVfx.key % 1000} /> : null}
         {boostFx ? <BoostFx key={boostFx.key} kind={boostFx.kind} fromLeft={boostFx.fromLeft} x={CENTER_X} y={STAGE_Y} /> : null}
         {canvasSeats ? <SeatGiftCanvas data={seatGiftData} /> : null}
