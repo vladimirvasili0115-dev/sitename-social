@@ -76,6 +76,7 @@ export function AdminBalances() {
 }
 
 // Tab "Oyunçular": place, bonus balance and ratings of every player, with the game controls under each one.
+const MOD_COINS_MAX = 50; // a moderator can load at most this many ₼ at once (the server checks it too)
 export function AdminPlayers({ owner }: { owner: boolean }) {
   const { t } = useTranslation();
   const list = usePlayers();
@@ -126,7 +127,7 @@ export function AdminPlayers({ owner }: { owner: boolean }) {
   function giveCoins(event: FormEvent<HTMLFormElement>, id: string) {
     event.preventDefault();
     const value = Math.round((Number(coins.replace(",", ".")) || 0) * 100);
-    if (!value) return;
+    if (!value || (!owner && Math.abs(value) > MOD_COINS_MAX * 100)) return;
     void run(id, async () => (await grantCoins(id, value)) !== null);
   }
   const stats = [["kisses", "💋", "#DB3100"], ["songs", "🎵", "#B45D8C"], ["smiles", "😊", "#FC8300"], ["price", "💘", "#D85723"], ["influence", "💕", "#AD1700"]] as const;
@@ -174,19 +175,19 @@ export function AdminPlayers({ owner }: { owner: boolean }) {
                         {note?.id === row.id ? <span role="status" className={cn("text-[11px] font-semibold", note.ok ? "text-accent" : "text-danger")}>{t(note.ok ? "admin.gameSaved" : note.max ? "admin.bonusMax" : "admin.vipFail")}</span> : null}
                       </form>
                       <div className="mt-3 flex flex-wrap gap-2">
-                        {owner ? <button disabled={locked} onClick={() => { setPanel(panel === "coins" ? null : "coins"); setCoins("1"); }} className={cn(action, panel === "coins" ? "border-accent text-accent" : "")}><Coins size={14} />Balans (₼)</button> : null}
+                        <button disabled={locked} onClick={() => { setPanel(panel === "coins" ? null : "coins"); setCoins("1"); }} className={cn(action, panel === "coins" ? "border-accent text-accent" : "")}><Coins size={14} />Balans (₼)</button>
                         <button disabled={locked} onClick={() => setPanel(panel === "game" ? null : "game")} aria-expanded={panel === "game"} className={cn(action, panel === "game" ? "border-accent text-accent" : "")}><Gamepad2 size={14} />VIP / VIP+ / oyun payları</button>
                         <button disabled={locked} onClick={() => setPanel(panel === "color" ? null : "color")} aria-expanded={panel === "color"} className={cn(action, panel === "color" ? "border-accent text-accent" : "")}><Palette size={14} /><span className={nameColorClass(nameColors[row.id])}>{t("admin.nameColor")}</span></button>
                         <button disabled={locked} onClick={() => void run(row.id, async () => (await gameGrant(row.id, "admire_block", flag?.block ? 0 : 1)) !== null)} className={cn(action, flag?.block ? "border-danger text-danger" : "")}><HeartOff size={14} />{t(flag?.block ? "admin.admireUnblock" : "admin.admireBlock")}</button>
                         <button disabled={locked} onClick={() => void run(row.id, async () => (await pageAllowSet(row.id, !pageOk[row.id])) !== null)} className={cn(action, pageOk[row.id] ? "border-accent text-accent" : "")}><FileText size={14} />{pageOk[row.id] ? "Səhifə icazəli (al)" : "Səhifə açmağa icazə ver"}</button>
                         <button disabled={locked} onClick={() => void run(row.id, async () => (await giftAllowSet(row.id, "c:cherry", !allowed[row.id]?.["c:cherry"])) !== null)} className={cn(action, allowed[row.id]?.["c:cherry"] ? "border-accent text-accent" : "")}><Wine size={14} />{allowed[row.id]?.["c:cherry"] ? "Kokteyl icazəli (al)" : "Kokteyl icazə ver"}</button>
                       </div>
-                      {panel === "coins" && owner ? (
+                      {panel === "coins" ? (
                         <form onSubmit={(event) => giveCoins(event, row.id)} className="mt-3 flex flex-wrap items-center gap-2">
                           <span className="flex h-10 items-center gap-1.5 rounded-xl bg-surface-2 px-3 text-xs font-bold"><span aria-hidden="true">₼</span>Balans (₼)</span>
-                          <input type="number" value={coins} onChange={(event) => setCoins(event.target.value)} min={-1000000} max={1000000} step={0.01} aria-label={t("admin.coinsAmount")} className="h-10 w-32 rounded-xl border border-border bg-surface-2 px-3 text-sm tabular-nums text-text outline-none focus:border-accent" />
+                          <input type="number" value={coins} onChange={(event) => setCoins(event.target.value)} min={owner ? -1000000 : -MOD_COINS_MAX} max={owner ? 1000000 : MOD_COINS_MAX} step={0.01} aria-label={t("admin.coinsAmount")} className="h-10 w-32 rounded-xl border border-border bg-surface-2 px-3 text-sm tabular-nums text-text outline-none focus:border-accent" />
                           <button type="submit" className="h-10 rounded-xl bg-accent px-4 text-xs font-semibold text-bg">{t("admin.coinsApply")}</button>
-                          <p className="basis-full text-[11px] text-muted">Məbləği manatla yaz: müsbət rəqəm balansı artırır, mənfi azaldır (məsələn 5 və ya 2.50).</p>
+                          <p className="basis-full text-[11px] text-muted">Məbləği manatla yaz: müsbət rəqəm balansı artırır, mənfi azaldır (məsələn 5 və ya 2.50).{owner ? "" : ` Moderator kimi bir dəfəyə ən çoxu ${MOD_COINS_MAX} ₼ yükləyə bilərsən.`}</p>
                         </form>
                       ) : null}
                       {panel === "game" ? <GamePanel id={row.id} /> : null}
