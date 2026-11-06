@@ -753,7 +753,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // When a receiver leaves the table (or moves to another one), the gifts flying to them stop; they never land on an empty seat.
   const playersRef = useRef(players);
   playersRef.current = players;
-  useEffect(() => { setFlying((list) => { const next = list.filter((item) => !item.toId || players[item.to]?.id === item.toId); return next.length === list.length ? list : next; }); }, [players]);
+  useEffect(() => { setFlying((list) => { const next = list.filter((item) => !item.toId || players[item.to]?.id === item.toId); return next.length === list.length ? list : next; }); dropDirect((item) => players[item.f.to]?.id === item.toId); }, [players]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { airborne.current = flying.length; }, [flying.length]);
   // Safety net: a gift that is still "in the air" long after its flight should have ended (tab was in the background, a timer was lost) is removed.
   useEffect(() => {
@@ -1720,7 +1720,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   useEffect(() => { if (!liveTable) return; const id = liveTable; const timer = window.setTimeout(() => setStayed((list) => { const next = { ...list, [id]: Date.now() + 6 * 3600 * 1000 }; try { window.localStorage.setItem("bottle-stayed", JSON.stringify(next)); } catch { /* storage is blocked */ } return next; }), 180000); return () => window.clearTimeout(timer); }, [liveTable]);
   // A new table or room starts clean: gifts that sat on the photos at the old table do not come along.
   // Every table has its own music: moving to another table stops the song of the old one and plays the new table's song (if any).
-  useEffect(() => { tableGen.current += 1; setFlying([]); setBursts([]); setShows([]); setStickers({}); setSpots({}); setPiles({}); setScatters([]); setVideo(null); setAudio(null); trackAt.current = 0; }, [liveTable]);
+  useEffect(() => { tableGen.current += 1; setFlying([]); directFlights.current = []; pushCanvas(); setBursts([]); setShows([]); setStickers({}); setSpots({}); setPiles({}); setScatters([]); setVideo(null); setAudio(null); trackAt.current = 0; }, [liveTable]);
   useEffect(() => {
     if (!liveTable) return;
     try {
@@ -1896,8 +1896,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       frames += 1; last = now;
       if (now - since < 1000) return;
       const fps = (frames * 1000) / (now - since); frames = 0; since = now;
-      if (flyingCount.current > 0 && fps < 28) { slow += 1; calm = 0; if (slow >= 2) set(true); }
-      else { slow = 0; if (flyingCount.current === 0) { calm += 1; if (calm >= 5) set(false); } }
+      if (flyingCount.current + directFlights.current.length > 0 && fps < 28) { slow += 1; calm = 0; if (slow >= 2) set(true); }
+      else { slow = 0; if (flyingCount.current + directFlights.current.length === 0) { calm += 1; if (calm >= 5) set(false); } }
     };
     raf = requestAnimationFrame(loop);
     return () => { cancelAnimationFrame(raf); liteGifts = false; };
@@ -1919,6 +1919,27 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const canvasCount = useRef(0);
   const canvasLast = useRef<unknown[]>([]);
   const canvasFlights = useRef<CanvasFlight[]>([]);
+  // Canvas test switch (?pixi=1): a gift that flies on the canvas goes straight into the canvas list, without a React state change,
+  // so a fast gift stream no longer redraws the whole game for every gift (the canvas reads the list on each frame).
+  const directFlights = useRef<{ f: CanvasFlight; toId: string }[]>([]);
+  const stateFlights = useRef<CanvasFlight[]>([]);
+  const pushCanvas = () => { canvasFlights.current = directFlights.current.length ? stateFlights.current.concat(directFlights.current.map((item) => item.f)) : stateFlights.current; };
+  const dropDirect = (keep: (item: { f: CanvasFlight; toId: string }) => boolean) => {
+    const next = directFlights.current.filter(keep);
+    if (next.length !== directFlights.current.length) { directFlights.current = next; pushCanvas(); }
+  };
+  const flyDirect = (key: number, gift: string, plan: ReturnType<typeof planLanding>, from: number, to: number, toId: string, ms: number) => {
+    if (!canvasSeats) return false;
+    const url = flightUrl(WHOLE_FLIGHT.has(gift) ? gift : plan.land ?? gift);
+    if (!url) return false;
+    const now = performance.now();
+    const aim = flightTo(plan, gift);
+    const flight: CanvasFlight = { key, url, from, to, t0: now, ms, tx: aim.tx, ty: aim.ty, base: aim.base, end: aim.end, rot: plan.spot?.kind === "hatL" ? -45 : plan.spot?.kind === "hatR" ? 45 : plan.spot?.r ?? 0, fixed: plan.spot?.kind === "hatL" || plan.spot?.kind === "hatR", spin: SPIN_FLIGHT.test(gift) };
+    // safety net: a flight long past its landing time (a lost timer) is dropped
+    directFlights.current = [...directFlights.current.filter((item) => now - item.f.t0 < item.f.ms + 6000), { f: flight, toId }];
+    pushCanvas();
+    return true;
+  };
   const flightGeometry = useRef<FlightGeometry>({ seats: [], cx: 50, cy: 50, staged: false, turn: null, target: null });
   function chooseSkin(n: number) {
     if (!online && n !== skin) say({ from: "me", bottle: { a: skin, b: n } });
@@ -2626,10 +2647,11 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   }
   // The canvas draws every flight that has a picture; it reads this list on each frame.
   useEffect(() => {
-    canvasFlights.current = flying.flatMap((item) => {
+    stateFlights.current = flying.flatMap((item) => {
       const url = flightUrl(WHOLE_FLIGHT.has(item.gift) ? item.gift : item.look ?? item.gift);
       return url ? [{ key: item.key, url, from: item.from, to: item.to, t0: item.t0 ?? performance.now(), ms: item.ms, tx: item.tx, ty: item.ty, base: item.base, end: item.end, rot: item.rot ?? 0, fixed: item.fixed, spin: SPIN_FLIGHT.test(item.gift) }] : [];
     });
+    pushCanvas();
   }, [flying, art]); // eslint-disable-line react-hooks/exhaustive-deps
   // Realtime: every gift is also announced on the table's live channel at once, so everybody at the table sees it fly
   // within a fraction of a second (the database is not asked for it). The 1-second sync stays as the backup; a gift that
@@ -2653,6 +2675,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     setPiles(drop);
     setScatters((list) => list.filter((item) => item.to !== id));
     setFlying((list) => list.filter((item) => item.toId !== id));
+    dropDirect((item) => item.toId !== id);
   };
   const liveOut = useRef<{ from: string; to: string; gift: string; seed: number }[]>([]);
   const liveTimer = useRef(0);
@@ -2825,7 +2848,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     // Drinks fly like every other gift (one by one); on landing the receiver gets the "+1 heart" burst.
     const pour = isDrink(gift) && index !== meIndex;
     const plan = planLanding(gift, seed);
-    {
+    if (!flyDirect(key, gift, plan, meIndex, index, player.id, ms)) {
       // My own gifts always fly on my screen: when the sky is full, the oldest gift from someone else makes room.
       // A gift already in the air is never removed before it arrives. When the sky is full, someone else's oldest gift makes room;
       // if all of them are mine, the new one simply lands without a flight.
@@ -2836,7 +2859,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     const gen = tableGen.current;
     const startedAt = performance.now();
     window.setTimeout(() => inGiftBatch(() => {
-      setFlying((list) => list.filter((item) => item.key !== key));
+      setFlying((list) => (list.some((item) => item.key === key) ? list.filter((item) => item.key !== key) : list));
+      dropDirect((item) => item.f.key !== key);
       if (gen !== tableGen.current || playersRef.current[index]?.id !== player.id || (freshAt.current[player.id] ?? 0) > startedAt) return;
       giftSound(gift, "land");
       if (pour) heartBurst(key, index);
@@ -2864,7 +2888,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (busy) ms = 500;
     else giftSound(gift, "send");
     const plan = planLanding(gift, seed);
-    {
+    if (busy || !flyDirect(key, gift, plan, fromAt >= 0 ? fromAt : toAt, toAt, toId, ms)) {
       if (!busy) setFlying((list) => ([...list, { key, gift, look: plan.land, t0: performance.now(), from: fromAt >= 0 ? fromAt : toAt, to: toAt, toId, moved: false, ms, still: liteRef.current || list.length >= 12, rot: plan.spot?.kind === "hatL" ? -45 : plan.spot?.kind === "hatR" ? 45 : plan.spot?.r ?? 0, fixed: plan.spot?.kind === "hatL" || plan.spot?.kind === "hatR", ...flightTo(plan, gift) }]));
       window.setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(() => inGiftBatch(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item)))))), 20);
     }
@@ -2872,7 +2896,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     const gen = tableGen.current;
     const startedAt = performance.now();
     window.setTimeout(() => inGiftBatch(() => {
-      setFlying((list) => list.filter((item) => item.key !== key));
+      setFlying((list) => (list.some((item) => item.key === key) ? list.filter((item) => item.key !== key) : list));
+      dropDirect((item) => item.f.key !== key);
       if (gen !== tableGen.current || playersRef.current[toAt]?.id !== toId || (freshAt.current[toId] ?? 0) > startedAt) return;
       giftSound(gift, "land");
       if (pour) heartBurst(key, toAt);
