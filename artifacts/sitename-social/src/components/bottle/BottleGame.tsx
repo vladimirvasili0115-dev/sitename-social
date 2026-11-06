@@ -303,6 +303,14 @@ function planLanding(gift: string, seed: number = Math.random() * 1e9) {
     if (name !== "catdress") spot = { ...spot, x: spot.x - (flushed ? 0 : CORNER_SHIFT_LEFT) - (/^(makarov|revolver)$/.test(name) ? 4 : 0) + (HEART_TRIO.test(name) ? HEART_SHIFT_RIGHT : 0) + (name === "surprizebox" ? SURPRISE_SHIFT_RIGHT : name === "teddybear" ? 6 : 0) }; // the teddy bear stands 3 mm (6%) further right (the flight reads this same spot) // the pistol: another 2 mm (4%) to the left // flightTo reads this same spot, so the flight ends exactly where the gift stays
     }
   }
+  // Every gift on the bottom-right corner stays inside the frame: its visible picture may touch the right and the bottom line of the photo,
+  // never cross them (also the ones that were moved further right before: the hearts, the clown box, the teddy bear, the big gifts, balloons).
+  // The size stays; the gift only moves left / up as much as needed. The flight reads this same spot.
+  if (spot && (spot.kind === "corner" || spot.kind === "balloon") && spot.x + spot.s / 2 >= 45) {
+    const box = name ? artBox(name, true) : null;
+    const right = spot.x + spot.s * (box ? box.r : 1), bottom = spot.y + spot.s * (box ? box.b : 1);
+    if (right > 100 || bottom > 100) spot = { ...spot, x: spot.x - Math.max(0, right - 100), y: spot.y - Math.max(0, bottom - 100) };
+  }
   return { land, spot, scatter };
 }
 // While flying, a family gift changes colour through its members.
