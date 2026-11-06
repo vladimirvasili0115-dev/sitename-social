@@ -17,6 +17,9 @@ type BoardGame = Pick<DGame, "ch_a" | "ch_b" | "spin_idx" | "up_a" | "up_b" | "d
 
 const GAP = 0.06;
 const EDGE = 0.25;
+// Returning rows keep this far from the spinner column: a double in an arm lies across it and
+// reaches 1 unit to each side, and a double in a corner reaches past the row end.
+const ARM_CLEAR = 2;
 
 const add = (p: V, d: V, k: number): V => ({ x: p.x + d.x * k, y: p.y + d.y * k });
 
@@ -47,19 +50,40 @@ function walk(
   let p = start, d = dir, half = startHalf;
   let back: V | null = null; // after a corner tile: horizontal direction to go next
   let down = 0;              // how far the corner has gone; rows need 2 units between them
-  const step = (dbl: boolean) => {
-    const len = dbl ? 1 : 2;
+  const isDbl = (i: number) => i < tiles.length && tiles[i].inner === tiles[i].outer;
+  // Straight room tile i needs. A turn may only happen between two plain tiles (never on a double,
+  // never right after one), so every "double + the plain tile after it" that follows must also fit
+  // (plain, double, plain, double, ... cannot turn anywhere until two plain tiles meet).
+  const need = (i: number) => {
+    let n = (isDbl(i) ? 1 : 2) + GAP;
+    for (let j = i + 1; isDbl(j); j += 2) n += 1 + GAP + (j + 1 < tiles.length ? 2 + GAP : 0);
+    return n;
+  };
+  const xLimits = (dx: number) => ({
+    max: dx > 0 ? (kind === "right" ? lim.x1 : lim.innerX ?? lim.x1) : null,
+    min: dx < 0 ? (kind === "left" ? lim.x0 : lim.innerX ?? lim.x0) : null,
+  });
+  // i = index of the tile about to be placed (tiles.length = the free spot for the next move)
+  const step = (i: number) => {
+    const dbl = isDbl(i);
+    const plainBefore = half === 0.5; // the tile before is not a double
     if (back) {
-      if (down < 2 - 1e-6) return; // a double in the corner is short: keep going down/up one more tile
-      p = add(add(p, d, -0.5), back, half + GAP);
+      // turning back: only with a plain tile after a plain tile, and only when the rows are 2 units apart
+      if (dbl || !plainBefore || down < 2 - 1e-6) return;
+      const q = add(add(p, d, -0.5), back, half + GAP);
+      const farX = q.x + back.x * need(i);
+      const { max, min } = xLimits(back.x);
+      // no room on the way back: keep going down/up instead
+      if ((max !== null && farX > max) || (min !== null && farX < min)) return;
+      p = q;
       d = back; back = null;
       return;
     }
-    const far = add(p, d, len);
+    if (dbl || !plainBefore) return; // a double never turns, and nothing turns off a double
+    const far = add(p, d, need(i));
     if (kind === "right" || kind === "left") {
       // horizontal runs: outer edge of the board, or the spinner column on the way back
-      const max = d.x > 0 ? (kind === "right" ? lim.x1 : lim.innerX ?? lim.x1) : null;
-      const min = d.x < 0 ? (kind === "left" ? lim.x0 : lim.innerX ?? lim.x0) : null;
+      const { max, min } = xLimits(d.x);
       if ((max !== null && far.x > max) || (min !== null && far.x < min)) {
         const turn: V = kind === "right" ? { x: 0, y: 1 } : { x: 0, y: -1 };
         back = { x: -d.x, y: 0 };
@@ -67,7 +91,8 @@ function walk(
         p = add(add(p, d, -0.5), turn, half + GAP);
         d = turn;
       }
-    } else if (d.y !== 0 && (far.y < lim.y0 || far.y > lim.y1)) {
+    } else if (d.y !== 0 && Math.abs(p.y) >= 2.5 && (far.y < lim.y0 || far.y > lim.y1)) {
+      // an arm turns only once it is a full tile away from the main line, so it never folds onto it
       const turn: V = kind === "up" ? { x: 1, y: 0 } : { x: -1, y: 0 };
       p = add(add(p, d, -0.5), turn, half + GAP);
       d = turn;
@@ -75,7 +100,7 @@ function walk(
   };
   tiles.forEach((t, i) => {
     const dbl = t.inner === t.outer;
-    step(dbl);
+    step(i);
     const r = rectOf(p, d, dbl);
     const f = facesOf(d, dbl, t.inner, t.outer);
     pieces.push({ key: `${keyPrefix}${keyIndex(i)}`, ...r, ...f });
@@ -83,7 +108,7 @@ function walk(
     half = dbl ? 1 : 0.5;
     if (back) down += dbl ? 1 : 2;
   });
-  step(false);
+  step(tiles.length);
   return { pieces, spot: rectOf(p, d, false) };
 }
 
@@ -99,11 +124,11 @@ export function layoutBoard(g: BoardGame, anchor: number, W: number, H: number) 
   const lim = { x0: -W / 2 + EDGE, x1: W / 2 - EDGE, y0: -H / 2 + EDGE, y1: H / 2 - EDGE, innerX: null as number | null };
   const right = walk("c", (i) => k + 1 + i,
     g.ch_a.slice(k + 1).map((a, i) => ({ inner: a, outer: g.ch_b[k + 1 + i] })),
-    { x: hx + GAP, y: 0 }, { x: 1, y: 0 }, half0, "right", { ...lim, innerX: spin ? hx + 0.2 : null });
+    { x: hx + GAP, y: 0 }, { x: 1, y: 0 }, half0, "right", { ...lim, innerX: spin ? ARM_CLEAR : null });
   const leftIdx = Array.from({ length: k }, (_, i) => k - 1 - i);
   const left = walk("c", (i) => k - 1 - i,
     leftIdx.map((j) => ({ inner: g.ch_b[j], outer: g.ch_a[j] })),
-    { x: -hx - GAP, y: 0 }, { x: -1, y: 0 }, half0, "left", { ...lim, innerX: spin ? -(hx + 0.2) : null });
+    { x: -hx - GAP, y: 0 }, { x: -1, y: 0 }, half0, "left", { ...lim, innerX: spin ? -ARM_CLEAR : null });
   // With a spinner the returning rows stop at the spinner column (innerX), clear of the up/down arms.
   pieces.push(...right.pieces, ...left.pieces);
   const spots: Spot[] = [{ side: "R", ...right.spot }, { side: "L", ...left.spot }];
@@ -124,8 +149,8 @@ export function layoutBoard(g: BoardGame, anchor: number, W: number, H: number) 
 
 // Largest tile size (px per unit) at which the snake fits the box.
 export function fitBoard(g: BoardGame, anchor: number, pxW: number, pxH: number, maxUnit: number) {
-  // At least ~6 tiles per row (13 units across), so a phone turns after 5-6 tiles, not after 2.
-  let unit = Math.max(8, Math.min(maxUnit, pxW / 13));
+  // At least ~5 tiles per row (11 units across), so a phone turns after 4-5 tiles, not after 2.
+  let unit = Math.max(8, Math.min(maxUnit, pxW / 11));
   for (let i = 0; i < 40; i++) {
     const W = pxW / unit, H = pxH / unit;
     const res = layoutBoard(g, anchor, Math.max(W, 6.5), Math.max(H, 6.5));

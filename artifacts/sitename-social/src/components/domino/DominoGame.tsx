@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "@/i18n/useTranslation";
 import { supabase } from "@/lib/supabase";
 import {
@@ -113,7 +113,7 @@ export function DominoGame() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const d = params.get("demo");
-    if (d === "1" || d === "101" || d === "365") { setDemo(d); setChecked(true); return; }
+    if (d === "1" || d === "101" || d === "365" || d === "solo") { setDemo(d); setChecked(true); return; }
     if (!supabase) { setChecked(true); return; }
     dominoMyTable().then((r) => { if (r.data) setTableId(r.data); setChecked(true); });
   }, []);
@@ -394,11 +394,45 @@ function TableBackground() {
   );
 }
 
+// Where tiles may lie: a rectangle inside the felt of table.jpg (2400x1600), clear of the neon line.
+// Measured on the picture: neon line x 14%–86%, y 22.6%–71.7%, round ends of radius ~16% of the width.
+// U/V below keep the corners of the rectangle inside the round ends too; MARGIN adds a gap on every side.
+// The picture is drawn with object-cover (and turned 90° clockwise on a portrait screen), so the
+// rectangle is mapped the same way. "short" = phone held sideways: little height, compact layout.
+const FELT = { u0: 0.27, u1: 0.73, v0: 0.25, v1: 0.69 };
+const FELT_MARGIN = 10;
+type Geometry = { zone: { left: number; top: number; width: number; height: number }; short: boolean };
+function useTableGeometry(): Geometry | null {
+  const [geo, setGeo] = useState<Geometry | null>(null);
+  useLayoutEffect(() => {
+    const calc = () => {
+      const W = window.innerWidth, H = window.innerHeight;
+      let x0: number, x1: number, y0: number, y1: number;
+      if (H >= W) {
+        const s = Math.max(W / 1600, H / 2400), dw = 1600 * s, dh = 2400 * s, ox = (W - dw) / 2, oy = (H - dh) / 2;
+        x0 = ox + (1 - FELT.v1) * dw; x1 = ox + (1 - FELT.v0) * dw; y0 = oy + FELT.u0 * dh; y1 = oy + FELT.u1 * dh;
+      } else {
+        const s = Math.max(W / 2400, H / 1600), dw = 2400 * s, dh = 1600 * s, ox = (W - dw) / 2, oy = (H - dh) / 2;
+        x0 = ox + FELT.u0 * dw; x1 = ox + FELT.u1 * dw; y0 = oy + FELT.v0 * dh; y1 = oy + FELT.v1 * dh;
+      }
+      setGeo({
+        zone: { left: x0 + FELT_MARGIN, top: y0 + FELT_MARGIN, width: Math.max(40, x1 - x0 - 2 * FELT_MARGIN), height: Math.max(40, y1 - y0 - 2 * FELT_MARGIN) },
+        short: W > H && H < 520,
+      });
+    };
+    calc();
+    window.addEventListener("resize", calc);
+    return () => window.removeEventListener("resize", calc);
+  }, []);
+  return geo;
+}
+
 type ViewSeat = { name: string; avatar: string | null; me: boolean; turn: boolean; blue: boolean; count: number; secs: number | null; partner: boolean; empty: boolean; seat: number };
 
-function SeatBadge({ pos, s, tx, onSit }: { pos: Pos; s: ViewSeat; tx: (k: string) => string; onSit?: () => void }) {
+function SeatBadge({ pos, s, tx, onSit, short = false }: { pos: Pos; s: ViewSeat; tx: (k: string) => string; onSit?: () => void; short?: boolean }) {
   const place: Record<Pos, string> = {
-    bottom: "bottom-[calc(env(safe-area-inset-bottom)+6px)] left-2 sm:left-1/2 sm:-translate-x-1/2",
+    // sideways phone: my badge goes to the bottom-left corner so the hand can sit in the middle
+    bottom: short ? "bottom-[calc(env(safe-area-inset-bottom)+6px)] left-2" : "bottom-[calc(env(safe-area-inset-bottom)+6px)] left-2 sm:left-1/2 sm:-translate-x-1/2",
     top: "top-[148px] left-1/2 -translate-x-1/2 sm:top-2",
     left: "left-1 top-[30%] -translate-y-1/2 sm:left-4 sm:top-1/2",
     right: "right-1 top-[30%] -translate-y-1/2 sm:right-4 sm:top-1/2",
@@ -477,6 +511,10 @@ function Stage({ tx, sync, myId, clockOffset, error, toast, onPlay, onDraw, onPa
   const moves = useMemo(() => (myTurn ? sync.moves ?? [] : []), [myTurn, sync.moves]);
   useEffect(() => { setSelected(null); }, [g?.ver]);
   const anchor = useAnchor(g, t.id);
+  const geo = useTableGeometry();
+  const short = !!geo?.short;
+  // Compact scores: sideways phone, or more than two teams (3-4 players without teams).
+  const compact = short || (!!g && g.team_count > 2);
 
   const nameOf = (uid: string) => sync.seats.find((s) => s.user_id === uid)?.name ?? "—";
   const avatarOf = (uid: string) => sync.seats.find((s) => s.user_id === uid)?.avatar ?? null;
@@ -533,39 +571,57 @@ function Stage({ tx, sync, myId, clockOffset, error, toast, onPlay, onDraw, onPa
       {/* top bar */}
       <div className="absolute left-2 top-2 z-30 flex items-start gap-2 sm:left-5 sm:top-4">
         <button type="button" onClick={onLeave} className="rounded-full bg-black/60 px-3 py-1.5 text-xs">← {tx("leave")}</button>
-        <div className="hidden sm:block"><Logo /></div>
+        {short ? null : <div className="hidden sm:block"><Logo /></div>}
       </div>
-      <div className="absolute left-2 top-[46px] z-30 hidden whitespace-nowrap rounded-full border border-[#c8973a] bg-black/70 px-3 py-1 text-[11px] text-[#ffd77a] sm:left-5 sm:top-[84px] sm:block sm:text-[13px]">
+      <div className={`absolute left-2 top-[46px] z-30 hidden whitespace-nowrap rounded-full border border-[#c8973a] bg-black/70 px-3 py-1 text-[11px] text-[#ffd77a] sm:left-5 sm:top-[84px] sm:text-[13px] ${short ? "" : "sm:block"}`}>
         {t.mode === "365" ? "Telefon 365" : "101"} · {tx("target")} {t.target}{g ? ` · ${g.n === 4 && g.team_count === 2 ? "2×2" : `${g.n}`}` : ""}{g && live ? ` · ${tx("round")} ${g.round_no}` : ""}
       </div>
 
       {/* scores */}
       {g ? (
-        <div className="absolute right-2 top-2 z-30 w-[170px] rounded-xl border border-[#c8973a] bg-black/75 p-2 sm:right-5 sm:top-4 sm:w-[250px] sm:p-3.5">
-          <div className="mb-1.5 text-[10px] font-bold tracking-[2px] text-[#ffd77a] sm:text-[13px]">{tx("scores")}</div>
-          <div className="mb-1 text-[10px] text-[#ffd77a] sm:hidden">{t.mode === "365" ? "Telefon 365" : "101"} · {tx("round")} {g.round_no}</div>
-          {g.scores.map((sc, team) => {
-            const mine = me !== null && g.teams[me] === team;
-            return (
-              <div key={team} className="mb-1.5 text-[10px] sm:mb-2.5 sm:text-[13px]">
-                <div className="flex justify-between gap-2"><span className="truncate">{teamLabel(tx, g, team, names)}</span><b className={mine ? "text-[#ffd77a]" : ""}>{sc}/{g.target}</b></div>
-                <div className="mt-0.5 h-1.5 overflow-hidden rounded bg-[#2a2a2a] sm:h-2"><b className="block h-full bg-[linear-gradient(90deg,#c8973a,#ffe08a)]" style={{ width: `${Math.min(100, (sc / g.target) * 100)}%` }} /></div>
-              </div>
-            );
-          })}
-          {g.mode === "365" ? <div className="hidden text-[11px] text-white/60 sm:block">{tx("rule35")}</div> : null}
-          {live ? <div className="text-[10px] text-white/60 sm:text-[11px]">{tx("stock")}: {g.stock_n}</div> : null}
-        </div>
+        compact ? (
+          // One line per team, thin bar: fits 4 solo players (and a sideways phone) without covering the top seat.
+          <div className={`absolute right-2 top-2 z-30 rounded-xl border border-[#c8973a] bg-black/75 px-2 py-1.5 ${short ? "w-[160px]" : "w-[170px] sm:right-5 sm:top-4 sm:w-[220px]"}`}>
+            <div className="mb-1 flex justify-between text-[10px] font-bold text-[#ffd77a]"><span className="tracking-[2px]">{tx("scores")}</span><span className="font-normal">{t.mode === "365" ? "365" : "101"} · {tx("round")} {g.round_no}</span></div>
+            {g.scores.map((sc, team) => {
+              const mine = me !== null && g.teams[me] === team;
+              return (
+                <div key={team} className="mb-1 text-[10px] leading-tight">
+                  <div className="flex justify-between gap-2"><span className="truncate">{teamLabel(tx, g, team, names)}</span><b className={mine ? "text-[#ffd77a]" : ""}>{sc}/{g.target}</b></div>
+                  <div className="mt-px h-[3px] overflow-hidden rounded bg-[#2a2a2a]"><b className="block h-full bg-[linear-gradient(90deg,#c8973a,#ffe08a)]" style={{ width: `${Math.min(100, (sc / g.target) * 100)}%` }} /></div>
+                </div>
+              );
+            })}
+            {live ? <div className="text-[10px] text-white/60">{tx("stock")}: {g.stock_n}</div> : null}
+          </div>
+        ) : (
+          <div className="absolute right-2 top-2 z-30 w-[170px] rounded-xl border border-[#c8973a] bg-black/75 p-2 sm:right-5 sm:top-4 sm:w-[250px] sm:p-3.5">
+            <div className="mb-1.5 text-[10px] font-bold tracking-[2px] text-[#ffd77a] sm:text-[13px]">{tx("scores")}</div>
+            <div className="mb-1 text-[10px] text-[#ffd77a] sm:hidden">{t.mode === "365" ? "Telefon 365" : "101"} · {tx("round")} {g.round_no}</div>
+            {g.scores.map((sc, team) => {
+              const mine = me !== null && g.teams[me] === team;
+              return (
+                <div key={team} className="mb-1.5 text-[10px] sm:mb-2.5 sm:text-[13px]">
+                  <div className="flex justify-between gap-2"><span className="truncate">{teamLabel(tx, g, team, names)}</span><b className={mine ? "text-[#ffd77a]" : ""}>{sc}/{g.target}</b></div>
+                  <div className="mt-0.5 h-1.5 overflow-hidden rounded bg-[#2a2a2a] sm:h-2"><b className="block h-full bg-[linear-gradient(90deg,#c8973a,#ffe08a)]" style={{ width: `${Math.min(100, (sc / g.target) * 100)}%` }} /></div>
+                </div>
+              );
+            })}
+            {g.mode === "365" ? <div className="hidden text-[11px] text-white/60 sm:block">{tx("rule35")}</div> : null}
+            {live ? <div className="text-[10px] text-white/60 sm:text-[11px]">{tx("stock")}: {g.stock_n}</div> : null}
+          </div>
+        )
       ) : null}
 
       {views.map(({ pos, s }) => (
-        <SeatBadge key={`${pos}-${s.seat}`} pos={pos} s={s} tx={tx} onSit={!live && s.empty && onSit ? () => onSit(s.seat) : undefined} />
+        <SeatBadge key={`${pos}-${s.seat}`} pos={pos} s={s} tx={tx} short={short} onSit={!live && s.empty && onSit ? () => onSit(s.seat) : undefined} />
       ))}
-      {live && g ? views.filter((v) => !v.s.me).map(({ pos, s }) => <HiddenHand key={`h-${pos}`} pos={pos} count={s.count} />) : null}
+      {/* sideways phone: no room for the face-down rows, the badge already shows how many tiles are left */}
+      {live && g && !short ? views.filter((v) => !v.s.me).map(({ pos, s }) => <HiddenHand key={`h-${pos}`} pos={pos} count={s.count} />) : null}
 
-      {/* board */}
-      {g && (live || g.match_over) ? (
-        <div className="absolute inset-x-[11%] bottom-[23%] top-[25%] z-10 sm:inset-x-[12%] sm:bottom-[24%] sm:top-[17%]">
+      {/* board: always inside the felt, never on or past the neon line */}
+      {g && (live || g.match_over) && geo ? (
+        <div className="absolute z-10" style={geo.zone}>
           <DominoBoard game={g} anchor={anchor} targets={targets} onTarget={(side) => { if (selected !== null) { onPlay(selected, side); setSelected(null); } }} lastKey={lastPieceKey(g)} maxUnit={46} />
         </div>
       ) : null}
@@ -576,8 +632,8 @@ function Stage({ tx, sync, myId, clockOffset, error, toast, onPlay, onDraw, onPa
 
       {/* my hand + actions */}
       {live && g && me !== null ? (
-        <div className="absolute inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+46px)] z-20 flex flex-col items-center gap-2 px-2">
-          {myTurn ? <div className="rounded-full bg-black/60 px-3 py-0.5 text-[11px] text-[#7dffa6]">{sync.need === "play" ? tx("tapTile") : tx("yourTurn")}</div> : null}
+        <div className={`absolute inset-x-0 z-20 flex flex-col items-center gap-2 px-2 ${short ? "bottom-[calc(env(safe-area-inset-bottom)+4px)]" : "bottom-[calc(env(safe-area-inset-bottom)+46px)]"}`}>
+          {myTurn && !short ? <div className="rounded-full bg-black/60 px-3 py-0.5 text-[11px] text-[#7dffa6]">{sync.need === "play" ? tx("tapTile") : tx("yourTurn")}</div> : null}
           <div className="flex max-w-full items-end justify-center gap-1 overflow-x-auto pb-1 sm:gap-2">
             {hand.map((tile) => {
               const ok = playable.has(tile);
@@ -585,7 +641,7 @@ function Stage({ tx, sync, myId, clockOffset, error, toast, onPlay, onDraw, onPa
                 <button key={tile} type="button" onClick={() => pick(tile)} disabled={!myTurn || !ok}
                   className={`shrink-0 transition-transform ${selected === tile ? "-translate-y-3" : ok ? "hover:-translate-y-1" : ""}`}>
                   <DominoTile a={tileLo(tile)} b={tileHi(tile)} glow={selected === tile} dim={myTurn && !ok}
-                    className="h-[60px] w-[30px] sm:h-[96px] sm:w-[48px]" />
+                    className={short ? "h-[50px] w-[25px]" : "h-[60px] w-[30px] sm:h-[96px] sm:w-[48px]"} />
                 </button>
               );
             })}
@@ -834,13 +890,15 @@ const DEMO_BOARDS: Record<string, Pick<DGame, "ch_a" | "ch_b" | "spin_idx" | "up
   },
 };
 function demoSync(variant = "1"): DSync {
-  const base = DEMO_BOARDS[variant] ?? DEMO_BOARDS["1"];
+  const solo = variant === "solo"; // 4 players without teams, like a real 101 table
+  const base = DEMO_BOARDS[solo ? "101" : variant] ?? DEMO_BOARDS["1"];
   const used = new Set([...base.ch_a.map((a, i) => Math.min(a, base.ch_b[i]) * 10 + Math.max(a, base.ch_b[i])),
     ...base.up_a.map((a, i) => Math.min(a, base.up_b[i]) * 10 + Math.max(a, base.up_b[i])),
     ...base.dn_a.map((a, i) => Math.min(a, base.dn_b[i]) * 10 + Math.max(a, base.dn_b[i]))]);
   const ends = demoEnds(base);
   const g: DGame = {
-    ...base, players: DEMO_IDS, n: 4, mode: variant === "101" ? "101" : "365", teams: [0, 1, 0, 1], team_count: 2, scores: [180, 135], target: 365,
+    ...base, players: DEMO_IDS, n: 4, mode: variant === "101" || solo ? "101" : "365",
+    teams: solo ? [0, 1, 2, 3] : [0, 1, 0, 1], team_count: solo ? 4 : 2, scores: solo ? [0, 0, 0, 0] : [180, 135], target: solo || variant === "101" ? 101 : 365,
     turn: 0, starter: 0, passes: 0, over: false, winner: null, blocked: false, first_tile: null, match_over: false, match_winner: null, instant: false,
     last_score: null, round_no: 3, turn_at: new Date().toISOString(), over_at: null, last_move: null, leaver: null, ver: 1, stock_n: 0,
     ends_sum: ends.reduce((a, e) => a + e.v * (e.dbl ? 2 : 1), 0), ends, hand_n: [7, 7, 7, 7],
@@ -848,7 +906,7 @@ function demoSync(variant = "1"): DSync {
   const hand = [55, 36, 2, 13, 24, 11, 5, 15, 25, 35, 45, 56, 16, 26, 46, 0, 22, 44].filter((t) => !used.has(t)).slice(0, 7);
   return {
     now: new Date().toISOString(), turn_secs: 30,
-    table: { id: 0, owner: "me", mode: variant === "101" ? "101" : "365", target: variant === "101" ? 101 : 365, teams: true, status: "playing" },
+    table: { id: 0, owner: "me", mode: variant === "101" || solo ? "101" : "365", target: variant === "101" || solo ? 101 : 365, teams: !solo, status: "playing" },
     seats: [
       { seat: 0, user_id: "me", name: "Sən", avatar: null }, { seat: 1, user_id: "rauf", name: "Rauf", avatar: null },
       { seat: 2, user_id: "elnur", name: "Elnur", avatar: null }, { seat: 3, user_id: "aysel", name: "Aysel", avatar: null },
