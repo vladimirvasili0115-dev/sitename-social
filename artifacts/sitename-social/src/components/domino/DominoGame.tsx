@@ -11,6 +11,7 @@ import {
 } from "@/lib/dominoSync";
 import { DominoBoard, lastPieceKey, useAnchor } from "./DominoBoard";
 import { DominoDefs, DominoTile } from "./DominoTile";
+import { setSoundOn, soundOn, tileSound, unlockSound, warnSound } from "./dominoSound";
 
 type Dict = Record<string, string>;
 const TX: Record<"az" | "en", Dict> = {
@@ -25,7 +26,7 @@ const TX: Record<"az" | "en", Dict> = {
     waitOwner: "Masa sahibi oyunu başladacaq.", needTwo: "Başlamaq üçün ən az 2 nəfər lazımdır.", owner: "sahib", you: "Sən",
     invite: "Dəvət et", invitePh: "@istifadəçi adı", invited: "Dəvət göndərildi.", noUser: "Belə istifadəçi tapılmadı.",
     scores: "XALLAR", teamA: "Komanda A", teamB: "Komanda B", rule35: "35 xal birdəfəyə yazan komanda dərhal qalib olur",
-    draw: "Çək", drawEmpty: "Çək (bazar yoxdur)", pass: "Pas", stock: "Bazar", yourTurn: "Sənin növbən", sec: "san",
+    draw: "Çək", drawEmpty: "Çək (bazar yoxdur)", pass: "Pas", tapStock: "Bazara toxun", soundOn: "Səsi aç", soundOff: "Səsi bağla", stock: "Bazar", yourTurn: "Sənin növbən", sec: "san",
     roundOver: "Raund bitdi", blocked: "Blok", won: "qazandı", nextRound: "Növbəti raund başlayır…", hands: "Əllərdə qalan",
     matchOver: "OYUN BİTDİ", winner: "Qalib", again: "Yenidən başlat", left: "oyunu tərk etdi", somePlayer: "Bir oyunçu", instant: "Birdəfəyə 35 xal!",
     signIn: "Oynamaq üçün hesaba daxil ol.", demo: "Önizləmə (demo)", demoNote: "Bu önizləmədir: oyun serverə bağlı deyil.", tapTile: "Daşa toxun, sonra işıqlanan yerə qoy.",
@@ -49,7 +50,7 @@ const TX: Record<"az" | "en", Dict> = {
     waitOwner: "The table owner will start the game.", needTwo: "At least 2 players are needed.", owner: "owner", you: "You",
     invite: "Invite", invitePh: "@username", invited: "Invite sent.", noUser: "User not found.",
     scores: "SCORES", teamA: "Team A", teamB: "Team B", rule35: "A team scoring 35 at once wins at once",
-    draw: "Draw", drawEmpty: "Draw (stock empty)", pass: "Pass", stock: "Stock", yourTurn: "Your turn", sec: "s",
+    draw: "Draw", drawEmpty: "Draw (stock empty)", pass: "Pass", tapStock: "Tap the stock", soundOn: "Sound on", soundOff: "Sound off", stock: "Stock", yourTurn: "Your turn", sec: "s",
     roundOver: "Round over", blocked: "Blocked", won: "won", nextRound: "Next round is starting…", hands: "Left in hands",
     matchOver: "GAME OVER", winner: "Winner", again: "Start again", left: "left the game", somePlayer: "A player", instant: "35 points at once!",
     signIn: "Sign in to play.", demo: "Preview (demo)", demoNote: "This is a preview: not connected to the server.", tapTile: "Tap a tile, then the glowing spot.",
@@ -113,7 +114,7 @@ export function DominoGame() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const d = params.get("demo");
-    if (d === "1" || d === "101" || d === "365" || d === "solo") { setDemo(d); setChecked(true); return; }
+    if (d === "1" || d === "101" || d === "365" || d === "solo" || d === "bazar") { setDemo(d); setChecked(true); return; }
     if (!supabase) { setChecked(true); return; }
     dominoMyTable().then((r) => { if (r.data) setTableId(r.data); setChecked(true); });
   }, []);
@@ -401,7 +402,7 @@ function TableBackground() {
 // rectangle is mapped the same way. "short" = phone held sideways: little height, compact layout.
 const FELT = { u0: 0.27, u1: 0.73, v0: 0.25, v1: 0.69 };
 const FELT_MARGIN = 10;
-type Geometry = { zone: { left: number; top: number; width: number; height: number }; short: boolean };
+type Geometry = { zone: { left: number; top: number; width: number; height: number }; short: boolean; wide: boolean };
 function useTableGeometry(): Geometry | null {
   const [geo, setGeo] = useState<Geometry | null>(null);
   useLayoutEffect(() => {
@@ -418,6 +419,7 @@ function useTableGeometry(): Geometry | null {
       setGeo({
         zone: { left: x0 + FELT_MARGIN, top: y0 + FELT_MARGIN, width: Math.max(40, x1 - x0 - 2 * FELT_MARGIN), height: Math.max(40, y1 - y0 - 2 * FELT_MARGIN) },
         short: W > H && H < 520,
+        wide: W >= 640,
       });
     };
     calc();
@@ -429,13 +431,14 @@ function useTableGeometry(): Geometry | null {
 
 type ViewSeat = { name: string; avatar: string | null; me: boolean; turn: boolean; blue: boolean; count: number; secs: number | null; partner: boolean; empty: boolean; seat: number };
 
-function SeatBadge({ pos, s, tx, onSit, short = false }: { pos: Pos; s: ViewSeat; tx: (k: string) => string; onSit?: () => void; short?: boolean }) {
+function SeatBadge({ pos, s, tx, onSit, short = false, avatar = 44 }: { pos: Pos; s: ViewSeat; tx: (k: string) => string; onSit?: () => void; short?: boolean; avatar?: number }) {
   const place: Record<Pos, string> = {
     // sideways phone: my badge goes to the bottom-left corner so the hand can sit in the middle
     bottom: short ? "bottom-[calc(env(safe-area-inset-bottom)+6px)] left-2" : "bottom-[calc(env(safe-area-inset-bottom)+6px)] left-2 sm:left-1/2 sm:-translate-x-1/2",
-    top: "top-[148px] left-1/2 -translate-x-1/2 sm:top-2",
-    left: "left-1 top-[30%] -translate-y-1/2 sm:left-4 sm:top-1/2",
-    right: "right-1 top-[30%] -translate-y-1/2 sm:right-4 sm:top-1/2",
+    // portrait phone: kept above the board area (it starts about 27% down the screen)
+    top: "top-[128px] left-1/2 -translate-x-1/2 sm:top-2",
+    left: "left-1 top-[23%] -translate-y-1/2 sm:left-4 sm:top-1/2",
+    right: "right-1 top-[23%] -translate-y-1/2 sm:right-4 sm:top-1/2",
   };
   if (s.empty) {
     return (
@@ -446,10 +449,12 @@ function SeatBadge({ pos, s, tx, onSit, short = false }: { pos: Pos; s: ViewSeat
   }
   return (
     <div className={`absolute z-20 ${place[pos]} flex items-center gap-2 rounded-full border border-[#c8973a88] bg-black/70 py-1 pl-1 pr-3 text-xs sm:text-sm`}>
-      <Avatar name={s.name} src={s.avatar} turn={s.turn} blue={s.blue} size={pos === "bottom" ? 34 : 32} />
+      <Avatar name={s.name} src={s.avatar} turn={s.turn} blue={s.blue} size={avatar} />
       <div className="leading-tight">
-        <div className="max-w-[90px] truncate font-semibold sm:max-w-[140px]">{s.me ? tx("you") : s.name}{s.partner ? " 🤝" : ""}</div>
-        {s.turn && s.secs !== null ? <div className={`text-[11px] ${s.secs <= 5 ? "text-red-400" : "text-[#7dffa6]"}`}>⏱ {s.secs} {tx("sec")}</div> : <div className="text-[11px] text-white/50">{s.count ? `🁫 ${s.count}` : ""}</div>}
+        <div className="max-w-[90px] truncate font-semibold sm:max-w-[150px]">{s.me ? tx("you") : s.name}{s.partner ? " 🤝" : ""}</div>
+        {s.turn && s.secs !== null
+          ? <div className={`text-xs ${s.secs <= 10 ? "animate-pulse font-bold text-red-400" : s.secs <= 20 ? "font-semibold text-orange-300" : "text-[#7dffa6]"}`}>⏱ {s.secs} {tx("sec")}</div>
+          : <div className="text-xs text-white/50">{s.count ? `🁫 ${s.count}` : ""}</div>}
       </div>
     </div>
   );
@@ -459,9 +464,9 @@ function HiddenHand({ pos, count }: { pos: Pos; count: number }) {
   if (pos === "bottom" || count <= 0) return null;
   const vertical = pos === "left" || pos === "right";
   const place: Record<Pos, string> = {
-    top: "top-[192px] left-1/2 -translate-x-1/2 flex-row sm:top-[62px]",
-    left: "left-2 top-[30%] mt-6 flex-col sm:left-6 sm:top-1/2 sm:-translate-y-1/2 sm:mt-12",
-    right: "right-2 top-[30%] mt-6 flex-col sm:right-6 sm:top-1/2 sm:-translate-y-1/2 sm:mt-12",
+    top: "top-[184px] left-1/2 -translate-x-1/2 flex-row sm:top-[78px]",
+    left: "left-2 top-[23%] mt-8 flex-col sm:left-6 sm:top-1/2 sm:-translate-y-1/2 sm:mt-[72px]",
+    right: "right-2 top-[23%] mt-8 flex-col sm:right-6 sm:top-1/2 sm:-translate-y-1/2 sm:mt-[72px]",
     bottom: "",
   };
   const shown = Math.min(count, 10);
@@ -515,6 +520,33 @@ function Stage({ tx, sync, myId, clockOffset, error, toast, onPlay, onDraw, onPa
   const short = !!geo?.short;
   // Compact scores: sideways phone, or more than two teams (3-4 players without teams).
   const compact = short || (!!g && g.team_count > 2);
+  const avatarSize = short ? 36 : geo?.wide ? 56 : 44;
+
+  // ── sounds ── (on/off remembered per device; browsers allow sound only after the first tap)
+  const [sound, setSound] = useState(true);
+  useEffect(() => {
+    setSound(soundOn());
+    const unlock = () => unlockSound();
+    window.addEventListener("pointerdown", unlock, { once: true });
+    return () => window.removeEventListener("pointerdown", unlock);
+  }, []);
+  // a soft "tock" for every tile laid on the table (anyone's move, auto moves too)
+  const heardVer = useRef<number | null>(null);
+  useEffect(() => {
+    if (!g) return;
+    if (heardVer.current !== null && g.ver !== heardVer.current && g.last_move?.kind === "play") tileSound();
+    heardVer.current = g.ver;
+  }, [g?.ver]); // eslint-disable-line react-hooks/exhaustive-deps
+  // my turn: a gentle beep every 10 seconds without a move (at 10 s and 20 s of the 30 s turn)
+  const warned = useRef<{ key: string; step: number }>({ key: "", step: 0 });
+  useEffect(() => {
+    if (!myTurn || !g) return;
+    const key = `${g.turn}-${g.turn_at}`;
+    if (warned.current.key !== key) warned.current = { key, step: 0 };
+    const elapsed = (Date.now() - clockOffset - Date.parse(g.turn_at)) / 1000;
+    const step = Math.min(2, Math.floor(elapsed / 10));
+    if (step > warned.current.step) { warnSound(); warned.current.step = step; }
+  });
 
   const nameOf = (uid: string) => sync.seats.find((s) => s.user_id === uid)?.name ?? "—";
   const avatarOf = (uid: string) => sync.seats.find((s) => s.user_id === uid)?.avatar ?? null;
@@ -571,6 +603,9 @@ function Stage({ tx, sync, myId, clockOffset, error, toast, onPlay, onDraw, onPa
       {/* top bar */}
       <div className="absolute left-2 top-2 z-30 flex items-start gap-2 sm:left-5 sm:top-4">
         <button type="button" onClick={onLeave} className="rounded-full bg-black/60 px-3 py-1.5 text-xs">← {tx("leave")}</button>
+        <button type="button" onClick={() => { const on = !sound; setSoundOn(on); setSound(on); if (on) tileSound(); }}
+          aria-label={sound ? tx("soundOff") : tx("soundOn")} title={sound ? tx("soundOff") : tx("soundOn")}
+          className="grid h-[30px] w-[30px] place-items-center rounded-full bg-black/60 text-sm">{sound ? "🔊" : "🔇"}</button>
         {short ? null : <div className="hidden sm:block"><Logo /></div>}
       </div>
       <div className={`absolute left-2 top-[46px] z-30 hidden whitespace-nowrap rounded-full border border-[#c8973a] bg-black/70 px-3 py-1 text-[11px] text-[#ffd77a] sm:left-5 sm:top-[84px] sm:text-[13px] ${short ? "" : "sm:block"}`}>
@@ -614,7 +649,7 @@ function Stage({ tx, sync, myId, clockOffset, error, toast, onPlay, onDraw, onPa
       ) : null}
 
       {views.map(({ pos, s }) => (
-        <SeatBadge key={`${pos}-${s.seat}`} pos={pos} s={s} tx={tx} short={short} onSit={!live && s.empty && onSit ? () => onSit(s.seat) : undefined} />
+        <SeatBadge key={`${pos}-${s.seat}`} pos={pos} s={s} tx={tx} short={short} avatar={avatarSize} onSit={!live && s.empty && onSit ? () => onSit(s.seat) : undefined} />
       ))}
       {/* sideways phone: no room for the face-down rows, the badge already shows how many tiles are left */}
       {live && g && !short ? views.filter((v) => !v.s.me).map(({ pos, s }) => <HiddenHand key={`h-${pos}`} pos={pos} count={s.count} />) : null}
@@ -632,9 +667,24 @@ function Stage({ tx, sync, myId, clockOffset, error, toast, onPlay, onDraw, onPa
 
       {/* my hand + actions */}
       {live && g && me !== null ? (
-        <div className={`absolute inset-x-0 z-20 flex flex-col items-center gap-2 px-2 ${short ? "bottom-[calc(env(safe-area-inset-bottom)+4px)]" : "bottom-[calc(env(safe-area-inset-bottom)+46px)]"}`}>
+        <div className={`absolute inset-x-0 z-20 flex flex-col items-center gap-2 px-2 ${short ? "bottom-[calc(env(safe-area-inset-bottom)+4px)]" : "bottom-[calc(env(safe-area-inset-bottom)+64px)] sm:bottom-[calc(env(safe-area-inset-bottom)+78px)]"}`}>
           {myTurn && !short ? <div className="rounded-full bg-black/60 px-3 py-0.5 text-[11px] text-[#7dffa6]">{sync.need === "play" ? tx("tapTile") : tx("yourTurn")}</div> : null}
           <div className="flex max-w-full items-end justify-center gap-1 overflow-x-auto pb-1 sm:gap-2">
+            {/* the stock (bazar) lies on the table face down; tap it to draw when you have no move */}
+            {g.stock_n > 0 ? (
+              <button type="button" onClick={onDraw} disabled={!myTurn || sync.need !== "draw"}
+                aria-label={`${tx("stock")} ${g.stock_n}`}
+                className={`relative mr-2 shrink-0 rounded-lg sm:mr-4 ${myTurn && sync.need === "draw" ? "animate-pulse drop-shadow-[0_0_12px_#ffd77a]" : "opacity-80"}`}>
+                <span className={`relative block ${short ? "h-[50px] w-[37px]" : "h-[60px] w-[44px] sm:h-[96px] sm:w-[68px]"}`}>
+                  {Array.from({ length: Math.min(3, g.stock_n) }, (_, i) => (
+                    <DominoTile key={i} back className={`absolute top-0 ${short ? "h-[50px] w-[25px]" : "h-[60px] w-[30px] sm:h-[96px] sm:w-[48px]"}`}
+                      style={{ left: `${i * 18}%`, transform: `rotate(${(i - 1) * 6}deg)` }} />
+                  ))}
+                </span>
+                <span className={`absolute -right-2 -top-2 grid h-5 min-w-5 place-items-center rounded-full px-1 text-[11px] font-black ${gold}`}>{g.stock_n}</span>
+                {myTurn && sync.need === "draw" ? <span className="absolute -bottom-4 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] font-bold text-[#ffd77a]">{tx("tapStock")}</span> : null}
+              </button>
+            ) : null}
             {hand.map((tile) => {
               const ok = playable.has(tile);
               return (
@@ -650,10 +700,6 @@ function Stage({ tx, sync, myId, clockOffset, error, toast, onPlay, onDraw, onPa
       ) : null}
       {live && g && me !== null ? (
         <div className="absolute bottom-[calc(env(safe-area-inset-bottom)+6px)] right-2 z-30 flex gap-2 sm:right-5">
-          <button type="button" onClick={onDraw} disabled={!myTurn || sync.need !== "draw"}
-            className={`rounded-full border border-[#c8973a88] px-3 py-2 text-xs disabled:opacity-40 sm:text-sm ${myTurn && sync.need === "draw" ? gold + " font-bold" : "bg-black/70"}`}>
-            {g.stock_n > 0 ? `${tx("draw")} (${g.stock_n})` : tx("drawEmpty")}
-          </button>
           <button type="button" onClick={onPass} disabled={!myTurn || sync.need !== "pass"}
             className={`rounded-full px-4 py-2 text-xs font-extrabold disabled:opacity-40 sm:text-sm ${myTurn && sync.need === "pass" ? gold : "bg-black/70 text-white"}`}>{tx("pass")}</button>
         </div>
@@ -895,9 +941,15 @@ function demoSum(g: Pick<DGame, "ends" | "up_a" | "dn_a">) {
     .filter((e) => (e.k !== "U" || g.up_a.length > 0) && (e.k !== "D" || g.dn_a.length > 0))
     .reduce((a, e) => a + e.v * (e.dbl ? 2 : 1), 0);
 }
+// ?demo=bazar: no move in hand, tiles left in the stock — tap the stock pile to draw (1 at a time in 365)
+const DEMO_STOCK = [3, 13, 25, 15, 35];
+function demoNeed(moves: { t: number }[], stock: number): DSync["need"] {
+  return moves.length ? "play" : stock > 0 ? "draw" : "pass";
+}
 function demoSync(variant = "1"): DSync {
   const solo = variant === "solo"; // 4 players without teams, like a real 101 table
-  const base = DEMO_BOARDS[solo ? "101" : variant] ?? DEMO_BOARDS["1"];
+  const bazar = variant === "bazar";
+  const base = DEMO_BOARDS[solo ? "101" : bazar ? "1" : variant] ?? DEMO_BOARDS["1"];
   const used = new Set([...base.ch_a.map((a, i) => Math.min(a, base.ch_b[i]) * 10 + Math.max(a, base.ch_b[i])),
     ...base.up_a.map((a, i) => Math.min(a, base.up_b[i]) * 10 + Math.max(a, base.up_b[i])),
     ...base.dn_a.map((a, i) => Math.min(a, base.dn_b[i]) * 10 + Math.max(a, base.dn_b[i]))]);
@@ -906,10 +958,14 @@ function demoSync(variant = "1"): DSync {
     ...base, players: DEMO_IDS, n: 4, mode: variant === "101" || solo ? "101" : "365",
     teams: solo ? [0, 1, 2, 3] : [0, 1, 0, 1], team_count: solo ? 4 : 2, scores: solo ? [0, 0, 0, 0] : [180, 135], target: solo || variant === "101" ? 101 : 365,
     turn: 0, starter: 0, passes: 0, over: false, winner: null, blocked: false, first_tile: null, match_over: false, match_winner: null, instant: false,
-    last_score: null, round_no: 3, turn_at: new Date().toISOString(), over_at: null, last_move: null, leaver: null, ver: 1, stock_n: 0,
+    last_score: null, round_no: 3, turn_at: new Date().toISOString(), over_at: null, last_move: null, leaver: null, ver: 1,
+    stock_n: bazar ? DEMO_STOCK.length : 0,
     ends_sum: demoSum({ ...base, ends }), ends, hand_n: [7, 7, 7, 7],
   };
-  const hand = [55, 36, 2, 13, 24, 11, 5, 15, 25, 35, 45, 56, 16, 26, 46, 0, 22, 44].filter((t) => !used.has(t)).slice(0, 7);
+  const hand = bazar
+    ? [22, 23, 33, 36]
+    : [55, 36, 2, 13, 24, 11, 5, 15, 25, 35, 45, 56, 16, 26, 46, 0, 22, 44].filter((t) => !used.has(t)).slice(0, 7);
+  const moves = demoMoves(g, hand);
   return {
     now: new Date().toISOString(), turn_secs: 30,
     table: { id: 0, owner: "me", mode: variant === "101" || solo ? "101" : "365", target: variant === "101" || solo ? 101 : 365, teams: !solo, status: "playing" },
@@ -917,7 +973,7 @@ function demoSync(variant = "1"): DSync {
       { seat: 0, user_id: "me", name: "Sən", avatar: null }, { seat: 1, user_id: "rauf", name: "Rauf", avatar: null },
       { seat: 2, user_id: "elnur", name: "Elnur", avatar: null }, { seat: 3, user_id: "aysel", name: "Aysel", avatar: null },
     ],
-    game: g, me: 0, hand, need: "play", moves: demoMoves(g, hand),
+    game: g, me: 0, hand, need: demoNeed(moves, g.stock_n), moves,
   };
 }
 
@@ -944,11 +1000,25 @@ function DemoTable({ tx, onExit, variant }: { tx: (k: string) => string; onExit:
       g.turn_at = new Date().toISOString();
       const hand = (s.hand ?? []).filter((t) => t !== tile);
       g.hand_n = [hand.length, ...g.hand_n.slice(1)];
-      return { ...s, now: new Date().toISOString(), game: g, hand, moves: demoMoves(g, hand), need: demoMoves(g, hand).length ? "play" : "pass" };
+      const moves = demoMoves(g, hand);
+      return { ...s, now: new Date().toISOString(), game: g, hand, moves, need: demoNeed(moves, g.stock_n) };
+    });
+  };
+  // demo draw: one tile from the stock (365 rule), like tapping the pile in a real game
+  const draw = () => {
+    setSync((s) => {
+      const g0 = s.game!;
+      if (!g0.stock_n) return s;
+      const tile = DEMO_STOCK[DEMO_STOCK.length - g0.stock_n];
+      const g = { ...g0, stock_n: g0.stock_n - 1, ver: g0.ver + 1, turn_at: new Date().toISOString(), last_move: { kind: "draw", p: 0, n: 1 } };
+      const hand = [...(s.hand ?? []), tile];
+      g.hand_n = [hand.length, ...g.hand_n.slice(1)];
+      const moves = demoMoves(g, hand);
+      return { ...s, now: new Date().toISOString(), game: g, hand, moves, need: demoNeed(moves, g.stock_n) };
     });
   };
   return (
     <Stage tx={tx} sync={sync} myId="me" clockOffset={0} error={null} toast={toast} banner={tx("demoNote")}
-      onPlay={play} onDraw={() => {}} onPass={() => setSync(demoSync(variant))} onLeave={onExit} />
+      onPlay={play} onDraw={draw} onPass={() => setSync(demoSync(variant))} onLeave={onExit} />
   );
 }
