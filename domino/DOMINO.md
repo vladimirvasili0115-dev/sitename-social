@@ -30,8 +30,8 @@ Son nəticə: 3600 təsadüfi matç xətasız (yalnız mühərrik məntiqi; brau
 
 ## Telefon 365
 - Başlayan: **3-2 daşı olan**, o daşla başlanır (ilk hamlədə 5 xal yazılır). 3-2 heç kimdə yoxdursa 1-1 qoşa olan, sonra 2-2 … 6-6.
-- İlk oynanan qoşa **spinner** olur. Sol və sağ tərəfə daş qoyulandan sonra yuxarı və aşağı da açılır (4 açıq uc).
-- Hər hamlədən sonra bütün açıq uclardakı rəqəmlərin cəmi (qoşa uc iki dəfə) **5-ə bölünürsə**, cəm qədər xal yazılır (5, 10 … 35).
+- **Spinner** = yanına ilk daş qoyulan qoşa (istifadəçi təsdiqlədi, paket-HK). İki ucda qoşa olsa da, hansına əvvəl daş bitişdirilsə, 4 tərəfli yalnız o olur; digər qoşalar adi qalır. Sol və sağ tərəfə daş qoyulandan sonra yuxarı və aşağı da açılır.
+- Hər hamlədən sonra açıq uclardakı rəqəmlərin cəmi (qoşa uc iki dəfə) **5-ə bölünürsə**, cəm qədər xal yazılır (5, 10 … 35). Spinnerin yuxarı/aşağı tərəfi yalnız ora daş qoyulubsa sayılır: 2 tərəfdə daş → 2 ucun cəmi, 3 → 3, 4 → 4.
 - **Birdəfəyə 35 (və ya daha çox) xal yazdıran komanda dərhal qalib olur**, hədəfi gözləmək lazım deyil. Tək oyunçudursa o qalib olur.
 - Hədəf (masa sahibi seçir): **365, 355 və ya 255**. Hədəfə ilk çatan qalib olur.
 - **Raund sonu bonusu (300 qaydası, istifadəçi təsdiqlədi):**

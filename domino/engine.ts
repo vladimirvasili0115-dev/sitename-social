@@ -175,10 +175,14 @@ export function openEnds(s: State): { key: EndKey; value: number; double: boolea
 
 // 365 xal hesabı: açıq uclardakı rəqəmlərin cəmi (qoşa uc iki dəfə sayılır).
 // Lövhədə tək daş varsa, onun öz cəmi.
+// Spinnerin yuxarı/aşağı tərəfi yalnız ora daş qoyulubsa sayılır (istifadəçi təsdiqlədi):
+// 2 tərəfdə daş → 2 ucun cəmi, 3 tərəfdə → 3, 4 tərəfdə → 4.
 export function endsSum(s: State): number {
   if (!s.chain.length) return 0;
   if (s.chain.length === 1) return pips(s.chain[0].tile);
-  return openEnds(s).reduce((a, e) => a + e.value * (e.double ? 2 : 1), 0);
+  return openEnds(s)
+    .filter((e) => (e.key !== "U" || !!s.spin?.up.length) && (e.key !== "D" || !!s.spin?.down.length))
+    .reduce((a, e) => a + e.value * (e.double ? 2 : 1), 0);
 }
 
 export function canPlayTile(s: State, t: Tile, side: Side): boolean {
@@ -255,19 +259,23 @@ export function play(s0: State, p: number, tileIdx: number, side: Side): Result 
   const s = clone(s0);
   s.hands[p].splice(tileIdx, 1);
   const wasEmpty = s.chain.length === 0;
+  // 365 spinner: ilk dəfə yanına daş qoyulan qoşa (istifadəçi təsdiqlədi). İki ucda qoşa olsa da,
+  // hansına əvvəl daş bitişdirilsə, 4 tərəfli yalnız o olur; digəri adi qoşa qalır.
   if (wasEmpty) {
     s.chain.push({ tile: t, a: t[0], b: t[1] });
     s.firstTile = null;
-    if (s.mode === "365" && isDouble(t)) s.spin = { idx: 0, up: [], down: [] };
   } else if (side === "L") {
+    const endDouble = s.chain[0].a === s.chain[0].b;
     // solda xarici rəqəm a-dır: daşın daxili tərəfi chain[0].a-ya bitişir (b)
     const o = orient(t, s.chain[0].a);
     s.chain.unshift({ tile: t, a: o.b, b: o.a });
     if (s.spin) s.spin.idx += 1;
-    if (s.mode === "365" && !s.spin && isDouble(t)) s.spin = { idx: 0, up: [], down: [] };
+    else if (s.mode === "365" && endDouble) s.spin = { idx: 1, up: [], down: [] };
   } else if (side === "R") {
-    s.chain.push(orient(t, s.chain[s.chain.length - 1].b));
-    if (s.mode === "365" && !s.spin && isDouble(t)) s.spin = { idx: s.chain.length - 1, up: [], down: [] };
+    const last = s.chain.length - 1;
+    const endDouble = s.chain[last].a === s.chain[last].b;
+    s.chain.push(orient(t, s.chain[last].b));
+    if (s.mode === "365" && !s.spin && endDouble) s.spin = { idx: last, up: [], down: [] };
   } else {
     const arm = side === "U" ? s.spin!.up : s.spin!.down;
     const inner = arm.length ? arm[arm.length - 1].b : s.chain[s.spin!.idx].a;

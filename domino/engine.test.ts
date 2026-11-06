@@ -147,24 +147,49 @@ ok(E.newMatch(3, "101", E.mulberry32(1)).stock.length === 7, "3 nəfərdə bazar
     stock: [], chain: [], spin: null, turn: 0, firstTile: [6, 6], passes: 0, over: false, winner: null, blocked: false,
     scores: [0, 0],
   });
-  let r = E.play(s, 0, 0, "R"); // 6-6 spinner, tək daş cəmi 12 (5-ə bölünmür)
-  ok(r.ok && r.s.scores[0] === 0 && !!r.s.spin, "spinner qoyuldu, xal yoxdur");
+  let r = E.play(s, 0, 0, "R"); // 6-6 tək daş: cəmi 12 (5-ə bölünmür); yanına daş gəlməyib, hələ spinner deyil
+  ok(r.ok && r.s.scores[0] === 0 && !r.s.spin, "6-6 qoyuldu, xal yoxdur, hələ spinner deyil");
   if (!r.ok) throw new Error("x");
   s = { ...r.s, turn: 0 };
   ok(!E.canPlayTile(s, [6, 4], "U"), "spinner açılmayıb: yuxarı olmaz");
-  r = E.play(s, 0, 1, "R"); // 6-4: uclar: sol 6-6(12) + sağ 4 = 16
-  ok(r.ok && r.s.scores[0] === 0, "16 xal deyil");
+  r = E.play(s, 0, 1, "R"); // 6-4: 6-6-ya ilk daş → spinner. uclar: sol 6-6(12) + sağ 4 = 16
+  ok(r.ok && r.s.scores[0] === 0 && r.s.spin?.idx === 0, "16 xal deyil, 6-6 spinner oldu");
   if (!r.ok) throw new Error("x");
   s = { ...r.s, turn: 0 };
   ok(!E.canPlayTile(s, [6, 1], "U"), "hələ də bir tərəf boş: yuxarı olmaz");
-  r = E.play(s, 0, 0, "L"); // 6-1 sola: sol=1, sağ=4, yuxarı=6, aşağı=6 → 17
+  r = E.play(s, 0, 0, "L"); // 6-1 sola: yuxarı/aşağı boşdur, sayılmır → sol 1 + sağ 4 = 5
   ok(r.ok, "6-1 sola");
   if (!r.ok) throw new Error("x");
-  ok(E.endsSum(r.s) === 17 && r.s.scores[0] === 0, `uclar cəmi 17 (alındı ${E.endsSum(r.s)})`);
-  s = { ...r.s, hands: [[[6, 4], [0, 0]], r.s.hands[1]], turn: 0 };
+  ok(E.endsSum(r.s) === 5 && r.s.scores[0] === 5, `2 tərəf: uclar cəmi 5, 5 xal (alındı ${E.endsSum(r.s)} / ${r.s.scores[0]})`);
+  s = { ...r.s, hands: [[[6, 4], [6, 0], [0, 0]], r.s.hands[1]], turn: 0 };
   ok(E.canPlayTile(s, [6, 4], "U") && E.canPlayTile(s, [6, 4], "D"), "indi yuxarı/aşağı açıqdır");
-  const r2 = E.play(s, 0, 0, "U"); // yuxarı 6-4 → sol 1 + sağ 4 + yuxarı 4 + aşağı 6 = 15
-  ok(r2.ok && E.endsSum(r2.s) === 15 && r2.s.scores[0] === 15, `15 xal yazıldı (alındı ${r2.ok ? r2.s.scores[0] : "?"})`);
+  const r2 = E.play(s, 0, 0, "U"); // 3 tərəf: sol 1 + sağ 4 + yuxarı 4 = 9 → xal yox
+  ok(r2.ok && E.endsSum(r2.s) === 9 && r2.s.scores[0] === 5, `3 tərəf: cəmi 9, xal yoxdur (alındı ${r2.ok ? E.endsSum(r2.s) : "?"})`);
+  if (!r2.ok) throw new Error("x");
+  const r3 = E.play({ ...r2.s, turn: 0 }, 0, 0, "D"); // 4 tərəf: sol 1 + sağ 4 + yuxarı 4 + aşağı 0 = 9
+  ok(r3.ok && E.endsSum(r3.s) === 9, `4 tərəf: cəmi 9 (alındı ${r3.ok ? E.endsSum(r3.s) : "?"})`);
+}
+
+// 7b) 365: iki ucda qoşa — spinner ilk yanına daş qoyulan qoşa olur, digəri adi qalır
+{
+  let s = base(2, "365", {
+    hands: [[[2, 2], [3, 1], [2, 5]], [[3, 3], [1, 4]]],
+    stock: [], chain: [P([3, 2], 3, 2)], spin: null, turn: 0, firstTile: null, passes: 0, over: false, winner: null, blocked: false,
+    scores: [0, 0],
+  });
+  let r = E.play(s, 0, 0, "R"); // 2-2 sağa (əvvəl oynanan qoşa)
+  ok(r.ok && !r.s.spin, "2-2 qoyuldu, yanına daş gəlməyib: spinner yoxdur");
+  if (!r.ok) throw new Error("x");
+  r = E.play({ ...r.s, turn: 1 }, 1, 0, "L"); // 3-3 sola: uclar 3-3 (6) + 2-2 (4) = 10
+  ok(r.ok && !r.s.spin && r.s.scores[1] === 10, `iki ucda qoşa, spinner yoxdur, 10 xal (alındı ${r.ok ? r.s.scores[1] : "?"})`);
+  if (!r.ok) throw new Error("x");
+  r = E.play({ ...r.s, turn: 0 }, 0, 0, "L"); // 3-1 → 3-3-ün yanına: 3-3 spinner olur
+  ok(r.ok && r.s.spin?.idx === 1 && r.s.chain[1].tile[0] === 3 && r.s.chain[1].tile[1] === 3, "spinner 3-3 oldu (əvvəl oynanan 2-2 yox)");
+  if (!r.ok) throw new Error("x");
+  s = { ...r.s, turn: 0 };
+  ok(E.canPlayTile(s, [3, 5], "U") && E.canPlayTile(s, [3, 5], "D"), "3-3-ün yuxarı/aşağısı açıqdır");
+  r = E.play(s, 0, 0, "R"); // 2-5 → 2-2-nin yanına: 2-2 adi qalır
+  ok(r.ok && r.s.spin?.idx === 1, "2-2 spinner olmadı");
 }
 
 // 8) 365: birdəfəyə 35 xal → oyun dərhal bitir

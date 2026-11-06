@@ -33,7 +33,7 @@ const TX: Record<"az" | "en", Dict> = {
     e_not_your_turn: "Növbə səndə deyil.", e_illegal: "Bu daş ora qoyulmur.", e_has_move: "Gedişin var, bazardan çəkmək olmaz.", e_must_draw: "Əvvəl bazardan çək.",
     e_playing: "Bu masada oyun gedir.", e_full: "Masa doludur.", e_seat_taken: "Bu yer tutulub.", e_not_owner: "Bunu yalnız masa sahibi edə bilər.",
     e_players_2_4: "2-4 nəfər lazımdır.", e_too_many: "Çox dəvət göndərdin, bir az gözlə.", e_not_signed_in: "Hesaba daxil ol.",
-    rulesText: "101: başlayan 1-1 olan oyunçudur (yoxdursa 2-2…6-6). Əli ilk boşalan raundu qazanır, rəqiblərin əlindəki xallar ona yazılır. Blokda əlində az qalan qazanır (xal = fərq). 101-ə ilk çatan qalibdir. Bazardan 2-2 çəkilir.\n\nTelefon 365: başlayan 3-2 daşı olan oyunçudur. İlk qoşa spinner olur və 4 tərəfə açılır. Hər hamlədən sonra uclar cəmi 5-ə bölünürsə, o qədər xal yazılır. Birdəfəyə 35 xal yazan dərhal qalibdir. Raund sonunda rəqiblərin əlindəki xal (5-ə yuvarlaq) yalnız 300-dən az xalı olan komandaya yazılır. Bazardan 1-1 çəkilir.\n\n4 nəfərdə qarşı-qarşıya oturanlar komandadır. Növbə 30 saniyədir, vaxt bitəndə hamləni server edir.",
+    rulesText: "101: başlayan 1-1 olan oyunçudur (yoxdursa 2-2…6-6). Əli ilk boşalan raundu qazanır, rəqiblərin əlindəki xallar ona yazılır. Blokda əlində az qalan qazanır (xal = fərq). 101-ə ilk çatan qalibdir. Bazardan 2-2 çəkilir.\n\nTelefon 365: başlayan 3-2 daşı olan oyunçudur. Yanına ilk daş qoyulan qoşa spinner olur və 4 tərəfə açılır (digər qoşalar adi qalır). Hər hamlədən sonra uclar cəmi 5-ə bölünürsə, o qədər xal yazılır; spinnerin yalnız daş qoyulmuş tərəfləri sayılır. Birdəfəyə 35 xal yazan dərhal qalibdir. Raund sonunda rəqiblərin əlindəki xal (5-ə yuvarlaq) yalnız 300-dən az xalı olan komandaya yazılır. Bazardan 1-1 çəkilir.\n\n4 nəfərdə qarşı-qarşıya oturanlar komandadır. Növbə 30 saniyədir, vaxt bitəndə hamləni server edir.",
     m_win1: "İlk qələbə", m_win10: "Usta (bürünc)", m_win50: "Usta (gümüş)", m_win100: "Usta (qızıl)", m_win500: "Usta (brilyant)", m_phone35: "Telefon 35",
     m_clean: "Quru qələbə", m_streak5: "Seriya 5", m_pair10: "Komanda ruhu", m_week1: "Həftənin 1-ci", m_week2: "Həftənin 2-ci", m_week3: "Həftənin 3-cü",
     noMedals: "Hələ medal yoxdur. Oyna və qazan!", myStats: "Göstəricilərim", streak: "seriya",
@@ -57,7 +57,7 @@ const TX: Record<"az" | "en", Dict> = {
     e_not_your_turn: "It is not your turn.", e_illegal: "That tile does not go there.", e_has_move: "You have a move, you cannot draw.", e_must_draw: "Draw from the stock first.",
     e_playing: "A game is on at this table.", e_full: "The table is full.", e_seat_taken: "That seat is taken.", e_not_owner: "Only the table owner can do that.",
     e_players_2_4: "2-4 players are needed.", e_too_many: "Too many invites, wait a little.", e_not_signed_in: "Sign in first.",
-    rulesText: "101: the player with 1-1 starts (else 2-2…6-6). First to empty the hand wins the round and scores the opponents' pips. In a block the lower hand wins (score = difference). First to 101 wins. Draw 2 at a time.\n\nPhone 365: the player with 3-2 starts. The first double is the spinner and opens 4 ways. After each move, if the open ends add up to a multiple of 5, that many points are scored. 35 at once wins at once. At round end the opponents' pips (rounded to 5) are scored only by a team under 300. Draw 1 at a time.\n\nWith 4 players, partners sit opposite. A turn is 30 seconds; when time runs out the server moves.",
+    rulesText: "101: the player with 1-1 starts (else 2-2…6-6). First to empty the hand wins the round and scores the opponents' pips. In a block the lower hand wins (score = difference). First to 101 wins. Draw 2 at a time.\n\nPhone 365: the player with 3-2 starts. The first double that gets a tile next to it is the spinner and opens 4 ways (other doubles stay normal). After each move, if the open ends add up to a multiple of 5, that many points are scored; only the spinner sides that hold a tile count. 35 at once wins at once. At round end the opponents' pips (rounded to 5) are scored only by a team under 300. Draw 1 at a time.\n\nWith 4 players, partners sit opposite. A turn is 30 seconds; when time runs out the server moves.",
     m_win1: "First win", m_win10: "Master (bronze)", m_win50: "Master (silver)", m_win100: "Master (gold)", m_win500: "Master (diamond)", m_phone35: "Phone 35",
     m_clean: "Clean win", m_streak5: "Streak 5", m_pair10: "Team spirit", m_week1: "Week #1", m_week2: "Week #2", m_week3: "Week #3",
     noMedals: "No medals yet. Play and win!", myStats: "My stats", streak: "streak",
@@ -889,6 +889,12 @@ const DEMO_BOARDS: Record<string, Pick<DGame, "ch_a" | "ch_b" | "spin_idx" | "up
     up_a: [6, 2, 2, 0, 0], up_b: [2, 2, 0, 0, 5], dn_a: [6, 3, 1, 4], dn_b: [3, 1, 4, 5],
   },
 };
+// Same as the server (paket-HK): the spinner's up/down sides count only when a tile lies there.
+function demoSum(g: Pick<DGame, "ends" | "up_a" | "dn_a">) {
+  return g.ends
+    .filter((e) => (e.k !== "U" || g.up_a.length > 0) && (e.k !== "D" || g.dn_a.length > 0))
+    .reduce((a, e) => a + e.v * (e.dbl ? 2 : 1), 0);
+}
 function demoSync(variant = "1"): DSync {
   const solo = variant === "solo"; // 4 players without teams, like a real 101 table
   const base = DEMO_BOARDS[solo ? "101" : variant] ?? DEMO_BOARDS["1"];
@@ -901,7 +907,7 @@ function demoSync(variant = "1"): DSync {
     teams: solo ? [0, 1, 2, 3] : [0, 1, 0, 1], team_count: solo ? 4 : 2, scores: solo ? [0, 0, 0, 0] : [180, 135], target: solo || variant === "101" ? 101 : 365,
     turn: 0, starter: 0, passes: 0, over: false, winner: null, blocked: false, first_tile: null, match_over: false, match_winner: null, instant: false,
     last_score: null, round_no: 3, turn_at: new Date().toISOString(), over_at: null, last_move: null, leaver: null, ver: 1, stock_n: 0,
-    ends_sum: ends.reduce((a, e) => a + e.v * (e.dbl ? 2 : 1), 0), ends, hand_n: [7, 7, 7, 7],
+    ends_sum: demoSum({ ...base, ends }), ends, hand_n: [7, 7, 7, 7],
   };
   const hand = [55, 36, 2, 13, 24, 11, 5, 15, 25, 35, 45, 56, 16, 26, 46, 0, 22, 44].filter((t) => !used.has(t)).slice(0, 7);
   return {
@@ -929,7 +935,7 @@ function DemoTable({ tx, onExit, variant }: { tx: (k: string) => string; onExit:
       else if (side === "U") { const inner = g.up_a.length ? g.up_b[g.up_b.length - 1] : g.ch_a[g.spin_idx!]; g.up_a.push(inner); g.up_b.push(other(inner)); }
       else { const inner = g.dn_a.length ? g.dn_b[g.dn_b.length - 1] : g.ch_a[g.spin_idx!]; g.dn_a.push(inner); g.dn_b.push(other(inner)); }
       g.ends = demoEnds(g);
-      g.ends_sum = g.ends.reduce((a, e) => a + e.v * (e.dbl ? 2 : 1), 0);
+      g.ends_sum = demoSum(g);
       g.scores = [...g.scores];
       g.last_score = null;
       if (g.mode === "365" && g.ends_sum % 5 === 0) { g.scores[0] += g.ends_sum; g.last_score = { team: 0, pts: g.ends_sum, kind: "play" }; }
