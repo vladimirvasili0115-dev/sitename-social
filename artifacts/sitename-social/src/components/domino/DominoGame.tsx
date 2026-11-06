@@ -402,22 +402,29 @@ function TableBackground() {
 // rectangle is mapped the same way. "short" = phone held sideways: little height, compact layout.
 const FELT = { u0: 0.27, u1: 0.73, v0: 0.25, v1: 0.69 };
 const FELT_MARGIN = 10;
-type Geometry = { zone: { left: number; top: number; width: number; height: number }; short: boolean; wide: boolean };
+// pile: centre of the stock pile, in the round end of the felt (left end, or bottom end on a portrait screen),
+// between the neon line and the board area, so it never takes room from the chain.
+type Geometry = { zone: { left: number; top: number; width: number; height: number }; pile: { x: number; y: number }; short: boolean; wide: boolean };
 function useTableGeometry(): Geometry | null {
   const [geo, setGeo] = useState<Geometry | null>(null);
   useLayoutEffect(() => {
     const calc = () => {
       const W = window.innerWidth, H = window.innerHeight;
-      let x0: number, x1: number, y0: number, y1: number;
+      let x0: number, x1: number, y0: number, y1: number, pile: { x: number; y: number };
+      // round end of the felt: between the neon line (u 0.14 / 0.86) and the board area (u 0.27 / 0.73)
+      const PILE_U = (0.14 + FELT.u0) / 2, MID_V = 0.4715;
       if (H >= W) {
         const s = Math.max(W / 1600, H / 2400), dw = 1600 * s, dh = 2400 * s, ox = (W - dw) / 2, oy = (H - dh) / 2;
         x0 = ox + (1 - FELT.v1) * dw; x1 = ox + (1 - FELT.v0) * dw; y0 = oy + FELT.u0 * dh; y1 = oy + FELT.u1 * dh;
+        pile = { x: ox + (1 - MID_V) * dw, y: oy + 0.765 * dh }; // bottom end, just under the board area, above my hand
       } else {
         const s = Math.max(W / 2400, H / 1600), dw = 2400 * s, dh = 1600 * s, ox = (W - dw) / 2, oy = (H - dh) / 2;
         x0 = ox + FELT.u0 * dw; x1 = ox + FELT.u1 * dw; y0 = oy + FELT.v0 * dh; y1 = oy + FELT.v1 * dh;
+        pile = { x: ox + PILE_U * dw, y: oy + MID_V * dh }; // left end
       }
       setGeo({
         zone: { left: x0 + FELT_MARGIN, top: y0 + FELT_MARGIN, width: Math.max(40, x1 - x0 - 2 * FELT_MARGIN), height: Math.max(40, y1 - y0 - 2 * FELT_MARGIN) },
+        pile,
         short: W > H && H < 520,
         wide: W >= 640,
       });
@@ -427,6 +434,33 @@ function useTableGeometry(): Geometry | null {
     return () => window.removeEventListener("resize", calc);
   }, []);
   return geo;
+}
+
+// The stock lying on the felt: face-down tiles stacked neatly like bricks (2 per layer, each layer a little higher),
+// small enough to sit in the round end of the table. Glows and can be tapped when the player must draw.
+function StockPile({ count, active, onDraw, tx, at, small }: {
+  count: number; active: boolean; onDraw: () => void; tx: (k: string) => string; at: { x: number; y: number }; small: boolean;
+}) {
+  if (count <= 0) return null;
+  const tw = small ? 30 : 40, th = tw / 2, gap = 2, lift = small ? 4 : 5;
+  const shown = Math.min(count, 8);
+  const layers = Math.ceil(shown / 2);
+  const w = tw * 2 + gap, h = th + (layers - 1) * lift;
+  return (
+    <button type="button" onClick={onDraw} disabled={!active} aria-label={`${tx("stock")} ${count}`}
+      className={`absolute z-20 -translate-x-1/2 -translate-y-1/2 rounded-md ${active ? "animate-pulse drop-shadow-[0_0_14px_#ffd77a]" : ""}`}
+      style={{ left: at.x, top: at.y, width: w, height: h }}>
+      {Array.from({ length: shown }, (_, i) => {
+        const layer = Math.floor(i / 2), col = i % 2;
+        return (
+          <DominoTile key={i} back horizontal className="absolute"
+            style={{ left: col * (tw + gap), top: (layers - 1 - layer) * lift, width: tw, height: th, filter: `brightness(${0.75 + layer * 0.06}) drop-shadow(0 2px 2px #000a)` }} />
+        );
+      })}
+      <span className={`absolute -right-3 -top-3 grid h-5 min-w-5 place-items-center rounded-full px-1 text-[11px] font-black ${gold}`}>{count}</span>
+      {active ? <span className="absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap rounded-full bg-black/60 px-2 text-[10px] font-bold text-[#ffd77a]">{tx("tapStock")}</span> : null}
+    </button>
+  );
 }
 
 type ViewSeat = { name: string; avatar: string | null; me: boolean; turn: boolean; blue: boolean; count: number; secs: number | null; partner: boolean; empty: boolean; seat: number };
@@ -661,6 +695,11 @@ function Stage({ tx, sync, myId, clockOffset, error, toast, onPlay, onDraw, onPa
         </div>
       ) : null}
 
+      {/* the stock (bazar) lies on the felt, in the round end of the table; tap it to draw when you have no move */}
+      {live && g && geo ? (
+        <StockPile count={g.stock_n} active={myTurn && sync.need === "draw"} onDraw={onDraw} tx={tx} at={geo.pile} small={!geo.wide || short} />
+      ) : null}
+
       {toast ? (
         <div key={toast} className={`absolute left-1/2 top-[44%] z-40 -translate-x-1/2 animate-bounce rounded-3xl px-5 py-1.5 text-xl font-black shadow-[0_0_30px_#ffd77aaa] sm:text-2xl ${gold}`}>{toast}</div>
       ) : null}
@@ -668,23 +707,8 @@ function Stage({ tx, sync, myId, clockOffset, error, toast, onPlay, onDraw, onPa
       {/* my hand + actions */}
       {live && g && me !== null ? (
         <div className={`absolute inset-x-0 z-20 flex flex-col items-center gap-2 px-2 ${short ? "bottom-[calc(env(safe-area-inset-bottom)+4px)]" : "bottom-[calc(env(safe-area-inset-bottom)+64px)] sm:bottom-[calc(env(safe-area-inset-bottom)+78px)]"}`}>
-          {myTurn && !short ? <div className="rounded-full bg-black/60 px-3 py-0.5 text-[11px] text-[#7dffa6]">{sync.need === "play" ? tx("tapTile") : tx("yourTurn")}</div> : null}
+          {myTurn && !short && sync.need !== "draw" ? <div className="rounded-full bg-black/60 px-3 py-0.5 text-[11px] text-[#7dffa6]">{sync.need === "play" ? tx("tapTile") : tx("yourTurn")}</div> : null}
           <div className="flex max-w-full items-end justify-center gap-1 overflow-x-auto pb-1 sm:gap-2">
-            {/* the stock (bazar) lies on the table face down; tap it to draw when you have no move */}
-            {g.stock_n > 0 ? (
-              <button type="button" onClick={onDraw} disabled={!myTurn || sync.need !== "draw"}
-                aria-label={`${tx("stock")} ${g.stock_n}`}
-                className={`relative mr-2 shrink-0 rounded-lg sm:mr-4 ${myTurn && sync.need === "draw" ? "animate-pulse drop-shadow-[0_0_12px_#ffd77a]" : "opacity-80"}`}>
-                <span className={`relative block ${short ? "h-[50px] w-[37px]" : "h-[60px] w-[44px] sm:h-[96px] sm:w-[68px]"}`}>
-                  {Array.from({ length: Math.min(3, g.stock_n) }, (_, i) => (
-                    <DominoTile key={i} back className={`absolute top-0 ${short ? "h-[50px] w-[25px]" : "h-[60px] w-[30px] sm:h-[96px] sm:w-[48px]"}`}
-                      style={{ left: `${i * 18}%`, transform: `rotate(${(i - 1) * 6}deg)` }} />
-                  ))}
-                </span>
-                <span className={`absolute -right-2 -top-2 grid h-5 min-w-5 place-items-center rounded-full px-1 text-[11px] font-black ${gold}`}>{g.stock_n}</span>
-                {myTurn && sync.need === "draw" ? <span className="absolute -bottom-4 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] font-bold text-[#ffd77a]">{tx("tapStock")}</span> : null}
-              </button>
-            ) : null}
             {hand.map((tile) => {
               const ok = playable.has(tile);
               return (
