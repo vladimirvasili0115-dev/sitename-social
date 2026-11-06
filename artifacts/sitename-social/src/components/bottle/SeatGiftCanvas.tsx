@@ -66,6 +66,7 @@ export function SeatGiftCanvas({ data }: { data: MutableRefObject<SeatGiftData> 
       drawn = true;
       const unit = Math.min(w, h) / 100;
       const side = d.box * unit;
+      let waiting = false;
       d.ids.forEach((id, index) => {
         const piles = d.piles[id] ?? [], spots = d.spots[id] ?? [];
         if (!piles.length && !spots.length) return;
@@ -84,7 +85,8 @@ export function SeatGiftCanvas({ data }: { data: MutableRefObject<SeatGiftData> 
           const url = d.url(gift);
           if (!url) return;
           const img = picture(url);
-          if (!img.complete || !img.naturalWidth) return;
+          if (!img.complete) { waiting = true; return; } // still loading: draw again on the next frames until it is there
+          if (!img.naturalWidth) return; // a broken picture: skipped for good
           const box = (s / 100) * side;
           const ratio = img.naturalWidth / img.naturalHeight;
           let dw = ratio >= 1 ? box : box * ratio, dh = ratio >= 1 ? box / ratio : box;
@@ -119,9 +121,12 @@ export function SeatGiftCanvas({ data }: { data: MutableRefObject<SeatGiftData> 
           put(s.gift, s.x, s.y, s.s, rot, 1, grow, s.kind === "corner" || s.kind === "balloon" ? corner : null);
         }
       });
+      // A gift whose picture was not loaded yet is drawn as soon as it arrives (before, it stayed invisible until something else changed).
+      if (waiting) busyUntil = Math.max(busyUntil, now + 100);
     };
     raf = requestAnimationFrame(frame);
     return () => { cancelAnimationFrame(raf); watch.disconnect(); };
   }, [data]);
-  return <canvas ref={canvas} aria-hidden="true" className="pointer-events-none absolute inset-0 z-[8] h-full w-full" />;
+  // z-30 and placed after the seats: above the raised photos (the spinner z-10, the kissing pair z-30), below the names (z-31) and the kiss arrows/buttons that come later.
+  return <canvas ref={canvas} aria-hidden="true" className="pointer-events-none absolute inset-0 z-30 h-full w-full" />;
 }
