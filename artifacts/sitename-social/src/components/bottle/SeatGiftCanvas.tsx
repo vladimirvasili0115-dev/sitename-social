@@ -67,6 +67,18 @@ export function SeatGiftCanvas({ data }: { data: MutableRefObject<SeatGiftData> 
       const unit = Math.min(w, h) / 100;
       const side = d.box * unit;
       let waiting = false;
+      // The middle of a player's photo (the seat button, data-seat) on this canvas, read from the page while the photo moves.
+      let host: { left: number; top: number } | null = null;
+      const livePlace = (id: string): [number, number] | null => {
+        const parent = node.parentElement;
+        if (!parent) return null;
+        const el = parent.querySelector(`[data-seat="${CSS.escape(id)}"]`);
+        if (!el) return null;
+        if (!host) { const box = parent.getBoundingClientRect(); host = { left: box.left + parent.clientLeft, top: box.top + parent.clientTop }; }
+        const r = el.getBoundingClientRect();
+        if (!r.width) return null;
+        return [r.left + r.width / 2 - host.left, r.top + r.height / 2 - host.top];
+      };
       d.ids.forEach((id, index) => {
         const piles = d.piles[id] ?? [], spots = d.spots[id] ?? [];
         if (!piles.length && !spots.length) return;
@@ -76,10 +88,17 @@ export function SeatGiftCanvas({ data }: { data: MutableRefObject<SeatGiftData> 
         let cur = shown.get(id);
         if (!cur) { cur = { x: tx, y: ty, fx: tx, fy: ty, tx, ty, t0: now - 2000 }; shown.set(id, cur); }
         if (Math.abs(cur.tx - tx) > 0.5 || Math.abs(cur.ty - ty) > 0.5) { cur.fx = cur.x; cur.fy = cur.y; cur.tx = tx; cur.ty = ty; cur.t0 = now; }
-        const k = Math.min(1, (now - cur.t0) / 1100);
-        const e = inOut(k);
-        cur.x = cur.fx + (cur.tx - cur.fx) * e; cur.y = cur.fy + (cur.ty - cur.fy) * e;
-        if (k < 1) busyUntil = Math.max(busyUntil, now + 50);
+        // While the photo glides (its CSS move takes 1.1 s), the gifts follow the photo's real place on the screen, so they stay glued to it
+        // instead of trailing behind; only when the photo cannot be found they glide on their own.
+        const moving = now - cur.t0 < 1300;
+        const photo = moving ? livePlace(id) : null;
+        if (photo) { cur.x = photo[0]; cur.y = photo[1]; }
+        else {
+          const k = Math.min(1, (now - cur.t0) / 1100);
+          const e = inOut(k);
+          cur.x = cur.fx + (cur.tx - cur.fx) * e; cur.y = cur.fy + (cur.ty - cur.fy) * e;
+        }
+        if (moving) busyUntil = Math.max(busyUntil, now + 50);
         const left = cur.x - side / 2, top = cur.y - side / 2;
         const put = (gift: string, x: number, y: number, s: number, rot: number, alpha: number, scale: number, corner: "l" | "r" | null) => {
           const url = d.url(gift);
