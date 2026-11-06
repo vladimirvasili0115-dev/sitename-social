@@ -16,10 +16,10 @@ function BottleTile() {
   return own ? <img src="/games/bottle.png" alt="" onError={() => setOwn(false)} className="h-full w-full object-cover" /> : <BottleCover className="h-full w-full" />;
 }
 
-// Domino picture: public/games/domino.png when it exists, otherwise a drawn neon tile.
+// Domino picture: public/games/domino-ravetill-v2.png (the Canva logo), otherwise a drawn neon tile.
 function DominoIcon() {
   const [own, setOwn] = useState(true);
-  return own ? <img src="/games/domino.png" alt="" onError={() => setOwn(false)} className="h-full w-full object-cover" /> : (
+  return own ? <img src="/games/domino-ravetill-v2.png" alt="" onError={() => setOwn(false)} className="h-full w-full object-cover" /> : (
     <span className="flex h-full w-full items-center justify-center bg-[radial-gradient(circle_at_50%_40%,#1d3bb0,#110726)]">
       <span className="flex h-[62px] w-[31px] flex-col rounded-md bg-[linear-gradient(145deg,#fffdf4,#e4dbc0)] p-[3px] shadow-[0_0_14px_#6d5bff]">
         <span className="grid flex-1 place-items-center"><span className="h-[6px] w-[6px] rounded-full bg-red-700" /></span>

@@ -17,8 +17,15 @@ const tiles = [
   { emoji: "🕴️", name: "Mafiya", href: "/mafia", img: "/games/mafia.png" },
   { emoji: "🎲", name: "Nərd", href: "/games" },
   { emoji: "🎱", name: "Loto", href: "/games" },
-  { emoji: "🁫", name: "Domino", href: "/domino", img: "/games/domino.png" },
+  // New file name: the old address was cached (Cloudflare, 4 h) as a page before the file existed.
+  { emoji: "🁫", name: "Domino", href: "/domino", img: "/games/domino-ravetill-v2.png" },
 ];
+
+// Game picture with the emoji as a fallback, so a missing or stale picture never shows a broken image.
+function TileIcon({ img, emoji }: { img?: string; emoji: string }) {
+  const [ok, setOk] = useState(true);
+  return img && ok ? <img src={img} alt="" onError={() => setOk(false)} className="h-full w-full object-cover" /> : <>{emoji}</>;
+}
 
 export function NeonHome({ name }: { name: string }) {
   const { locale } = useTranslation();
@@ -48,7 +55,7 @@ export function NeonHome({ name }: { name: string }) {
     </section>
     <div className="mb-4 grid grid-cols-4 gap-2 sm:grid-cols-5">
       {tiles.map((tile) => <Link key={tile.name} href={tile.href} className={`${tile.name === "Domino" ? "col-span-4 sm:col-span-1 " : ""}flex items-center gap-2 rounded-2xl border border-border bg-surface p-2 hover:brightness-110`}>
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[linear-gradient(135deg,rgba(124,58,237,.35),rgba(236,72,153,.35))] text-xl">{"img" in tile ? <img src={tile.img} alt="" className="h-full w-full object-cover" /> : tile.emoji}</span>
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[linear-gradient(135deg,rgba(124,58,237,.35),rgba(236,72,153,.35))] text-xl"><TileIcon img={"img" in tile ? tile.img : undefined} emoji={tile.emoji} /></span>
         <span className="min-w-0 truncate text-xs font-bold text-text">{tile.name}</span>
       </Link>)}
     </div>
