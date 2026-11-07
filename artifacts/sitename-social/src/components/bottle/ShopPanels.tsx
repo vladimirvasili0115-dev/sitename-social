@@ -17,11 +17,11 @@ export const shopPacks: { hearts: number; price: number; bonus?: number; tag?: "
 ];
 // Sale: until this moment the packs cost the listed price; after it the server (paket-HW) charges double.
 export const SALE_END = Date.parse("2026-11-10T23:59:00+04:00");
-const saleWords: Record<string, { title: string; note: string; d: string; h: string; m: string; s: string }> = {
-  az: { title: "ENDİRİM BİTİR!", note: "Qiymətlər 2 qat artacaq", d: "Gün", h: "Saat", m: "Dəq", s: "San" },
-  tr: { title: "İNDİRİM BİTİYOR!", note: "Fiyatlar 2 kat artacak", d: "Gün", h: "Saat", m: "Dak", s: "San" },
-  ru: { title: "СКИДКА ЗАКАНЧИВАЕТСЯ!", note: "Цены вырастут в 2 раза", d: "Дн", h: "Час", m: "Мин", s: "Сек" },
-  en: { title: "SALE ENDS SOON!", note: "Prices will double", d: "Days", h: "Hrs", m: "Min", s: "Sec" },
+const saleWords: Record<string, { title: string; d: string; h: string; m: string; s: string }> = {
+  az: { title: "ENDİRİM BİTİR!", d: "Gün", h: "Saat", m: "Dəq", s: "San" },
+  tr: { title: "İNDİRİM BİTİYOR!", d: "Gün", h: "Saat", m: "Dak", s: "San" },
+  ru: { title: "СКИДКА ЗАКАНЧИВАЕТСЯ!", d: "Дн", h: "Час", m: "Мин", s: "Сек" },
+  en: { title: "SALE ENDS SOON!", d: "Days", h: "Hrs", m: "Min", s: "Sec" },
 };
 // Only this small banner ticks every second, so the rest of the shop is not redrawn.
 function SaleBanner({ locale, onEnd }: { locale: string; onEnd: () => void }) {
@@ -37,7 +37,6 @@ function SaleBanner({ locale, onEnd }: { locale: string; onEnd: () => void }) {
   return (
     <div role="timer" className="relative mx-2.5 mb-1.5 shrink-0 rounded-[10px] bg-[#E0242F] px-2 pb-2 pt-1.5 text-center text-white shadow-[0_2px_4px_-1px_rgba(0,0,0,0.25)]">
       <p className="text-[15px] font-extrabold tracking-wide">{x.title}</p>
-      <p className="text-[11px] font-bold text-[#FFE1E3]">{x.note}</p>
       <div className="mt-1.5 flex justify-center gap-1.5">
         {cells.map(([n, label]) => (
           <span key={label} className="w-[52px] rounded-md bg-white py-0.5 text-[#A3121B]"><b className="block text-[18px] leading-tight tabular-nums">{String(n).padStart(2, "0")}</b><small className="block text-[10px] font-bold">{label}</small></span>
@@ -97,7 +96,7 @@ export function ShopPanel({ hearts, coins, activeSecs, payNote, onActive, onVip,
         {shopPacks.map((pack, i) => card(`p${pack.hearts}`, "bank_gold_bg",
           <><span className="pl-[18px] font-bold text-[rgb(255,62,0)] bg-no-repeat [background-position:left_-1px] [background-size:17px_18px]" style={bg("bank_heart")}>{pack.hearts.toLocaleString("ru-RU")}</span>{pack.bonus ? <span className="-mt-[3px] text-[11px] text-[rgb(255,143,0)]">{pack.bonus}% {t("bottle.bankBonus")}</span> : null}</>,
           <span className="relative block bg-contain bg-no-repeat" style={{ ...bg(`bank_opt_${shopPacks.length - i}`), ...[{ w: 50, h: 24 }, { w: 72, h: 33 }, { w: 55, h: 41 }, { w: 68, h: 42 }, { w: 63, h: 50 }, { w: 88, h: 52 }, { w: 86, h: 53 }].map(({ w, h }) => ({ width: w, height: h }))[Math.min(6, shopPacks.length - i - 1)] }} />,
-          btn(green, () => onPack(pack), <span className="tabular-nums">{priceOf(pack.price).toLocaleString("ru-RU")} ₼</span>),
+          <>{saleOn ? <s className="-mb-[10px] mt-0.5 text-[11px] font-bold tabular-nums leading-none text-[#7A6A6C] decoration-[#C8233F] decoration-2">{(pack.price * 2).toLocaleString("ru-RU")} ₼</s> : null}{btn(green, () => onPack(pack), <span className="tabular-nums">{priceOf(pack.price).toLocaleString("ru-RU")} ₼</span>)}</>,
           pack.tag ? <span className="absolute -left-1 -right-1 -top-1 z-[1] mx-auto flex h-[18px] w-fit min-w-16 max-w-[98px] justify-center rounded-[3px] px-1.5 text-[8.5px] font-bold text-white shadow-[0_1px_2px_rgba(0,0,0,0.25)]" style={{ backgroundColor: pack.tag === "best" ? "#E6007E" : "#A24DC2" }}><span className="mt-[2px] whitespace-nowrap">{t(pack.tag === "best" ? "bottle.bankProfit" : "bottle.bankHit")}</span></span> : undefined))}
         {card("active", "bank_blue_bg", <span className={small}>{t("bottle.activeTitle")}<b className="mt-0.5 block text-[rgb(47,137,233)]">{formatActive(activeSecs, t)}</b></span>, <Pic e="⏰" className="h-10 w-10" />, btn(cyan, onActive, t("bottle.details")))}
       </ul>
