@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Check, ChevronRight, Copy, Heart, Lock } from "lucide-react";
 import { useTranslation } from "@/i18n/useTranslation";
 import type { TranslationKey } from "@/i18n/LanguageProvider";
@@ -15,6 +15,38 @@ export const shopPacks: { hearts: number; price: number; bonus?: number; tag?: "
   { hearts: 240000, price: 220, bonus: 118, tag: "best", art: "💎" }, { hearts: 120000, price: 140, bonus: 71, art: "💰" }, { hearts: 60000, price: 75, bonus: 60, art: "🪙" },
   { hearts: 30000, price: 45, bonus: 33, tag: "hit", art: "🍯" }, { hearts: 15000, price: 25, art: "👝" }, { hearts: 7500, price: 15, art: "💕" },
 ];
+// Sale: until this moment the packs cost the listed price; after it the server (paket-HW) charges double.
+export const SALE_END = Date.parse("2026-11-10T23:59:00+04:00");
+const saleWords: Record<string, { title: string; note: string; d: string; h: string; m: string; s: string }> = {
+  az: { title: "ENDİRİM BİTİR!", note: "Qiymətlər 2 qat artacaq", d: "Gün", h: "Saat", m: "Dəq", s: "San" },
+  tr: { title: "İNDİRİM BİTİYOR!", note: "Fiyatlar 2 kat artacak", d: "Gün", h: "Saat", m: "Dak", s: "San" },
+  ru: { title: "СКИДКА ЗАКАНЧИВАЕТСЯ!", note: "Цены вырастут в 2 раза", d: "Дн", h: "Час", m: "Мин", s: "Сек" },
+  en: { title: "SALE ENDS SOON!", note: "Prices will double", d: "Days", h: "Hrs", m: "Min", s: "Sec" },
+};
+// Only this small banner ticks every second, so the rest of the shop is not redrawn.
+function SaleBanner({ locale, onEnd }: { locale: string; onEnd: () => void }) {
+  const x = saleWords[locale] ?? saleWords.en;
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+  const left = Math.max(0, Math.floor((SALE_END - now) / 1000));
+  useEffect(() => { if (left === 0) onEnd(); }, [left, onEnd]);
+  const cells: [number, string][] = [[Math.floor(left / 86400), x.d], [Math.floor((left % 86400) / 3600), x.h], [Math.floor((left % 3600) / 60), x.m], [left % 60, x.s]];
+  return (
+    <div role="timer" className="relative mx-2.5 mb-1.5 shrink-0 rounded-[10px] bg-[#E0242F] px-2 pb-2 pt-1.5 text-center text-white shadow-[0_2px_4px_-1px_rgba(0,0,0,0.25)]">
+      <p className="text-[15px] font-extrabold tracking-wide">{x.title}</p>
+      <p className="text-[11px] font-bold text-[#FFE1E3]">{x.note}</p>
+      <div className="mt-1.5 flex justify-center gap-1.5">
+        {cells.map(([n, label]) => (
+          <span key={label} className="w-[52px] rounded-md bg-white py-0.5 text-[#A3121B]"><b className="block text-[18px] leading-tight tabular-nums">{String(n).padStart(2, "0")}</b><small className="block text-[10px] font-bold">{label}</small></span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // Active play rewards: minutes of play today → hearts.
 // [minutes, hearts, level number sent to the server]. The 1 hour level is number 4 (bit 8) so the claims already made today by the 4/8/12 hour levels (bits 1, 2, 4) stay valid.
 export const activeLevels: [number, number, number][] = [[60, 350, 4], [240, 1000, 1], [480, 2000, 2], [720, 3000, 3]];
@@ -26,7 +58,10 @@ export const formatActive = (secs: number, t: (key: TranslationKey) => string) =
 export function ShopPanel({ hearts, coins, activeSecs, payNote, onActive, onVip, onPlus, onInvite, onCompliments, onPack, onPass, packNote }: {
   hearts: number; coins?: number | null; activeSecs: number; payNote: boolean; packNote?: ReactNode; onActive: () => void; onVip: () => void; onPlus: () => void; onInvite: () => void; onCompliments: () => void; onPack: (pack: { hearts: number; price: number }) => void; onPass: () => void;
 }) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
+  const [saleOn, setSaleOn] = useState(() => Date.now() < SALE_END);
+  const endSale = useCallback(() => setSaleOn(false), []);
+  const priceOf = (price: number) => (saleOn ? price : price * 2);
   const O = "/custom/orig/";
   const bg = (name: string) => ({ backgroundImage: `url(${O}${name}.svg)` });
   const heart = (n: number, big = false) => <span className={cn("whitespace-nowrap bg-no-repeat font-bold text-[rgb(255,62,0)]", big ? "pl-[18px] [background-position:left_-1px] [background-size:17px_18px]" : "pl-3 [background-position:left_1px] [background-size:11px_9px]")} style={bg("bank_heart")}>{n.toLocaleString("ru-RU")}</span>;
@@ -52,6 +87,7 @@ export function ShopPanel({ hearts, coins, activeSecs, payNote, onActive, onVip,
         <p className="mb-2.5 flex items-center gap-1 rounded-full bg-white/25 px-2.5 py-0.5 text-[12px] font-bold text-white">{t("bottle.balance")}: <span className="pl-[14px] bg-no-repeat [background-position:left_center] [background-size:12px_12px]" style={bg("bank_heart")}>{hearts.toLocaleString("ru-RU")}</span></p>
         {coins == null ? null : <p className="-mt-1.5 mb-2.5 rounded-full bg-white/25 px-2.5 py-0.5 text-[12px] font-bold tabular-nums text-white">₼ {(coins / 100).toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>}
       </div>
+      {saleOn ? <SaleBanner locale={locale} onEnd={endSale} /> : null}
       <ul className="relative grid min-h-0 grid-cols-3 gap-[5px] overflow-y-auto px-2.5 pb-2.5 pt-[3px] [scrollbar-width:none] [@media(min-width:700px)]:grid-cols-4">
         {card("pass", "bank_gold_bg", <span className="text-center text-[10px] font-bold uppercase text-[rgb(255,144,0)]">{t("bottle.bankPremium")}</span>, icon("bank_premium_pass", 62, 39), btn(blue, onPass, t("bottle.details")))}
         {card("vip", "bank_gold_bg", <><span className="font-bold text-[rgb(255,144,0)]">VIP</span><span className="-mt-[3px] text-[11px] text-[rgb(255,144,0)]">{t("bottle.bankStatus")}</span></>, icon("bank_vip", 55, 37), btn(blue, onVip, t("bottle.details")))}
@@ -61,7 +97,7 @@ export function ShopPanel({ hearts, coins, activeSecs, payNote, onActive, onVip,
         {shopPacks.map((pack, i) => card(`p${pack.hearts}`, "bank_gold_bg",
           <><span className="pl-[18px] font-bold text-[rgb(255,62,0)] bg-no-repeat [background-position:left_-1px] [background-size:17px_18px]" style={bg("bank_heart")}>{pack.hearts.toLocaleString("ru-RU")}</span>{pack.bonus ? <span className="-mt-[3px] text-[11px] text-[rgb(255,143,0)]">{pack.bonus}% {t("bottle.bankBonus")}</span> : null}</>,
           <span className="relative block bg-contain bg-no-repeat" style={{ ...bg(`bank_opt_${shopPacks.length - i}`), ...[{ w: 50, h: 24 }, { w: 72, h: 33 }, { w: 55, h: 41 }, { w: 68, h: 42 }, { w: 63, h: 50 }, { w: 88, h: 52 }, { w: 86, h: 53 }].map(({ w, h }) => ({ width: w, height: h }))[Math.min(6, shopPacks.length - i - 1)] }} />,
-          btn(green, () => onPack(pack), <span className="tabular-nums">{pack.price.toLocaleString("ru-RU")} ₼</span>),
+          btn(green, () => onPack(pack), <span className="tabular-nums">{priceOf(pack.price).toLocaleString("ru-RU")} ₼</span>),
           pack.tag ? <span className="absolute -left-1 -right-1 -top-1 z-[1] mx-auto flex h-[18px] w-fit min-w-16 max-w-[98px] justify-center rounded-[3px] px-1.5 text-[8.5px] font-bold text-white shadow-[0_1px_2px_rgba(0,0,0,0.25)]" style={{ backgroundColor: pack.tag === "best" ? "#E6007E" : "#A24DC2" }}><span className="mt-[2px] whitespace-nowrap">{t(pack.tag === "best" ? "bottle.bankProfit" : "bottle.bankHit")}</span></span> : undefined))}
         {card("active", "bank_blue_bg", <span className={small}>{t("bottle.activeTitle")}<b className="mt-0.5 block text-[rgb(47,137,233)]">{formatActive(activeSecs, t)}</b></span>, <Pic e="⏰" className="h-10 w-10" />, btn(cyan, onActive, t("bottle.details")))}
       </ul>
