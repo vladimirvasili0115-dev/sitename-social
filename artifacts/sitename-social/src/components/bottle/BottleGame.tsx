@@ -430,7 +430,7 @@ const leagueName = (locale: string, level: number) => (LEAGUE_NAMES[locale] ?? L
 const LEAGUE_FIRST = [30, 35, 40, 45, 55, 60, 70, 80, 95, 110, 125, 145, 170, 195, 225, 260, 300];
 const leaguePrizeFor = (level: number, place: number) => Math.round(LEAGUE_FIRST[Math.min(Math.max(level, 0), LEAGUE_TOP)] * (place === 1 ? 1 : place === 2 ? 0.7 : place === 3 ? 0.5 : place <= 5 ? 0.3 : place <= 10 ? 0.15 : 0));
 function LeagueBadge({ league, className }: { league: number; className?: string }) {
-  return <img src={`/custom/league/${LEAGUE_SLUGS[Math.min(Math.max(league, 0), LEAGUE_TOP)]}.png`} alt="" aria-hidden="true" draggable={false} className={cn("object-contain", className)} />;
+  return <img src={`/custom/league/${LEAGUE_SLUGS[Math.min(Math.max(league, 0), LEAGUE_TOP)]}.png?v=2`} alt="" aria-hidden="true" draggable={false} className={cn("object-contain", className)} />; // ?v=: new pictures are not served from the old cache
 }
 // IMPARATOR: this player shows a small yellow SUV after his name in every table chat (instead of the VIP+ owner crown on his own table) and after his name under his photo at the table. The mark follows his account id, so a changed name keeps it.
 const SPECIAL_MARK_USER = "015c0753-f296-4ff9-8483-f10ef997f1d2";
