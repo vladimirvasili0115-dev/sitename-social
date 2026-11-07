@@ -811,10 +811,10 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [vip, setVip] = useState(false);
   // Admins: everything in the game is open for them (to test it), and their seat and card look different.
   const iAmAdmin = useIsAdmin() === true;
-  // Test: the new table background (/bottle/table5.jpg) is shown only to the owner for now; everybody else keeps table2.jpg.
+  // Test: the new table background (/bottle/table6.webp) is shown only to the owner for now; everybody else keeps table2.jpg.
   const [ownerWood, setOwnerWood] = useState(false);
   useEffect(() => { if (iAmAdmin) void fetchIsOwner().then(setOwnerWood); }, [iAmAdmin]);
-  const woodSrc = ownerWood ? "/bottle/table5.jpg" : undefined;
+  const woodSrc = ownerWood ? "/bottle/table6.webp" : undefined;
   // The cherry cocktail is hidden for accounts the admin did not allow (the server refuses it too).
   const [giftAllow, setGiftAllow] = useState<string[]>([]);
   useEffect(() => {
