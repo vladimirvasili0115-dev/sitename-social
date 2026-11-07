@@ -1564,6 +1564,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       setTouched(true);
       const node = audioRef.current;
       if (node && node.paused) void node.play().catch(() => {});
+      if (needTapRef.current) { needTapRef.current = false; setNeedTap(false); resumeSong.current(); } // a song paused while the game was hidden
     };
     window.addEventListener("pointerdown", wake);
     window.addEventListener("keydown", wake);
@@ -1584,6 +1585,39 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     }, 1500);
     return () => window.clearTimeout(timer);
   }, [musicLocked, track, touched, tune.playing, tune.dur, audio, ytCall]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Back from another app: the phone paused the song while the game was hidden. It plays on from where the table is;
+  // if the phone does not allow that without a tap, the "tap for sound" cover is shown and the next tap anywhere starts it.
+  const [needTap, setNeedTap] = useState(false);
+  const needTapRef = useRef(false);
+  needTapRef.current = needTap;
+  const liveSong = useRef({ playing: false, dur: 0, track: false, audio: false });
+  liveSong.current = { playing: tune.playing, dur: tune.dur, track: Boolean(track), audio: Boolean(audio) };
+  const resumeSong = useRef(() => {});
+  resumeSong.current = () => {
+    const at = songNow();
+    if (!liveSong.current.track || (liveSong.current.dur > 0 && at >= liveSong.current.dur - 2)) return;
+    const node = liveSong.current.audio ? audioRef.current : null;
+    if (node) { if (node.paused) { if (at < (node.duration || Infinity)) node.currentTime = at; void node.play().catch(() => {}); } return; }
+    ytCall("seekTo", [at, true]);
+    ytCall("playVideo");
+    if (music > 0 && !queued) ytCall("unMute");
+  };
+  useEffect(() => {
+    if (!online) return;
+    let wasPlaying = false;
+    let check = 0;
+    const onShow = () => {
+      if (document.hidden) { wasPlaying = liveSong.current.playing; return; }
+      if (!liveSong.current.track || (!wasPlaying && !musicLocked)) return;
+      window.clearTimeout(check);
+      window.setTimeout(() => resumeSong.current(), 400);
+      check = window.setTimeout(() => { if (!liveSong.current.playing && liveSong.current.track) setNeedTap(true); }, 3000);
+    };
+    document.addEventListener("visibilitychange", onShow);
+    window.addEventListener("pageshow", onShow);
+    return () => { window.clearTimeout(check); document.removeEventListener("visibilitychange", onShow); window.removeEventListener("pageshow", onShow); };
+  }, [online, musicLocked]);
+  useEffect(() => { if (needTap && (tune.playing || !track)) setNeedTap(false); }, [needTap, tune.playing, track]);
   // The first tap gives the sound: jump to where the song is for everybody else.
   useEffect(() => { if (touched && video && startMuted) ytCall("seekTo", [songNow(), true]); }, [touched]); // eslint-disable-line react-hooks/exhaustive-deps
   // A newcomer's video starts silent (browsers allow sound only after a tap): a big, lively "turn the sound on" cover invites the tap.
@@ -1595,7 +1629,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       <button type="button" aria-label={lang === "az" ? "10 saniyə irəli" : "Forward 10 s"} title={lang === "az" ? "10 saniyə irəli" : "Forward 10 s"} onClick={() => seekBy(10)} className="h-6 rounded-md border border-border bg-surface/90 px-2 text-[11px] font-bold text-text">10 ⏩</button>
     </div>
   ) : null;
-  const soundPill = !touched && startMuted ? (
+  const soundPill = (!touched && startMuted) || needTap ? (
     <button onClick={(event) => { event.stopPropagation(); setTouched(true); }} aria-label={t("videos.unmute")} className="group absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-[radial-gradient(circle,rgba(0,0,0,0.25),rgba(0,0,0,0.6))] text-white">
       <span className="relative flex h-14 w-14 items-center justify-center">
         <span aria-hidden="true" className="absolute inset-0 rounded-full bg-[#FF4D6D] opacity-60 motion-safe:animate-ping" />
