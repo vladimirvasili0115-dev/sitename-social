@@ -668,6 +668,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const vidWRef = useRef(MINI_VIDEO_W);
   useEffect(() => { try { const saved = Number(window.localStorage.getItem("bottle-vid-w")); if (Number.isFinite(saved) && saved >= 100 && saved <= 2000) { setVidW(saved); vidWRef.current = saved; } } catch { /* storage blocked */ } }, []);
   const vipSizing = !wide && Boolean(net?.room); // phone + VIP room only
+  // Ordinary and VIP+ tables: the song window stays in its place and the song plays for everybody without pause or seeking. VIP rooms keep all their controls.
+  const musicLocked = online && !net?.room;
   const videoW = vipSizing ? vidW : MINI_VIDEO_W;
   function startVid(event: ReactPointerEvent, edge: "top" | "bottom") {
     const box = miniRef.current;
@@ -712,7 +714,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   function startMini(event: ReactPointerEvent, mode: "move" | "size") {
     const box = miniRef.current;
     const area = box?.parentElement;
-    if (!box || !area) return;
+    if (!box || !area || (musicLocked && mode === "move")) return;
     event.preventDefault();
     const outer = area.getBoundingClientRect();
     const rect = box.getBoundingClientRect();
@@ -1568,7 +1570,20 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     return () => { window.removeEventListener("pointerdown", wake); window.removeEventListener("keydown", wake); };
   }, []);
   const startAt = useMemo(() => Math.floor(songNow()), [video]); // eslint-disable-line react-hooks/exhaustive-deps
-  const ytSrc = (id: string) => `https://www.youtube.com/embed/${id}?autoplay=1&playsinline=1&rel=0&iv_load_policy=3&enablejsapi=1&origin=${encodeURIComponent(typeof window !== "undefined" ? window.location.origin : "")}${startAt > 2 ? `&start=${startAt}` : ""}${startMuted ? "&mute=1" : ""}`;
+  const ytSrc = (id: string) => `https://www.youtube.com/embed/${id}?autoplay=1&playsinline=1&rel=0&iv_load_policy=3&enablejsapi=1&origin=${encodeURIComponent(typeof window !== "undefined" ? window.location.origin : "")}${startAt > 2 ? `&start=${startAt}` : ""}${startMuted ? "&mute=1" : ""}${musicLocked ? "&controls=0&disablekb=1" : ""}`;
+  // Ordinary tables: a song that got paused (a tap on the video, the phone) plays on from where it is for everybody.
+  useEffect(() => {
+    if (!musicLocked || !track || !touched || tune.playing) return;
+    const timer = window.setTimeout(() => {
+      const at = songNow();
+      if (tune.dur > 0 && at >= tune.dur - 2) return; // the song is over
+      const node = audio ? audioRef.current : null;
+      if (node) { if (node.paused) { if (at < (node.duration || Infinity)) node.currentTime = at; void node.play().catch(() => {}); } return; }
+      ytCall("seekTo", [at, true]);
+      ytCall("playVideo");
+    }, 1500);
+    return () => window.clearTimeout(timer);
+  }, [musicLocked, track, touched, tune.playing, tune.dur, audio, ytCall]); // eslint-disable-line react-hooks/exhaustive-deps
   // The first tap gives the sound: jump to where the song is for everybody else.
   useEffect(() => { if (touched && video && startMuted) ytCall("seekTo", [songNow(), true]); }, [touched]); // eslint-disable-line react-hooks/exhaustive-deps
   // A newcomer's video starts silent (browsers allow sound only after a tap): a big, lively "turn the sound on" cover invites the tap.
@@ -4186,6 +4201,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         {video && wide && !musicMode ? (
           <div className={cn("relative w-full shrink-0 bg-black", picked !== null || dedicate ? "h-0 overflow-hidden" : "aspect-video max-h-[42%]")}>
             <iframe ref={frameRef} onLoad={() => { window.setTimeout(pushMusic, 800); frameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: "listening", id: 1 }), "*"); }} src={ytSrc(video)} title="YouTube" referrerPolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen className="h-full w-full" />
+            {musicLocked ? <div aria-hidden="true" className="absolute inset-0" /> /* ordinary tables: taps on the video do not pause or seek it */ : null}
             {soundPill}
             {seekButtons ? <div className="absolute bottom-1.5 right-1.5 z-10">{seekButtons}</div> : null}
             {track ? <SongRing frac={songFrac} className="pointer-events-none absolute left-1.5 top-1.5"><img src={songByAvatar} alt="" title={t("bottle.musicNow")} className="h-8 w-8 select-none rounded-full border-2 border-white/80 object-cover shadow" draggable={false} /></SongRing> : null}
@@ -4198,7 +4214,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             ) : null}
             <div className="flex items-center">
               <SongRing frac={songFrac} className="mx-1"><img src={songByAvatar} alt="" title={t("bottle.miniMove")} onPointerDown={(event) => startMini(event, "move")} className="h-7 w-7 shrink-0 cursor-move touch-none select-none rounded-full border-2 border-border object-cover" draggable={false} /></SongRing>
-              <div className={cn(musicMode ? "my-1 mr-1 h-[200px] w-[200px] shrink-0 overflow-hidden rounded-xl" : "aspect-video min-w-0 flex-1", "bg-black", miniBusy && "pointer-events-none")}><iframe ref={frameRef} onLoad={() => { window.setTimeout(pushMusic, 800); frameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: "listening", id: 1 }), "*"); }} src={ytSrc(video)} title="YouTube" referrerPolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen className="h-full w-full" /></div>
+              <div className={cn(musicMode ? "my-1 mr-1 h-[200px] w-[200px] shrink-0 overflow-hidden rounded-xl" : "aspect-video min-w-0 flex-1", "relative bg-black", miniBusy && "pointer-events-none")}><iframe ref={frameRef} onLoad={() => { window.setTimeout(pushMusic, 800); frameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: "listening", id: 1 }), "*"); }} src={ytSrc(video)} title="YouTube" referrerPolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen className="h-full w-full" />{musicLocked ? <div aria-hidden="true" className="absolute inset-0" /> : null}</div>
             </div>
             {musicMode ? <div className="flex items-center gap-2 px-2 pt-0.5"><Equalizer className="h-4 shrink-0" /><p className="min-w-0 flex-1 truncate text-xs font-bold">{videoTitle}</p></div> : null}
             {soundPill}
@@ -4228,9 +4244,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 <p className="text-[10px] font-bold uppercase tracking-wider text-white/60">♫ {t("bottle.musicNow")}</p>
                 <p className="truncate text-sm font-black">{audio ? audio.name : videoTitle}</p>
                 <div className="mt-1 flex items-center gap-2">
-                  <button onClick={() => { const node = audio ? audioRef.current : null; if (node) { if (node.paused) void node.play().catch(() => {}); else node.pause(); return; } setTouched(true); ytCall(tune.playing ? "pauseVideo" : "playVideo"); if (!tune.playing) ytCall("unMute"); }} aria-label={tune.playing ? "Pause" : "Play"} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-[#4C1D95] shadow hover:scale-105">{tune.playing ? <Pause size={15} fill="currentColor" /> : <Play size={15} fill="currentColor" className="translate-x-px" />}</button>
+                  {musicLocked ? null : (<button onClick={() => { const node = audio ? audioRef.current : null; if (node) { if (node.paused) void node.play().catch(() => {}); else node.pause(); return; } setTouched(true); ytCall(tune.playing ? "pauseVideo" : "playVideo"); if (!tune.playing) ytCall("unMute"); }} aria-label={tune.playing ? "Pause" : "Play"} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-[#4C1D95] shadow hover:scale-105">{tune.playing ? <Pause size={15} fill="currentColor" /> : <Play size={15} fill="currentColor" className="translate-x-px" />}</button>)}
                   <span className="w-9 shrink-0 text-right text-[10px] tabular-nums text-white/70">{clock(tune.cur)}</span>
-                  <input type="range" min={0} max={Math.max(1, Math.floor(tune.dur))} value={Math.floor(tune.cur)} onChange={(event) => { const at = Number(event.target.value); const node = audio ? audioRef.current : null; if (node) node.currentTime = at; else ytCall("seekTo", [at, true]); setTune((v) => ({ ...v, cur: at })); }} aria-label={audio ? audio.name : videoTitle} className="min-w-0 flex-1 accent-[#EC4899]" />
+                  <input type="range" min={0} max={Math.max(1, Math.floor(tune.dur))} value={Math.floor(tune.cur)} disabled={musicLocked} onChange={(event) => { if (musicLocked) return; const at = Number(event.target.value); const node = audio ? audioRef.current : null; if (node) node.currentTime = at; else ytCall("seekTo", [at, true]); setTune((v) => ({ ...v, cur: at })); }} aria-label={audio ? audio.name : videoTitle} className="min-w-0 flex-1 accent-[#EC4899]" />
                   <span className="w-9 shrink-0 text-[10px] tabular-nums text-white/70">{clock(tune.dur)}</span>
                   <Equalizer className={cn("h-5 shrink-0", !tune.playing && "opacity-40 [&>span]:![animation-play-state:paused]")} />
                 </div>
@@ -4241,8 +4257,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
               <span title={t("bottle.miniMove")} onPointerDown={(event) => startMini(event, "move")} className="flex w-full cursor-move touch-none select-none justify-center pb-1.5 pt-0.5"><span className={cn("flex shrink-0 items-center justify-center rounded-full border-2 border-white/20 bg-[radial-gradient(circle,#BE185D_20%,#111_21%,#2a2a2a_45%,#111_46%,#333_70%,#111_71%)] bg-cover bg-center shadow-lg", tune.playing && "animate-[spin_3s_linear_infinite]", "h-auto w-[40%] aspect-square")} style={!audio && video ? { backgroundImage: `radial-gradient(circle,#1E1B3A 14%,transparent 15%),url(https://i.ytimg.com/vi/${video}/mqdefault.jpg)` } : undefined}><span className="h-2 w-2 rounded-full bg-white/80" /></span></span>
               <p className="w-full truncate text-center text-[10px] font-black">{audio ? audio.name : videoTitle}</p>
               <div className="mt-1 flex w-full items-center gap-1">
-                <button onClick={() => { const node = audio ? audioRef.current : null; if (node) { if (node.paused) void node.play().catch(() => {}); else node.pause(); return; } setTouched(true); ytCall(tune.playing ? "pauseVideo" : "playVideo"); if (!tune.playing) ytCall("unMute"); }} aria-label={tune.playing ? "Pause" : "Play"} className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-[#4C1D95] shadow">{tune.playing ? <Pause size={14} fill="currentColor" /> : <Play size={14} fill="currentColor" className="translate-x-px" />}</button>
-                <input type="range" min={0} max={Math.max(1, Math.floor(tune.dur))} value={Math.floor(tune.cur)} onChange={(event) => { const at = Number(event.target.value); const node = audio ? audioRef.current : null; if (node) node.currentTime = at; else ytCall("seekTo", [at, true]); setTune((v) => ({ ...v, cur: at })); }} aria-label={audio ? audio.name : videoTitle} className="min-w-0 flex-1 accent-[#EC4899]" />
+                {musicLocked ? null : (<button onClick={() => { const node = audio ? audioRef.current : null; if (node) { if (node.paused) void node.play().catch(() => {}); else node.pause(); return; } setTouched(true); ytCall(tune.playing ? "pauseVideo" : "playVideo"); if (!tune.playing) ytCall("unMute"); }} aria-label={tune.playing ? "Pause" : "Play"} className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-[#4C1D95] shadow">{tune.playing ? <Pause size={14} fill="currentColor" /> : <Play size={14} fill="currentColor" className="translate-x-px" />}</button>)}
+                <input type="range" min={0} max={Math.max(1, Math.floor(tune.dur))} value={Math.floor(tune.cur)} disabled={musicLocked} onChange={(event) => { if (musicLocked) return; const at = Number(event.target.value); const node = audio ? audioRef.current : null; if (node) node.currentTime = at; else ytCall("seekTo", [at, true]); setTune((v) => ({ ...v, cur: at })); }} aria-label={audio ? audio.name : videoTitle} className="min-w-0 flex-1 accent-[#EC4899]" />
                 <Equalizer className={cn("h-3 shrink-0", !tune.playing && "opacity-40 [&>span]:![animation-play-state:paused]")} />
               </div>
               <p className="mt-0.5 w-full text-center text-[9px] tabular-nums text-white/60">{clock(tune.cur)} / {clock(tune.dur)}</p>
