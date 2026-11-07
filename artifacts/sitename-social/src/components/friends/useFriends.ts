@@ -44,7 +44,7 @@ export function useFriends() {
       const skip = new Set([...state.hidden, ...blocked]);
       return {
         directory: remote.everyone.filter((item) => !blocked.includes(item.user.id)),
-        friends: remote.friends,
+        friends: remote.friends.filter((item) => !blocked.includes(item.user.id)),
         incoming: remote.incoming,
         outgoing: remote.outgoing,
         suggestions: [...remote.outgoing, ...remote.others].filter((item) => !skip.has(item.user.id)),

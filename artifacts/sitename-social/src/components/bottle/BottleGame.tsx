@@ -37,6 +37,7 @@ import { BottleSvg, WaterBottleSvg, WoodTable } from "./BottleArt";
 import { playGiftSound, playPing, playSfx, playSound, setVolume, warmPing } from "./sound";
 import { supabase } from "@/lib/supabase";
 import { refreshFriends } from "@/lib/friendsSync";
+import { useSettings } from "@/components/settings/useSettings";
 import { ensureMessagesLoaded, openRemoteChat, remoteChats, sendRemoteMessage } from "@/lib/messagesSync";
 import { uploadBlob } from "@/lib/media";
 import { refreshGifts } from "@/lib/giftsSync";
@@ -823,7 +824,15 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const doubleRef = useRef(0);
   const jumpRef = useRef(false);
   const [jump, setJump] = useState(false);
-  const [muted, setMutedIds] = useState<string[]>([]);
+  // "Reject" online is the site block: it is saved (the blocks table), hides the player's chat lines, ends the friendship and hides both people from each other's friends and suggestions.
+  const { settings: siteSettings, update: updateSettings } = useSettings();
+  const [localMuted, setLocalMuted] = useState<string[]>([]);
+  const muted = online ? siteSettings.blocked : localMuted;
+  const toggleMuted = (id: string) => {
+    const flip = (list: string[]) => (list.includes(id) ? list.filter((item) => item !== id) : [...list, id]);
+    if (online) updateSettings((current) => ({ ...current, blocked: flip(current.blocked) }));
+    else setLocalMuted(flip);
+  };
   const [flagMenu, setFlagMenu] = useState(false);
   const [signOpen, setSignOpen] = useState(false);
   const meTap = useRef(0);
@@ -3120,7 +3129,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   {player.me ? <button onClick={() => { setCard(false); setFramePick(null); setFrameNote(null); setPanel("frames"); }} aria-label={t("bottle.frames")} title={t("bottle.frames")} className="absolute bottom-[9px] right-[11px] h-5 w-5 bg-contain bg-no-repeat active:brightness-75" style={{ backgroundImage: `url(${P}decor.svg)` }} /> : <button onClick={() => setFlagMenu(!flagMenu)} aria-expanded={flagMenu} aria-label={t("bottle.more")} title={t("bottle.more")} className="absolute bottom-[13px] right-[14px] h-[14px] w-[14px] bg-contain bg-no-repeat active:brightness-75" style={{ backgroundImage: `url(${P}claim.svg)` }} />}
                   {flagMenu && !player.me ? (
                     <div role="menu" className="absolute bottom-9 right-1.5 z-10 w-44 overflow-hidden rounded-lg bg-white py-1 text-left text-xs font-semibold text-[#1F2937] shadow-xl">
-                      <button role="menuitem" onClick={() => { setMutedIds((list) => (list.includes(player.id) ? list.filter((id) => id !== player.id) : [...list, player.id])); setFlagMenu(false); setCardNote(t(muted.includes(player.id) ? "bottle.unrejected" : "bottle.rejected")); }} className="block w-full px-3 py-2 text-left hover:bg-black/5">{t(muted.includes(player.id) ? "bottle.unreject" : "bottle.reject")}</button>
+                      <button role="menuitem" onClick={() => { toggleMuted(player.id); setFlagMenu(false); setCardNote(t(muted.includes(player.id) ? "bottle.unrejected" : "bottle.rejected")); }} className="block w-full px-3 py-2 text-left hover:bg-black/5">{t(muted.includes(player.id) ? "bottle.unreject" : "bottle.reject")}</button>
                       <button role="menuitem" onClick={() => { setDraft(`${player.name}, `); setFlagMenu(false); setCard(false); setPicked(null); window.setTimeout(() => chatRef.current?.focus(), 50); }} className="block w-full px-3 py-2 text-left hover:bg-black/5">{t("bottle.mention")}</button>
                       <button role="menuitem" onClick={() => { setFlagMenu(false); setCardNote(t("bottle.reportSent")); }} className="block w-full px-3 py-2 text-left hover:bg-black/5">{t("bottle.report")}</button>
                       {iAmAdmin ? <button role="menuitem" onClick={() => { setFlagMenu(false); void openIp(player.name, player.id); }} className="block w-full px-3 py-2 text-left font-bold text-[#B45309] hover:bg-black/5">IP</button> : null}

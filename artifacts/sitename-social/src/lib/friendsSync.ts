@@ -37,12 +37,15 @@ async function sessionUserId() {
 export async function refreshFriends() {
   const userId = await sessionUserId();
   if (!supabase || !userId) return set(empty);
-  const [links, profiles] = await Promise.all([
+  const [links, profiles, blockers] = await Promise.all([
     supabase.from("friendships").select("status,requester_id,addressee_id").or(`requester_id.eq.${userId},addressee_id.eq.${userId}`),
     supabase.from("profiles").select("id,name,handle,avatar_url,city,last_seen").neq("id", userId).order("last_seen", { ascending: false, nullsFirst: false }).limit(500),
+    supabase.rpc("my_blockers"),
   ]);
   if (links.error || profiles.error) return console.error("Friends could not be loaded:", links.error?.message ?? profiles.error?.message);
-  const everyone = (profiles.data as Row[]).map(toPerson);
+  // People who blocked me are not shown to me either (friends, suggestions, people lists). Before the SQL is run the call fails and nobody is hidden.
+  const hiddenBy = new Set(Array.isArray(blockers.data) ? (blockers.data as unknown[]).map((item) => (typeof item === "string" ? item : String((item as { blocker_id?: unknown })?.blocker_id ?? ""))) : []);
+  const everyone = (profiles.data as Row[]).filter((row) => !hiddenBy.has(row.id)).map(toPerson);
   const byId = new Map(everyone.map((person) => [person.user.id, person]));
   const pick = (ids: string[]) => ids.flatMap((id) => byId.get(id) ?? []);
   const rows = links.data as Link[];
