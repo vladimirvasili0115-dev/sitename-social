@@ -1906,8 +1906,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     const emoji = giftEmoji[id] ? giftEmoji[id] : id.startsWith("e:") ? id.slice(2) : null;
     return emoji ? giftSrc(emoji) : null;
   };
-  // Gifts lying on the photos sit on the photos as before (the old table). Open the game with ?pixi=1 (remembered) to try the canvas layer, ?pixi=0 to turn it off again.
-  const [canvasSeats, setCanvasSeats] = useState(false);
+  // Gifts lying on the photos sit on the photos as before (the old table). The canvas layer is switched off for good.
+  const [canvasSeats] = useState(false);
   // Test switch: open the game as /bottle/?nochat=1 to run it without the chat list (to see how much the chat costs).
   const [noChat, setNoChat] = useState(false);
   useEffect(() => { try { setNoChat(new URLSearchParams(window.location.search).get("nochat") === "1"); } catch { /* no query */ } }, []);
@@ -1948,13 +1948,14 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   }, []);
   const [perf, setPerf] = useState(false);
   useEffect(() => { try { setPerf(new URLSearchParams(window.location.search).get("perf") === "1"); } catch { /* no query */ } }, []);
+  // The ?pixi=1 / ?pixi=0 switch is gone: the canvas layer stays off for everyone (with it the gifts did not show on the two players in the middle).
+  // The old remembered choice is wiped, and a leftover ?pixi=... is removed from the address.
   useEffect(() => {
     try {
-      const q = new URLSearchParams(window.location.search).get("pixi");
-      if (q === "1") window.localStorage.setItem("pixi-on", "1");
-      if (q === "0") window.localStorage.removeItem("pixi-on");
-      setCanvasSeats(window.localStorage.getItem("pixi-on") === "1");
-    } catch { /* storage blocked: stays off */ }
+      window.localStorage.removeItem("pixi-on");
+      const url = new URL(window.location.href);
+      if (url.searchParams.has("pixi")) { url.searchParams.delete("pixi"); window.history.replaceState(window.history.state, "", url.toString()); }
+    } catch { /* storage blocked: nothing to wipe */ }
   }, []);
   const seatGiftData = useRef<SeatGiftData>({ piles: {}, spots: {}, ids: [], seats: [], box: 17.5, cx: 50, cy: 50, staged: false, turn: null, target: null, url: () => null, pileMs: PILE_MS, version: 0 });
   const canvasUrl = (gift: string) => (canvasSeats ? flightUrl(gift) : null);
