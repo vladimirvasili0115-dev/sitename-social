@@ -10,6 +10,7 @@ import { useProfile } from "@/components/profile/useProfile";
 import { cn } from "@/lib/utils";
 import { emojiSets } from "@/lib/emojiSets";
 import { useIsAdmin } from "@/components/report/useIsAdmin";
+import { fetchIsOwner } from "@/lib/adminSync";
 import { customFile, useCustomArt } from "@/lib/customArt";
 import { giftBounds } from "./giftBounds";
 import { durationSeconds, rankSongs, songScore } from "@/lib/songSearch";
@@ -810,6 +811,10 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [vip, setVip] = useState(false);
   // Admins: everything in the game is open for them (to test it), and their seat and card look different.
   const iAmAdmin = useIsAdmin() === true;
+  // Test: the new oak table background (/bottle/table3.webp) is shown only to the owner for now; everybody else keeps table2.jpg.
+  const [ownerWood, setOwnerWood] = useState(false);
+  useEffect(() => { if (iAmAdmin) void fetchIsOwner().then(setOwnerWood); }, [iAmAdmin]);
+  const woodSrc = ownerWood ? "/bottle/table3.webp" : undefined;
   // The cherry cocktail is hidden for accounts the admin did not allow (the server refuses it too).
   const [giftAllow, setGiftAllow] = useState<string[]>([]);
   useEffect(() => {
@@ -3363,10 +3368,10 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       })() : null}
       {/* On a phone-shaped window the title bar sits on the same wood as the table, with no seam between them. */}
       <div className={cn("relative shrink-0", wide ? "h-full w-[54%]" : "mx-auto w-full max-w-[64dvh]")}>
-      {wide ? null : <WoodTable className="pointer-events-none absolute inset-0 h-full w-full" />}
+      {wide ? null : <WoodTable src={woodSrc} className="pointer-events-none absolute inset-0 h-full w-full" />}
       {wide ? null : header}
       <div className={cn("relative shrink-0 overflow-hidden [container-type:size]", wide ? "h-full w-full bg-[#E0A04E]" : "aspect-[9/10] w-full")} onClick={() => { setPicked(null); if (dedicate) chooseMode(false); }}>
-        {wide ? <WoodTable className="pointer-events-none absolute inset-0 h-full w-full" /> : null}
+        {wide ? <WoodTable src={woodSrc} className="pointer-events-none absolute inset-0 h-full w-full" /> : null}
         <div className={cn("absolute flex items-center", menuOpen ? "z-[44]" : "z-10", wide ? "inset-y-0 left-0 w-[13%] flex-col gap-[2.2cqmin] py-[2.2cqmin]" : "inset-x-0 top-0 h-[10%] gap-[1.3cqmin] px-[2cqmin]")} onClick={(event) => event.stopPropagation()}>
           <button ref={balanceRef} key={balancePulse} type="button" onClick={() => { setPayNote(false); setPanel("shop"); }} aria-label={`${t("bottle.shop")}: ${hearts}`} className={cn("flex items-center text-white hover:brightness-110", balancePulse > 0 && "motion-safe:animate-[balance-pulse_0.45s_ease-out]", wide ? "flex-col" : "gap-1.5")} title={t("bottle.shop")}>
             {/* The original balance button: an orange heart with a white rim (bottle-html5 btn_gold_add_heart_up). */}

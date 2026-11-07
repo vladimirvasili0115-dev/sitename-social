@@ -52,8 +52,8 @@ export function WaterBottleSvg({ className }: { className?: string }) {
 }
 
 // The table top: a real-looking honey wood texture (public/bottle/table2.jpg), lighter in the middle.
-export function WoodTable({ className }: { className?: string }) {
-  return <div aria-hidden="true" className={className} style={{ backgroundColor: "#D2924C", backgroundImage: "url(/bottle/table2.jpg)", backgroundSize: "cover", backgroundPosition: "center" }} />;
+export function WoodTable({ className, src = "/bottle/table2.jpg" }: { className?: string; src?: string }) {
+  return <div aria-hidden="true" className={className} style={{ backgroundColor: "#D2924C", backgroundImage: `url(${src})`, backgroundSize: "cover", backgroundPosition: "center" }} />;
 }
 
 // Cover tile for the games list: the bottle on a wooden table with hearts and spin arrows.
