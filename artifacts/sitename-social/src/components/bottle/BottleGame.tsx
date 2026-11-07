@@ -1360,9 +1360,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     // A hidden tab asks only every 5 seconds (enough to keep the seat), a visible one every second.
     let hiddenTick = 0;
     const timer = window.setInterval(() => { if (document.hidden && ++hiddenTick % 5) return; void pull(); }, 1000);
-    const bye = () => void bottleLeave();
-    window.addEventListener("pagehide", bye);
-    return () => { alive = false; window.clearInterval(timer); window.removeEventListener("pagehide", bye); void bottleLeave(); };
+    // Leaving the app (another app, a closed tab) does not take the seat at once: the server frees it after 90 seconds of silence, so a short switch keeps the seat.
+    return () => { alive = false; window.clearInterval(timer); void bottleLeave(); };
   }, [online]);
   // A song someone put on plays for the whole table (a song older than 5 minutes is not started for newcomers).
   const trackAt = useRef(0);
