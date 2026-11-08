@@ -106,8 +106,20 @@ export function ShopPanel({ hearts, coins, activeSecs, payNote, onActive, onVip,
   );
 }
 
-export function ActivePanel({ secs, claimed, live, onClaim }: { secs: number; claimed: number; live: boolean; onClaim: (level: number) => void }) {
+// What came back from taking an activity bonus: "ok", or why it was not given.
+export type ActiveClaimResult = "ok" | "day" | "time" | "got" | "net";
+const ACTIVE_FAIL: Record<Exclude<ActiveClaimResult, "ok">, TranslationKey> = { day: "bottle.activeFailDay", time: "bottle.activeFailTime", got: "bottle.activeFailGot", net: "bottle.activeFailNet" };
+export function ActivePanel({ secs, claimed, live, onClaim }: { secs: number; claimed: number; live: boolean; onClaim: (level: number) => Promise<ActiveClaimResult> }) {
   const { t } = useTranslation();
+  // While a request is on its way the button is locked (no double taps); when the bonus was not given, the reason is shown.
+  const [busy, setBusy] = useState<number | null>(null);
+  const [fail, setFail] = useState<Exclude<ActiveClaimResult, "ok"> | null>(null);
+  useEffect(() => { if (!fail) return; const timer = window.setTimeout(() => setFail(null), 5000); return () => window.clearTimeout(timer); }, [fail]);
+  const take = (level: number) => {
+    if (busy !== null) return;
+    setBusy(level); setFail(null);
+    void onClaim(level).then((result) => { if (result !== "ok") setFail(result); }).catch(() => setFail("net")).finally(() => setBusy(null));
+  };
   return (
     <div className="max-h-[calc(100cqh-56px)] overflow-y-auto overscroll-contain text-[#1F2937] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       <div className="flex flex-col items-center"><Pic e="⏰" className="h-11 w-11" /><p className="text-sm text-[#6B7280]">{t("bottle.activeToday")}</p><p className="text-2xl font-black tabular-nums text-[#7C3AED]">{formatActive(secs, t)}</p></div>
@@ -121,11 +133,12 @@ export function ActivePanel({ secs, claimed, live, onClaim }: { secs: number; cl
               <span className="w-16 shrink-0 text-sm font-bold">{minutes >= 60 ? `${minutes / 60} ${t("bottle.hourLong")}` : `${minutes} ${t("bottle.minLong")}`}</span>
               <span className="flex flex-1 items-center gap-1 text-base font-black text-[#E8352B]"><H size={16} />{prize}</span>
               {got ? <span className="flex items-center gap-1 text-xs font-bold text-[#16A34A]"><Check size={15} strokeWidth={3} />{t("bottle.claimed")}</span>
-                : <button disabled={!ready || !live} onClick={() => onClaim(level)} className="flex h-8 items-center gap-1 rounded-lg bg-[linear-gradient(180deg,#9BD65A,#6DB33F)] px-3 text-xs font-bold text-white shadow disabled:bg-none disabled:bg-[#E5E7EB] disabled:text-[#9CA3AF] disabled:shadow-none">{ready ? t("bottle.claim") : <><Lock size={12} />{formatActive(minutes * 60 - secs, t)}</>}</button>}
+                : <button disabled={!ready || !live || busy !== null} onClick={() => take(level)} className="flex h-8 items-center gap-1 rounded-lg bg-[linear-gradient(180deg,#9BD65A,#6DB33F)] px-3 text-xs font-bold text-white shadow disabled:bg-none disabled:bg-[#E5E7EB] disabled:text-[#9CA3AF] disabled:shadow-none">{ready ? t("bottle.claim") : <><Lock size={12} />{formatActive(minutes * 60 - secs, t)}</>}</button>}
             </li>
           );
         })}
       </ul>
+      {fail ? <p role="status" className="mt-2 rounded-lg bg-[#FEF2F2] p-2 text-center text-xs font-semibold text-[#B91C1C]">{t(ACTIVE_FAIL[fail])}</p> : null}
       <p className="mt-2 text-center text-[11px] text-[#6B7280]">{t(live ? "bottle.activeHint" : "bottle.liveOnly")}</p>
     </div>
   );

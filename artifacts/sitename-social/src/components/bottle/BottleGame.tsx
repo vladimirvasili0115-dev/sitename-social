@@ -243,7 +243,7 @@ function PackNote({ note, locale }: { note: { kind: "wait" | "ok" | "balance" | 
 // Auto-clicker guard: at most this many gifts a second from one device (enough for fast tapping at a full table of 12).
 const GIFT_BUCKET = 120;
 // These corner gifts are smaller than the other ones (whiskey glass 1.4x, wine glass 1.3x, joystick 1.4x); they still stand on the right frame line (flush) and the bottom line.
-const CORNER_SHRINK: Record<string, number> = { whiskey: 1.4, wine: 1.3, joystick: 1.4, martini: 1.3, mobile: 1.3, nokia: 1.3, heartlock: 1.3, snakepot: 2, beer: 1.3, milk: 1.2, vodka: 1.5 }; // the snake in the pot 2x smaller, the beer mug 1.3x smaller (and 3 mm further right, below)
+const CORNER_SHRINK: Record<string, number> = { whiskey: 1.4, wine: 1.3, joystick: 1.4, martini: 1.3, mobile: 1.3, nokia: 1.3, heartlock: 1.3, snakepot: 2, beer: 1.3, milk: 1.2 * 1.1, vodka: 1.5, love: 1.3 }; // milk: 1.2x, then 1.1x more; love (the pink cocktail): 1.3x // the snake in the pot 2x smaller, the beer mug 1.3x smaller (and 3 mm further right, below)
 const BIGGER_CORNER = /^(cherry|makarov|revolver)$/;
 const BIGGER_BY = 1.2;
 const CORNER_ALL_BY = 1.7; // every other gift on the bottom-right corner is 1.7x bigger (they looked tiny next to the photo)
@@ -3853,7 +3853,14 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   {passNote ? <p role="status" className="absolute inset-x-3 bottom-3 z-10 rounded-xl bg-[#111827]/85 px-3 py-2 text-center text-sm font-bold text-white">{passNote}</p> : null}
                 </>
               ) : panel === "active" ? (
-                <ActivePanel secs={activeSecs} claimed={net?.active?.claimed ?? 0} live={online} onClaim={(level) => void bottleActiveClaim(level).then((left) => { if (left !== null && left >= 0) { heartsRef.current = left; setHearts(left); pullRef.current(); } })} />
+                <ActivePanel secs={activeSecs} claimed={net?.active?.claimed ?? 0} live={online} onClaim={async (level) => {
+                  // One more try when the request did not get through; the status is read again after every answer.
+                  let left = await bottleActiveClaim(level);
+                  if (left === null) left = await bottleActiveClaim(level);
+                  pullRef.current();
+                  if (left !== null && left >= 0) { heartsRef.current = left; setHearts(left); return "ok"; }
+                  return left === null ? "net" : left === -2 ? "day" : left === -3 ? "time" : left === -4 ? "got" : "net";
+                }} />
               ) : panel === "invite" ? (
                 <InvitePanel link={online && net ? `${window.location.origin}/register?ref=${net.me}` : null} invited={refInfo.invited} done={refInfo.done} />
               ) : panel === "compliments" ? (
