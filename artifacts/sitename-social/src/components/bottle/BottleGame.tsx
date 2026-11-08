@@ -215,7 +215,7 @@ function hatSpot(name: string): { x: number; y: number; s: number; a: number } {
 // Drinks and other corner gifts stand on the bottom-right edge of the frame: the picture's left edge is 10% inside the frame, its bottom just below it.
 // The visible art is at most CORNER_ART_H% of the photo high and CORNER_ART_W% wide (not the empty picture box), so big pictures stay small on the corner.
 const CORNER_SIZE = 80;
-const CORNER_EXTRA_RIGHT = 4; // all bottom-right corner gifts: 2 mm (4% of the photo width) further right
+const CORNER_EXTRA_RIGHT = 8; // all bottom-right corner gifts: 4 mm (8% of the photo width) further right (2 mm, then 2 mm more)
 const CORNER_SHIFT_LEFT = 7; // gifts on the bottom-right corner (hearts, drinks, balloons...) hang over the frame: they sit 3.5 mm (7% of the photo width) further left, in flight and when landed
 const CAT_SHIFT_LEFT = 12; // the cat in the dress sits about 6 mm (12% of the photo width) further left (3 mm, then 3 mm more)
 const CORNER_ART_H = 38;
@@ -243,7 +243,7 @@ function PackNote({ note, locale }: { note: { kind: "wait" | "ok" | "balance" | 
 // Auto-clicker guard: at most this many gifts a second from one device (enough for fast tapping at a full table of 12).
 const GIFT_BUCKET = 120;
 // These corner gifts are smaller than the other ones (whiskey glass 1.4x, wine glass 1.3x, joystick 1.4x); they still stand on the right frame line (flush) and the bottom line.
-const CORNER_SHRINK: Record<string, number> = { whiskey: 1.4, wine: 1.3, joystick: 1.4, martini: 1.3, mobile: 1.3, nokia: 1.3, heartlock: 1.3, snakepot: 2, beer: 1.3 }; // the snake in the pot 2x smaller, the beer mug 1.3x smaller (and 3 mm further right, below)
+const CORNER_SHRINK: Record<string, number> = { whiskey: 1.4, wine: 1.3, joystick: 1.4, martini: 1.3, mobile: 1.3, nokia: 1.3, heartlock: 1.3, snakepot: 2, beer: 1.3, milk: 1.2, vodka: 1.5 }; // the snake in the pot 2x smaller, the beer mug 1.3x smaller (and 3 mm further right, below)
 const BIGGER_CORNER = /^(cherry|makarov|revolver)$/;
 const BIGGER_BY = 1.2;
 const CORNER_ALL_BY = 1.7; // every other gift on the bottom-right corner is 1.7x bigger (they looked tiny next to the photo)
