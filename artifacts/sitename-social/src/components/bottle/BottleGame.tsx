@@ -884,6 +884,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     void bottleGetAccept().then((value) => { if (typeof value === "boolean") setAccept(value); });
   }, [online, net]);
   const [panel, setPanel] = useState<"gestures" | "settings" | "top" | "rules" | "shop" | "menu" | "vip" | "bottles" | "frames" | "achievements" | "boosters" | "wheel" | "chances" | "tables" | "rooms" | "active" | "invite" | "compliments" | "kick" | "pass" | "league" | "market" | "smiles" | "plus" | "plusbuy" | null>(null);
+  // The home page's "Activity bonus" card opens the game as /bottle?panel=active: the bonus window opens at once (the address is cleaned).
+  useEffect(() => { try { const url = new URL(window.location.href); if (url.searchParams.get("panel") === "active") { setPanel("active"); url.searchParams.delete("panel"); window.history.replaceState(window.history.state, "", url.toString()); } } catch { /* no query */ } }, []);
   // Panels drop down from the top like a hanging sign and go back up when closed.
   const [closing, setClosing] = useState(false);
   const [weekOpen, setWeekOpen] = useState(false);

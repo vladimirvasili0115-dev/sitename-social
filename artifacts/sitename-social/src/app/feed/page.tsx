@@ -11,6 +11,7 @@ import { PostCard } from "@/components/feed/PostCard";
 import { Card } from "@/components/ui/Card";
 import { NeonHome } from "@/components/feed/NeonHome";
 import { SiteStats } from "@/components/feed/SiteStats";
+import { HomeSideCards } from "@/components/feed/HomeSideCards";
 import { BirthdayReminder } from "@/components/feed/BirthdayReminder";
 
 export default function FeedPage() {
@@ -23,6 +24,8 @@ export default function FeedPage() {
   const tabClass = (active: boolean) => cn("relative px-3 py-3 text-xs", active ? "font-semibold text-accent" : "font-medium text-muted hover:text-text");
   const body = <div className="mx-auto min-w-0 max-w-[620px] flex-1 xl:mx-0">
     <NeonHome name={user.name ? user.name.split(" ")[0] : ""} />
+    {/* On a phone / narrow screen the right-column cards stand here, under the games. */}
+    <HomeSideCards className="mb-4 xl:hidden" />
     <StoriesBar />
     <BirthdayReminder />
     <PostComposer />
