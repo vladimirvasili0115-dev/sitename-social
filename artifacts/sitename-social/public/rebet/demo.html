@@ -218,7 +218,10 @@ const people=[{n:"Sən",c:"#7c3aed",me:1},{n:"Aylin",c:"#db2777"},{n:"Murad",c:"
 const base={table:{x:5,y:4.85,w:90},timer:{x:41,y:34,w:18},choose:{x:12,y:84,w:52},hint:{x:72,y:83,w:16},match:{x:15,y:12,w:70}};
 for(let i=0;i<8;i++){const a=i/8*Math.PI*2+Math.PI/2;base["seat"+i]={x:+(50+Math.cos(a)*37-8.5).toFixed(2),y:+(43+Math.sin(a)*29-7).toFixed(2),w:17}}
 const KEY="gizli-regbet-layout";const clone=o=>JSON.parse(JSON.stringify(o));
-let layouts={pc:clone(base),tel:clone(base)};
+// telefon yerləşimi: sahibin rebet-test3-də düzəltdiyi (8 noyabr 2026)
+const TEL={"table":{"x":-3.27,"y":1.85,"w":109.8},"choose":{"x":10.93,"y":82,"w":52},"hint":{"x":64.27,"y":83,"w":22.4},"off":{"title":{"x":9,"y":-2}},"zoom":{"title":138}};
+const defs={pc:clone(base),tel:Object.assign(clone(base),clone(TEL))};
+let layouts={pc:clone(defs.pc),tel:clone(defs.tel)};
 try{const sv=JSON.parse(localStorage.getItem(KEY)||"null");if(sv)for(const v of ["pc","tel"])Object.assign(layouts[v],sv[v]||{})}catch(e){}
 let view=matchMedia("(max-width:899px)").matches?"tel":"pc";
 const qv=new URLSearchParams(location.search).get("v");if(qv==="pc"||qv==="tel")view=qv;
@@ -316,10 +319,12 @@ $("edSave").onclick=()=>{try{localStorage.setItem(KEY,JSON.stringify(merged()));
 $("edCopy").onclick=()=>{const txt=JSON.stringify(merged());$("edJson").value=txt;$("edJson").hidden=false;$("edJson").select();
 navigator.clipboard&&navigator.clipboard.writeText(txt).then(()=>flash("JSON kopyalandı ✓"),()=>flash("Aşağıdakı mətni əl ilə kopyala"))};
 let resetAsk=false;$("edReset").onclick=()=>{if(!resetAsk){resetAsk=true;$("edReset").textContent="Əminsən? Bir də bas";setTimeout(()=>{resetAsk=false;$("edReset").textContent="Sıfırla"},3000);return}
-resetAsk=false;$("edReset").textContent="Sıfırla";layouts[view]=clone(base);apply();info();flash((view==="pc"?"PC":"Telefon")+" yerləşimi sıfırlandı")};
+resetAsk=false;$("edReset").textContent="Sıfırla";layouts[view]=clone(defs[view]);apply();info();flash((view==="pc"?"PC":"Telefon")+" yerləşimi sıfırlandı")};
 const site=new URLSearchParams(location.search).has("site");
 if(qv||site){$("vPc").hidden=$("vTel").hidden=true}
 if(site)document.documentElement.classList.add("site");
+// oyunçular üçün (?play=1): düzəltmə paneli görünməsin
+if(new URLSearchParams(location.search).has("play"))$("tools").style.display="none";
 if(site)mq.addEventListener("change",()=>setView(mq.matches?"tel":"pc"));
 setView(view);render();newRound();
 </script>
