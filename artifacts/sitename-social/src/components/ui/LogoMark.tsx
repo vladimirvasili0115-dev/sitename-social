@@ -1,13 +1,18 @@
+import { useId } from "react";
+
 // Site mark: a warm gradient tile with a tilted bottle whose neck points at a small heart — the spin-the-bottle game in one sign.
 export function LogoMark({ className }: { className?: string }) {
+  // Own gradient ids for every copy: when two logos are on one page and one is hidden (display: none), a shared id would leave the visible one without its colours.
+  const uid = useId().replace(/:/g, "");
+  const bg = `np-bg-${uid}`, shine = `np-shine-${uid}`;
   return (
     <svg viewBox="0 0 64 64" className={className} aria-hidden="true">
       <defs>
-        <linearGradient id="np-bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#FF4D8D" /><stop offset="1" stopColor="#FF8A3D" /></linearGradient>
-        <linearGradient id="np-shine" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#fff" stopOpacity="0.35" /><stop offset="1" stopColor="#fff" stopOpacity="0" /></linearGradient>
+        <linearGradient id={bg} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#FF4D8D" /><stop offset="1" stopColor="#FF8A3D" /></linearGradient>
+        <linearGradient id={shine} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#fff" stopOpacity="0.35" /><stop offset="1" stopColor="#fff" stopOpacity="0" /></linearGradient>
       </defs>
-      <rect width="64" height="64" rx="16" fill="url(#np-bg)" />
-      <path d="M0 16A16 16 0 0 1 16 0h32a16 16 0 0 1 16 16v8C44 30 20 30 0 24z" fill="url(#np-shine)" />
+      <rect width="64" height="64" rx="16" fill={`url(#${bg})`} />
+      <path d="M0 16A16 16 0 0 1 16 0h32a16 16 0 0 1 16 16v8C44 30 20 30 0 24z" fill={`url(#${shine})`} />
       <g transform="rotate(-45 30 36)">
         <rect x="25" y="26" width="12" height="26" rx="5" fill="#fff" />
         <rect x="28" y="16" width="6" height="12" rx="2.5" fill="#fff" />

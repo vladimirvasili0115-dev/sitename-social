@@ -9,6 +9,8 @@ import { useNavBadges } from "./useNavBadges";
 import { useInvisible } from "@/components/invisible/useInvisible";
 import { ShieldAlert } from "lucide-react";
 import { useIsAdmin } from "@/components/report/useIsAdmin";
+import { LogoMark } from "@/components/ui/LogoMark";
+import { Wordmark } from "@/components/ui/Logo";
 
 // Calm look: plain line icons; the open page has a soft warm background and an orange bar on its left edge.
 const itemClass = (active: boolean) => cn(
@@ -27,6 +29,11 @@ export function Sidebar() {
   return (
     <aside className="sticky top-[96px] hidden h-fit w-[220px] shrink-0 lg:block">
       <Card className="overflow-hidden rounded-3xl p-2.5">
+        {/* On a computer the site logo sits at the top of the menu card (the top bar shows it on phones only). */}
+        <Link href="/feed" className="mb-2 flex items-center gap-2.5 px-2.5 pb-2 pt-2">
+          <LogoMark className="h-10 w-10 shrink-0 drop-shadow-[0_4px_10px_rgba(255,77,141,0.4)]" />
+          <Wordmark />
+        </Link>
         <nav className="space-y-0.5" aria-label={t("nav.mainNavigation")}>
           {navigation.map(({ key, href, icon: Icon, disabled }, index) => {
             const active = pathname === href && (href !== "/online" || key === "nav.online");

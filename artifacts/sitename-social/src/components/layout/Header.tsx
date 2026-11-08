@@ -31,11 +31,13 @@ export function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-bg/95 pt-[env(safe-area-inset-top)] backdrop-blur">
       <div className="relative mx-auto flex h-[72px] max-w-[1160px] items-center gap-2 px-4 sm:gap-5 md:px-6">
-        <Link href="/feed" className="flex min-w-0 items-center gap-2.5">
+        {/* The logo: on a computer it stands at the top of the left menu card instead, so here it is shown on phones / narrow screens only. */}
+        <Link href="/feed" className="flex min-w-0 items-center gap-2.5 lg:hidden">
           <LogoMark className="h-9 w-9 shrink-0 drop-shadow-[0_2px_6px_rgba(255,77,141,0.35)]" />
           <Wordmark className={musicOn ? "max-sm:hidden" : ""} />
         </Link>
-        <form onSubmit={handleSearch} role="search" className="hidden h-10 max-w-[340px] flex-1 items-center gap-2.5 rounded-xl border border-border bg-surface px-3.5 text-muted focus-within:border-accent md:flex">
+        {/* Search: its own framed box; on a computer it starts above the page content, not above the left menu (menu 220 px + 24 px gap). */}
+        <form onSubmit={handleSearch} role="search" className="hidden h-11 max-w-[420px] flex-1 items-center gap-2.5 rounded-2xl border border-border bg-surface px-4 text-muted shadow-sm focus-within:border-accent md:flex lg:ml-[244px]">
           <Search size={16} />
           <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} aria-label={t("header.search")} className="w-full bg-transparent text-sm text-text outline-none placeholder:text-muted" placeholder={t("header.search")} />
         </form>
