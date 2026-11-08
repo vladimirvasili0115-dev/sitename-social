@@ -6,12 +6,13 @@ import Link from "next/link";
 import { Palette, Eye, EyeOff, KeyRound, HeartOff, Lock, LockOpen, Wine, FileText, BadgeCheck, Ban, ChevronDown, Coins, Crown, Gamepad2, Heart, ShieldCheck, ShieldOff, Trash2, Undo2 } from "lucide-react";
 import { useSyncExternalStore } from "react";
 import { refreshVerified, verifiedStore } from "@/lib/verifiedSync";
-import { setUserPassword, banUser, deleteUser, fetchAdminUsers, fetchUserDetail, grantCoins, grantHearts, setModerator, setVerified, vipAll, vipCount, gesturesOpenGet, gesturesOpenSet, setNameColor, gameState, gameGrant, gameFlags, statFreezeGet, statFreezeSet, pageAllowGet, pageAllowSet, type PageAllow, giftAllowGet, giftAllowSet, type GiftAllow, type StatKind, type StatFreeze, type GameFlags, type GameState, type AdminUser, type UserDetail } from "@/lib/adminSync";
+import { setUserPassword, setUserLogin, banUser, deleteUser, fetchAdminUsers, fetchUserDetail, grantCoins, grantHearts, setModerator, setVerified, vipAll, vipCount, gesturesOpenGet, gesturesOpenSet, setNameColor, gameState, gameGrant, gameFlags, statFreezeGet, statFreezeSet, pageAllowGet, pageAllowSet, type PageAllow, giftAllowGet, giftAllowSet, type GiftAllow, type StatKind, type StatFreeze, type GameFlags, type GameState, type AdminUser, type UserDetail } from "@/lib/adminSync";
 import { adminBannedList, adminDeletedList, adminRoomPass, adminRooms, adminSpendOverview, adminSpendUser, broadcastCount, broadcastSend, type AdminRoom, type BannedAccount, type DeletedAccount, type SpendDetail, type SpendRow } from "@/lib/adminSync";
 import type { TranslationKey } from "@/i18n/LanguageProvider";
 import { initialsAvatar } from "@/lib/avatar";
 import { formatDay } from "@/lib/datetime";
 import { userHref } from "@/lib/links";
+import { looksLikePhone, normalizePhone, phoneEmail } from "@/lib/phoneAuth";
 import { useTranslation } from "@/i18n/useTranslation";
 import { Card } from "@/components/ui/Card";
 import { SearchInput } from "@/components/ui/SearchInput";
@@ -45,6 +46,29 @@ export function AdminUsers({ owner }: { owner: boolean }) {
   const [pwFor, setPwFor] = useState<string | null>(null);
   const [pwText, setPwText] = useState("");
   const [pwNote, setPwNote] = useState("");
+  // "Set login": the owner gives a player a new login (e-mail or phone); a phone becomes the same hidden e-mail as at sign-up.
+  const [loginText, setLoginText] = useState("");
+  const [loginNote, setLoginNote] = useState("");
+  async function saveLogin(id: string) {
+    const raw = loginText.trim();
+    if (!raw) return setLoginNote("Login yaz: e-poçt və ya telefon.");
+    let email = raw.toLowerCase();
+    if (looksLikePhone(raw)) {
+      const digits = normalizePhone(raw);
+      if (!digits) return setLoginNote("Telefon nömrəsi düzgün deyil.");
+      email = await phoneEmail(digits);
+    }
+    const res = await setUserLogin(id, email);
+    const notes: Record<string, string> = {
+      ok: `Login dəyişdi: ${raw} — adam bununla və öz şifrəsi ilə girə bilər (köhnə sessiyaları bağlandı).`,
+      taken: "Bu login artıq başqa hesabdadır.",
+      bad: "Login düzgün deyil.",
+      admin: "Admin/moderatorun loginini dəyişmək olmaz.",
+      no_user: "Belə hesab tapılmadı.",
+      not_owner: "Bunu yalnız sahib edə bilər.",
+    };
+    setLoginNote(res ? notes[res] ?? "Alınmadı." : "Alınmadı. paket-HY.sql işlədilib?");
+  }
   const makePassword = () => { const chars = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789"; const bytes = crypto.getRandomValues(new Uint32Array(10)); setPwText(Array.from(bytes, (n) => chars[n % chars.length]).join("")); };
   const [colorFor, setColorFor] = useState<string | null>(null);
   const nameColors = useNameColors();
@@ -192,7 +216,7 @@ export function AdminUsers({ owner }: { owner: boolean }) {
                     <button disabled={locked} onClick={() => setGameFor(gameFor === user.id ? null : user.id)} aria-expanded={gameFor === user.id} className={action}><Gamepad2 size={14} />{t("admin.game")}</button>
                     <button disabled={locked} onClick={() => setColorFor(colorFor === user.id ? null : user.id)} aria-expanded={colorFor === user.id} className={action}><Palette size={14} /><span className={nameColorClass(nameColors[user.id])}>{t("admin.nameColor")}</span></button>
                     {user.email && supabase ? <button disabled={locked || resetSent[user.id]} onClick={() => { if (!supabase || !user.email) return; void supabase.auth.resetPasswordForEmail(user.email, { redirectTo: `${window.location.origin}/reset-password` }).then(({ error }) => setResetSent((value) => ({ ...value, [user.id]: !error }))); }} title={t("admin.resetHint")} className={action}><KeyRound size={14} />{t(resetSent[user.id] ? "admin.resetSent" : "admin.resetPass")}</button> : null}
-                    {owner ? <button disabled={locked} onClick={() => { setPwFor(pwFor === user.id ? null : user.id); setPwText(""); setPwNote(""); }} aria-expanded={pwFor === user.id} className={action}><KeyRound size={14} />Şifrə təyin et</button> : null}
+                    {owner ? <button disabled={locked} onClick={() => { setPwFor(pwFor === user.id ? null : user.id); setPwText(""); setPwNote(""); setLoginText(""); setLoginNote(""); }} aria-expanded={pwFor === user.id} className={action}><KeyRound size={14} />Şifrə təyin et</button> : null}
                     {user.moderator ? null : user.banned
                       ? <button disabled={locked} onClick={() => void run(user.id, () => banUser(user.id, -1, ""))} className={action}><Undo2 size={14} />{t("settings.blkUnblock")}</button>
                       : <button disabled={locked} onClick={() => { setBanFor(banFor === user.id ? null : user.id); setBanDays(7); setReason(""); }} className={cn(danger, "text-danger hover:bg-surface-2")}><Ban size={14} />{t("admin.ban")}</button>}
@@ -209,6 +233,15 @@ export function AdminUsers({ owner }: { owner: boolean }) {
                         <button type="submit" className="h-10 rounded-xl bg-accent px-4 text-xs font-semibold text-bg">Təyin et</button>
                       </div>
                       {pwNote ? <p role="status" className="text-xs font-semibold text-accent">{pwNote}</p> : null}
+                    </form>
+                  ) : null}
+                  {owner && pwFor === user.id ? (
+                    <form onSubmit={(event) => { event.preventDefault(); void saveLogin(user.id); }} className="mt-2 space-y-2">
+                      <div className="flex flex-wrap gap-2">
+                        <input value={loginText} onChange={(event) => { setLoginText(event.target.value); setLoginNote(""); }} maxLength={200} aria-label="Yeni login" placeholder="Yeni login: e-poçt və ya telefon" autoComplete="off" className="h-10 min-w-0 flex-1 rounded-xl border border-border bg-surface px-3 text-sm outline-none focus:border-accent" />
+                        <button type="submit" className="h-10 rounded-xl bg-accent px-4 text-xs font-semibold text-bg">Login təyin et</button>
+                      </div>
+                      {loginNote ? <p role="status" className="text-xs font-semibold text-accent">{loginNote}</p> : null}
                     </form>
                   ) : null}
                   {banFor === user.id ? (
