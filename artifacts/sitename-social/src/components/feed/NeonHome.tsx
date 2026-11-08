@@ -16,8 +16,9 @@ const words = {
 
 // Games with their own logo open their page; the others say "coming soon" and cannot be opened yet.
 // photo: the scene behind the card (made in Canva to match each logo), on the right side; the colour shows while it loads.
-const games: { name: string; href?: string; img?: string; emoji: string; bg: string; photo: string }[] = [
-  { name: "Butulka", href: "/bottle", img: "/games/bottle.png", emoji: "🍾", bg: "#3a2416", photo: "/games/card-butulka.jpg" },
+// full: the picture fills the whole card (a wide scene that should be seen whole), otherwise it stands on the right side.
+const games: { name: string; href?: string; img?: string; emoji: string; bg: string; photo: string; full?: boolean }[] = [
+  { name: "Butulka", href: "/bottle", img: "/games/bottle.png", emoji: "🍾", bg: "#2a0d4a", photo: "/games/card-butulka-kiss2.jpg", full: true },
   { name: "Mafiya", href: "/mafia", img: "/games/mafia.png", emoji: "🕴️", bg: "#1d1233", photo: "/games/card-mafia.jpg" },
   // New file name: the old address was cached (Cloudflare, 4 h) as a page before the file existed.
   { name: "Domino", href: "/domino", img: "/games/domino-ravetill-v2.png", emoji: "🁫", bg: "#0d1730", photo: "/games/card-domino.jpg" },
@@ -88,9 +89,9 @@ export function NeonHome({ name }: { name: string }) {
     <div className="mb-4 grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3">
       {games.map((game) => {
         const inner = <>
-          <img src={game.photo} alt="" aria-hidden="true" loading="lazy" className="pointer-events-none absolute inset-y-0 right-0 h-full w-[78%] object-cover" />
+          <img src={game.photo} alt="" aria-hidden="true" loading="lazy" className={`pointer-events-none absolute inset-y-0 right-0 h-full object-cover ${game.full ? "w-full object-center" : "w-[78%]"}`} />
           {/* dark from the left and the bottom, so the logo, the name and the button stay readable over the picture */}
-          <span aria-hidden="true" className="pointer-events-none absolute inset-0" style={{ background: `linear-gradient(90deg, ${game.bg} 18%, transparent 62%), linear-gradient(0deg, rgba(0,0,0,.55), transparent 55%)` }} />
+          <span aria-hidden="true" className="pointer-events-none absolute inset-0" style={{ background: game.full ? "linear-gradient(0deg, rgba(0,0,0,.6), transparent 60%)" : `linear-gradient(90deg, ${game.bg} 18%, transparent 62%), linear-gradient(0deg, rgba(0,0,0,.55), transparent 55%)` }} />
           <span className="relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl bg-white/15 shadow-[0_4px_12px_-4px_rgba(0,0,0,.4)]"><GameLogo img={game.img} emoji={game.emoji} /></span>
           <span className="relative mt-3 block text-lg font-black">{game.name}</span>
           {game.href
