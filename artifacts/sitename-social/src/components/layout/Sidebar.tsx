@@ -27,7 +27,9 @@ export function Sidebar() {
   const badges = useNavBadges();
   const admin = useIsAdmin();
   return (
-    <aside className="sticky top-[96px] hidden h-fit w-[220px] shrink-0 lg:block">
+    // The menu card starts at the very top of the page, beside the search row (it is pulled up over the empty left part of the top bar);
+    // when the screen is lower than the menu, the menu scrolls inside itself, so the last items can still be reached.
+    <aside className="sticky top-4 z-50 hidden max-h-[calc(100dvh-32px)] w-[220px] shrink-0 overflow-y-auto rounded-3xl [scrollbar-width:none] lg:-mt-[80px] lg:block [&::-webkit-scrollbar]:hidden">
       <Card className="overflow-hidden rounded-3xl p-2.5">
         {/* On a computer the site logo sits at the top of the menu card (the top bar shows it on phones only). */}
         <Link href="/feed" className="mb-2 flex items-center gap-2.5 px-2.5 pb-2 pt-2">
