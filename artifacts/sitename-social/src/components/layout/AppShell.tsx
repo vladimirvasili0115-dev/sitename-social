@@ -4,7 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { isAuthRoute, isPublicRoute } from "@/lib/auth";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useSettings } from "@/components/settings/useSettings";
-import { Header } from "./Header";
+import { Header, MobileSearch } from "./Header";
 import { Sidebar } from "./Sidebar";
 import { MobileNav } from "./MobileNav";
 import { Footer } from "./Footer";
@@ -60,6 +60,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return <div className="min-h-[100dvh] bg-bg text-text">
     <Header />
+    <MobileSearch />
     <SiteNotice />
     <div className={`mx-auto flex min-h-[calc(100dvh-72px)] max-w-[1160px] items-start gap-6 px-4 pt-6 md:px-6${onFeed ? "" : " pb-24 lg:pb-0"}`}>
       <Sidebar />

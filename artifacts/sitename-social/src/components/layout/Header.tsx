@@ -57,3 +57,23 @@ export function Header() {
     </header>
   );
 }
+
+// Phones / narrow screens: the search box stands under the top bar in its own frame (on a computer it is in the top bar).
+// It is not sticky: it scrolls away with the page, so it does not take space from the screen while reading.
+export function MobileSearch() {
+  const { t } = useTranslation();
+  const router = useRouter();
+  const [query, setQuery] = useState("");
+  function handleSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (query.trim()) router.push(`/search?q=${encodeURIComponent(query.trim())}`);
+  }
+  return (
+    <div className="px-4 pt-3 md:hidden">
+      <form onSubmit={handleSearch} role="search" className="flex h-11 items-center gap-2.5 rounded-2xl border border-border bg-surface px-4 text-muted shadow-sm focus-within:border-accent">
+        <Search size={16} />
+        <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} aria-label={t("header.search")} className="w-full bg-transparent text-sm text-text outline-none placeholder:text-muted" placeholder={t("header.search")} />
+      </form>
+    </div>
+  );
+}
