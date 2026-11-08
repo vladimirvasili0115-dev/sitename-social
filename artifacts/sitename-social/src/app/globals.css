@@ -344,3 +344,8 @@ button { cursor: pointer; }
 @keyframes home-heart { 0% { transform: translateY(0) scale(0.7) rotate(-8deg); opacity: 0; } 15% { opacity: 0.9; } 100% { transform: translateY(-120px) scale(1.15) rotate(10deg); opacity: 0; } }
 @keyframes home-live { 0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.6); } 50% { opacity: 0.6; box-shadow: 0 0 0 5px rgba(52, 211, 153, 0); } }
 @media (prefers-reduced-motion: reduce) { .home-anim { animation: none !important; opacity: 0.7 !important; } }
+
+/* Stories card: the rings of new stories turn slowly, the "add" circle breathes, soft colour glows drift behind. */
+@keyframes story-spin { to { transform: rotate(360deg); } }
+@keyframes story-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(244, 81, 30, 0.55); } 50% { box-shadow: 0 0 0 6px rgba(244, 81, 30, 0); } }
+@keyframes story-glow { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(18px, -8px) scale(1.15); } }
