@@ -23,10 +23,11 @@ export default function FeedPage() {
   const posts = tab === "following" ? feed.filter((post) => post.mine || friends.some((item) => item.user.id === post.author.id)) : feed;
   const tabClass = (active: boolean) => cn("relative px-3 py-3 text-xs", active ? "font-semibold text-accent" : "font-medium text-muted hover:text-text");
   const body = <div className="mx-auto min-w-0 max-w-[620px] flex-1 xl:mx-0">
+    {/* Stories first (right under the search), then the banner and the games. */}
+    <StoriesBar />
     <NeonHome name={user.name ? user.name.split(" ")[0] : ""} />
     {/* On a phone / narrow screen the right-column cards stand here, under the games. */}
     <HomeSideCards className="mb-4 xl:hidden" />
-    <StoriesBar />
     <BirthdayReminder />
     <PostComposer />
     <div className="mb-3 flex items-center gap-1 border-b border-border px-1">
