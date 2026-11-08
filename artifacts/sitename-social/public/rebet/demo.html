@@ -86,7 +86,7 @@ button{font:inherit;color:inherit}
 #sheet{display:contents}
 #sheetHead{display:none}
 .mob #statsBtn{display:block}
-.mob #main{grid-template-columns:minmax(0,1fr)}
+.mob #main{grid-template-columns:minmax(0,1fr);align-items:center}
 .mob #s{height:auto;width:100%}
 .mob #sheet{display:block;position:fixed;left:0;right:0;bottom:0;max-height:78vh;overflow:auto;background:var(--plum);border-top:1.5px solid var(--gold);border-radius:20px 20px 0 0;padding:12px max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));transform:translateY(105%);transition:transform .3s;z-index:90}
 .mob #sheet.on{transform:none}
@@ -113,6 +113,10 @@ html,body{overflow-x:hidden}
 .edit .seat{transition:none}.edit #match{pointer-events:auto}
 #tools{padding:8px max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px))}
 .hd{position:absolute;right:-12px;bottom:-12px;width:26px;height:26px;border-radius:50%;background:var(--pink);border:2px solid #fff;cursor:nwse-resize;pointer-events:auto!important;touch-action:none;z-index:70}
+.site #tools{position:fixed;left:max(10px,env(safe-area-inset-left,0px));bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:95;margin:0;padding:6px;max-width:calc(100% - 20px);justify-content:flex-start;background:#1b0b22e6;border:1px solid var(--line);border-radius:14px}
+.site:not(.edit) #tools{padding:0;background:none;border:0}.site:not(.edit) #editInfo{display:none}
+.site #s{height:min(calc(100vh - 110px),900px)}.site.mob #s{height:auto}
+.site.mob #main{align-items:stretch;align-content:start;grid-template-rows:auto 1fr;gap:12px}.site.mob #pLog{min-height:140px;margin-bottom:46px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
@@ -271,13 +275,13 @@ $("soundBtn").onclick=()=>setSound(!cfg.sound);$("swSound").onclick=()=>setSound
 $("swAnim").onclick=()=>{cfg.anim=!cfg.anim;$("swAnim").classList.toggle("on",cfg.anim);document.body.style.setProperty("--x","")};
 const seg=(id,key)=>$(id).querySelectorAll("button").forEach(b=>b.onclick=()=>{cfg[key]=+b.dataset.v;$(id).querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b))});
 seg("segDur","dur");seg("segOdds","odds");
-$("exitYes").onclick=()=>{$("mExit").classList.remove("on");away=true;clearInterval(timer);$("left-out").classList.add("on");$("status").textContent="";log("Sən masadan çıxdın")};
+$("exitYes").onclick=()=>{if(new URLSearchParams(location.search).has("site")){try{parent.location.href="/games"}catch(e){location.href="/games"}return}$("mExit").classList.remove("on");away=true;clearInterval(timer);$("left-out").classList.add("on");$("status").textContent="";log("Sən masadan çıxdın")};
 $("rejoin").onclick=()=>{away=false;$("left-out").classList.remove("on");log("Sən masaya qayıtdın");newRound()};
 $("statsBtn").onclick=()=>$("sheet").classList.add("on");$("sheetClose").onclick=()=>$("sheet").classList.remove("on");
 // görünüş: PC / telefon. Telefonda hadisələr paneli də aşağı paneldə olur.
 const mq=matchMedia("(max-width:899px)");
 function setView(v){view=v;const narrow=mq.matches;document.documentElement.classList.toggle("mob",v==="tel"||narrow);document.documentElement.classList.toggle("frame",v==="tel"&&!narrow);
-if(v==="tel"||narrow)$("sheet").appendChild($("pLog"));else $("main").appendChild($("pLog"));
+const siteMode=new URLSearchParams(location.search).has("site");if(siteMode&&(v==="tel"||narrow))$("main").appendChild($("pLog"));else if(v==="tel"||narrow)$("sheet").appendChild($("pLog"));else $("main").appendChild($("pLog"));
 $("vPc").classList.toggle("on",v==="pc");$("vTel").classList.toggle("on",v==="tel");$("sheet").classList.remove("on");sel=null;drawSel();apply();info()}
 $("vPc").onclick=()=>setView("pc");$("vTel").onclick=()=>setView("tel");mq.addEventListener("change",()=>setView(view));
 // redaktə rejimi: sürüşdür, küncdən böyüt, yadda saxla, JSON
@@ -313,7 +317,10 @@ $("edCopy").onclick=()=>{const txt=JSON.stringify(merged());$("edJson").value=tx
 navigator.clipboard&&navigator.clipboard.writeText(txt).then(()=>flash("JSON kopyalandı ✓"),()=>flash("Aşağıdakı mətni əl ilə kopyala"))};
 let resetAsk=false;$("edReset").onclick=()=>{if(!resetAsk){resetAsk=true;$("edReset").textContent="Əminsən? Bir də bas";setTimeout(()=>{resetAsk=false;$("edReset").textContent="Sıfırla"},3000);return}
 resetAsk=false;$("edReset").textContent="Sıfırla";layouts[view]=clone(base);apply();info();flash((view==="pc"?"PC":"Telefon")+" yerləşimi sıfırlandı")};
-if(qv){$("vPc").hidden=$("vTel").hidden=true}
+const site=new URLSearchParams(location.search).has("site");
+if(qv||site){$("vPc").hidden=$("vTel").hidden=true}
+if(site)document.documentElement.classList.add("site");
+if(site)mq.addEventListener("change",()=>setView(mq.matches?"tel":"pc"));
 setView(view);render();newRound();
 </script>
 </body></html>
