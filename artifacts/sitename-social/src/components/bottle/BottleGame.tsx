@@ -215,7 +215,7 @@ function hatSpot(name: string): { x: number; y: number; s: number; a: number } {
 // Drinks and other corner gifts stand on the bottom-right edge of the frame: the picture's left edge is 10% inside the frame, its bottom just below it.
 // The visible art is at most CORNER_ART_H% of the photo high and CORNER_ART_W% wide (not the empty picture box), so big pictures stay small on the corner.
 const CORNER_SIZE = 80;
-const CORNER_EXTRA_RIGHT = 8; // all bottom-right corner gifts: 4 mm (8% of the photo width) further right (2 mm, then 2 mm more)
+const CORNER_EXTRA_RIGHT = 12; // all bottom-right corner gifts: 6 mm (12% of the photo width) further right (2 mm three times)
 const CORNER_SHIFT_LEFT = 7; // gifts on the bottom-right corner (hearts, drinks, balloons...) hang over the frame: they sit 3.5 mm (7% of the photo width) further left, in flight and when landed
 const CAT_SHIFT_LEFT = 12; // the cat in the dress sits about 6 mm (12% of the photo width) further left (3 mm, then 3 mm more)
 const CORNER_ART_H = 38;
