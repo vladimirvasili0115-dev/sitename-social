@@ -15,13 +15,14 @@ const words = {
 } as const;
 
 // Games with their own logo open their page; the others say "coming soon" and cannot be opened yet.
-const games: { name: string; href?: string; img?: string; emoji: string; bg: string }[] = [
-  { name: "Butulka", href: "/bottle", img: "/games/bottle.png", emoji: "🍾", bg: "linear-gradient(135deg,#f0643c,#c0265f)" },
-  { name: "Mafiya", href: "/mafia", img: "/games/mafia.png", emoji: "🕴️", bg: "linear-gradient(135deg,#8b5cf6,#4c1d95)" },
+// photo: the scene behind the card (made in Canva to match each logo), on the right side; the colour shows while it loads.
+const games: { name: string; href?: string; img?: string; emoji: string; bg: string; photo: string }[] = [
+  { name: "Butulka", href: "/bottle", img: "/games/bottle.png", emoji: "🍾", bg: "#3a2416", photo: "/games/card-butulka.jpg" },
+  { name: "Mafiya", href: "/mafia", img: "/games/mafia.png", emoji: "🕴️", bg: "#1d1233", photo: "/games/card-mafia.jpg" },
   // New file name: the old address was cached (Cloudflare, 4 h) as a page before the file existed.
-  { name: "Domino", href: "/domino", img: "/games/domino-ravetill-v2.png", emoji: "🁫", bg: "linear-gradient(135deg,#14b8a6,#155e75)" },
-  { name: "Nərd", emoji: "🎲", bg: "linear-gradient(135deg,#0e7490,#164e63)" },
-  { name: "Loto", emoji: "🎱", bg: "linear-gradient(135deg,#ea8a2a,#b45309)" },
+  { name: "Domino", href: "/domino", img: "/games/domino-ravetill-v2.png", emoji: "🁫", bg: "#0d1730", photo: "/games/card-domino.jpg" },
+  { name: "Nərd", emoji: "🎲", bg: "#241710", photo: "/games/card-nard.jpg" },
+  { name: "Loto", emoji: "🎱", bg: "#0b1f24", photo: "/games/card-loto.jpg" },
 ];
 
 // Game logo with the emoji as a fallback, so a missing or stale picture never shows a broken image.
@@ -87,14 +88,16 @@ export function NeonHome({ name }: { name: string }) {
     <div className="mb-4 grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3">
       {games.map((game) => {
         const inner = <>
-          <span aria-hidden="true" className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/10" />
-          <span className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl bg-white/15 shadow-[0_4px_12px_-4px_rgba(0,0,0,.4)]"><GameLogo img={game.img} emoji={game.emoji} /></span>
+          <img src={game.photo} alt="" aria-hidden="true" loading="lazy" className="pointer-events-none absolute inset-y-0 right-0 h-full w-[78%] object-cover" />
+          {/* dark from the left and the bottom, so the logo, the name and the button stay readable over the picture */}
+          <span aria-hidden="true" className="pointer-events-none absolute inset-0" style={{ background: `linear-gradient(90deg, ${game.bg} 18%, transparent 62%), linear-gradient(0deg, rgba(0,0,0,.55), transparent 55%)` }} />
+          <span className="relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl bg-white/15 shadow-[0_4px_12px_-4px_rgba(0,0,0,.4)]"><GameLogo img={game.img} emoji={game.emoji} /></span>
           <span className="relative mt-3 block text-lg font-black">{game.name}</span>
           {game.href
             ? <span className="relative mt-2 inline-flex items-center rounded-lg border border-white/50 bg-white/15 px-3 py-1 text-xs font-bold">{w.go} ↗</span>
             : <span className="relative mt-2 inline-flex items-center rounded-lg bg-black/25 px-3 py-1 text-xs font-bold">⏳ {w.soon}</span>}
         </>;
-        const cls = "relative overflow-hidden rounded-2xl p-3.5 text-white shadow-[0_10px_24px_-14px_rgba(0,0,0,.6)] sm:p-4";
+        const cls = "relative min-h-[150px] overflow-hidden rounded-2xl border border-white/10 p-3.5 text-white shadow-[0_10px_24px_-14px_rgba(0,0,0,.6)] sm:p-4";
         return game.href
           ? <Link key={game.name} href={game.href} className={`${cls} transition-transform hover:-translate-y-0.5 hover:brightness-110`} style={{ background: game.bg }}>{inner}</Link>
           : <div key={game.name} aria-disabled="true" className={`${cls} opacity-75 saturate-[.7]`} style={{ background: game.bg }}>{inner}</div>;
