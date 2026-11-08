@@ -215,6 +215,7 @@ function hatSpot(name: string): { x: number; y: number; s: number; a: number } {
 // Drinks and other corner gifts stand on the bottom-right edge of the frame: the picture's left edge is 10% inside the frame, its bottom just below it.
 // The visible art is at most CORNER_ART_H% of the photo high and CORNER_ART_W% wide (not the empty picture box), so big pictures stay small on the corner.
 const CORNER_SIZE = 80;
+const CORNER_EXTRA_RIGHT = 4; // all bottom-right corner gifts: 2 mm (4% of the photo width) further right
 const CORNER_SHIFT_LEFT = 7; // gifts on the bottom-right corner (hearts, drinks, balloons...) hang over the frame: they sit 3.5 mm (7% of the photo width) further left, in flight and when landed
 const CAT_SHIFT_LEFT = 12; // the cat in the dress sits about 6 mm (12% of the photo width) further left (3 mm, then 3 mm more)
 const CORNER_ART_H = 38;
@@ -304,6 +305,9 @@ function planLanding(gift: string, seed: number = Math.random() * 1e9) {
     if (name !== "catdress") spot = { ...spot, x: spot.x - (flushed ? 0 : CORNER_SHIFT_LEFT) - (/^(makarov|revolver)$/.test(name) ? 4 : 0) + (HEART_TRIO.test(name) ? HEART_SHIFT_RIGHT : 0) + (name === "surprizebox" ? SURPRISE_SHIFT_RIGHT : name === "teddybear" || name === "beer" ? 6 : 0) }; // the teddy bear stands 3 mm (6%) further right (the flight reads this same spot) // the pistol: another 2 mm (4%) to the left // flightTo reads this same spot, so the flight ends exactly where the gift stays
     }
   }
+  // Every gift on the bottom-right corner sits CORNER_EXTRA_RIGHT further right (same size, same height); the flight reads this same spot.
+  // Not the hats, the gifts anywhere on the photo, the left corner or the rooster that covers the whole photo.
+  if (spot && (spot.kind === "corner" || spot.kind === "balloon") && spot.x + spot.s / 2 >= 45 && land !== "e:🐓") spot = { ...spot, x: spot.x + CORNER_EXTRA_RIGHT };
   return { land, spot, scatter };
 }
 // While flying, a family gift changes colour through its members.
