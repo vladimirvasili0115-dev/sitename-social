@@ -3525,7 +3525,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         ) : null}
 
         {waitNote && !myTurn && !staged ? <p role="status" className="pointer-events-none absolute z-30 -translate-x-1/2 whitespace-nowrap rounded-full bg-black/75 px-[2.4cqmin] py-[0.8cqmin] text-[2.6cqmin] font-bold text-white" style={{ left: `${CENTER_X}%`, top: `calc(${STAGE_Y}% + 17cqmin)` }}>{t("bottle.waitTurn")}</p> : null}
-        {phase === "waiting" && !myTurn ? <p className="pointer-events-none absolute w-[40cqmin] -translate-x-1/2 -translate-y-1/2 text-center text-[3.4cqmin] font-bold leading-tight text-white [text-shadow:0_2px_6px_rgba(0,0,0,0.85)]" style={{ left: `${CENTER_X}%`, top: `${STAGE_Y}%` }}>{t(enoughGirls ? "bottle.waitingSpin" : net?.room ? "bottle.needPair" : "bottle.needGirls")}</p> : null}
+        {phase === "waiting" && !myTurn ? <p className="pointer-events-none absolute w-[40cqmin] -translate-x-1/2 -translate-y-1/2 text-center text-[3.4cqmin] font-bold leading-tight text-white [text-shadow:0_2px_6px_rgba(0,0,0,0.85)]" style={{ left: `${CENTER_X}%`, top: `${STAGE_Y}%` }}>{t(enoughGirls ? "bottle.waitingSpin" : net?.room ? "bottle.needPair" : "bottle.waitingSpin") /* "2 girls needed" is not shown any more (the rule itself stays) */}</p> : null}
 
         {players.map((player, index) => {
           if (player.empty) return null;
