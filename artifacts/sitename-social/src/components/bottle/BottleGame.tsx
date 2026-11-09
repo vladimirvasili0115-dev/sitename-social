@@ -26,8 +26,9 @@ import { NAME_COLORS, nameColorClass, refreshNameColors, useNameColors } from ".
 import { flashRefusal } from "@/lib/flash";
 import { startCall } from "@/lib/callSync";
 import { clock as callClock, parseCallLog } from "@/lib/callLog";
-import { SeatGiftCanvas, type SeatGiftData } from "./SeatGiftCanvas";
+import type { SeatGiftData } from "./SeatGiftCanvas";
 import { FlightCanvas, type CanvasFlight, type FlightGeometry } from "./FlightCanvas";
+import { PixiLayer, type PixiFx } from "./PixiLayer";
 import { FIRST_ORIGINAL, FRAME_PRICE, FrameArt, ORIGINAL_FRAMES, frameLooks, frameStone } from "./FrameArt";
 import { PassPanel, type PassData } from "./PassPanel";
 import { OnceImg } from "./OnceImg";
@@ -1917,8 +1918,10 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     const emoji = giftEmoji[id] ? giftEmoji[id] : id.startsWith("e:") ? id.slice(2) : null;
     return emoji ? giftSrc(emoji) : null;
   };
-  // Gifts lying on the photos sit on the photos as before (the old table). The canvas layer is switched off for good.
-  const [canvasSeats] = useState(false);
+  // PixiJS test (owner and moderators only): flying gifts, the gifts on the photos and the fireworks / heart bursts are painted by ONE WebGL layer.
+  // Everybody else keeps the old table (DOM gifts on the photos, FlightCanvas, DOM effects).
+  const pixiOn = iAmAdmin;
+  const canvasSeats = pixiOn;
   // Test switch: open the game as /bottle/?nochat=1 to run it without the chat list (to see how much the chat costs).
   const [noChat, setNoChat] = useState(false);
   useEffect(() => { try { setNoChat(new URLSearchParams(window.location.search).get("nochat") === "1"); } catch { /* no query */ } }, []);
@@ -1975,6 +1978,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const canvasLast = useRef<unknown[]>([]);
   const canvasFlights = useRef<CanvasFlight[]>([]);
   const flightGeometry = useRef<FlightGeometry>({ seats: [], cx: 50, cy: 50, staged: false, turn: null, target: null });
+  // What the Pixi layer needs for the fireworks and heart bursts (read on every frame).
+  const pixiFx = useRef<PixiFx>({ shows: [], bursts: [], seats: [] });
   function chooseSkin(n: number) {
     if (!online && n !== skin) say({ from: "me", bottle: { a: skin, b: n } });
     setSkin(n);
@@ -2673,6 +2678,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const seatXq = (index: number) => (staged && (index === turn || index === target) ? `(${CENTER_X}cqw ${index === turn ? "-" : "+"} 12.5cqmin)` : `${seats[index][0]}cqw`);
   const seatYq = (index: number) => (staged && (index === turn || index === target) ? `${STAGE_Y}cqh` : `${seats[index][1]}cqh`);
   flightGeometry.current = { seats, cx: CENTER_X, cy: STAGE_Y, staged, turn, target };
+  pixiFx.current = { shows, bursts, seats };
   if (canvasSeats) {
     const last = canvasLast.current;
     if (last[0] !== piles || last[1] !== spots || last[2] !== staged || last[3] !== turn || last[4] !== target || last[5] !== wide) { canvasLast.current = [piles, spots, staged, turn, target, wide]; canvasCount.current += 1; }
@@ -3506,12 +3512,11 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           );
         })}
 
-        {bursts.map((item) => <HeartBurst key={item.key} at={seats[item.to]} amount={item.amount} />)}
-        {shows.map((item) => <Fireworks key={`fw-${item.key}`} at={seats[item.to]} level={item.level} seed={item.key} />)}
+        {pixiOn ? null : bursts.map((item) => <HeartBurst key={item.key} at={seats[item.to]} amount={item.amount} />)}
+        {pixiOn ? null : shows.map((item) => <Fireworks key={`fw-${item.key}`} at={seats[item.to]} level={item.level} seed={item.key} />)}
         {tableVfx ? <TableShower key={tableVfx.key} emoji={tableVfx.emoji} seed={tableVfx.key % 1000} /> : null}
         {boostFx ? <BoostFx key={boostFx.key} kind={boostFx.kind} fromLeft={boostFx.fromLeft} x={CENTER_X} y={STAGE_Y} /> : null}
-        {canvasSeats ? <SeatGiftCanvas data={seatGiftData} /> : null}
-        <FlightCanvas flights={canvasFlights} geometry={flightGeometry} />
+        {pixiOn ? <PixiLayer flights={canvasFlights} geometry={flightGeometry} seatData={seatGiftData} fx={pixiFx} /> : <FlightCanvas flights={canvasFlights} geometry={flightGeometry} />}
         {flying.filter((item) => !flightUrl(WHOLE_FLIGHT.has(item.gift) ? item.gift : item.look ?? item.gift)).map((item) => <div key={item.key} className="pointer-events-none absolute z-40 -translate-x-1/2 -translate-y-1/2" style={{ width: `${item.base}cqmin`, height: `${item.base}cqmin`, left: seatLeft(item.from), top: seatTop(item.from) }}><span className="block h-full w-full" style={{ /* moved with transform only (GPU): smooth like butter, no layout work while flying */ transform: item.moved ? `translate(calc(${seatXq(item.to)} - ${seatXq(item.from)} + ${item.tx}cqmin), calc(${seatYq(item.to)} - ${seatYq(item.from)} + ${item.ty}cqmin))` : "translate(0, 0)", transition: `transform ${item.ms}ms cubic-bezier(0.3, 0.6, 0.7, 0.9)` }}><span className="block h-full w-full" style={{ animation: `gift-fly-to ${item.ms}ms ease-in-out both`, ["--end" as string]: item.end }}><span className="block h-full w-full" style={SPIN_FLIGHT.test(item.gift) ? { animation: `gift-turn ${item.ms}ms linear both` } : { transform: `rotate(${item.moved ? item.rot ?? 0 : 0}deg)`, transition: `transform ${item.ms}ms cubic-bezier(0.3, 0.6, 0.7, 0.9)` }}>{/* one look the whole way: the flower/colour that will land, no colour changes in flight */}<Gift anim={!item.still} id={WHOLE_FLIGHT.has(item.gift) ? item.gift : item.look ?? item.gift} className="h-full w-full" /></span></span></span></div>)}
 
         {staged && target !== null ? (
