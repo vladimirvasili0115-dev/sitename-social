@@ -102,7 +102,6 @@ export function PixiLayer({ flights, geometry, seatData, fx }: {
 
       const flightSprites = new Map<number, import("pixi.js").Sprite>();
       const seatSprites = new Map<string, import("pixi.js").Sprite>();
-      const shown = new Map<string, { x: number; y: number; fx: number; fy: number; tx: number; ty: number; t0: number }>();
       type Show = { t0: number; g: import("pixi.js").Graphics; end: number };
       type Burst = { t0: number; c: import("pixi.js").Container; hearts: import("pixi.js").Sprite[]; plus: import("pixi.js").Container };
       const shows = new Map<number, Show>();
@@ -120,22 +119,55 @@ export function PixiLayer({ flights, geometry, seatData, fx }: {
         for (const [key, s] of map) if (!seen.has(key)) { s.destroy(); map.delete(key); }
       };
 
+      // Where each photo REALLY is on the screen right now (its centre and side, in px of this layer).
+      // The photos move with CSS (to the middle for the kiss and back, the wobble while spinning); reading their box every
+      // frame keeps the gifts glued to the frame: they never lag behind or run ahead, whatever the curve or the frame rate.
+      const seatEls = new Map<string, HTMLElement>();
+      const seatBox = new Map<string, { x: number; y: number; side: number }>();
+      let measuredAt = -1, seatsMoving = false;
+      const measure = (now: number) => {
+        if (measuredAt === now) return;
+        measuredAt = now;
+        seatsMoving = false;
+        const root = node.parentElement;
+        if (!root) return;
+        const base = node.getBoundingClientRect();
+        const ids = seatData.current.ids;
+        for (const id of ids) {
+          let el = seatEls.get(id);
+          if (!el || !el.isConnected) {
+            el = root.querySelector<HTMLElement>(`[data-seat="${CSS.escape(id)}"]`) ?? undefined;
+            if (el) seatEls.set(id, el); else { seatEls.delete(id); seatBox.delete(id); continue; }
+          }
+          const r = el.getBoundingClientRect();
+          const next = { x: r.left + r.width / 2 - base.left, y: r.top + r.height / 2 - base.top, side: r.width };
+          const prev = seatBox.get(id);
+          if (!prev || Math.abs(prev.x - next.x) > 0.2 || Math.abs(prev.y - next.y) > 0.2 || Math.abs(prev.side - next.side) > 0.2) seatsMoving = true;
+          seatBox.set(id, next);
+        }
+        for (const id of [...seatBox.keys()]) if (!ids.includes(id)) { seatBox.delete(id); seatEls.delete(id); }
+      };
+      // Fallback (photo not in the page yet): the position worked out from the seat numbers, as before.
+      const seatAt = (index: number, unit: number) => {
+        const id = seatData.current.ids[index];
+        const box = id ? seatBox.get(id) : undefined;
+        if (box) return [box.x, box.y] as const;
+        const g = geometry.current;
+        if (g.staged && (index === g.turn || index === g.target)) return [(g.cx / 100) * w + (index === g.turn ? -12.5 : 12.5) * unit, (g.cy / 100) * h] as const;
+        const seat = g.seats[index] ?? [50, 50];
+        return [(seat[0] / 100) * w, (seat[1] / 100) * h] as const;
+      };
+
       const drawFlights = (now: number, unit: number) => {
         const list = flights.current;
-        const g = geometry.current;
-        const seatAt = (index: number) => {
-          if (g.staged && (index === g.turn || index === g.target)) return [(g.cx / 100) * w + (index === g.turn ? -12.5 : 12.5) * unit, (g.cy / 100) * h] as const;
-          const seat = g.seats[index] ?? [50, 50];
-          return [(seat[0] / 100) * w, (seat[1] / 100) * h] as const;
-        };
         const seen = new Set<number>();
         for (const item of list) {
           const tex = texture(item.url);
           if (!tex) continue;
           const raw = clamp01((now - item.t0) / item.ms);
           const p = flightEase(raw);
-          const [sx, sy] = seatAt(item.from);
-          const [rx, ry] = seatAt(item.to);
+          const [sx, sy] = seatAt(item.from, unit);
+          const [rx, ry] = seatAt(item.to, unit);
           const ex = rx + item.tx * unit, ey = ry + item.ty * unit;
           const size = item.base * unit * scaleAt(raw, item.end);
           const ratio = tex.width / tex.height;
@@ -160,21 +192,7 @@ export function PixiLayer({ flights, geometry, seatData, fx }: {
         for (const id of d.ids) if (d.piles[id]?.length || d.spots[id]?.length) { any = true; break; }
         if (!any) { if (drewSeats) { sweep(seatSprites as Map<string | number, import("pixi.js").Sprite>, new Set()); drewSeats = false; return true; } return false; }
         const young = (at: number, ms: number) => wall - at < ms;
-        let animating = now < busyUntil || force;
-        // Where each photo is now. A photo that moved (to the middle for the kiss, or back to its seat) starts its own
-        // 1.1 s move here, before any early return, so the gifts always follow it even if frames were skipped meanwhile.
-        // A player with no gifts is forgotten, so their next gift appears on the photo where it is (not where it was before).
-        d.ids.forEach((id, index) => {
-          if (!d.piles[id]?.length && !d.spots[id]?.length) { shown.delete(id); return; }
-          let tx: number, ty: number;
-          if (d.staged && (index === d.turn || index === d.target)) { tx = (d.cx / 100) * w + (index === d.turn ? -12.5 : 12.5) * unit; ty = (d.cy / 100) * h; }
-          else { const seat = d.seats[index] ?? [50, 50]; tx = (seat[0] / 100) * w; ty = (seat[1] / 100) * h; }
-          let cur = shown.get(id);
-          if (!cur) { cur = { x: tx, y: ty, fx: tx, fy: ty, tx, ty, t0: now - 2000 }; shown.set(id, cur); }
-          if (Math.abs(cur.tx - tx) > 0.5 || Math.abs(cur.ty - ty) > 0.5) { cur.fx = cur.x; cur.fy = cur.y; cur.tx = tx; cur.ty = ty; cur.t0 = now; }
-          if (now - cur.t0 < 1150 || Math.abs(cur.x - tx) > 0.5 || Math.abs(cur.y - ty) > 0.5) animating = true;
-        });
-        for (const id of [...shown.keys()]) if (!d.ids.includes(id)) shown.delete(id);
+        let animating = now < busyUntil || force || seatsMoving;
         if (!animating) {
           for (const id of d.ids) {
             for (const p of d.piles[id] ?? []) if (young(p.at, 400) || wall - p.at > d.pileMs - 3200) { animating = true; break; }
@@ -185,23 +203,16 @@ export function PixiLayer({ flights, geometry, seatData, fx }: {
         }
         if (!animating && drewSeats) return false;
         drewSeats = true;
-        const side = d.box * unit;
         const seen = new Set<string>();
         let z = 0;
         d.ids.forEach((id, index) => {
           const piles = d.piles[id] ?? [], spots = d.spots[id] ?? [];
           if (!piles.length && !spots.length) return;
-          let tx: number, ty: number;
-          if (d.staged && (index === d.turn || index === d.target)) { tx = (d.cx / 100) * w + (index === d.turn ? -12.5 : 12.5) * unit; ty = (d.cy / 100) * h; }
-          else { const seat = d.seats[index] ?? [50, 50]; tx = (seat[0] / 100) * w; ty = (seat[1] / 100) * h; }
-          let cur = shown.get(id);
-          if (!cur) { cur = { x: tx, y: ty, fx: tx, fy: ty, tx, ty, t0: now - 2000 }; shown.set(id, cur); }
-          if (Math.abs(cur.tx - tx) > 0.5 || Math.abs(cur.ty - ty) > 0.5) { cur.fx = cur.x; cur.fy = cur.y; cur.tx = tx; cur.ty = ty; cur.t0 = now; }
-          const k = Math.min(1, (now - cur.t0) / 1100);
-          const e = inOut(k);
-          cur.x = cur.fx + (cur.tx - cur.fx) * e; cur.y = cur.fy + (cur.ty - cur.fy) * e;
-          if (k < 1) busyUntil = Math.max(busyUntil, now + 50);
-          const left = cur.x - side / 2, top = cur.y - side / 2;
+          // The photo box as it is on the screen this very frame (fallback: worked out from the seat numbers).
+          const box = seatBox.get(id);
+          const [cx, cy] = box ? [box.x, box.y] : seatAt(index, unit);
+          const side = box ? box.side : d.box * unit;
+          const left = cx - side / 2, top = cy - side / 2;
           const put = (key: string, gift: string, x: number, y: number, size: number, rot: number, alpha: number, scale: number, corner: "l" | "r" | null) => {
             const url = d.url(gift);
             if (!url) return;
@@ -342,6 +353,9 @@ export function PixiLayer({ flights, geometry, seatData, fx }: {
         const now = performance.now();
         const unit = Math.min(w, h) / 100;
         const force = resized || now < dirtyUntil;
+        // Read the photo boxes only while there is something to place on them (gifts on photos or in the air).
+        const sd = seatData.current;
+        if (flights.current.length || sd.ids.some((id) => sd.piles[id]?.length || sd.spots[id]?.length)) measure(now);
         const flying = drawFlights(now, unit);
         const seatsMoved = drawSeats(now, unit, force);
         const effects = drawFx(now, unit);
