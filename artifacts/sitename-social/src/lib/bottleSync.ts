@@ -36,6 +36,8 @@ export const bottleTableGifts = (upto: number) => call<BottleSeatGift[]>("bottle
 export const bottleSync = (after: number) => call<BottleState>("bottle_sync", { p_after: after });
 export const bottleSpin = () => call<boolean>("bottle_spin");
 export const bottleAnswer = (kiss: boolean) => call<null>("bottle_answer", { p_kiss: kiss });
+// A player of the running round (spinner or chosen) came back after a page reload: the round ends and the turn moves on (paket-ID).
+export const bottleRoundReset = () => call<boolean>("bottle_round_reset");
 // A line in the table chat. A refused line (for example one with a website address) shows the short notice at the bottom.
 export async function bottleSay(text: string): Promise<null> {
   if (!supabase) return null;

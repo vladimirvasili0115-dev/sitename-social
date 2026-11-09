@@ -44,7 +44,7 @@ import { useSettings } from "@/components/settings/useSettings";
 import { ensureMessagesLoaded, openRemoteChat, remoteChats, sendRemoteMessage } from "@/lib/messagesSync";
 import { uploadBlob } from "@/lib/media";
 import { refreshGifts } from "@/lib/giftsSync";
-import { bottleSeek, bottleLogIp, bottleAdminIpLookup, type BottleIpRow, bottleAnswer, bottleAchSync, bottleAchView, bottleGesture, bottleSmiles, bottleBuyHearts, bottleGiftAllow, bottleBuySmiles, bottleProgress, bottleGesturesOpen, bottleSkin, bottleBadges, bottleGetAccept, bottleSetAccept, bottleBuyChances, bottleJoin, bottleMove, bottleMoveWaitStart, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleProfile, type BottleProfile, bottleDaily, bottleItems, bottleItemBuy, bottleBooster, bottleTutorial, bottleAdminIds, type BottleItems, bottleLeagueInfo, bottleLeagueClaim, type BottleLeague, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleKickPrice, bottleKickDefendPrice, bottlePlusCreate, bottlePlusPass, bottlePlusNumColor, bottlePlusNameColor, bottlePlusMute, bottleUnmuteSelf, bottleGift, bottleGiftMany, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, bottleClaim, type BottleState, type BottleSeat, bottleEffectOf, bottleYtGet, bottleYtPut, bottleTableGifts, type BottleSeatGift } from "@/lib/bottleSync";
+import { bottleSeek, bottleLogIp, bottleAdminIpLookup, type BottleIpRow, bottleAnswer, bottleRoundReset, bottleAchSync, bottleAchView, bottleGesture, bottleSmiles, bottleBuyHearts, bottleGiftAllow, bottleBuySmiles, bottleProgress, bottleGesturesOpen, bottleSkin, bottleBadges, bottleGetAccept, bottleSetAccept, bottleBuyChances, bottleJoin, bottleMove, bottleMoveWaitStart, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleProfile, type BottleProfile, bottleDaily, bottleItems, bottleItemBuy, bottleBooster, bottleTutorial, bottleAdminIds, type BottleItems, bottleLeagueInfo, bottleLeagueClaim, type BottleLeague, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleKickPrice, bottleKickDefendPrice, bottlePlusCreate, bottlePlusPass, bottlePlusNumColor, bottlePlusNameColor, bottlePlusMute, bottleUnmuteSelf, bottleGift, bottleGiftMany, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, bottleClaim, type BottleState, type BottleSeat, bottleEffectOf, bottleYtGet, bottleYtPut, bottleTableGifts, type BottleSeatGift } from "@/lib/bottleSync";
 import { ytHint, ytReason } from "./ytHints";
 import { WeeklyPanel, WeekPrizePopup } from "./WeeklyTop";
 import { BonusMarket, EnigmaEffect, arrivalLabel, marketLabel } from "./BonusMarket";
@@ -1246,7 +1246,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       return () => window.clearTimeout(timer);
     }
     if (phase === "kissed" || phase === "declined") {
-      const timer = window.setTimeout(nextTurn, 2600);
+      const timer = window.setTimeout(nextTurn, 1500); // the result shows 1.5 s (like the server, paket-ID)
       return () => window.clearTimeout(timer);
     }
   }, [phase, turn, spin, nextTurn, enoughGirls]);
@@ -1369,6 +1369,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         // Coming (back) into a room — first load, another table, a re-join or a long pause — starts clean:
         // gifts sent before you came in do not fly in and do not sit on the photos.
         const entered = !primed.current || syncTable.current !== data.table;
+        // Back after a page reload while I was one of the pair of a running round (spinning or choosing): the round ends,
+        // the other player goes back to their seat and the turn moves on, instead of everybody waiting for the timer.
+        if (!primed.current && (data.phase === "spinning" || data.phase === "choice") && (data.turn === data.me || data.target === data.me)) void bottleRoundReset().then(() => pullRef.current());
         // Coming into the game or into another table: the 8-second wait before the next table change starts (unless it is already running).
         if (entered && !iAmAdmin && Date.now() >= moveUntil.current) void bottleMoveWaitStart().then((left) => { if (typeof left === "number" && left > 0 && Date.now() >= moveUntil.current) startMoveWait(Math.min(8, left)); });
         const first = entered || rejoined || Date.now() - lastPullAt.current > 15000;
