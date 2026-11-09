@@ -63,7 +63,8 @@ const FW_COLORS = ["#FFD84D", "#FF5A7A", "#5BD1FF", "#9BFF6B", "#C38BFF", "#FF9F
 const hex = (c: string) => parseInt(c.slice(1), 16);
 const HEART_SPREAD: [number, number][] = [[-7, -8], [7, -8], [-10, -1], [10, -1], [-4, -12], [4, -12]];
 
-export function PixiLayer({ flights, geometry, seatData, fx }: {
+export function PixiLayer({ flights, geometry, seatData, fx, onFail }: {
+  onFail?: () => void;
   flights: MutableRefObject<CanvasFlight[]>;
   geometry: MutableRefObject<FlightGeometry>;
   seatData: MutableRefObject<SeatGiftData>;
@@ -74,7 +75,8 @@ export function PixiLayer({ flights, geometry, seatData, fx }: {
     let dead = false;
     let stop = () => {};
     void (async () => {
-      const PIXI = await import("pixi.js");
+      let PIXI: typeof import("pixi.js");
+      try { PIXI = await import("pixi.js"); } catch (error) { console.error("[pixi] load failed", error); if (!dead) onFail?.(); return; }
       const node = host.current;
       if (dead || !node) return;
       const app = new PIXI.Application();
@@ -82,6 +84,7 @@ export function PixiLayer({ flights, geometry, seatData, fx }: {
         await app.init({ backgroundAlpha: 0, antialias: true, autoStart: false, autoDensity: true, resolution: Math.min(2, window.devicePixelRatio || 1), resizeTo: node, preference: "webgl", powerPreference: "low-power" });
       } catch (error) {
         console.error("[pixi] init failed", error);
+        if (!dead) onFail?.(); // no WebGL here: the game goes back to the old drawing
         return;
       }
       if (dead) { app.destroy(true, { children: true }); return; }

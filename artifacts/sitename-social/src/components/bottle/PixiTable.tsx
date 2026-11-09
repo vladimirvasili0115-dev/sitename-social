@@ -7,7 +7,7 @@ import { useEffect, useRef } from "react";
 // and the players' photos. The photos are read from the page: every seat button has <img data-photo>, which is kept (transparent)
 // for the layout, the clicks, the arrival animation and everything drawn on top (frames, kiss lips, names, rings, gestures).
 // Each frame the layer reads where each photo really is, so a photo moving to the middle for the kiss and back stays exact.
-export function PixiTable({ wood }: { wood: string | null }) {
+export function PixiTable({ wood, onFail }: { wood: string | null; onFail?: () => void }) {
   const host = useRef<HTMLDivElement>(null);
   const woodRef = useRef(wood);
   woodRef.current = wood;
@@ -15,7 +15,8 @@ export function PixiTable({ wood }: { wood: string | null }) {
     let dead = false;
     let stop = () => {};
     void (async () => {
-      const PIXI = await import("pixi.js");
+      let PIXI: typeof import("pixi.js");
+      try { PIXI = await import("pixi.js"); } catch (error) { console.error("[pixi-table] load failed", error); if (!dead) onFail?.(); return; }
       const node = host.current;
       if (dead || !node) return;
       const app = new PIXI.Application();
@@ -23,6 +24,7 @@ export function PixiTable({ wood }: { wood: string | null }) {
         await app.init({ backgroundAlpha: 0, antialias: true, autoStart: false, autoDensity: true, resolution: Math.min(2, window.devicePixelRatio || 1), resizeTo: node, preference: "webgl", powerPreference: "low-power" });
       } catch (error) {
         console.error("[pixi-table] init failed", error);
+        if (!dead) onFail?.(); // no WebGL here: the game goes back to the old drawing
         return;
       }
       if (dead) { app.destroy(true, { children: true }); return; }

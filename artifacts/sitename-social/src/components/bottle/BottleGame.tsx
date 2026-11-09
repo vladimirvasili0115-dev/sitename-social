@@ -1704,7 +1704,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // The pair in the middle: the spinner used to go always to the left and the chosen one to the right, so their paths could cross.
   // Test (owner, moderators): each goes to the side of the bottle they sit on — the one sitting more to the left stands left.
   const leftOne = (() => {
-    if (!staged || target === null || !iAmAdmin) return turn;
+    if (!staged || target === null) return turn;
     const tx = layouts[wide ? "wide" : "tall"].seats[turn]?.[0] ?? 0, gx = layouts[wide ? "wide" : "tall"].seats[target]?.[0] ?? 0;
     return gx < tx ? target : turn;
   })();
@@ -1976,10 +1976,13 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   };
   // PixiJS test (owner and moderators only): flying gifts, the gifts on the photos and the fireworks / heart bursts are painted by ONE WebGL layer.
   // Everybody else keeps the old table (DOM gifts on the photos, FlightCanvas, DOM effects).
-  const pixiOn = iAmAdmin;
+  // Pixi (WebGL) for everybody now. If a phone cannot start it (no WebGL), the game falls back to the old drawing by itself.
+  const [pixiFailed, setPixiFailed] = useState(false);
+  const pixiOn = !pixiFailed;
+  const pixiFail = useCallback(() => setPixiFailed(true), []);
   // Test (owner and moderators): names as in our own earlier look (white, normal weight 400, 2.1 cqmin, soft shadow) and
   // no thick white ring on the player whose turn it is. The photos keep their size (17.5 / 18.5 cqmin). Everybody else keeps the current look.
-  const oldLook = iAmAdmin;
+  const oldLook = true; // the tested look (plain names, no white ring, no arrival effects, no slide) is now for everybody
   const seatSize = wide ? 18.5 : 17.5;
   // Test (owner, moderators): a player who changes seat jumps to the new place (no 1.1 s slide across the table).
   // The slide to the middle for the kiss and back stays. lastSeat holds each player's seat number as last drawn.
@@ -3465,7 +3468,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       <div className={cn("relative shrink-0 overflow-hidden [container-type:size]", wide ? "h-full w-full bg-[#E0A04E]" : "aspect-[9/10] w-full")} onClick={() => { setPicked(null); if (dedicate) chooseMode(false); }}>
         {wide && !pixiOn ? <WoodTable src={woodSrc} className="pointer-events-none absolute inset-0 h-full w-full" /> : null}
         {/* Pixi test (owner and moderators): the wood (wide table) and the photos are painted by a WebGL layer under the seats. */}
-        {pixiOn ? <PixiTable wood={wide ? woodSrc ?? "/bottle/table2.jpg" : null} /> : null}
+        {pixiOn ? <PixiTable wood={wide ? woodSrc ?? "/bottle/table2.jpg" : null} onFail={pixiFail} /> : null}
         <div className={cn("absolute flex items-center", menuOpen ? "z-[44]" : "z-10", wide ? "inset-y-0 left-0 w-[13%] flex-col gap-[2.2cqmin] py-[2.2cqmin]" : "inset-x-0 top-0 h-[10%] gap-[1.3cqmin] px-[2cqmin]")} onClick={(event) => event.stopPropagation()}>
           <button ref={balanceRef} key={balancePulse} type="button" onClick={() => { setPayNote(false); setPanel("shop"); }} aria-label={`${t("bottle.shop")}: ${hearts}`} className={cn("flex items-center text-white hover:brightness-110", balancePulse > 0 && "motion-safe:animate-[balance-pulse_0.45s_ease-out]", wide ? "flex-col" : "gap-1.5")} title={t("bottle.shop")}>
             {/* The original balance button: an orange heart with a white rim (bottle-html5 btn_gold_add_heart_up). */}
@@ -3599,7 +3602,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         {pixiOn ? null : shows.map((item) => <Fireworks key={`fw-${item.key}`} at={seats[item.to]} level={item.level} seed={item.key} />)}
         {tableVfx && !pixiOn ? <TableShower key={tableVfx.key} emoji={tableVfx.emoji} seed={tableVfx.key % 1000} /> : null}
         {boostFx && !pixiOn ? <BoostFx key={boostFx.key} kind={boostFx.kind} fromLeft={boostFx.fromLeft} x={CENTER_X} y={STAGE_Y} /> : null}
-        {pixiOn ? <PixiLayer flights={canvasFlights} geometry={flightGeometry} seatData={seatGiftData} fx={pixiFx} /> : <FlightCanvas flights={canvasFlights} geometry={flightGeometry} />}
+        {pixiOn ? <PixiLayer flights={canvasFlights} geometry={flightGeometry} seatData={seatGiftData} fx={pixiFx} onFail={pixiFail} /> : <FlightCanvas flights={canvasFlights} geometry={flightGeometry} />}
         {flying.filter((item) => !flightUrl(WHOLE_FLIGHT.has(item.gift) ? item.gift : item.look ?? item.gift)).map((item) => <div key={item.key} className="pointer-events-none absolute z-40 -translate-x-1/2 -translate-y-1/2" style={{ width: `${item.base}cqmin`, height: `${item.base}cqmin`, left: seatLeft(item.from), top: seatTop(item.from) }}><span className="block h-full w-full" style={{ /* moved with transform only (GPU): smooth like butter, no layout work while flying */ transform: item.moved ? `translate(calc(${seatXq(item.to)} - ${seatXq(item.from)} + ${item.tx}cqmin), calc(${seatYq(item.to)} - ${seatYq(item.from)} + ${item.ty}cqmin))` : "translate(0, 0)", transition: `transform ${item.ms}ms cubic-bezier(0.3, 0.6, 0.7, 0.9)` }}><span className="block h-full w-full" style={{ animation: item.steady ? undefined : `gift-fly-to ${item.ms}ms ease-in-out both`, ["--end" as string]: item.end }}><span className="block h-full w-full" style={SPIN_FLIGHT.test(item.gift) ? { animation: `gift-turn ${item.ms}ms linear both` } : { transform: `rotate(${item.moved ? item.rot ?? 0 : 0}deg)`, transition: `transform ${item.ms}ms cubic-bezier(0.3, 0.6, 0.7, 0.9)` }}>{/* one look the whole way: the flower/colour that will land, no colour changes in flight */}<Gift anim={!item.still} id={WHOLE_FLIGHT.has(item.gift) ? item.gift : item.look ?? item.gift} className="h-full w-full" /></span></span></span></div>)}
 
         {staged && target !== null ? (
