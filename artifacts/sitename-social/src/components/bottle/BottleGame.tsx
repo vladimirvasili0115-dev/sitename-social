@@ -3496,7 +3496,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           if (player.empty) return null;
           const active = index === turn || index === target;
           const arrivedAt = arrivals[player.id] ?? 0;
-          const arriving = arrivedAt > 0 && Date.now() - arrivedAt < 1800;
+          // Test (owner, moderators): no arrival animation and no white ring when a player sits down or changes seat / table.
+          const arriving = !oldLook && arrivedAt > 0 && Date.now() - arrivedAt < 1800;
           const fxAt = seatFx[player.id] ?? 0;
           return (
             <div key={player.id} className={cn("absolute -translate-x-1/2 -translate-y-1/2 transition-[left,top]", seatW, " duration-[1100ms] ease-in-out motion-reduce:duration-0", staged && active ? "z-30" : index === turn && "z-10", fxAt > 0 && Date.now() - fxAt < 4200 && "z-40")} style={staged && active ? { left: `calc(${CENTER_X}% ${index === turn ? "-" : "+"} 12.5cqmin)`, top: `${STAGE_Y}%` } : { left: `${seats[index][0]}%`, top: `${seats[index][1]}%` }}>
