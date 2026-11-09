@@ -170,10 +170,9 @@ function seeded(seed: number) {
 // Random gifts do not push each other off the photo any more: up to RAND_MAX of them stay together and each goes after RAND_KEEP_MS.
 const RAND_MAX = 5;
 const RAND_KEEP_MS = 30000;
-// A gift pushed out of its place by a new one stays 5 s, then fades out in 0.9 s (at most 3 such old gifts per place).
+// A RANDOM gift that has to go (pushed out by new ones) stays 5 s, then fades out in 0.9 s.
 const LEAVE_MS = 5000;
 const LEAVE_FADE = 900;
-const LEAVE_KEEP = 3;
 const RANDOM_SPOT = /^(air_kiss\d|gem\d|flower\d+|loveis\d|iloveyou|bear\d+|egg\d|strawberry\d|valentine\d)$/;
 // Caps and hats sit on the top-left or the top-right corner of the photo, tilted towards it.
 const HAT_SPOT = /^(\w*cap|cappy|cowboy|cylinderw?|indianhat|napoleon|musketeer|nurse|bezkoz|monomachhat|noteshat\w|partyhat\d|clown|carnivalmask\d|horseheadhat2|baseballa\w)$/;
@@ -598,18 +597,24 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     // in its own place; the others stay until a new gift comes to their place.
     // Gifts worn without a spot (stickers) sit in the same places: head/ears on the left, body bottom-right, face in the middle.
     const keepStickers = (value: Record<string, string[]>, place: string) => (value[toId]?.some((gift) => stickerPlace(gift) === place) ? { ...value, [toId]: value[toId].filter((gift) => stickerPlace(gift) !== place) } : value);
-    // The gift that was in this place does not vanish at once: it stays LEAVE_MS (5 s) under the new one, then fades out.
-    // In a gift storm only the newest LEAVE_KEEP old gifts of a place wait like that (the older ones go at once).
+    // Only the RANDOM gifts (kind "rand", the middle of the photo) are not taken away at once when they have to go:
+    // they stay LEAVE_MS (5 s) and then fade out in LEAVE_FADE. Every other gift is replaced at once, as before.
+    const leaveLater = () => {
+      window.setTimeout(() => setSpots((v) => (v[toId]?.some((item) => item.leaveAt) ? { ...v } : v)), LEAVE_MS + 20); // re-draw: the fade starts
+      window.setTimeout(() => setSpots((v) => { const l = v[toId]; if (!l) return v; const now = Date.now(); const keep = l.filter((item) => !item.leaveAt || now < item.leaveAt + LEAVE_FADE); return keep.length === l.length ? v : { ...v, [toId]: keep }; }), LEAVE_MS + LEAVE_FADE + 60);
+    };
     const keepSpots = (value: Record<string, Spot[]>, place: string) => {
       const list = value[toId];
       if (!list?.some((item) => spotPlace(item) === place && !item.leaveAt)) return value;
       const at = Date.now() + LEAVE_MS;
-      let marked = list.map((item) => (spotPlace(item) === place && !item.leaveAt ? { ...item, leaveAt: at } : item));
-      const leaving = marked.filter((item) => item.leaveAt && spotPlace(item) === place);
-      if (leaving.length > LEAVE_KEEP) { const drop = new Set(leaving.slice(0, leaving.length - LEAVE_KEEP).map((item) => item.key)); marked = marked.filter((item) => !drop.has(item.key)); }
-      window.setTimeout(() => setSpots((v) => (v[toId]?.some((item) => item.leaveAt) ? { ...v } : v)), LEAVE_MS + 20); // re-draw: the fade starts
-      window.setTimeout(() => setSpots((v) => { const l = v[toId]; if (!l) return v; const now = Date.now(); const keep = l.filter((item) => !item.leaveAt || now < item.leaveAt + LEAVE_FADE); return keep.length === l.length ? v : { ...v, [toId]: keep }; }), LEAVE_MS + LEAVE_FADE + 60);
-      return { ...value, [toId]: marked };
+      let later = false;
+      const next = list.flatMap((item) => {
+        if (spotPlace(item) !== place || item.leaveAt) return [item];
+        if (item.kind === "rand") { later = true; return [{ ...item, leaveAt: at }]; }
+        return [];
+      });
+      if (later) leaveLater();
+      return { ...value, [toId]: next };
     };
     if (plan.spot) {
       const spot: Spot = { ...plan.spot, key };
@@ -622,8 +627,13 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         setSpots((value) => {
           const mine = value[toId] ?? [];
           const others = mine.filter((item) => spotPlace(item) !== place);
-          const rands = mine.filter((item) => spotPlace(item) === place && item.kind === "rand" && now - (item.t ?? 0) < RAND_KEEP_MS).slice(-(RAND_MAX - 1));
-          return { ...value, [toId]: [...others, ...rands, stamped] };
+          const live = mine.filter((item) => spotPlace(item) === place && item.kind === "rand" && !item.leaveAt);
+          const rands = live.filter((item) => now - (item.t ?? 0) < RAND_KEEP_MS).slice(-(RAND_MAX - 1));
+          const keepKeys = new Set(rands.map((item) => item.key));
+          const pushed = live.filter((item) => !keepKeys.has(item.key)).map((item) => ({ ...item, leaveAt: now + LEAVE_MS }));
+          const fading = mine.filter((item) => spotPlace(item) === place && item.kind === "rand" && item.leaveAt);
+          if (pushed.length) window.setTimeout(leaveLater, 0);
+          return { ...value, [toId]: [...others, ...fading, ...pushed, ...rands, stamped] };
         });
         window.setTimeout(() => setSpots((value) => {
           const list = value[toId] ?? [];
@@ -2710,6 +2720,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     const tx = ((cx - 50) / 100) * w, ty = ((cy - 50) / 100) * w;
     // Gifts that land anywhere on the photo (not the corner ones) fly at the size they will sit at.
     if (plan.spot.kind === "rand") return { tx, ty, end: 1, base: (size / 100) * w };
+    // Corner gifts (right and left corner): their size on the photo stays as it is; on the way they are SMALLER than that
+    // (0.7 of it, at most 0.84 with the 1.2 swell of the flight) and grow to their size as they land — never bigger in the air.
+    if (plan.spot.kind === "corner") { const final = (size / 100) * w; return { tx, ty, end: 1 / 0.7, base: final * 0.7 }; }
     return { tx, ty, end: ((size / 100) * w) / base, base };
   };
   // Where a seat really is right now: the two players kissing stand in the middle of the table.
