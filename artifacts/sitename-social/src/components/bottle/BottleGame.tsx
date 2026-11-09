@@ -170,6 +170,8 @@ function seeded(seed: number) {
 // Random gifts do not push each other off the photo any more: up to RAND_MAX of them stay together and each goes after RAND_KEEP_MS.
 const RAND_MAX = 5;
 const RAND_KEEP_MS = 30000;
+// All gift flights go 1.3 times faster than before (single gift 6 s -> 4.6 s, press-and-hold stream 4 s -> 3.1 s).
+const GIFT_SPEED = 1.3;
 // A RANDOM gift that has to go (pushed out by new ones) stays 5 s, then fades out in 0.9 s.
 const LEAVE_MS = 5000;
 const LEAVE_FADE = 900;
@@ -2960,7 +2962,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   function sendGift(index: number, gift: string, price: number, ms = 5200) {
     if (!groupPaid.current && !takeGiftTokens(1)) return true; // too fast: skipped without stopping a hold-to-send stream
     const seed = 1 + Math.floor(Math.random() * 2e9); // goes to the server with the gift, so every screen puts it in the same spot
-    ms = ms <= 1800 ? 4000 : 6000; // a single gift flies 6 s, a press-and-hold stream 4 s
+    ms = ms <= 1800 ? Math.round(4000 / GIFT_SPEED) : Math.round(6000 / GIFT_SPEED); // a single gift 6 s, a press-and-hold stream 4 s, both 1.3x faster
     if (gift.startsWith("c:") && colorSteps.has(gift.slice(2))) gift = `c:${nextColor(gift.slice(2))}`; // one colour per tap, in order
     const player = players[index];
     if (!player || player.empty) return false;
@@ -3003,7 +3005,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // A gift another player sent: it flies from their seat to the receiver, then sits on the photo and goes into the chat.
   const remoteGift = useRef<(from: string, to: string, gift: string, ms: number, seed: number) => void>(() => {});
   remoteGift.current = (fromId, toId, gift, ms, seed) => {
-    ms = ms <= 1800 ? 4000 : 6000; // a single gift flies 6 s, a press-and-hold stream 4 s
+    ms = ms <= 1800 ? Math.round(4000 / GIFT_SPEED) : Math.round(6000 / GIFT_SPEED); // a single gift 6 s, a press-and-hold stream 4 s, both 1.3x faster
     const fromAt = players.findIndex((player) => player.id === fromId);
     const toAt = players.findIndex((player) => player.id === toId);
     if (!gift || toAt < 0) return;
