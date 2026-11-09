@@ -1372,7 +1372,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         // Gifts from other players fly across the table on every screen; my own gifts were already shown when I sent them.
         const gifts = all.filter((item) => item.kind === "gift" && item.from !== data!.me && !(item.seed && seenSeeds.current.has(item.seed)));
         for (const item of gifts) if (item.seed) seenSeeds.current.add(item.seed);
-        if (!first) gifts.forEach((item, order) => window.setTimeout(() => remoteGift.current(who(item.from), who(item.to), item.body ?? "", gifts.length > 1 ? 1800 : 3600, item.seed ?? item.id), order * Math.min(150, 900 / gifts.length))); // a big batch still starts within a second
+        const giftTable = data.table; // a delayed gift of this table is dropped if I have moved on meanwhile (it would land on my photo at the new table)
+        if (!first) gifts.forEach((item, order) => window.setTimeout(() => { if (syncTable.current !== giftTable) return; remoteGift.current(who(item.from), who(item.to), item.body ?? "", gifts.length > 1 ? 1800 : 3600, item.seed ?? item.id); }, order * Math.min(150, 900 / gifts.length))); // a big batch still starts within a second
         for (const seat of data.seats) names.current[seat.id] = { name: gameName(seat.name) || "?", avatar: seat.avatar ?? "" };
         const nameOf = (id: string | null) => names.current[id ?? ""]?.name ?? "?"; // own name too, not "you"
         if (!first) all.filter((item) => item.kind === "compliment" && item.to === data!.me).forEach((item) => setComplimentIn({ name: names.current[item.from ?? ""]?.name ?? "?", avatar: names.current[item.from ?? ""]?.avatar || NO_PHOTO, kind: Number(item.body) || 1 }));
@@ -2799,9 +2800,13 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       const items = (message.payload?.items ?? []).filter((item) => item && typeof item.seed === "number" && !seenSeeds.current.has(item.seed));
       if (seenSeeds.current.size > 5000) seenSeeds.current.clear();
       const who = (id: string) => (id === meId.current ? "me" : id);
+      // Only gifts of the table I sit at now: right after a table change the old table's channel can still deliver a few gifts
+      // (and the batch below is spread over up to 0.6 s). Those used to land on my photo at the NEW table, and my answer to the
+      // newcomers' "need" then showed them to everybody there.
+      if (syncTable.current !== liveTableId) return;
       items.forEach((item, order) => {
         seenSeeds.current.add(item.seed);
-        window.setTimeout(() => remoteGift.current(who(item.from), who(item.to), item.gift, items.length > 1 ? 1800 : 3600, item.seed), order * Math.min(120, 600 / items.length));
+        window.setTimeout(() => { if (syncTable.current !== liveTableId) return; remoteGift.current(who(item.from), who(item.to), item.gift, items.length > 1 ? 1800 : 3600, item.seed); }, order * Math.min(120, 600 / items.length));
       });
     });
     channel.on("broadcast", { event: "fresh" }, (message: { payload?: { id?: string } }) => {
