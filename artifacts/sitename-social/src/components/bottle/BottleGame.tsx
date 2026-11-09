@@ -1976,7 +1976,15 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // The slide to the middle for the kiss and back stays. lastSeat holds each player's seat number as last drawn.
   const lastSeat = useRef<Record<string, number>>({});
   useEffect(() => { lastSeat.current = Object.fromEntries(players.map((player, index) => [player.id, index])); });
-  const seatJumped = (id: string, index: number) => oldLook && lastSeat.current[id] !== undefined && lastSeat.current[id] !== index;
+  // The jump is kept for 0.4 s: React may draw two or three times in a row right after a seat change, and if the browser only
+  // sees the last of them (with the 1.1 s transition back on) the photo would still slide.
+  const jumpUntil = useRef<Record<string, number>>({});
+  const seatJumped = (id: string, index: number) => {
+    if (!oldLook) return false;
+    const now = performance.now();
+    if (lastSeat.current[id] !== undefined && lastSeat.current[id] !== index) jumpUntil.current[id] = now + 400;
+    return (jumpUntil.current[id] ?? 0) > now;
+  };
   const seatW = wide ? "w-[18.5cqmin]" : "w-[17.5cqmin]";
   const canvasSeats = pixiOn;
   // Test switch: open the game as /bottle/?nochat=1 to run it without the chat list (to see how much the chat costs).
