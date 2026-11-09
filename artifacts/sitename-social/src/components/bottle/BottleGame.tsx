@@ -29,6 +29,7 @@ import { clock as callClock, parseCallLog } from "@/lib/callLog";
 import type { SeatGiftData } from "./SeatGiftCanvas";
 import { FlightCanvas, type CanvasFlight, type FlightGeometry } from "./FlightCanvas";
 import { PixiLayer, type PixiFx } from "./PixiLayer";
+import { PixiTable } from "./PixiTable";
 import { FIRST_ORIGINAL, FRAME_PRICE, FrameArt, ORIGINAL_FRAMES, frameLooks, frameStone } from "./FrameArt";
 import { PassPanel, type PassData } from "./PassPanel";
 import { OnceImg } from "./OnceImg";
@@ -326,8 +327,11 @@ export const giftFileName = (id: string): string => (id.startsWith("e:") ? Array
 // from the MP3 tab, "♪ " an own MP3 file (5 hearts); everything else is a YouTube song (9 hearts).
 const cleanSong = (raw: string) => raw.replace(/#[^\s#]+/g, "").replace(/\s{2,}/g, " ").trim();
 // The ring around the round photo of whoever put the song on: light grey track, darker grey part that fills as the song plays.
-function SongRing({ frac, className, children }: { frac: number; className?: string; children: ReactNode }) {
-  const deg = Math.round(Math.min(1, Math.max(0, frac)) * 360);
+function SongRing({ frac, className, children }: { frac: () => number; className?: string; children: ReactNode }) {
+  // Only this small ring re-draws every half second (it used to re-draw the whole game).
+  const [, setTick] = useState(0);
+  useEffect(() => { const timer = window.setInterval(() => setTick((n) => n + 1), 500); return () => window.clearInterval(timer); }, []);
+  const deg = Math.round(Math.min(1, Math.max(0, frac())) * 360);
   return <span className={cn("inline-flex shrink-0 rounded-full p-[3px]", className)} style={{ background: `conic-gradient(#4B5563 ${deg}deg, #D1D5DB ${deg}deg)` }}>{children}</span>;
 }
 
@@ -636,16 +640,28 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // Gifts that just arrived lie scattered over the photo for a while (PILE_MS), then fade away.
   const [piles, setPiles] = useState<Record<string, { key: number; gift: string; x: number; y: number; r: number; s: number; at: number }[]>>({});
   const [pileNow, setPileNow] = useState(0);
-  const hasPiles = Object.values(piles).some((list) => list.length > 0);
+  // No ticking every second (that re-drew the whole game for 90 s after every gift storm): a timer wakes up only when the next
+  // pile gift starts to fade (3 s before its end) or has to go, and the game is re-drawn just then.
   useEffect(() => {
-    if (!hasPiles) return;
-    const timer = window.setInterval(() => {
-      const now = Date.now();
-      setPileNow(now);
-      setPiles((value) => Object.fromEntries(Object.entries(value).map(([id, list]) => [id, list.filter((item) => now - item.at < PILE_MS)]).filter(([, list]) => list.length)));
-    }, 1000);
-    return () => window.clearInterval(timer);
-  }, [hasPiles]);
+    let next = Infinity;
+    const now = Date.now();
+    for (const list of Object.values(piles)) for (const item of list) {
+      const fadeAt = item.at + PILE_MS - 3000, goneAt = item.at + PILE_MS;
+      if (fadeAt > now) next = Math.min(next, fadeAt); else next = Math.min(next, goneAt);
+    }
+    if (next === Infinity) return;
+    const timer = window.setTimeout(() => {
+      const at = Date.now();
+      setPileNow(at);
+      setPiles((value) => {
+        let changed = false;
+        const out: typeof value = {};
+        for (const [id, list] of Object.entries(value)) { const keep = list.filter((item) => at - item.at < PILE_MS); if (keep.length !== list.length) changed = true; if (keep.length) out[id] = keep; }
+        return changed ? out : value;
+      });
+    }, Math.max(50, next - now + 20));
+    return () => window.clearTimeout(timer);
+  }, [piles, pileNow]);
   const [lines, setLines] = useState<Line[]>([{ id: 1, from: "b3", text: smallTalk[0] }, { id: 2, from: "b6", to: "b1" }]);
   const [draft, setDraft] = useState("");
   // Price of a gift by its id (used by the "send it back" button in the chat).
@@ -1347,7 +1363,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         }
         // Nothing changed and nothing counts down: skip the full re-render (the clock is refreshed at least every 4 seconds).
         const sig = JSON.stringify({ ...data, now: 0 });
-        const counting = data.phase !== "waiting" || Boolean(data.track) || data.seats.some((seat) => Boolean((seat as { kicked?: unknown }).kicked));
+        // A playing song alone is not "counting": its ring follows the song clock by itself (SongRing), so a table with music
+        // but nothing else changing is no longer re-drawn every second.
+        const counting = data.phase !== "waiting" || data.seats.some((seat) => Boolean((seat as { kicked?: unknown }).kicked));
         if (entered || counting || sig !== netSig.current.sig || Date.now() - netSig.current.at > 4000) { netSig.current = { sig, at: Date.now() }; setNet(data); }
         if (entered) {
           const tableAtEntry = data.table;
@@ -1410,13 +1428,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     return seat?.avatar || players.find((player) => player.id === by)?.avatar || names.current[by]?.avatar || djPics[by] || NO_PHOTO;
   })();
   // The ring around that photo fills as the song goes. Every screen takes the song's place from the same server start time, so all see the same.
-  const [, setRingTick] = useState(0);
-  useEffect(() => {
-    if (!track) return;
-    const timer = window.setInterval(() => setRingTick((n) => n + 1), 500);
-    return () => window.clearInterval(timer);
-  }, [track?.at]); // eslint-disable-line react-hooks/exhaustive-deps
-  const songFrac = tune.dur > 0 ? Math.min(1, Math.max(0, songNow() / tune.dur)) : 0;
+  // The ring reads the song clock itself (SongRing ticks on its own), so the whole game is not re-drawn twice a second while music plays.
+  const songFrac = () => (tune.dur > 0 ? Math.min(1, Math.max(0, songNow() / tune.dur)) : 0);
   useEffect(() => {
     const by = track?.by;
     if (!by || by === net?.me || djPics[by] || net?.seats.some((item) => item.id === by) || names.current[by]?.avatar) return;
@@ -2463,7 +2476,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // After a song starts, nobody else can change it for 30 seconds (the server checks it too).
   function songBusy() {
     if (!online || !net?.track || net.track.by === net.me) return false;
-    const left = Math.ceil(30 - (net.now - net.track.at) / 1000);
+    const left = Math.ceil(30 - (net.now + Math.max(0, Date.now() - netSig.current.at) - net.track.at) / 1000); // net may be up to 4 s old
     if (left <= 0) return false;
     setGiftNote(t("bottle.songBusy").replace("{n}", String(left)));
     return true;
@@ -3383,7 +3396,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       {wide ? null : <WoodTable src={woodSrc} className="pointer-events-none absolute inset-0 h-full w-full" />}
       {wide ? null : header}
       <div className={cn("relative shrink-0 overflow-hidden [container-type:size]", wide ? "h-full w-full bg-[#E0A04E]" : "aspect-[9/10] w-full")} onClick={() => { setPicked(null); if (dedicate) chooseMode(false); }}>
-        {wide ? <WoodTable src={woodSrc} className="pointer-events-none absolute inset-0 h-full w-full" /> : null}
+        {wide && !pixiOn ? <WoodTable src={woodSrc} className="pointer-events-none absolute inset-0 h-full w-full" /> : null}
+        {/* Pixi test (owner and moderators): the wood (wide table) and the photos are painted by a WebGL layer under the seats. */}
+        {pixiOn ? <PixiTable wood={wide ? woodSrc ?? "/bottle/table2.jpg" : null} /> : null}
         <div className={cn("absolute flex items-center", menuOpen ? "z-[44]" : "z-10", wide ? "inset-y-0 left-0 w-[13%] flex-col gap-[2.2cqmin] py-[2.2cqmin]" : "inset-x-0 top-0 h-[10%] gap-[1.3cqmin] px-[2cqmin]")} onClick={(event) => event.stopPropagation()}>
           <button ref={balanceRef} key={balancePulse} type="button" onClick={() => { setPayNote(false); setPanel("shop"); }} aria-label={`${t("bottle.shop")}: ${hearts}`} className={cn("flex items-center text-white hover:brightness-110", balancePulse > 0 && "motion-safe:animate-[balance-pulse_0.45s_ease-out]", wide ? "flex-col" : "gap-1.5")} title={t("bottle.shop")}>
             {/* The original balance button: an orange heart with a white rim (bottle-html5 btn_gold_add_heart_up). */}
@@ -3442,7 +3457,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             <div key={player.id} className={cn("absolute -translate-x-1/2 -translate-y-1/2 transition-[left,top]", wide ? "w-[18.5cqmin]" : "w-[17.5cqmin]", " duration-[1100ms] ease-in-out motion-reduce:duration-0", staged && active ? "z-30" : index === turn && "z-10", fxAt > 0 && Date.now() - fxAt < 4200 && "z-40")} style={staged && active ? { left: `calc(${CENTER_X}% ${index === turn ? "-" : "+"} 12.5cqmin)`, top: `${STAGE_Y}%` } : { left: `${seats[index][0]}%`, top: `${seats[index][1]}%` }}>
               <button type="button" onClick={(event) => { event.stopPropagation(); if (dedicate) { if (!player.me) setChosen((list) => (list.includes(player.id) ? list.filter((id) => id !== player.id) : [...list, player.id])); return; } setGiftNote(null); setCardNote(null); setFlagMenu(false); setSignOpen(false); if (player.me) { if (Date.now() - meTap.current > 15000 || picked !== index) { meTap.current = Date.now(); setFrameNote(null); pullProgress.current(); setCard(false); setPicked(index); return; } meTap.current = 0; setCard(true); setPicked(index); return; } setCard(picked === index); setPicked(index); }} aria-label={`${player.name}, ${player.age}`} data-seat={player.id} className={cn("group relative isolate block aspect-square w-full rounded-[14%] bg-surface-2 shadow-[0_4px_10px_rgba(0,0,0,0.4)]", phase === "spinning" && index === turn && "motion-safe:animate-[seat-wobble_0.4s_ease-out]", tour === 3 && !player.me && !player.empty && "ring-4 ring-[#FFD84D] motion-safe:animate-pulse", !player.empty && isAdminPlayer(player) && "shadow-[0_0_0_0.6cqmin_#F5B400,0_0_14px_4px_rgba(245,180,0,0.65)]", staged && index === target ? "ring-[0.9cqmin] ring-[#FFE2A8]" : active ? "ring-4 ring-white" : picked === index ? "ring-4 ring-[#8CC63F]" : player.me ? "ring-2 ring-white/80" : "")}>
                 {player.empty ? null : <span aria-hidden="true" className="pointer-events-none absolute left-1/2 top-1/2 z-[5] hidden h-[7cqmin] w-[7cqmin] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-[4cqmin] shadow [@media(hover:hover)]:group-hover:flex">{player.me ? "😊" : "🎁"}</span>}
-                <img key={arrivedAt || "photo"} src={player.avatar} alt="" className={cn("h-full w-full rounded-[14%] object-cover", arriving && "animate-[seat-arrive_0.8s_ease-out] motion-reduce:animate-none")} />
+                <img key={arrivedAt || "photo"} data-photo="" src={player.avatar} alt="" className={cn("h-full w-full rounded-[14%] object-cover", arriving && "animate-[seat-arrive_0.8s_ease-out] motion-reduce:animate-none")} />
                 {arriving ? <span key={`ring-${arrivedAt}`} aria-hidden="true" className="pointer-events-none absolute inset-0 z-[6] rounded-[14%] animate-[seat-ring_1.1s_ease-out_forwards] motion-reduce:hidden" /> : null}
                 {fxAt > 0 ? <EnigmaEffect key={fxAt} label={arrivalLabel(locale, player.name)} /> : null}
                 {frameOf(player) ? <FrameArt id={frameOf(player)} className={cn("pointer-events-none absolute z-[1]", frameOf(player) >= FIRST_ORIGINAL ? "-inset-[17%] h-[134%] w-[134%]" : "-inset-[9%] h-[118%] w-[118%]")} /> : null}
