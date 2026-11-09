@@ -13,7 +13,22 @@ export type PixiFx = {
   shows: { key: number; to: number; level: number }[];
   bursts: { key: number; to: number; amount?: number }[];
   seats: readonly (readonly [number, number])[];
+  // the whole-table shower (petals, confetti…) and the kiss-fire / slap booster over the pair in the middle
+  shower?: { key: number; emoji: string[] } | null;
+  boost?: { key: number; kind: string; fromLeft: boolean } | null;
+  cx?: number; cy?: number;
 };
+// CSS-like keyframes: [time 0..1, value] stops, each part eased out (like `ease-out` per keyframe interval).
+function kf(p: number, stops: [number, number][]) {
+  if (p <= stops[0][0]) return stops[0][1];
+  for (let i = 1; i < stops.length; i++) {
+    const [t1, v1] = stops[i];
+    const [t0, v0] = stops[i - 1];
+    if (p <= t1) { const q = t1 > t0 ? (p - t0) / (t1 - t0) : 1; return v0 + (v1 - v0) * (1 - (1 - q) ** 2); }
+  }
+  return stops[stops.length - 1][1];
+}
+const SHOWER_SECONDS = 10;
 
 // --- curves (the same ones the canvas / CSS versions use) ---
 function bezier(p1x: number, p1y: number, p2x: number, p2y: number) {
@@ -339,7 +354,110 @@ export function PixiLayer({ flights, geometry, seatData, fx }: {
           b.plus.alpha = q < 0.2 ? q / 0.2 : q < 0.75 ? 1 : 1 - (q - 0.75) / 0.25;
         }
         for (const [key, b] of bursts) if (!liveBursts.has(key)) { b.c.destroy({ children: true }); bursts.delete(key); }
-        return f.shows.length > 0 || f.bursts.length > 0 || shows.size > 0 || bursts.size > 0;
+        const showerOn = drawShower(now, unit);
+        const boostOn = drawBoost(now, unit);
+        return f.shows.length > 0 || f.bursts.length > 0 || shows.size > 0 || bursts.size > 0 || showerOn || boostOn;
+      };
+
+      // Emoji pictures (🔥 💥 🌸 …) are drawn once into a texture and reused.
+      const emojiTex = new Map<string, import("pixi.js").Texture>();
+      const emoji = (ch: string) => {
+        let tex = emojiTex.get(ch);
+        if (!tex) {
+          const text = new PIXI.Text({ text: ch, style: { fontSize: 64, fontFamily: "Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, sans-serif" } });
+          tex = app.renderer.generateTexture({ target: text, resolution: 1 });
+          text.destroy();
+          emojiTex.set(ch, tex);
+        }
+        return tex;
+      };
+      const sized = (s: import("pixi.js").Sprite, size: number) => { const k = size / Math.max(s.texture.width, s.texture.height || 1); s.scale.set(k); return k; };
+
+      // The whole-table shower (TableShower): 36 things fall over 10 s, swaying, turning.
+      let shower: { key: number; t0: number; c: import("pixi.js").Container; items: { s: import("pixi.js").Sprite; x: number; sway: number; dur: number; delay: number; size: number }[] } | null = null;
+      const drawShower = (now: number, unit: number) => {
+        const want = fx.current.shower;
+        if (!want) { if (shower) { shower.c.destroy({ children: true }); shower = null; } return false; }
+        if (!shower || shower.key !== want.key) {
+          shower?.c.destroy({ children: true });
+          const c = new PIXI.Container();
+          const seed = want.key % 1000;
+          const items = Array.from({ length: 36 }, (_, n) => {
+            const r = (k: number) => { const x = Math.sin((seed + n * 13 + k) * 9301.7) * 43758.5; return x - Math.floor(x); };
+            const s = new PIXI.Sprite(emoji(want.emoji[n % want.emoji.length] ?? "✨"));
+            s.anchor.set(0.5); s.alpha = 0;
+            c.addChild(s);
+            return { s, x: r(1), sway: (r(2) - 0.5) * 16, dur: (3.5 + r(3) * 3) * 1000, delay: r(4) * (SHOWER_SECONDS - 4) * 1000, size: 3.5 + r(5) * 3 };
+          });
+          fxLayer.addChild(c);
+          shower = { key: want.key, t0: now, c, items };
+        }
+        const t = now - shower.t0;
+        let alive = false;
+        for (const it of shower.items) {
+          const p = (t - it.delay) / it.dur;
+          if (p < 0 || p > 1) { it.s.alpha = 0; if (p < 0) alive = true; continue; }
+          alive = true;
+          sized(it.s, it.size * unit);
+          const sway = p < 0.5 ? it.sway * (p / 0.5) : it.sway * (1 - (p - 0.5) / 0.5);
+          it.s.position.set(it.x * w + sway * unit, -8 * unit + 112 * unit * p + (it.size * unit) / 2);
+          it.s.rotation = (320 * p * Math.PI) / 180;
+          it.s.alpha = p < 0.08 ? p / 0.08 : p < 0.9 ? 1 : 1 - (p - 0.9) / 0.1;
+        }
+        return alive;
+      };
+
+      // The booster over the pair in the middle (BoostFx): burning lips with flames, or a slap with a bang.
+      let boost: { key: number; t0: number; c: import("pixi.js").Container; parts: import("pixi.js").Sprite[]; kind: string; fromLeft: boolean } | null = null;
+      const drawBoost = (now: number, unit: number) => {
+        const want = fx.current.boost;
+        if (!want) { if (boost) { boost.c.destroy({ children: true }); boost = null; } return false; }
+        const picUrl = want.kind === "kiss_fire" ? "/custom/ui/kiss_fire.webp" : "/custom/ui/refuse_slap.webp";
+        const pic = texture(picUrl);
+        if (!boost || boost.key !== want.key) {
+          boost?.c.destroy({ children: true });
+          const c = new PIXI.Container();
+          const parts: import("pixi.js").Sprite[] = [];
+          if (want.kind === "kiss_fire") for (let n = 0; n < 10; n++) { const s = new PIXI.Sprite(emoji("🔥")); s.anchor.set(0.5); s.alpha = 0; c.addChild(s); parts.push(s); }
+          else { const s = new PIXI.Sprite(emoji("💥")); s.anchor.set(0.5); s.alpha = 0; c.addChild(s); parts.push(s); }
+          const main = new PIXI.Sprite(); main.anchor.set(0.5); main.alpha = 0; c.addChild(main); parts.push(main);
+          fxLayer.addChild(c);
+          boost = { key: want.key, t0: now, c, parts, kind: want.kind, fromLeft: want.fromLeft };
+        }
+        const cx = ((fx.current.cx ?? 50) / 100) * w, cy = ((fx.current.cy ?? 50) / 100) * h;
+        const t = now - boost.t0;
+        const main = boost.parts[boost.parts.length - 1];
+        if (pic && main.texture !== pic) main.texture = pic;
+        if (boost.kind === "kiss_fire") {
+          for (let n = 0; n < 10; n++) {
+            const s = boost.parts[n];
+            const p = clamp01((t - n * 90) / 1400);
+            const e = easeOut(p);
+            sized(s, 6 * unit * (0.6 + 0.7 * e));
+            const fxo = ((n * 37) % 9) - 4;
+            s.position.set(cx + (n - 4.5) * 2.6 * unit + 3 * unit + fxo * unit * e, cy + 2 * unit + 3 * unit - 16 * unit * e);
+            s.alpha = p <= 0 ? 0 : p < 0.2 ? p / 0.2 : 1 - (p - 0.2) / 0.8;
+          }
+          const p = clamp01(t / 2400);
+          if (pic) sized(main, 24 * unit * kf(p, [[0, 0.2], [0.2, 1.25], [0.35, 1], [1, 1.1]]));
+          main.position.set(cx, cy);
+          main.alpha = pic ? kf(p, [[0, 0], [0.2, 1], [0.8, 1], [1, 0]]) : 0;
+          return t < 2600;
+        }
+        const bang = boost.parts[0];
+        const pb = clamp01(t / 1600);
+        sized(bang, 16 * unit * kf(pb, [[0, 0], [0.4, 0], [0.5, 1.4], [1, 1.8]]));
+        bang.position.set(cx, cy);
+        bang.alpha = kf(pb, [[0, 0], [0.4, 0], [0.5, 1], [1, 0]]);
+        const p = clamp01(t / 2200);
+        const size = 22 * unit;
+        const startX = cx + (boost.fromLeft ? -1.8 : 0.8) * size + size / 2;
+        const slide = kf(p, [[0, 0], [0.45, 1], [1, 1]]);
+        if (pic) sized(main, size * kf(p, [[0, 0.8], [0.45, 1.3], [0.55, 1.15], [1, 1.1]]));
+        main.position.set(startX + (cx - startX) * slide, cy);
+        main.rotation = (kf(p, [[0, boost.fromLeft ? -40 : 40], [0.45, 0], [0.55, -8], [1, 0]]) * Math.PI) / 180;
+        main.alpha = pic ? kf(p, [[0, 0], [0.15, 1], [0.85, 1], [1, 0]]) : 0;
+        return t < 2400;
       };
 
       let resized = true;
@@ -369,6 +487,7 @@ export function PixiLayer({ flights, geometry, seatData, fx }: {
         app.renderer.off("resize", onResize);
         for (const t of textures.values()) t?.destroy(true);
         heartTex.destroy(true);
+        for (const t of emojiTex.values()) t.destroy(true);
         app.destroy(true, { children: true });
       };
     })();

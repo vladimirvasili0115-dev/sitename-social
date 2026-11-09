@@ -327,6 +327,12 @@ export const giftFileName = (id: string): string => (id.startsWith("e:") ? Array
 // from the MP3 tab, "♪ " an own MP3 file (5 hearts); everything else is a YouTube song (9 hearts).
 const cleanSong = (raw: string) => raw.replace(/#[^\s#]+/g, "").replace(/\s{2,}/g, " ").trim();
 // The ring around the round photo of whoever put the song on: light grey track, darker grey part that fills as the song plays.
+// Seconds left until `deadline`; this tiny component re-draws itself 4 times a second, nothing else does.
+function Countdown({ deadline }: { deadline: number }) {
+  const [, setTick] = useState(0);
+  useEffect(() => { const timer = window.setInterval(() => setTick((n) => n + 1), 250); return () => window.clearInterval(timer); }, []);
+  return <>{Math.max(0, Math.ceil((deadline - Date.now()) / 1000))}</>;
+}
 function SongRing({ frac, className, children }: { frac: () => number; className?: string; children: ReactNode }) {
   // Only this small ring re-draws every half second (it used to re-draw the whole game).
   const [, setTick] = useState(0);
@@ -574,7 +580,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [phase, setPhase] = useState<Phase>("waiting");
   const [rotation, setRotation] = useState(0);
   const [answers, setAnswers] = useState<{ spinner: boolean | null; target: boolean | null }>({ spinner: null, target: null });
-  const [seconds, setSeconds] = useState(0);
+  // The turn countdown is a deadline; only the small <Countdown> ticks (the whole game is not re-drawn every second for it).
+  const [deadline, setDeadline] = useState(0);
+  const setSeconds = useCallback((n: number) => { const at = Date.now() + n * 1000; setDeadline((prev) => (Math.abs(prev - at) > 600 ? at : prev)); }, []);
   const [kisses, setKisses] = useState<Record<string, number>>({ b1: 3, b4: 8, b7: 1 });
   const [stickers, setStickers] = useState<Record<string, string[]>>({ b2: ["tea"], b5: ["rose"] });
   const [spots, setSpots] = useState<Record<string, Spot[]>>({});
@@ -1194,9 +1202,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         return () => window.clearTimeout(timer);
       }
       setSeconds(SPIN_SECONDS);
-      const tick = window.setInterval(() => setSeconds((value) => Math.max(0, value - 1)), 1000);
       const timer = window.setTimeout(nextTurn, SPIN_SECONDS * 1000);
-      return () => { window.clearInterval(tick); window.clearTimeout(timer); };
+      return () => window.clearTimeout(timer);
     }
     if (phase === "spinning") {
       const timer = window.setTimeout(() => { playSound("chosen"); setPhase("choice"); }, 4700);
@@ -1213,14 +1220,13 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   useEffect(() => {
     if (online || phase !== "choice" || target === null) return;
     setSeconds(ANSWER_SECONDS);
-    const tick = window.setInterval(() => setSeconds((value) => Math.max(0, value - 1)), 1000);
     const timers = (["spinner", "target"] as const).map((role) => {
       const index = role === "spinner" ? turn : target;
       return index === meIndex
         ? window.setTimeout(() => setAnswers((value) => (value[role] === null ? { ...value, [role]: false } : value)), ANSWER_SECONDS * 1000)
         : window.setTimeout(() => setAnswers((value) => (value[role] === null ? { ...value, [role]: Math.random() < 0.75 } : value)), 1500 + Math.random() * 4500);
     });
-    return () => { window.clearInterval(tick); timers.forEach((timer) => window.clearTimeout(timer)); };
+    return () => { timers.forEach((timer) => window.clearTimeout(timer)); };
   }, [phase, turn, target]);
 
   // A kiss counts for the player who receives it, even when they refused themselves.
@@ -1365,7 +1371,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         const sig = JSON.stringify({ ...data, now: 0 });
         // A playing song alone is not "counting": its ring follows the song clock by itself (SongRing), so a table with music
         // but nothing else changing is no longer re-drawn every second.
-        const counting = data.phase !== "waiting" || data.seats.some((seat) => Boolean((seat as { kicked?: unknown }).kicked));
+        // The turn countdown ticks by itself too (<Countdown> with a deadline), so only a kick timer (drawn from net.now) still needs a fresh net every second.
+        const counting = data.seats.some((seat) => Boolean((seat as { kicked?: unknown }).kicked));
         if (entered || counting || sig !== netSig.current.sig || Date.now() - netSig.current.at > 4000) { netSig.current = { sig, at: Date.now() }; setNet(data); }
         if (entered) {
           const tableAtEntry = data.table;
@@ -1475,7 +1482,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (!net) return;
     const place = (id: string | null) => (id ? players.findIndex((player) => player.id === (id === net.me ? "me" : id)) : -1);
     const [turnAt, targetAt] = [place(net.turn), place(net.target)];
-    const left = (limit: number) => Math.max(0, Math.ceil(limit - (net.now - net.phase_at) / 1000));
+    const left = (limit: number) => Math.max(0, limit - (net.now - net.phase_at) / 1000); // exact; <Countdown> rounds up
     setTurn(turnAt);
     setTarget(targetAt >= 0 && net.phase !== "waiting" ? targetAt : null);
     setAnswers({ spinner: net.spinner_answer, target: net.target_answer });
@@ -2691,7 +2698,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const seatXq = (index: number) => (staged && (index === turn || index === target) ? `(${CENTER_X}cqw ${index === turn ? "-" : "+"} 12.5cqmin)` : `${seats[index][0]}cqw`);
   const seatYq = (index: number) => (staged && (index === turn || index === target) ? `${STAGE_Y}cqh` : `${seats[index][1]}cqh`);
   flightGeometry.current = { seats, cx: CENTER_X, cy: STAGE_Y, staged, turn, target };
-  pixiFx.current = { shows, bursts, seats };
+  pixiFx.current = { shows, bursts, seats, shower: tableVfx ? { key: tableVfx.key, emoji: tableVfx.emoji } : null, boost: boostFx ? { key: boostFx.key, kind: boostFx.kind, fromLeft: boostFx.fromLeft } : null, cx: CENTER_X, cy: STAGE_Y };
   if (canvasSeats) {
     const last = canvasLast.current;
     if (last[0] !== piles || last[1] !== spots || last[2] !== staged || last[3] !== turn || last[4] !== target || last[5] !== wide) { canvasLast.current = [piles, spots, staged, turn, target, wide]; canvasCount.current += 1; }
@@ -3426,7 +3433,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           <span className="flex-1" />
           <span className={cn("text-center text-[max(8px,1.55cqmin)] font-bold leading-tight text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.7)]", wide && "order-last mt-1")}>{net?.room ? <><span aria-hidden="true">🔒</span><br /><span className="line-clamp-2 block max-w-[64px] break-words">{net.room.name}</span><button onClick={leaveRoom} aria-label={t("bottle.roomLeave")} title={t("bottle.roomLeave")} className="mx-auto mt-1 flex items-center gap-1 rounded-full bg-[#E5484D] px-2 py-0.5 text-[11px] font-bold text-white shadow hover:bg-[#D13438] [text-shadow:none]"><X size={12} strokeWidth={3} />{t("bottle.roomLeaveShort")}</button>{canDeleteRoom ? <button onClick={() => void deleteRoom()} aria-label={t("bottle.roomDelete")} title={t("bottle.roomDelete")} className="mx-auto mt-1 flex items-center gap-1 rounded-full bg-[#7C2D12] px-2 py-0.5 text-[11px] font-bold text-white shadow hover:bg-[#9A3412] [text-shadow:none]"><Trash2 size={12} strokeWidth={2.6} />{t("bottle.roomDeleteShort")}</button> : null}</> : <>{t("bottle.table")}<br />{online ? (net?.table != null ? tableLabel(net.table) : "…") : tableLabel(tableNo)}</>}</span>
           {myTurn
-            ? <span aria-label={`${seconds}`} className={cn(tool, "text-[max(14px,3cqmin)] font-bold tabular-nums")}>{seconds}</span>
+            ? <span role="timer" className={cn(tool, "text-[max(14px,3cqmin)] font-bold tabular-nums")}><Countdown deadline={deadline} /></span>
             : <button onClick={changeTable} aria-label={moveLeft > 0 ? `${moveLeft}` : t("bottle.changeTable")} title={t("bottle.changeTable")} className={tool}>{moveLeft > 0 ? <b className="text-[max(14px,3cqmin)] font-bold tabular-nums">{moveLeft}</b> : <RefreshCw size={17} />}</button>}
           {!wide && !full ? <button onClick={onLeave} aria-label={t("photos.close")} title={t("photos.close")} className={cn(tool, "bg-[#E5484D]/90 hover:bg-[#E5484D] sm:hidden")}><X size={19} strokeWidth={3} /></button> : null}
         </div>
@@ -3529,8 +3536,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
 
         {pixiOn ? null : bursts.map((item) => <HeartBurst key={item.key} at={seats[item.to]} amount={item.amount} />)}
         {pixiOn ? null : shows.map((item) => <Fireworks key={`fw-${item.key}`} at={seats[item.to]} level={item.level} seed={item.key} />)}
-        {tableVfx ? <TableShower key={tableVfx.key} emoji={tableVfx.emoji} seed={tableVfx.key % 1000} /> : null}
-        {boostFx ? <BoostFx key={boostFx.key} kind={boostFx.kind} fromLeft={boostFx.fromLeft} x={CENTER_X} y={STAGE_Y} /> : null}
+        {tableVfx && !pixiOn ? <TableShower key={tableVfx.key} emoji={tableVfx.emoji} seed={tableVfx.key % 1000} /> : null}
+        {boostFx && !pixiOn ? <BoostFx key={boostFx.key} kind={boostFx.kind} fromLeft={boostFx.fromLeft} x={CENTER_X} y={STAGE_Y} /> : null}
         {pixiOn ? <PixiLayer flights={canvasFlights} geometry={flightGeometry} seatData={seatGiftData} fx={pixiFx} /> : <FlightCanvas flights={canvasFlights} geometry={flightGeometry} />}
         {flying.filter((item) => !flightUrl(WHOLE_FLIGHT.has(item.gift) ? item.gift : item.look ?? item.gift)).map((item) => <div key={item.key} className="pointer-events-none absolute z-40 -translate-x-1/2 -translate-y-1/2" style={{ width: `${item.base}cqmin`, height: `${item.base}cqmin`, left: seatLeft(item.from), top: seatTop(item.from) }}><span className="block h-full w-full" style={{ /* moved with transform only (GPU): smooth like butter, no layout work while flying */ transform: item.moved ? `translate(calc(${seatXq(item.to)} - ${seatXq(item.from)} + ${item.tx}cqmin), calc(${seatYq(item.to)} - ${seatYq(item.from)} + ${item.ty}cqmin))` : "translate(0, 0)", transition: `transform ${item.ms}ms cubic-bezier(0.3, 0.6, 0.7, 0.9)` }}><span className="block h-full w-full" style={{ animation: `gift-fly-to ${item.ms}ms ease-in-out both`, ["--end" as string]: item.end }}><span className="block h-full w-full" style={SPIN_FLIGHT.test(item.gift) ? { animation: `gift-turn ${item.ms}ms linear both` } : { transform: `rotate(${item.moved ? item.rot ?? 0 : 0}deg)`, transition: `transform ${item.ms}ms cubic-bezier(0.3, 0.6, 0.7, 0.9)` }}>{/* one look the whole way: the flower/colour that will land, no colour changes in flight */}<Gift anim={!item.still} id={WHOLE_FLIGHT.has(item.gift) ? item.gift : item.look ?? item.gift} className="h-full w-full" /></span></span></span></div>)}
 
@@ -3541,7 +3548,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             </p>
             <div className="pointer-events-none absolute z-30 h-[21cqmin] w-[42cqmin] -translate-x-1/2 -translate-y-1/2" style={{ left: `${CENTER_X}%`, top: `${STAGE_Y}%` }}>
               {deciding
-                ? <span aria-label={`${seconds}`} className="absolute left-1/2 top-[22%] -translate-x-1/2 text-[7cqmin] font-bold tabular-nums leading-none text-white [text-shadow:0_2px_6px_rgba(0,0,0,0.75)]">{seconds}</span>
+                ? <span role="timer" className="absolute left-1/2 top-[22%] -translate-x-1/2 text-[7cqmin] font-bold tabular-nums leading-none text-white [text-shadow:0_2px_6px_rgba(0,0,0,0.75)]"><Countdown deadline={deadline} /></span>
                 : <Heart className="absolute left-1/2 top-[24%] h-[7cqmin] w-[7cqmin] -translate-x-1/2" fill={phase === "kissed" ? "#FF4D6A" : "none"} stroke="#FFFFFF" strokeWidth={1.8} />}
               {arrowLayer(true, answers.spinner, true)}
               {arrowLayer(false, answers.target, false)}
