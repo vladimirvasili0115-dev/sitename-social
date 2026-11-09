@@ -161,6 +161,20 @@ export function PixiLayer({ flights, geometry, seatData, fx }: {
         if (!any) { if (drewSeats) { sweep(seatSprites as Map<string | number, import("pixi.js").Sprite>, new Set()); drewSeats = false; return true; } return false; }
         const young = (at: number, ms: number) => wall - at < ms;
         let animating = now < busyUntil || force;
+        // Where each photo is now. A photo that moved (to the middle for the kiss, or back to its seat) starts its own
+        // 1.1 s move here, before any early return, so the gifts always follow it even if frames were skipped meanwhile.
+        // A player with no gifts is forgotten, so their next gift appears on the photo where it is (not where it was before).
+        d.ids.forEach((id, index) => {
+          if (!d.piles[id]?.length && !d.spots[id]?.length) { shown.delete(id); return; }
+          let tx: number, ty: number;
+          if (d.staged && (index === d.turn || index === d.target)) { tx = (d.cx / 100) * w + (index === d.turn ? -12.5 : 12.5) * unit; ty = (d.cy / 100) * h; }
+          else { const seat = d.seats[index] ?? [50, 50]; tx = (seat[0] / 100) * w; ty = (seat[1] / 100) * h; }
+          let cur = shown.get(id);
+          if (!cur) { cur = { x: tx, y: ty, fx: tx, fy: ty, tx, ty, t0: now - 2000 }; shown.set(id, cur); }
+          if (Math.abs(cur.tx - tx) > 0.5 || Math.abs(cur.ty - ty) > 0.5) { cur.fx = cur.x; cur.fy = cur.y; cur.tx = tx; cur.ty = ty; cur.t0 = now; }
+          if (now - cur.t0 < 1150 || Math.abs(cur.x - tx) > 0.5 || Math.abs(cur.y - ty) > 0.5) animating = true;
+        });
+        for (const id of [...shown.keys()]) if (!d.ids.includes(id)) shown.delete(id);
         if (!animating) {
           for (const id of d.ids) {
             for (const p of d.piles[id] ?? []) if (young(p.at, 400) || wall - p.at > d.pileMs - 3200) { animating = true; break; }
