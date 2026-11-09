@@ -208,6 +208,14 @@ const HAT_TURN: Record<string, number> = { pharaoh2: -30 };
 const CAP_NAME = /^(\w*cap|baseballa\w)$/;
 const CAP_NUDGE = 10;
 const HAT_NUDGE: Record<string, [number, number]> = { colander: [6, 6], cowboy: [6, 6], springwreath: [14, 14], pharaoh2: [7, 7], ushanka: [8, 8], noteshatw: [8, 8], noteshatb: [8, 8], rabbitcap: [5, 5], cappy: [8, 8] }; // the rabbit cap: its first place (centre on the corner) was almost right, so only 5% (about 2.5 mm) instead of the 10% of the other caps
+// The turn of a gift that goes to the top-left corner (head or ears) as it sits on the photo, or null for the other gifts.
+// The flight uses it from the start, so the gift does not fly straight and then suddenly turn when it lands.
+function headTurn(land: string): number | null {
+  const at = land.startsWith("c:") ? customPlace(land.slice(2)) : headGifts.has(land) ? "head" : "body";
+  if (at === "ears") return -45;
+  if (at === "head") return hatSpot(land.startsWith("c:") ? land.slice(2) : giftFileName(land)).a;
+  return null;
+}
 function hatSpot(name: string): { x: number; y: number; s: number; a: number } {
   const size = HAT_SIZE * (HAT_BIGGER[name] ?? 1);
   const box = artBox(name, false);
@@ -2972,7 +2980,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       // My own gifts always fly on my screen: when the sky is full, the oldest gift from someone else makes room.
       // A gift already in the air is never removed before it arrives. When the sky is full, someone else's oldest gift makes room;
       // if all of them are mine, the new one simply lands without a flight.
-      setFlying((list) => [...list, { key, gift, look: plan.land, t0: performance.now(), from: meIndex, to: index, toId: player.id, moved: false, ms, mine: true, still: liteRef.current || list.length >= 12, rot: plan.spot?.kind === "hatL" ? -45 : plan.spot?.kind === "hatR" ? 45 : plan.spot?.r ?? 0, fixed: plan.spot?.kind === "hatL" || plan.spot?.kind === "hatR", ...flightTo(plan, gift) }]); // no limit: every gift flies
+      setFlying((list) => [...list, { key, gift, look: plan.land, t0: performance.now(), from: meIndex, to: index, toId: player.id, moved: false, ms, mine: true, still: liteRef.current || list.length >= 12, rot: plan.spot?.kind === "hatL" ? -45 : plan.spot?.kind === "hatR" ? 45 : plan.spot ? plan.spot.r ?? 0 : headTurn(plan.land) ?? 0, fixed: plan.spot?.kind === "hatL" || plan.spot?.kind === "hatR" || (!plan.spot && headTurn(plan.land) !== null), ...flightTo(plan, gift) }]); // no limit: every gift flies
       window.setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))))), 20);
     }
     say({ from: "me", to: player.id, gift }); // the chat line is written when the gift leaves, not when it lands
@@ -3008,7 +3016,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     else giftSound(gift, "send");
     const plan = planLanding(gift, seed);
     {
-      if (!busy) setFlying((list) => ([...list, { key, gift, look: plan.land, t0: performance.now(), from: fromAt >= 0 ? fromAt : toAt, to: toAt, toId, moved: false, ms, still: liteRef.current || list.length >= 12, rot: plan.spot?.kind === "hatL" ? -45 : plan.spot?.kind === "hatR" ? 45 : plan.spot?.r ?? 0, fixed: plan.spot?.kind === "hatL" || plan.spot?.kind === "hatR", ...flightTo(plan, gift) }]));
+      if (!busy) setFlying((list) => ([...list, { key, gift, look: plan.land, t0: performance.now(), from: fromAt >= 0 ? fromAt : toAt, to: toAt, toId, moved: false, ms, still: liteRef.current || list.length >= 12, rot: plan.spot?.kind === "hatL" ? -45 : plan.spot?.kind === "hatR" ? 45 : plan.spot ? plan.spot.r ?? 0 : headTurn(plan.land) ?? 0, fixed: plan.spot?.kind === "hatL" || plan.spot?.kind === "hatR" || (!plan.spot && headTurn(plan.land) !== null), ...flightTo(plan, gift) }]));
       window.setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(() => setFlying((list) => list.map((item) => (item.key === key ? { ...item, moved: true } : item))))), 20);
     }
     say({ from: fromId, to: toId, gift }); // the chat line is written when the gift leaves the sender
@@ -3603,7 +3611,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         {tableVfx && !pixiOn ? <TableShower key={tableVfx.key} emoji={tableVfx.emoji} seed={tableVfx.key % 1000} /> : null}
         {boostFx && !pixiOn ? <BoostFx key={boostFx.key} kind={boostFx.kind} fromLeft={boostFx.fromLeft} x={CENTER_X} y={STAGE_Y} /> : null}
         {pixiOn ? <PixiLayer flights={canvasFlights} geometry={flightGeometry} seatData={seatGiftData} fx={pixiFx} onFail={pixiFail} /> : <FlightCanvas flights={canvasFlights} geometry={flightGeometry} />}
-        {flying.filter((item) => !flightUrl(WHOLE_FLIGHT.has(item.gift) ? item.gift : item.look ?? item.gift)).map((item) => <div key={item.key} className="pointer-events-none absolute z-40 -translate-x-1/2 -translate-y-1/2" style={{ width: `${item.base}cqmin`, height: `${item.base}cqmin`, left: seatLeft(item.from), top: seatTop(item.from) }}><span className="block h-full w-full" style={{ /* moved with transform only (GPU): smooth like butter, no layout work while flying */ transform: item.moved ? `translate(calc(${seatXq(item.to)} - ${seatXq(item.from)} + ${item.tx}cqmin), calc(${seatYq(item.to)} - ${seatYq(item.from)} + ${item.ty}cqmin))` : "translate(0, 0)", transition: `transform ${item.ms}ms cubic-bezier(0.3, 0.6, 0.7, 0.9)` }}><span className="block h-full w-full" style={{ animation: item.steady ? undefined : `gift-fly-to ${item.ms}ms ease-in-out both`, ["--end" as string]: item.end }}><span className="block h-full w-full" style={SPIN_FLIGHT.test(item.gift) ? { animation: `gift-turn ${item.ms}ms linear both` } : { transform: `rotate(${item.moved ? item.rot ?? 0 : 0}deg)`, transition: `transform ${item.ms}ms cubic-bezier(0.3, 0.6, 0.7, 0.9)` }}>{/* one look the whole way: the flower/colour that will land, no colour changes in flight */}<Gift anim={!item.still} id={WHOLE_FLIGHT.has(item.gift) ? item.gift : item.look ?? item.gift} className="h-full w-full" /></span></span></span></div>)}
+        {flying.filter((item) => !flightUrl(WHOLE_FLIGHT.has(item.gift) ? item.gift : item.look ?? item.gift)).map((item) => <div key={item.key} className="pointer-events-none absolute z-40 -translate-x-1/2 -translate-y-1/2" style={{ width: `${item.base}cqmin`, height: `${item.base}cqmin`, left: seatLeft(item.from), top: seatTop(item.from) }}><span className="block h-full w-full" style={{ /* moved with transform only (GPU): smooth like butter, no layout work while flying */ transform: item.moved ? `translate(calc(${seatXq(item.to)} - ${seatXq(item.from)} + ${item.tx}cqmin), calc(${seatYq(item.to)} - ${seatYq(item.from)} + ${item.ty}cqmin))` : "translate(0, 0)", transition: `transform ${item.ms}ms cubic-bezier(0.3, 0.6, 0.7, 0.9)` }}><span className="block h-full w-full" style={{ animation: item.steady ? undefined : `gift-fly-to ${item.ms}ms ease-in-out both`, ["--end" as string]: item.end }}><span className="block h-full w-full" style={SPIN_FLIGHT.test(item.gift) ? { animation: `gift-turn ${item.ms}ms linear both` } : item.fixed ? { transform: `rotate(${item.rot ?? 0}deg)` } : { transform: `rotate(${item.moved ? item.rot ?? 0 : 0}deg)`, transition: `transform ${item.ms}ms cubic-bezier(0.3, 0.6, 0.7, 0.9)` }}>{/* one look the whole way: the flower/colour that will land, no colour changes in flight */}<Gift anim={!item.still} id={WHOLE_FLIGHT.has(item.gift) ? item.gift : item.look ?? item.gift} className="h-full w-full" /></span></span></span></div>)}
 
         {staged && target !== null ? (
           <>
