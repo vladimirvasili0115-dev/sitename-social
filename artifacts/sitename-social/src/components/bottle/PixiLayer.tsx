@@ -212,7 +212,7 @@ export function PixiLayer({ flights, geometry, seatData, fx }: {
           for (const id of d.ids) {
             for (const p of d.piles[id] ?? []) if (young(p.at, 400) || wall - p.at > d.pileMs - 3200) { animating = true; break; }
             if (animating) break;
-            for (const s of d.spots[id] ?? []) if (s.t && young(s.t, 800)) { animating = true; break; }
+            for (const s of d.spots[id] ?? []) if ((s.t && young(s.t, 800)) || (s.leaveAt && wall > s.leaveAt - 50 && wall < s.leaveAt + 1000)) { animating = true; break; }
             if (animating) break;
           }
         }
@@ -261,7 +261,10 @@ export function PixiLayer({ flights, geometry, seatData, fx }: {
             const corner = s.x + s.s / 2 < 45 ? "l" : "r";
             const rot = s.kind === "hatL" ? -45 : s.kind === "hatR" ? 45 : s.r ?? 0;
             const grow = s.kind === "balloon" ? (age < 700 ? 0.6 + 0.6 * (age / 700) : 1.2) : age < 350 ? 1.12 - 0.12 * (age / 350) : 1;
-            put(`${id}:s${s.key}`, s.gift, s.x, s.y, s.s, rot, 1, grow, s.kind === "corner" || s.kind === "balloon" ? corner : null);
+            // a gift pushed out by a new one: still there for 5 s, then it fades (0.9 s)
+            const leave = s.leaveAt ? (wall < s.leaveAt ? 1 : Math.max(0, 1 - (wall - s.leaveAt) / 900)) : 1;
+            if (leave <= 0) continue;
+            put(`${id}:s${s.key}`, s.gift, s.x, s.y, s.s, rot, leave, grow, s.kind === "corner" || s.kind === "balloon" ? corner : null);
           }
         });
         sweep(seatSprites as Map<string | number, import("pixi.js").Sprite>, seen);

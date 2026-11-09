@@ -160,7 +160,7 @@ const wornGift = (gift: string) => (gift.startsWith("c:") ? customPlace(gift.sli
 // Which place of the photo a landed gift takes: a corner (left or right) or the middle.
 const spotPlace = (spot: Pick<Spot, "kind" | "x" | "s">) => (spot.kind === "hatL" ? "left" : spot.kind === "hatR" ? "right" : spot.kind === "corner" || spot.kind === "balloon" ? (spot.x + spot.s / 2 < 45 ? "left" : "right") : "middle");
 const stickerPlace = (gift: string) => { const at = gift.startsWith("c:") ? customPlace(gift.slice(2)) : headGifts.has(gift) ? "head" : "body"; return at === "head" || at === "ears" ? "left" : at === "body" ? "right" : "middle"; };
-type Spot = { key: number; gift: string; x: number; y: number; s: number; r?: number; t?: number; fade?: boolean; kind: "rand" | "corner" | "behind" | "balloon" | "hatL" | "hatR" };
+type Spot = { key: number; gift: string; x: number; y: number; s: number; r?: number; t?: number; fade?: boolean; leaveAt?: number; kind: "rand" | "corner" | "behind" | "balloon" | "hatL" | "hatR" };
 // Like the original (GiftAnimations.ts): a gift's random spot comes from a seed every screen knows, so all players see it in the same place.
 function seeded(seed: number) {
   let a = (Math.round(seed) >>> 0) || 1;
@@ -170,6 +170,10 @@ function seeded(seed: number) {
 // Random gifts do not push each other off the photo any more: up to RAND_MAX of them stay together and each goes after RAND_KEEP_MS.
 const RAND_MAX = 5;
 const RAND_KEEP_MS = 30000;
+// A gift pushed out of its place by a new one stays 5 s, then fades out in 0.9 s (at most 3 such old gifts per place).
+const LEAVE_MS = 5000;
+const LEAVE_FADE = 900;
+const LEAVE_KEEP = 3;
 const RANDOM_SPOT = /^(air_kiss\d|gem\d|flower\d+|loveis\d|iloveyou|bear\d+|egg\d|strawberry\d|valentine\d)$/;
 // Caps and hats sit on the top-left or the top-right corner of the photo, tilted towards it.
 const HAT_SPOT = /^(\w*cap|cappy|cowboy|cylinderw?|indianhat|napoleon|musketeer|nurse|bezkoz|monomachhat|noteshat\w|partyhat\d|clown|carnivalmask\d|horseheadhat2|baseballa\w)$/;
@@ -594,7 +598,19 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     // in its own place; the others stay until a new gift comes to their place.
     // Gifts worn without a spot (stickers) sit in the same places: head/ears on the left, body bottom-right, face in the middle.
     const keepStickers = (value: Record<string, string[]>, place: string) => (value[toId]?.some((gift) => stickerPlace(gift) === place) ? { ...value, [toId]: value[toId].filter((gift) => stickerPlace(gift) !== place) } : value);
-    const keepSpots = (value: Record<string, Spot[]>, place: string) => (value[toId]?.some((item) => spotPlace(item) === place) ? { ...value, [toId]: value[toId].filter((item) => spotPlace(item) !== place) } : value);
+    // The gift that was in this place does not vanish at once: it stays LEAVE_MS (5 s) under the new one, then fades out.
+    // In a gift storm only the newest LEAVE_KEEP old gifts of a place wait like that (the older ones go at once).
+    const keepSpots = (value: Record<string, Spot[]>, place: string) => {
+      const list = value[toId];
+      if (!list?.some((item) => spotPlace(item) === place && !item.leaveAt)) return value;
+      const at = Date.now() + LEAVE_MS;
+      let marked = list.map((item) => (spotPlace(item) === place && !item.leaveAt ? { ...item, leaveAt: at } : item));
+      const leaving = marked.filter((item) => item.leaveAt && spotPlace(item) === place);
+      if (leaving.length > LEAVE_KEEP) { const drop = new Set(leaving.slice(0, leaving.length - LEAVE_KEEP).map((item) => item.key)); marked = marked.filter((item) => !drop.has(item.key)); }
+      window.setTimeout(() => setSpots((v) => (v[toId]?.some((item) => item.leaveAt) ? { ...v } : v)), LEAVE_MS + 20); // re-draw: the fade starts
+      window.setTimeout(() => setSpots((v) => { const l = v[toId]; if (!l) return v; const now = Date.now(); const keep = l.filter((item) => !item.leaveAt || now < item.leaveAt + LEAVE_FADE); return keep.length === l.length ? v : { ...v, [toId]: keep }; }), LEAVE_MS + LEAVE_FADE + 60);
+      return { ...value, [toId]: marked };
+    };
     if (plan.spot) {
       const spot: Spot = { ...plan.spot, key };
       const place = spotPlace(spot);
@@ -3493,7 +3509,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                     {face ? <Gift id={face} className="absolute left-[8%] top-[10%] z-[2] h-[84%] w-[84%] animate-[gift-drop_0.35s_ease-out]" /> : null}
                     {ears ? <Gift anim id={ears} className="pointer-events-none absolute -left-[54.8%] -top-[33.6%] z-[2] h-[81.2%] w-[145.6%] -rotate-45 animate-[gift-drop_0.35s_ease-out] drop-shadow" /> : null}
                     {head && hat ? <span key={head} className="pointer-events-none absolute z-[5]" style={{ left: `${hat.x}%`, top: `${hat.y}%`, width: `${hat.s}%`, height: `${hat.s}%`, transform: `rotate(${hat.a}deg)` }}><Gift anim id={head} className="h-full w-full animate-[gift-drop_0.35s_ease-out] drop-shadow" /></span> : null}
-                    {spots[player.id]?.length ? spots[player.id].filter((spot) => !canvasCorners(spot)).map((spot) => <span key={spot.key} className={cn("pointer-events-none absolute", spot.kind === "behind" ? "-z-[1]" : spot.kind === "hatL" || spot.kind === "hatR" ? "z-[5]" : "z-[2]")} style={{ left: `${spot.x}%`, top: `${spot.y}%`, width: `${spot.s}%`, height: `${spot.s}%`, transform: spot.kind === "hatL" ? "rotate(-45deg)" : spot.kind === "hatR" ? "rotate(45deg)" : spot.r ? `rotate(${spot.r}deg)` : undefined }}><Gift anim once={spot.kind === "corner" || spot.kind === "balloon" ? spot.key : undefined} id={spot.gift} className={cn("h-full w-full drop-shadow", spot.x + spot.s / 2 < 45 ? "origin-bottom-left" : "origin-bottom-right", (spot.kind === "corner" || spot.kind === "balloon") && (spot.x + spot.s / 2 < 45 ? "object-left-bottom" : "object-right-bottom"), spot.kind === "balloon" ? "animate-[gift-grow_0.7s_ease-out_forwards]" : "animate-[gift-drop_0.35s_ease-out]")} /></span>)
+                    {spots[player.id]?.length ? spots[player.id].filter((spot) => !canvasCorners(spot)).map((spot) => <span key={spot.key} className={cn("pointer-events-none absolute", spot.kind === "behind" ? "-z-[1]" : spot.kind === "hatL" || spot.kind === "hatR" ? "z-[5]" : "z-[2]")} style={{ opacity: spot.leaveAt && Date.now() >= spot.leaveAt ? 0 : undefined, transition: spot.leaveAt ? `opacity ${LEAVE_FADE}ms ease-out` : undefined, left: `${spot.x}%`, top: `${spot.y}%`, width: `${spot.s}%`, height: `${spot.s}%`, transform: spot.kind === "hatL" ? "rotate(-45deg)" : spot.kind === "hatR" ? "rotate(45deg)" : spot.r ? `rotate(${spot.r}deg)` : undefined }}><Gift anim once={spot.kind === "corner" || spot.kind === "balloon" ? spot.key : undefined} id={spot.gift} className={cn("h-full w-full drop-shadow", spot.x + spot.s / 2 < 45 ? "origin-bottom-left" : "origin-bottom-right", (spot.kind === "corner" || spot.kind === "balloon") && (spot.x + spot.s / 2 < 45 ? "object-left-bottom" : "object-right-bottom"), spot.kind === "balloon" ? "animate-[gift-grow_0.7s_ease-out_forwards]" : "animate-[gift-drop_0.35s_ease-out]")} /></span>)
                       : rest.map((gift) => <Gift anim key={`${gift}-${mine.length}`} id={gift} className="absolute bottom-0 right-0 z-[2] h-[58%] w-[58%] animate-[gift-drop_0.35s_ease-out] drop-shadow" />)}
                     {scatters.filter((item) => item.to === player.id).flatMap((item) => item.names.map((name, n) => <span key={`${item.key}-${n}`} className="pointer-events-none absolute left-1/2 top-1/2 z-[3] h-[26%] w-[26%]" style={{ animation: "gift-scatter 1s ease-out forwards", ["--dx" as string]: `${item.dirs[n][0]}cqmin`, ["--dy" as string]: `${item.dirs[n][1]}cqmin` }}><Gift anim id={name} className="h-full w-full drop-shadow" /></span>))}
                   </>;

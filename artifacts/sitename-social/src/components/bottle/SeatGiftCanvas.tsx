@@ -5,7 +5,7 @@ import { useEffect, useRef, type MutableRefObject } from "react";
 // Gifts lying on the photos (the scattered pile and the corner/random/balloon spots) are painted on ONE canvas over the table,
 // so a gift storm does not add hundreds of DOM elements to paint and composite on a phone.
 export type SeatPile = { key: number; gift: string; x: number; y: number; r: number; s: number; at: number };
-export type SeatSpot = { key: number; gift: string; x: number; y: number; s: number; r?: number; t?: number; kind: string };
+export type SeatSpot = { key: number; gift: string; x: number; y: number; s: number; r?: number; t?: number; leaveAt?: number; kind: string };
 export type SeatGiftData = {
   piles: Record<string, SeatPile[]>; spots: Record<string, SeatSpot[]>;
   ids: string[]; seats: readonly (readonly [number, number])[]; box: number;
