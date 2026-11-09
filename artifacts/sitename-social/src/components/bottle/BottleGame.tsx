@@ -1701,6 +1701,15 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // Somebody who left the table: his lines stay in the chat for everyone (name and photo are remembered).
   const lineWho = (id: string) => byId(id) ?? (names.current[id] ? { id, name: names.current[id].name, age: 0, female: false, avatar: names.current[id].avatar } as Player : undefined);
   const staged = phase !== "waiting" && phase !== "spinning" && target !== null;
+  // The pair in the middle: the spinner used to go always to the left and the chosen one to the right, so their paths could cross.
+  // Test (owner, moderators): each goes to the side of the bottle they sit on — the one sitting more to the left stands left.
+  const leftOne = (() => {
+    if (!staged || target === null || !iAmAdmin) return turn;
+    const tx = layouts[wide ? "wide" : "tall"].seats[turn]?.[0] ?? 0, gx = layouts[wide ? "wide" : "tall"].seats[target]?.[0] ?? 0;
+    return gx < tx ? target : turn;
+  })();
+  const rightOne = leftOne === turn ? target : turn;
+  const spinnerLeft = leftOne === turn;
   const myRole: "spinner" | "target" | null = staged ? (turn === meIndex ? "spinner" : target === meIndex ? "target" : null) : null;
   const canAnswer = deciding && myRole !== null && answers[myRole] === null;
   const myTurn = phase === "waiting" && turn === meIndex;
@@ -2219,7 +2228,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [boostFx, setBoostFx] = useState<{ key: number; kind: keyof BottleItems; fromLeft: boolean } | null>(null);
   const showBoost = (kind: keyof BottleItems, actor: string) => {
     const key = Date.now();
-    setBoostFx({ key, kind, fromLeft: players[turn]?.id === actor || (actor === "me" && turn === meIndex) });
+    setBoostFx({ key, kind, fromLeft: (() => { const at = actor === "me" ? meIndex : players.findIndex((player) => player.id === actor); return at === leftOne; })() });
     if (kind === "kiss_fire") { playSfx("heartbeat"); window.setTimeout(() => playSfx("kissing2"), 500); }
     else { playSfx("whip"); window.setTimeout(() => playSfx("punch1"), 450); }
     window.setTimeout(() => setBoostFx((value) => (value?.key === key ? null : value)), 2600);
@@ -2739,17 +2748,17 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     return { tx, ty, end: ((size / 100) * w) / base, base };
   };
   // Where a seat really is right now: the two players kissing stand in the middle of the table.
-  const seatLeft = (index: number) => (staged && (index === turn || index === target) ? `calc(${CENTER_X}% ${index === turn ? "-" : "+"} 12.5cqmin)` : `${seats[index][0]}%`);
+  const seatLeft = (index: number) => (staged && (index === turn || index === target) ? `calc(${CENTER_X}% ${index === leftOne ? "-" : "+"} 12.5cqmin)` : `${seats[index][0]}%`);
   const seatTop = (index: number) => (staged && (index === turn || index === target) ? `${STAGE_Y}%` : `${seats[index][1]}%`);
   // The same seat positions in container units, for moving a flying gift with transform (cqw/cqh = % of the table box).
-  const seatXq = (index: number) => (staged && (index === turn || index === target) ? `(${CENTER_X}cqw ${index === turn ? "-" : "+"} 12.5cqmin)` : `${seats[index][0]}cqw`);
+  const seatXq = (index: number) => (staged && (index === turn || index === target) ? `(${CENTER_X}cqw ${index === leftOne ? "-" : "+"} 12.5cqmin)` : `${seats[index][0]}cqw`);
   const seatYq = (index: number) => (staged && (index === turn || index === target) ? `${STAGE_Y}cqh` : `${seats[index][1]}cqh`);
-  flightGeometry.current = { seats, cx: CENTER_X, cy: STAGE_Y, staged, turn, target };
+  flightGeometry.current = { seats, cx: CENTER_X, cy: STAGE_Y, staged, turn: leftOne, target: rightOne }; // turn = the one standing left
   pixiFx.current = { shows, bursts, seats, shower: tableVfx ? { key: tableVfx.key, emoji: tableVfx.emoji } : null, boost: boostFx ? { key: boostFx.key, kind: boostFx.kind, fromLeft: boostFx.fromLeft } : null, cx: CENTER_X, cy: STAGE_Y };
   if (canvasSeats) {
     const last = canvasLast.current;
-    if (last[0] !== piles || last[1] !== spots || last[2] !== staged || last[3] !== turn || last[4] !== target || last[5] !== wide) { canvasLast.current = [piles, spots, staged, turn, target, wide]; canvasCount.current += 1; }
-    seatGiftData.current = { piles, spots, ids: players.map((player) => player.id), seats, box: seatSize, cx: CENTER_X, cy: STAGE_Y, staged, turn, target, url: canvasUrl, pileMs: PILE_MS, version: canvasCount.current };
+    if (last[0] !== piles || last[1] !== spots || last[2] !== staged || last[3] !== leftOne || last[4] !== rightOne || last[5] !== wide) { canvasLast.current = [piles, spots, staged, leftOne, rightOne, wide]; canvasCount.current += 1; }
+    seatGiftData.current = { piles, spots, ids: players.map((player) => player.id), seats, box: seatSize, cx: CENTER_X, cy: STAGE_Y, staged, turn: leftOne, target: rightOne, url: canvasUrl, pileMs: PILE_MS, version: canvasCount.current };
   }
   // The canvas draws every flight that has a picture; it reads this list on each frame.
   useEffect(() => {
@@ -3513,7 +3522,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           const arriving = !oldLook && arrivedAt > 0 && Date.now() - arrivedAt < 1800;
           const fxAt = seatFx[player.id] ?? 0;
           return (
-            <div key={player.id} className={cn("absolute -translate-x-1/2 -translate-y-1/2 transition-[left,top]", seatW, seatJumped(player.id, index) ? "duration-0" : " duration-[1100ms] ease-in-out motion-reduce:duration-0", staged && active ? "z-30" : index === turn && "z-10", fxAt > 0 && Date.now() - fxAt < 4200 && "z-40")} style={staged && active ? { left: `calc(${CENTER_X}% ${index === turn ? "-" : "+"} 12.5cqmin)`, top: `${STAGE_Y}%` } : { left: `${seats[index][0]}%`, top: `${seats[index][1]}%` }}>
+            <div key={player.id} className={cn("absolute -translate-x-1/2 -translate-y-1/2 transition-[left,top]", seatW, seatJumped(player.id, index) ? "duration-0" : " duration-[1100ms] ease-in-out motion-reduce:duration-0", staged && active ? "z-30" : index === turn && "z-10", fxAt > 0 && Date.now() - fxAt < 4200 && "z-40")} style={staged && active ? { left: `calc(${CENTER_X}% ${index === leftOne ? "-" : "+"} 12.5cqmin)`, top: `${STAGE_Y}%` } : { left: `${seats[index][0]}%`, top: `${seats[index][1]}%` }}>
               <button type="button" onClick={(event) => { event.stopPropagation(); if (dedicate) { if (!player.me) setChosen((list) => (list.includes(player.id) ? list.filter((id) => id !== player.id) : [...list, player.id])); return; } setGiftNote(null); setCardNote(null); setFlagMenu(false); setSignOpen(false); if (player.me) { if (Date.now() - meTap.current > 15000 || picked !== index) { meTap.current = Date.now(); setFrameNote(null); pullProgress.current(); setCard(false); setPicked(index); return; } meTap.current = 0; setCard(true); setPicked(index); return; } setCard(picked === index); setPicked(index); }} aria-label={`${player.name}, ${player.age}`} data-seat={player.id} className={cn("group relative isolate block aspect-square w-full rounded-[14%] bg-surface-2 shadow-[0_4px_10px_rgba(0,0,0,0.4)]", phase === "spinning" && index === turn && "motion-safe:animate-[seat-wobble_0.4s_ease-out]", tour === 3 && !player.me && !player.empty && "ring-4 ring-[#FFD84D] motion-safe:animate-pulse", !player.empty && isAdminPlayer(player) && "shadow-[0_0_0_0.6cqmin_#F5B400,0_0_14px_4px_rgba(245,180,0,0.65)]", staged && index === target ? "ring-[0.9cqmin] ring-[#FFE2A8]" : active && !oldLook ? "ring-4 ring-white" : picked === index ? "ring-4 ring-[#8CC63F]" : player.me ? "ring-2 ring-white/80" : "")}>
                 {player.empty ? null : <span aria-hidden="true" className="pointer-events-none absolute left-1/2 top-1/2 z-[5] hidden h-[7cqmin] w-[7cqmin] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-[4cqmin] shadow [@media(hover:hover)]:group-hover:flex">{player.me ? "😊" : "🎁"}</span>}
                 <img key={arrivedAt || "photo"} data-photo="" src={player.avatar} alt="" className={cn("h-full w-full rounded-[14%] object-cover", arriving && "animate-[seat-arrive_0.8s_ease-out] motion-reduce:animate-none")} />
@@ -3579,7 +3588,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           const active = index === turn || index === target;
           const framed = Boolean(frameOf(player));
           return (
-            <div key={`name-${player.id}`} aria-hidden="true" className={cn("pointer-events-none absolute z-[31] -translate-x-1/2 -translate-y-1/2 transition-[left,top]", seatJumped(player.id, index) ? "duration-0" : "duration-[1100ms] ease-in-out motion-reduce:duration-0", seatW)} style={staged && active ? { left: `calc(${CENTER_X}% ${index === turn ? "-" : "+"} 12.5cqmin)`, top: `${STAGE_Y}%` } : { left: `${seats[index][0]}%`, top: `${seats[index][1]}%` }}>
+            <div key={`name-${player.id}`} aria-hidden="true" className={cn("pointer-events-none absolute z-[31] -translate-x-1/2 -translate-y-1/2 transition-[left,top]", seatJumped(player.id, index) ? "duration-0" : "duration-[1100ms] ease-in-out motion-reduce:duration-0", seatW)} style={staged && active ? { left: `calc(${CENTER_X}% ${index === leftOne ? "-" : "+"} 12.5cqmin)`, top: `${STAGE_Y}%` } : { left: `${seats[index][0]}%`, top: `${seats[index][1]}%` }}>
               <div className="aspect-square w-full" />
               <p onClick={player.me ? undefined : (event) => { event.stopPropagation(); setDraft((value) => (value.startsWith(`${player.name}, `) ? value : `${player.name}, ${value}`)); setCard(false); setPicked(null); if (dedicate) chooseMode(false); window.setTimeout(() => chatRef.current?.focus(), 50); }} title={player.me ? undefined : t("bottle.chatMention")} className={cn("relative left-1/2 w-max max-w-[26cqmin] -translate-x-1/2 truncate px-[0.5cqmin] text-center", oldLook ? "text-[2.1cqmin] font-normal leading-snug [text-shadow:0_1px_1px_rgba(0,0,0,0.5)]" : "text-[2.4cqmin] font-semibold leading-snug [text-shadow:0_1px_2px_rgba(0,0,0,0.8)]", !player.me && "pointer-events-auto cursor-pointer hover:underline", !framed ? "mt-0" : frameOf(player) >= FIRST_ORIGINAL ? "mt-[1.2cqmin]" : "mt-[0.9cqmin]", !oldLook && isAdminPlayer(player) ? "text-[#FFD54A]" : "text-white")}><span className={oldLook ? undefined : vipName(player)}>{/* test (owner, moderators): every name on the table plain white and thin; colours only in the chat */}{isAdminPlayer(player) ? "👑 " : ""}{player.name}{!player.me && nameSuffix(player) ? ` [${nameSuffix(player)}]` : ""}{player.age ? `, ${player.age}` : ""}{(player.me ? net?.me : player.id) === SPECIAL_MARK_USER ? <img src="/custom/ui/imparator-car.webp" alt="" aria-hidden="true" draggable={false} className="ml-[0.7cqmin] inline h-[2.8cqmin] w-auto align-[-0.5cqmin] [filter:drop-shadow(0_1px_1px_rgba(0,0,0,0.6))]" /> : null}</span></p>
             </div>
@@ -3602,8 +3611,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
               {deciding
                 ? <span role="timer" className="absolute left-1/2 top-[22%] -translate-x-1/2 text-[7cqmin] font-bold tabular-nums leading-none text-white [text-shadow:0_2px_6px_rgba(0,0,0,0.75)]"><Countdown deadline={deadline} /></span>
                 : <Heart className="absolute left-1/2 top-[24%] h-[7cqmin] w-[7cqmin] -translate-x-1/2" fill={phase === "kissed" ? "#FF4D6A" : "none"} stroke="#FFFFFF" strokeWidth={1.8} />}
-              {arrowLayer(true, answers.spinner, true)}
-              {arrowLayer(false, answers.target, false)}
+              {arrowLayer(true, answers.spinner, spinnerLeft)}
+              {arrowLayer(false, answers.target, !spinnerLeft)}
             </div>
             {boostOffer ? (
               <div className="absolute z-[31] -translate-x-1/2" style={{ left: `${CENTER_X}%`, top: `calc(${STAGE_Y}% + 24cqmin)` }}>
