@@ -6,7 +6,7 @@ import { useEffect, useRef, type MutableRefObject } from "react";
 // hundreds of gifts in the air cost about as much as one, so a big gift storm stays smooth on phones too.
 export type CanvasFlight = {
   key: number; url: string; from: number; to: number; t0: number; ms: number;
-  tx: number; ty: number; base: number; end: number; rot: number; spin: boolean; fixed?: boolean;
+  tx: number; ty: number; base: number; end: number; rot: number; spin: boolean; fixed?: boolean; steady?: boolean;
 };
 export type FlightGeometry = {
   seats: readonly (readonly [number, number])[]; cx: number; cy: number; staged: boolean; turn: number | null; target: number | null;
@@ -85,7 +85,7 @@ export function FlightCanvas({ flights, geometry }: { flights: MutableRefObject<
         const [rx, ry] = seatAt(item.to);
         const ex = rx + item.tx * unit, ey = ry + item.ty * unit;
         const x = sx + (ex - sx) * p, y = sy + (ey - sy) * p;
-        const size = item.base * unit * scaleAt(raw, item.end);
+        const size = item.base * unit * (item.steady ? 1 : scaleAt(raw, item.end)); // corner gifts: one size the whole way
         const img = picture(item.url);
         if (!img.complete || !img.naturalWidth) continue;
         const ratio = img.naturalWidth / img.naturalHeight;

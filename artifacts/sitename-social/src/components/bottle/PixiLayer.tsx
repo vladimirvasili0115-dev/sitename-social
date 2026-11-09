@@ -184,7 +184,7 @@ export function PixiLayer({ flights, geometry, seatData, fx }: {
           const [sx, sy] = seatAt(item.from, unit);
           const [rx, ry] = seatAt(item.to, unit);
           const ex = rx + item.tx * unit, ey = ry + item.ty * unit;
-          const size = item.base * unit * scaleAt(raw, item.end);
+          const size = item.base * unit * (item.steady ? 1 : scaleAt(raw, item.end)); // corner gifts: one size the whole way
           const ratio = tex.width / tex.height;
           const dw = ratio >= 1 ? size : size * ratio, dh = ratio >= 1 ? size / ratio : size;
           const s = sprite(flightSprites as Map<string | number, import("pixi.js").Sprite>, item.key, flightLayer, tex);

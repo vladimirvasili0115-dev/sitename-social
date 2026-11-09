@@ -791,7 +791,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [chosen, setChosen] = useState<string[]>([]);
   const [songMany, setSongMany] = useState<number[]>([]);
   const nameColors = useNameColors();
-  const [flying, setFlying] = useState<{ key: number; gift: string; from: number; to: number; moved: boolean; ms: number; rot?: number; fixed?: boolean; mine?: boolean; still?: boolean; toId?: string; look?: string; t0?: number; tx: number; ty: number; end: number; base: number }[]>([]);
+  const [flying, setFlying] = useState<{ key: number; gift: string; from: number; to: number; moved: boolean; ms: number; rot?: number; fixed?: boolean; mine?: boolean; still?: boolean; toId?: string; look?: string; t0?: number; tx: number; ty: number; end: number; base: number; steady?: boolean }[]>([]);
   // When a receiver leaves the table (or moves to another one), the gifts flying to them stop; they never land on an empty seat.
   const playersRef = useRef(players);
   playersRef.current = players;
@@ -2720,9 +2720,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     const tx = ((cx - 50) / 100) * w, ty = ((cy - 50) / 100) * w;
     // Gifts that land anywhere on the photo (not the corner ones) fly at the size they will sit at.
     if (plan.spot.kind === "rand") return { tx, ty, end: 1, base: (size / 100) * w };
-    // Corner gifts (right and left corner): their size on the photo stays as it is; on the way they are SMALLER than that
-    // (0.7 of it, at most 0.84 with the 1.2 swell of the flight) and grow to their size as they land — never bigger in the air.
-    if (plan.spot.kind === "corner") { const final = (size / 100) * w; return { tx, ty, end: 1 / 0.7, base: final * 0.7 }; }
+    // Corner gifts (right and left corner) fly the whole way at exactly the size they sit at on the photo: no swelling, no shrinking.
+    if (plan.spot.kind === "corner") return { tx, ty, end: 1, base: (size / 100) * w, steady: true };
     return { tx, ty, end: ((size / 100) * w) / base, base };
   };
   // Where a seat really is right now: the two players kissing stand in the middle of the table.
@@ -2742,7 +2741,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   useEffect(() => {
     canvasFlights.current = flying.flatMap((item) => {
       const url = flightUrl(WHOLE_FLIGHT.has(item.gift) ? item.gift : item.look ?? item.gift);
-      return url ? [{ key: item.key, url, from: item.from, to: item.to, t0: item.t0 ?? performance.now(), ms: item.ms, tx: item.tx, ty: item.ty, base: item.base, end: item.end, rot: item.rot ?? 0, fixed: item.fixed, spin: SPIN_FLIGHT.test(item.gift) }] : [];
+      return url ? [{ key: item.key, url, from: item.from, to: item.to, t0: item.t0 ?? performance.now(), ms: item.ms, tx: item.tx, ty: item.ty, base: item.base, end: item.end, rot: item.rot ?? 0, fixed: item.fixed, spin: SPIN_FLIGHT.test(item.gift), steady: item.steady }] : [];
     });
   }, [flying, art]); // eslint-disable-line react-hooks/exhaustive-deps
   // Realtime: every gift is also announced on the table's live channel at once, so everybody at the table sees it fly
@@ -3573,7 +3572,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         {tableVfx && !pixiOn ? <TableShower key={tableVfx.key} emoji={tableVfx.emoji} seed={tableVfx.key % 1000} /> : null}
         {boostFx && !pixiOn ? <BoostFx key={boostFx.key} kind={boostFx.kind} fromLeft={boostFx.fromLeft} x={CENTER_X} y={STAGE_Y} /> : null}
         {pixiOn ? <PixiLayer flights={canvasFlights} geometry={flightGeometry} seatData={seatGiftData} fx={pixiFx} /> : <FlightCanvas flights={canvasFlights} geometry={flightGeometry} />}
-        {flying.filter((item) => !flightUrl(WHOLE_FLIGHT.has(item.gift) ? item.gift : item.look ?? item.gift)).map((item) => <div key={item.key} className="pointer-events-none absolute z-40 -translate-x-1/2 -translate-y-1/2" style={{ width: `${item.base}cqmin`, height: `${item.base}cqmin`, left: seatLeft(item.from), top: seatTop(item.from) }}><span className="block h-full w-full" style={{ /* moved with transform only (GPU): smooth like butter, no layout work while flying */ transform: item.moved ? `translate(calc(${seatXq(item.to)} - ${seatXq(item.from)} + ${item.tx}cqmin), calc(${seatYq(item.to)} - ${seatYq(item.from)} + ${item.ty}cqmin))` : "translate(0, 0)", transition: `transform ${item.ms}ms cubic-bezier(0.3, 0.6, 0.7, 0.9)` }}><span className="block h-full w-full" style={{ animation: `gift-fly-to ${item.ms}ms ease-in-out both`, ["--end" as string]: item.end }}><span className="block h-full w-full" style={SPIN_FLIGHT.test(item.gift) ? { animation: `gift-turn ${item.ms}ms linear both` } : { transform: `rotate(${item.moved ? item.rot ?? 0 : 0}deg)`, transition: `transform ${item.ms}ms cubic-bezier(0.3, 0.6, 0.7, 0.9)` }}>{/* one look the whole way: the flower/colour that will land, no colour changes in flight */}<Gift anim={!item.still} id={WHOLE_FLIGHT.has(item.gift) ? item.gift : item.look ?? item.gift} className="h-full w-full" /></span></span></span></div>)}
+        {flying.filter((item) => !flightUrl(WHOLE_FLIGHT.has(item.gift) ? item.gift : item.look ?? item.gift)).map((item) => <div key={item.key} className="pointer-events-none absolute z-40 -translate-x-1/2 -translate-y-1/2" style={{ width: `${item.base}cqmin`, height: `${item.base}cqmin`, left: seatLeft(item.from), top: seatTop(item.from) }}><span className="block h-full w-full" style={{ /* moved with transform only (GPU): smooth like butter, no layout work while flying */ transform: item.moved ? `translate(calc(${seatXq(item.to)} - ${seatXq(item.from)} + ${item.tx}cqmin), calc(${seatYq(item.to)} - ${seatYq(item.from)} + ${item.ty}cqmin))` : "translate(0, 0)", transition: `transform ${item.ms}ms cubic-bezier(0.3, 0.6, 0.7, 0.9)` }}><span className="block h-full w-full" style={{ animation: item.steady ? undefined : `gift-fly-to ${item.ms}ms ease-in-out both`, ["--end" as string]: item.end }}><span className="block h-full w-full" style={SPIN_FLIGHT.test(item.gift) ? { animation: `gift-turn ${item.ms}ms linear both` } : { transform: `rotate(${item.moved ? item.rot ?? 0 : 0}deg)`, transition: `transform ${item.ms}ms cubic-bezier(0.3, 0.6, 0.7, 0.9)` }}>{/* one look the whole way: the flower/colour that will land, no colour changes in flight */}<Gift anim={!item.still} id={WHOLE_FLIGHT.has(item.gift) ? item.gift : item.look ?? item.gift} className="h-full w-full" /></span></span></span></div>)}
 
         {staged && target !== null ? (
           <>
