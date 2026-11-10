@@ -487,8 +487,16 @@ export function PixiLayer({ flights, geometry, seatData, fx, onFail }: {
         if (force || flying || hadFlights || seatsMoved || effects || hadFx) app.render();
         hadFlights = flying; hadFx = effects; resized = false;
       };
+      // Pixi's "resizeTo" follows only the browser window. The game box can change size without that (full screen, the chat,
+      // the video player, the small window becoming big): then the old-size picture was stretched and the photos/gifts slid
+      // off their frames. Follow the box itself and resize at once.
+      const fit = () => { if (!dead && (Math.round(app.screen.width) !== node.clientWidth || Math.round(app.screen.height) !== node.clientHeight)) app.resize(); };
+      const watch = new ResizeObserver(fit);
+      watch.observe(node);
+      fit();
       raf = requestAnimationFrame(frame);
       stop = () => {
+        watch.disconnect();
         cancelAnimationFrame(raf);
         app.renderer.off("resize", onResize);
         for (const t of textures.values()) t?.destroy(true);

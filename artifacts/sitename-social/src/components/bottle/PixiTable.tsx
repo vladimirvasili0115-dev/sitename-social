@@ -121,8 +121,16 @@ export function PixiTable({ wood, onFail }: { wood: string | null; onFail?: () =
         // Draw only when something changed (a photo moved or loaded, the size changed).
         if (sig !== last || dirty) { last = sig; dirty = false; app.render(); }
       };
+      // Pixi's "resizeTo" follows only the browser window. The game box can change size without that (full screen, the chat,
+      // the video player, the small window becoming big): then the old-size picture was stretched and the photos/gifts slid
+      // off their frames. Follow the box itself and resize at once.
+      const fit = () => { if (!dead && (Math.round(app.screen.width) !== node.clientWidth || Math.round(app.screen.height) !== node.clientHeight)) app.resize(); };
+      const watch = new ResizeObserver(fit);
+      watch.observe(node);
+      fit();
       raf = requestAnimationFrame(frame);
       stop = () => {
+        watch.disconnect();
         cancelAnimationFrame(raf);
         // Give the HTML photos back.
         for (const img of touched) img.style.opacity = "";
