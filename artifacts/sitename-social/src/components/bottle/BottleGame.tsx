@@ -4611,7 +4611,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 {arrows}
                 <span className="flex flex-row-reverse gap-[5px]">{receivers.slice(0, 12).map((player) => <span key={player.id} className="relative">{photo(player)}</span>)}</span>
                 {receivers.length > 12 ? <span className="ml-1 text-xs font-bold text-[#9E9E9E]">+{receivers.length - 12}</span> : null}
-                {!from.me && fromIndex >= 0 && !players[fromIndex].empty ? <button type="button" onClick={() => { const gift = line.gift ?? ""; if (gift === "c:heart1000" && !iAmAdmin) return; const price = priceOf(gift); if (price) giveGift(fromIndex, gift, price, giftNeed(gift)); }} aria-label={t("bottle.giftBack")} title={`${t("bottle.giftBack")} · ${priceOf(line.gift ?? "")} ❤`} className="ml-[9px] h-[22px] w-[30px] shrink-0 bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url(${O}chat_btn_reply.svg)` }} /> : null}
+                {/* the "send this gift back" arrow on gift lines was removed (the reply arrow on messages stays) */}
               </div>
             );
             if (to) return (
