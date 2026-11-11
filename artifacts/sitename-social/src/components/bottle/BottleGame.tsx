@@ -3137,6 +3137,13 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const pressed = useRef<{ timer: number; started: boolean; x: number; y: number } | null>(null);
   const stopHold = () => { if (hold.current) window.clearInterval(hold.current); hold.current = null; };
   const cancelPress = () => { if (pressed.current) window.clearTimeout(pressed.current.timer); pressed.current = null; stopHold(); };
+  // What a gift still needs before it can be sent (the same rules as the gift panel): 0 = open, -1 VIP only, -2 VIP+ only,
+  // >0 = kisses / other progress still missing. The "send it back" button in the chat used to skip these checks.
+  const giftNeed = (gift: string) => {
+    if (gift.startsWith("c:")) return missing(GIFT_RULES[gift], progress);
+    const lock = lockedGifts.find(([id]) => id === gift);
+    return lock ? Math.max(0, lock[2] - progress.kisses) : 0;
+  };
   function giveGift(index: number, gift: string, price: number, need?: number) {
     if (gift === "c:cherry" && giftHidden("cherry")) return false;
     if (gift.startsWith("song:")) { openSong(index); if (gift === "song:mp3") { setSongTab("mp3"); if (!tracks.length) void loadTracks(""); } return false; }
@@ -4615,7 +4622,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 {arrows}
                 <span className="flex flex-row-reverse gap-[5px]">{receivers.slice(0, 12).map((player) => <span key={player.id} className="relative">{photo(player)}</span>)}</span>
                 {receivers.length > 12 ? <span className="ml-1 text-xs font-bold text-[#9E9E9E]">+{receivers.length - 12}</span> : null}
-                {!from.me && fromIndex >= 0 && !players[fromIndex].empty ? <button type="button" onClick={() => { const price = priceOf(line.gift ?? ""); if (price) giveGift(fromIndex, line.gift ?? "", price); }} aria-label={t("bottle.giftBack")} title={`${t("bottle.giftBack")} · ${priceOf(line.gift ?? "")} ❤`} className="ml-[9px] h-[22px] w-[30px] shrink-0 bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url(${O}chat_btn_reply.svg)` }} /> : null}
+                {!from.me && fromIndex >= 0 && !players[fromIndex].empty ? <button type="button" onClick={() => { const gift = line.gift ?? ""; if (gift === "c:heart1000" && !iAmAdmin) return; const price = priceOf(gift); if (price) giveGift(fromIndex, gift, price, giftNeed(gift)); }} aria-label={t("bottle.giftBack")} title={`${t("bottle.giftBack")} · ${priceOf(line.gift ?? "")} ❤`} className="ml-[9px] h-[22px] w-[30px] shrink-0 bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url(${O}chat_btn_reply.svg)` }} /> : null}
               </div>
             );
             if (to) return (
