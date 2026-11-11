@@ -476,7 +476,7 @@ const NO_PHOTO = "/custom/profile/nophoto.svg";
 // A VIP+ table has the internal id 1 000 000 + its number, so a VIP+ table can share a number with a normal table; everywhere the number is written without the million.
 const shownTable = (n: number) => (n >= 1000000 ? n - 1000000 : n);
 const tableLabel = (n: number | string | null | undefined) => (n != null && Number(n) >= 1000000 ? String(Number(n) - 1000000) : Number(n) === 21 ? "021" : Number(n) === 14 ? "014" : String(n ?? ""));
-const DAILY_PRIZES = [200, 400, 600, 800, 1000];
+const DAILY_PRIZES = [100, 200, 300, 400, 500];
 // Lite mode (switched on by the game when the phone cannot keep up with a gift storm): gifts stay still pictures instead of animated ones.
 let liteGifts = false;
 function Gift({ id, className, anim, once, lazy }: { id: string; className?: string; anim?: boolean; once?: string | number; lazy?: boolean }) {
