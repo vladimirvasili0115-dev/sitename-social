@@ -172,6 +172,8 @@ const RAND_MAX = 5;
 const RAND_KEEP_MS = 30000;
 // All gift flights go 1.3 times faster than before (single gift 6 s -> 4.6 s, press-and-hold stream 4 s -> 3.1 s).
 const GIFT_SPEED = 1.3;
+// The live (Realtime) table channel for gifts / photo snapshots / "clear my gifts": off (nothing on it could be checked).
+const LIVE_TABLE_CHANNEL = false;
 // A RANDOM gift that has to go (pushed out by new ones) stays 5 s, then fades out in 0.9 s.
 const LEAVE_MS = 5000;
 const LEAVE_FADE = 900;
@@ -2826,6 +2828,10 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const stickersNow = useRef(stickers);
   stickersNow.current = stickers;
   useEffect(() => {
+    // The table live channel is switched off: nothing that came over it was checked by the server (fake gifts, a fake "clear
+    // this player", a fake photo snapshot for newcomers). Gifts come from the server sync, the gifts on the photos of a newcomer
+    // from bottle_table_gifts (server). Also saves Realtime messages. LIVE_TABLE_CHANNEL = true turns the old channel back on.
+    if (!LIVE_TABLE_CHANNEL) return;
     if (!online || !supabase || !liveTableId) return;
     const client = supabase;
     const channel = client.channel(`bottle-table-${liveTableId}`, { config: { broadcast: { self: false } } });
