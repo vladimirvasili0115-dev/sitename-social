@@ -2984,7 +2984,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       setFlying((list) => list.filter((item) => item.key !== key));
       if (gen !== tableGen.current || playersRef.current[index]?.id !== player.id || (freshAt.current[player.id] ?? 0) > startedAt) return;
       giftSound(gift, "land");
-      if (pour) heartBurst(key, index);
+      // (paket-IN) a cocktail no longer gives the receiver a heart: no "+1" burst any more
       if (gift === "c:heart1000") heartBurst(key + 0.5, index, 1000);
       fireworks(key, index, price, meIndex, gift);
       landGift(key, player.id, plan);
@@ -3020,7 +3020,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       setFlying((list) => list.filter((item) => item.key !== key));
       if (gen !== tableGen.current || playersRef.current[toAt]?.id !== toId || (freshAt.current[toId] ?? 0) > startedAt) return;
       giftSound(gift, "land");
-      if (pour) heartBurst(key, toAt);
+      // (paket-IN) a cocktail no longer gives the receiver a heart: no "+1" burst any more
       if (gift === "c:heart1000") heartBurst(key + 0.5, toAt, 1000);
       fireworks(key, toAt, priceOf(gift), fromAt, gift);
       landGift(key, toId, plan);
