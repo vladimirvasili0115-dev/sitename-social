@@ -546,6 +546,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const online = Boolean(supabase);
   const [net, setNet] = useState<BottleState | null>(null);
   const netSig = useRef({ sig: "", at: 0 });
+  const giftSpendAt = useRef(0); // when I last sent a gift (the balance shown is not pushed back up by a lagging server meanwhile)
   // Players who chose to hide their birth date and age (privacy setting): their age is not shown at the table.
   const [hideAges, setHideAges] = useState<Record<string, boolean>>({});
   const hideAskedRef = useRef<Map<string, number>>(new Map());
@@ -1533,8 +1534,11 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     setKisses(Object.fromEntries(net.seats.map((seat) => [seat.id === net.me ? "me" : seat.id, seat.kisses])));
     if (net.phase === "waiting") setSeconds(left(SPIN_SECONDS));
     if (net.phase === "choice") setSeconds(left(ANSWER_SECONDS));
-    heartsRef.current = net.hearts;
-    setHearts(net.hearts);
+    // During a fast gift stream the server is a moment behind (gifts go in batches), so its balance would jump back up and down again.
+    // For 3 s after my last gift the balance only goes DOWN from the server (never back up); after that the server value is taken as it is.
+    const fresh = Date.now() - giftSpendAt.current < 3000 ? Math.min(heartsRef.current, net.hearts) : net.hearts;
+    heartsRef.current = fresh;
+    setHearts(fresh);
     // The table has one bottle for everybody: whoever changes it, it changes on every device.
     if (typeof net.skin === "number" && Date.now() > skinLock.current) setSkin(net.skin);
     if (!wheelLock.current) setChances(net.chances ?? 0);
@@ -2960,6 +2964,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (!player || player.empty) return false;
     if (heartsRef.current < price) return false;
     heartsRef.current -= price;
+    giftSpendAt.current = Date.now();
     setHearts(heartsRef.current);
     if (online) {
       queueGift({ to: player.me ? net?.me ?? "" : player.id, gift, price, seed });
