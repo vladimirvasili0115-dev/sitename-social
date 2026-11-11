@@ -2810,16 +2810,11 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const liveTimer = useRef(0);
   const meId = useRef("");
   meId.current = net?.me ?? "";
+  // Gifts are NOT announced on the live channel any more: a gift there was shown on every screen without the server having taken
+  // the hearts (a changed page could fly gifts for free). The others now see a gift only when the server has it (the 1-second sync).
+  // This also saves a lot of Realtime messages. My own gift is still marked as seen, so the sync does not fly it a second time.
   function liveSend(item: { from: string; to: string; gift: string; seed: number }) {
-    if (!liveChannel.current) return;
     seenSeeds.current.add(item.seed);
-    liveOut.current.push(item);
-    if (liveTimer.current) return;
-    liveTimer.current = window.setTimeout(() => {
-      liveTimer.current = 0;
-      const items = liveOut.current.splice(0, liveOut.current.length);
-      if (items.length && liveChannel.current) void liveChannel.current.send({ type: "broadcast", event: "gifts", payload: { items } });
-    }, 120);
   }
   // No connection screen up: the live gift channel is closed too (no sounds or flying gifts from the table in the background).
   const liveTableId = gone || offline ? undefined : net?.table;
@@ -2834,19 +2829,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (!online || !supabase || !liveTableId) return;
     const client = supabase;
     const channel = client.channel(`bottle-table-${liveTableId}`, { config: { broadcast: { self: false } } });
-    channel.on("broadcast", { event: "gifts" }, (message: { payload?: { items?: { from: string; to: string; gift: string; seed: number }[] } }) => {
-      const items = (message.payload?.items ?? []).filter((item) => item && typeof item.seed === "number" && !seenSeeds.current.has(item.seed));
-      if (seenSeeds.current.size > 5000) seenSeeds.current.clear();
-      const who = (id: string) => (id === meId.current ? "me" : id);
-      // Only gifts of the table I sit at now: right after a table change the old table's channel can still deliver a few gifts
-      // (and the batch below is spread over up to 0.6 s). Those used to land on my photo at the NEW table, and my answer to the
-      // newcomers' "need" then showed them to everybody there.
-      if (syncTable.current !== liveTableId) return;
-      items.forEach((item, order) => {
-        seenSeeds.current.add(item.seed);
-        window.setTimeout(() => { if (syncTable.current !== liveTableId) return; remoteGift.current(who(item.from), who(item.to), item.gift, items.length > 1 ? 1800 : 3600, item.seed); }, order * Math.min(120, 600 / items.length));
-      });
-    });
+    // (No "gifts" listener any more: gifts from the live channel are not trusted, only gifts the server has fly. See liveSend.)
     channel.on("broadcast", { event: "fresh" }, (message: { payload?: { id?: string } }) => {
       const id = message.payload?.id;
       if (!id || id === meId.current) return;
