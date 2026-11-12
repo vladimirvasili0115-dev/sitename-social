@@ -1382,7 +1382,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         syncTable.current = data.table;
         lastPullAt.current = Date.now();
         // Only a real entry clears the photos; a short connection drop or pause keeps the gifts until a new one comes.
-        if (entered) { setSpots({}); setStickers({}); }
+        if (entered) { setSpots({}); setStickers({}); setLines([]); } // another table (also one the server moved me to): the old table's chat goes too
         const all = data.chat.filter((item) => item.id > lastChat.current && item.kind !== "wheel");
         const who = (id: string | null) => (id === data!.me ? "me" : id ?? "");
         // Gifts from other players fly across the table on every screen; my own gifts were already shown when I sent them.
