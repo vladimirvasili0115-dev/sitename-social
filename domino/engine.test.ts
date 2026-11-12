@@ -73,7 +73,10 @@ ok(E.newMatch(3, "101", E.mulberry32(1)).stock.length === 7, "3 nəfərdə bazar
     if (r.ok) ok(r.s.hands[0].length === 1 + (mode === "101" ? 2 : 1), `${mode} çəkmə sayı`);
   }
   const s2 = mk("101"); s2.hands[0] = [[6, 1]];
-  ok(!E.draw(s2, 0).ok, "əlində gediş varkən çəkmək olmaz");
+  ok(E.required(s2) === "play", "gediş var");
+  const r2 = E.draw(s2, 0);
+  ok(r2.ok && r2.s.hands[0].length === 3 && r2.s.turn === 0, "gediş varkən də çəkmək olar, növbə qalır");
+  ok(!E.pass(s2, 0).ok, "gediş varkən pas olmaz");
   const s3 = mk("101"); s3.stock = [[5, 5]];
   const r3 = E.draw(s3, 0);
   ok(r3.ok && r3.s.hands[0].length === 2, "bazarda 1 qalanda 1 çəkir");

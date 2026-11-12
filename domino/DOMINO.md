@@ -17,7 +17,7 @@ Son nəticə: 3600 təsadüfi matç xətasız (yalnız mühərrik məntiqi; brau
 ## Ümumi qaydalar
 - 28 daş (0-0 … 6-6), hər oyunçuya 7. 4 nəfərdə bazar yoxdur, 3 nəfərdə 7 daş, 2 nəfərdə 14 daş bazarda.
 - 2 və 3 nəfərlik oyunda qaydalar eynidir.
-- Əlində gediş varkən bazardan çəkmək olmaz. Gediş yoxdursa və bazar boş deyilsə çəkməlidir. Bazar boşdursa pas.
+- Əlində gediş olsa da bazardan çəkmək olar (istifadəçi təsdiqlədi, paket-IZ); növbə oyunçuda qalır. Gediş yoxdursa və bazar boş deyilsə çəkməlidir. Bazar boşdursa pas. Gediş varkən pas olmaz.
 - 101-də bazardan **2-2**, 365-də **1-1** çəkilir (bazarda 1 qalıbsa 1).
 - Hamı ardıcıl pas edərsə, raund blokla bitir.
 - 4 nəfərdə standart: **2x2 komanda**, qarşılıqlı oturanlar (oyunçu 0+2, 1+3) bir komandadır. Oyunçu ayarlarından komandasız seçmək olar. Komanda xalları birlikdə sayılır.

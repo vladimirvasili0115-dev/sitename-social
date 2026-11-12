@@ -321,7 +321,7 @@ export function draw(s0: State, p: number): Result {
   if (s0.over) return bad("over");
   if (p !== s0.turn) return bad("not_your_turn");
   if (s0.stock.length === 0) return bad("stock_empty");
-  if (hasMove(s0, p)) return bad("has_move");
+  // Gediş olsa da çəkmək olar (istifadəçi təsdiqlədi, paket-IZ). Növbə oyunçuda qalır.
   const s = clone(s0);
   const k = drawChunk(s);
   for (let i = 0; i < k; i++) s.hands[p].push(s.stock.shift()!);

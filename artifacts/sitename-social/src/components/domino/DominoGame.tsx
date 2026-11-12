@@ -437,9 +437,10 @@ function useTableGeometry(): Geometry | null {
 }
 
 // The stock lying on the felt: face-down tiles stacked neatly like bricks (2 per layer, each layer a little higher),
-// small enough to sit in the round end of the table. Glows and can be tapped when the player must draw.
-function StockPile({ count, active, onDraw, tx, at, small }: {
-  count: number; active: boolean; onDraw: () => void; tx: (k: string) => string; at: { x: number; y: number }; small: boolean;
+// small enough to sit in the round end of the table. Can be tapped on my turn (even with a move in hand, paket-IZ);
+// glows and shows the hint only when the player must draw.
+function StockPile({ count, active, glow, onDraw, tx, at, small }: {
+  count: number; active: boolean; glow: boolean; onDraw: () => void; tx: (k: string) => string; at: { x: number; y: number }; small: boolean;
 }) {
   if (count <= 0) return null;
   const tw = small ? 30 : 40, th = tw / 2, gap = 2, lift = small ? 4 : 5;
@@ -448,7 +449,7 @@ function StockPile({ count, active, onDraw, tx, at, small }: {
   const w = tw * 2 + gap, h = th + (layers - 1) * lift;
   return (
     <button type="button" onClick={onDraw} disabled={!active} aria-label={`${tx("stock")} ${count}`}
-      className={`absolute z-20 -translate-x-1/2 -translate-y-1/2 rounded-md ${active ? "animate-pulse drop-shadow-[0_0_14px_#ffd77a]" : ""}`}
+      className={`absolute z-20 -translate-x-1/2 -translate-y-1/2 rounded-md ${glow ? "animate-pulse drop-shadow-[0_0_14px_#ffd77a]" : active ? "drop-shadow-[0_0_6px_#ffd77a80]" : ""}`}
       style={{ left: at.x, top: at.y, width: w, height: h }}>
       {Array.from({ length: shown }, (_, i) => {
         const layer = Math.floor(i / 2), col = i % 2;
@@ -458,7 +459,7 @@ function StockPile({ count, active, onDraw, tx, at, small }: {
         );
       })}
       <span className={`absolute -right-3 -top-3 grid h-5 min-w-5 place-items-center rounded-full px-1 text-[11px] font-black ${gold}`}>{count}</span>
-      {active ? <span className="absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap rounded-full bg-black/60 px-2 text-[10px] font-bold text-[#ffd77a]">{tx("tapStock")}</span> : null}
+      {glow ? <span className="absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap rounded-full bg-black/60 px-2 text-[10px] font-bold text-[#ffd77a]">{tx("tapStock")}</span> : null}
     </button>
   );
 }
@@ -697,7 +698,7 @@ function Stage({ tx, sync, myId, clockOffset, error, toast, onPlay, onDraw, onPa
 
       {/* the stock (bazar) lies on the felt, in the round end of the table; tap it to draw when you have no move */}
       {live && g && geo ? (
-        <StockPile count={g.stock_n} active={myTurn && sync.need === "draw"} onDraw={onDraw} tx={tx} at={geo.pile} small={!geo.wide || short} />
+        <StockPile count={g.stock_n} active={myTurn && g.stock_n > 0} glow={myTurn && sync.need === "draw"} onDraw={onDraw} tx={tx} at={geo.pile} small={!geo.wide || short} />
       ) : null}
 
       {toast ? (
