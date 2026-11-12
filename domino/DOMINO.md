@@ -25,7 +25,7 @@ Son nəticə: 3600 təsadüfi matç xətasız (yalnız mühərrik məntiqi; brau
 ## 101
 - Başlayan: **1-1 olan oyunçu**; yoxdursa 2-2 … 6-6 sırası ilə. Heç kimdə qoşa yoxdursa yenidən payla.
 - Raundu əli ilk boşalan qazanır. Rəqiblərin əlində qalan daşların cəmi qalibin komandasına xal yazılır.
-- Blok: əlində az qalan komanda qalib, xal = rəqiblərin cəmi − öz cəmi. Bərabərlikdə xal yoxdur.
+- Blok: əlində az qalan komanda qalib, xal = rəqiblərin əlindəki daşların tam cəmi (istifadəçi təsdiqlədi, paket-JA; əvvəl fərq idi). Bərabərlikdə xal yoxdur.
 - **101-ə ilk çatan qalib olur.**
 
 ## Telefon 365

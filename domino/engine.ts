@@ -347,8 +347,8 @@ export function pass(s0: State, p: number): Result {
     if (winners.length === 1) {
       const total = totals.reduce((a, b) => a + b, 0);
       if (s.mode === "101") {
-        const diff = total - min - min; // 101: rəqiblərin cəmi − qalibin cəmi
-        if (diff > 0) addScore(s, winners[0], diff, "block");
+        const opp = total - min; // 101: rəqiblərin tam cəmi (paket-JA, əvvəl fərq idi)
+        if (opp > 0) addScore(s, winners[0], opp, "block");
       } else {
         bonus365(s, winners[0], total - min, "block"); // 365: rəqiblərin cəmi (300-dən az olanda)
       }

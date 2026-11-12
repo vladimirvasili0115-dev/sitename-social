@@ -113,7 +113,7 @@ ok(E.newMatch(3, "101", E.mulberry32(1)).stock.length === 7, "3 nəfərdə bazar
   }
 }
 
-// 5) 101 blok: az qalan komanda qalib, xal = fərq
+// 5) 101 blok: az qalan komanda qalib, xal = rəqiblərin tam cəmi (paket-JA)
 {
   const s = base(2, "101", {
     hands: [[[0, 1]], [[5, 6]]], stock: [], chain: [P([3, 3], 3, 3)], spin: null,
@@ -124,7 +124,7 @@ ok(E.newMatch(3, "101", E.mulberry32(1)).stock.length === 7, "3 nəfərdə bazar
   if (a.ok) {
     const b = E.pass(a.s, 1);
     ok(b.ok && b.s.blocked && b.s.over, "blok");
-    if (b.ok) ok(b.s.scores[0] === 10 && b.s.scores[1] === 0, `blokda fərq 11-1=10 (alındı ${b.s.scores[0]})`);
+    if (b.ok) ok(b.s.scores[0] === 11 && b.s.scores[1] === 0, `blokda rəqibin tam cəmi 11 (alındı ${b.s.scores[0]})`);
   }
 }
 
