@@ -3869,18 +3869,13 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                       <>
                         <p className="mt-4 text-xs font-bold text-[#6B7280]">{t("bottle.plusNumColor")} #{tableLabel(net?.table)}</p>
                         {swatches((id) => void bottlePlusNumColor(id).then((ok) => { if (ok) { setPlusNote(t("bottle.plusSaved")); void bottleTables().then(setRooms); } }))}
-                        <p className="mt-4 text-xs font-bold text-[#6B7280]">{t("bottle.plusPass")} {net?.plus?.locked ? "🔒" : ""}</p>
-                        <form onSubmit={(event) => { event.preventDefault(); void bottlePlusPass(plusPass).then((ok) => { if (ok) { setPlusNote(t(plusPass ? "bottle.plusPassSet" : "bottle.plusPassOff")); setPlusPass(""); pullRef.current(); } }); }} className="mt-1.5 flex gap-2">
-                          <input type="text" value={plusPass} onChange={(event) => setPlusPass(event.target.value)} maxLength={30} placeholder={t("bottle.plusPassNew")} aria-label={t("bottle.plusPass")} className="h-10 min-w-0 flex-1 rounded-lg border border-[#E5E7EB] bg-white px-2 text-sm" />
-                          <button type="submit" className="h-10 rounded-lg bg-[#7C3AED] px-3 text-xs font-bold text-white">{plusPass ? t("bottle.plusPassSave") : t("bottle.plusPassRemove")}</button>
-                        </form>
+                        {/* VIP+ tables have no password any more (paket-JE): the password field is gone. */}
                         <p className="mt-3 text-[11px] leading-4 text-[#6B7280]">{t("bottle.plusMuteHint")}</p>
                       </>
                     ) : (
                       <form onSubmit={(event) => { event.preventDefault(); const num = Math.trunc(Number(plusNum)); if (!num) return setPlusNote(t("bottle.plusNumBad")); void bottlePlusCreate(num, plusPass).then((result) => { if (!result) return setPlusNote(t("bottle.kickFail")); if (result.error) return setPlusNote(errors[result.error] ?? t("bottle.kickFail")); setPlusNum(""); setPlusPass(""); movePass.current[result.table ?? 0] = ""; enteredRoom(); }); }} className="mt-4">
                         <p className="text-xs font-bold text-[#6B7280]">{t("bottle.plusNew")}</p>
                         <input inputMode="numeric" value={plusNum} onChange={(event) => setPlusNum(event.target.value.replace(/\D/g, "").slice(0, 6))} placeholder={t("bottle.plusNumPlaceholder")} aria-label={t("bottle.plusNumPlaceholder")} className="mt-1.5 h-10 w-full rounded-lg border border-[#E5E7EB] bg-white px-2 text-sm tabular-nums" />
-                        <input type="text" value={plusPass} onChange={(event) => setPlusPass(event.target.value)} maxLength={30} placeholder={t("bottle.plusPassOptional")} aria-label={t("bottle.plusPass")} className="mt-2 h-10 w-full rounded-lg border border-[#E5E7EB] bg-white px-2 text-sm" />
                         <button type="submit" className="mt-2 h-11 w-full rounded-xl bg-[#7C3AED] text-sm font-bold text-white hover:brightness-110">{t("bottle.plusCreate")}</button>
                       </form>
                     )}
