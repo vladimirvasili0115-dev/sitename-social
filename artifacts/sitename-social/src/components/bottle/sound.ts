@@ -3,6 +3,35 @@ import { isDrink } from "./customGifts";
 let context: AudioContext | null = null;
 let level = 1;
 export const setVolume = (value: number) => { level = Math.min(1, Math.max(0, value)); };
+// All sounds (recorded and synthesized) play through ONE Web Audio chain: a soft limiter, so many sounds at once do not
+// clip and crackle (iPhone), and the recordings get a real volume (on iOS an <audio> element always plays at full volume).
+let limiter: DynamicsCompressorNode | null = null;
+function audio(): AudioContext | null {
+  if (typeof window === "undefined") return null;
+  if (!context) {
+    const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!Ctor) return null;
+    context = new Ctor();
+    limiter = context.createDynamicsCompressor();
+    limiter.threshold.value = -14; limiter.knee.value = 10; limiter.ratio.value = 8; limiter.attack.value = 0.003; limiter.release.value = 0.2;
+    limiter.connect(context.destination);
+  }
+  if (context.state === "suspended") void context.resume().catch(() => {});
+  return context;
+}
+const output = (): AudioNode => (limiter ?? context!.destination);
+// iPhone starts sound only after a touch: the first touch / click wakes the audio up (a silent tick unlocks it).
+if (typeof window !== "undefined") {
+  const unlock = () => {
+    const ctx = audio();
+    if (ctx) { try { const src = ctx.createBufferSource(); src.buffer = ctx.createBuffer(1, 1, 22050); src.connect(ctx.destination); src.start(0); } catch { /* ignore */ } }
+    // the recordings fetched so far are decoded now, so the first gifts already play the real sound
+    if (ctx) raw.forEach((_, name) => decodeClip(name));
+    if (ctx && ctx.state === "running") { window.removeEventListener("pointerdown", unlock); window.removeEventListener("touchend", unlock); }
+  };
+  window.addEventListener("pointerdown", unlock, { passive: true });
+  window.addEventListener("touchend", unlock, { passive: true });
+}
 
 function tone(frequency: number, start: number, length: number, volume = 0.16, type: OscillatorType = "sine") {
   if (!context) return;
@@ -13,7 +42,7 @@ function tone(frequency: number, start: number, length: number, volume = 0.16, t
   gain.gain.setValueAtTime(0.0001, context.currentTime + start);
   gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, volume * level), context.currentTime + start + 0.02);
   gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + start + length);
-  oscillator.connect(gain).connect(context.destination);
+  oscillator.connect(gain).connect(output());
   oscillator.start(context.currentTime + start);
   oscillator.stop(context.currentTime + start + length + 0.05);
 }
@@ -23,8 +52,7 @@ export function warmPing() { loadClip("sfx/ping_drop"); }
 export function playPing() {
   if (level === 0 || typeof window === "undefined") return;
   try {
-    context ??= new (window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
-    if (context.state === "suspended") void context.resume();
+    if (!audio()) return;
     playClip("sfx/ping_drop", () => { glide(700, 3300, 0, 0.16, 0.22); });
   } catch {
     // Audio is unavailable or blocked: stays silent.
@@ -33,8 +61,7 @@ export function playPing() {
 export function playSound(kind: "turn" | "chosen" | "kiss" | "decline") {
   if (level === 0 || typeof window === "undefined") return;
   try {
-    context ??= new (window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
-    if (context.state === "suspended") void context.resume();
+    if (!audio()) return;
     if (kind === "turn") return playClip("turn", () => { tone(880, 0, 0.16); tone(1175, 0.14, 0.24); });
     // The pair coming to the middle and a refusal are silent (the beeps sounded harsh).
     if (kind === "chosen" || kind === "decline") return;
@@ -60,7 +87,7 @@ function noise(start: number, length: number, frequency: number, volume = 0.2, s
   if (sweepTo) filter.frequency.exponentialRampToValueAtTime(sweepTo, context.currentTime + start + length);
   gain.gain.setValueAtTime(Math.max(0.0002, volume * level), context.currentTime + start);
   gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + start + length);
-  source.connect(filter).connect(gain).connect(context.destination);
+  source.connect(filter).connect(gain).connect(output());
   source.start(context.currentTime + start);
 }
 
@@ -76,21 +103,45 @@ function pourSynth() {
 }
 // Recorded sounds. Any gift sound can be replaced by a real recording: put "<name>.mp3" into the site's public/sounds folder
 // (kiss.mp3, frog.mp3, cocktail.mp3 ...). A file that exists is played; for a missing one the synthesized sound is used.
-const clips = new Map<string, HTMLAudioElement | null>();
+// The file is downloaded once (raw), decoded into memory when the audio is awake, and every play uses that memory copy.
+const raw = new Map<string, Promise<ArrayBuffer | null>>();
+const decoded = new Map<string, AudioBuffer | null>(); // null = could not be decoded: the synthesized sound is used
+const decoding = new Set<string>();
 function loadClip(name: string) {
-  if (clips.has(name) || typeof Audio === "undefined") return;
-  clips.set(name, null);
-  const audio = new Audio();
-  audio.preload = "auto";
-  audio.addEventListener("canplaythrough", () => clips.set(name, audio), { once: true });
-  audio.src = `/sounds/${name}.mp3`;
+  if (raw.has(name) || typeof fetch === "undefined") return;
+  raw.set(name, fetch(`/sounds/${name}.mp3`).then((res) => (res.ok ? res.arrayBuffer() : null)).catch(() => null));
+  decodeClip(name);
 }
+function decodeClip(name: string) {
+  const ctx = context;
+  if (!ctx || decoded.has(name) || decoding.has(name)) return;
+  const file = raw.get(name);
+  if (!file) return;
+  decoding.add(name);
+  void file.then((data) => {
+    if (!data) { decoded.set(name, null); decoding.delete(name); return; }
+    // the callback form works on old iPhones too (no promise there)
+    ctx.decodeAudioData(data.slice(0), (buffer) => { decoded.set(name, buffer); decoding.delete(name); }, () => { decoded.set(name, null); decoding.delete(name); });
+  });
+}
+// A gift stream can ask for dozens of sounds a second: only a few play at the same time, the rest are skipped (no noise heap).
+const MAX_VOICES = 5;
+let voices = 0;
 function playClip(name: string, fallback: () => void) {
-  const ready = clips.get(name);
-  if (!ready) { loadClip(name); return fallback(); }
-  const clip = ready.cloneNode() as HTMLAudioElement;
-  clip.volume = level;
-  void clip.play().catch(fallback);
+  const ctx = audio();
+  if (!ctx) return;
+  const buffer = decoded.get(name);
+  if (buffer === undefined) { loadClip(name); decodeClip(name); return fallback(); }
+  if (buffer === null) return fallback();
+  if (voices >= MAX_VOICES) return;
+  const source = ctx.createBufferSource();
+  const gain = ctx.createGain();
+  source.buffer = buffer;
+  gain.gain.value = level;
+  source.connect(gain).connect(output());
+  voices += 1;
+  source.onended = () => { voices = Math.max(0, voices - 1); };
+  source.start();
 }
 
 // A tone whose pitch slides from one frequency to another (animal calls, engines, springs).
@@ -105,7 +156,7 @@ function glide(from: number, to: number, start: number, length: number, volume =
   gain.gain.setValueAtTime(0.0001, at);
   gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, volume * level), at + Math.min(0.02, length / 3));
   gain.gain.exponentialRampToValueAtTime(0.0001, at + length);
-  oscillator.connect(gain).connect(context.destination);
+  oscillator.connect(gain).connect(output());
   oscillator.start(at);
   oscillator.stop(at + length + 0.05);
 }
@@ -213,8 +264,7 @@ export function playGiftSound(gift: string, moment: "send" | "land") {
   if (level === 0 || typeof window === "undefined") return;
   loadGiftSfx();
   try {
-    context ??= new (window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
-    if (context.state === "suspended") void context.resume();
+    if (!audio()) return;
     const sfx = sfxOf(gift);
     const list = sfx ? sfx[moment === "send" ? 0 : 1] : [];
     if (list.length) {
