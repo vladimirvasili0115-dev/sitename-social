@@ -4,7 +4,7 @@ import { flashRefusal } from "./flash";
 
 // Live tables of the bottle game. The database owns the game: seats, turns, where the bottle stops, answers and kisses.
 export type BottleSeat = { seat: number; id: string; name: string | null; avatar: string | null; gender: string | null; kisses: number; total?: number; smiles?: number; songs?: number; zodiac?: number | null; age: number | null; status?: string | null; frame?: number; pass?: boolean; top?: boolean; vip_badge?: boolean; kicked?: { by: string; at: number }; muted?: boolean | null; admirer?: { id: string; name: string | null; avatar: string | null; amount: number } | null };
-export type BottleChat = { id: number; from: string | null; to: string | null; kind: "text" | "kiss" | "wheel" | "song" | "gift" | "admire" | "admire_lost" | "kick" | "saved" | "kicked" | "compliment" | "bottle" | "gesture" | "booster" | "muted" | "unmuted"; body: string | null; seed?: number | null };
+export type BottleChat = { id: number; from: string | null; to: string | null; kind: "text" | "kiss" | "wheel" | "song" | "gift" | "admire" | "admire_lost" | "kick" | "saved" | "kicked" | "compliment" | "bottle" | "gesture" | "booster" | "muted" | "unmuted" | "fresh"; body: string | null; seed?: number | null };
 export type BottleState = {
   session?: string | null;
   table: number; me: string; now: number; hearts: number; chances?: number; winner?: { name: string | null; amount: number } | null;
@@ -38,6 +38,8 @@ export const bottleSpin = () => call<boolean>("bottle_spin");
 export const bottleAnswer = (kiss: boolean) => call<null>("bottle_answer", { p_kiss: kiss });
 // A player of the running round (spinner or chosen) came back after a page reload: the round ends and the turn moves on (paket-ID).
 export const bottleRoundReset = () => call<boolean>("bottle_round_reset");
+// Moving again at the same table (paket-JJ): my gifts are wiped on the server and the others see a "fresh" row and wipe them too.
+export const bottleFresh = () => call<boolean>("bottle_fresh");
 // A line in the table chat. A refused line (for example one with a website address) shows the short notice at the bottom.
 export async function bottleSay(text: string): Promise<null> {
   if (!supabase) return null;
