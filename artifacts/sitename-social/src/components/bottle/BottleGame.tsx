@@ -1731,7 +1731,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   ) : null;
   const byId = (id: string) => players.find((player) => player.id === id);
   // Somebody who left the table: his lines stay in the chat for everyone (name and photo are remembered).
-  const lineWho = (id: string) => byId(id) ?? (names.current[id] ? { id, name: names.current[id].name, age: 0, female: false, avatar: names.current[id].avatar } as Player : undefined);
+  // "me" is not in the seats while I sit hidden (paket-KC): my own chat lines still show, with my name and photo.
+  const lineWho = (id: string) => byId(id) ?? (names.current[id] ? { id, name: names.current[id].name, age: 0, female: false, avatar: names.current[id].avatar } as Player : id === "me" ? { id: "me", name: gameName(user?.name) || "?", age: 0, female: details?.gender === "female", avatar: user?.avatar || NO_PHOTO, me: true } as Player : undefined);
   const staged = phase !== "waiting" && phase !== "spinning" && target !== null;
   // The pair in the middle: the spinner used to go always to the left and the chosen one to the right, so their paths could cross.
   // Test (owner, moderators): each goes to the side of the bottle they sit on — the one sitting more to the left stands left.
