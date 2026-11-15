@@ -7,8 +7,8 @@ type Kind = "active" | "spend" | "kisses" | "songs";
 const KINDS: { key: Kind; icon: string }[] = [{ key: "active", icon: "⏱" }, { key: "spend", icon: "💸" }, { key: "kisses", icon: "💋" }, { key: "songs", icon: "🎵" }];
 
 const words: Record<string, Record<string, string>> = {
-  az: { title: "Həftənin yarışı", active: "Ən aktiv (oyunda keçirilən vaxt)", spend: "Ən çox xərcləyən", kisses: "Ən çox öpüş alan", songs: "Ən çox musiqi qoşan", prize: "Həftənin qalibinə mükafat", left: "Həftənin sonuna", d: "gün", h: "saat", m: "dəq", you: "Sən", empty: "Hələ heç kim yoxdur", close: "Bağla", congrats: "TƏBRİKLƏR, QAZANDINIZ!", take: "Götür", won: "Həftənin qalibi!", rules: "Admin və moderatorlar sayılmır. Həftə Bazar ertəsi başlayır.", place: "yer" },
-  en: { title: "Weekly contest", active: "Most active (time in game)", spend: "Biggest spender", kisses: "Most kisses received", songs: "Most songs played", prize: "Prize for the weekly winner", left: "Until the week ends", d: "d", h: "h", m: "min", you: "You", empty: "Nobody yet", close: "Close", congrats: "CONGRATULATIONS, YOU WON!", take: "Take", won: "Weekly winner!", rules: "Admins and moderators are not counted. The week starts on Monday.", place: "place" },
+  az: { title: "Həftənin yarışı", active: "Ən aktiv (oyunda keçirilən vaxt)", spend: "Ən çox xərcləyən", kisses: "Ən çox öpüş alan", songs: "Ən çox musiqi qoşan", prize: "İlk 3 yerə mükafat", placeWon: "Həftənin {n}. yeri!", left: "Həftənin sonuna", d: "gün", h: "saat", m: "dəq", you: "Sən", empty: "Hələ heç kim yoxdur", close: "Bağla", congrats: "TƏBRİKLƏR, QAZANDINIZ!", take: "Götür", won: "Həftənin qalibi!", rules: "Admin və moderatorlar sayılmır. Həftə Bazar ertəsi başlayır.", place: "yer" },
+  en: { title: "Weekly contest", active: "Most active (time in game)", spend: "Biggest spender", kisses: "Most kisses received", songs: "Most songs played", prize: "Prizes for the top 3", placeWon: "Place {n}!", left: "Until the week ends", d: "d", h: "h", m: "min", you: "You", empty: "Nobody yet", close: "Close", congrats: "CONGRATULATIONS, YOU WON!", take: "Take", won: "Weekly winner!", rules: "Admins and moderators are not counted. The week starts on Monday.", place: "place" },
 };
 const w = (locale: string) => words[locale] ?? words.en;
 
@@ -42,7 +42,7 @@ export function WeeklyPanel({ locale, onClose }: { locale: string; onClose: () =
         <p className="my-2 text-center text-xs text-[#c9b8ff]">{x[kind]}</p>
         <div className="mb-2 flex items-center gap-2.5 rounded-2xl bg-[linear-gradient(90deg,#f59e0b,#ef4444)] px-3 py-2.5">
           <span className="text-3xl">🏆</span>
-          <div><b className="text-xl">{(data?.prize ?? (kind === "active" || kind === "spend" ? 40000 : 10000)).toLocaleString("ru-RU")} ❤</b><small className="block text-[11px]">{x.prize}</small></div>
+          <div className="min-w-0 flex-1"><div className="flex flex-wrap gap-x-2.5 gap-y-0.5">{(data?.prizes ?? [20000, 15000, 10000]).map((amount, index) => <b key={index} className={index === 0 ? "text-lg" : "text-sm self-end"}>{["🥇", "🥈", "🥉"][index]} {amount.toLocaleString("ru-RU")} ❤</b>)}</div><small className="block text-[11px]">{x.prize}</small></div>
         </div>
         <ol className="min-h-[120px] flex-1 overflow-y-auto [scrollbar-width:none]">
           {data === null ? <li className="py-8 text-center text-xs text-white/60">…</li>
@@ -73,7 +73,7 @@ export function WeeklyPanel({ locale, onClose }: { locale: string; onClose: () =
 // After a week ends the winner sees the prize when entering the game and takes it with the button.
 export function WeekPrizePopup({ locale, online, onHearts }: { locale: string; online: boolean; onHearts: (hearts: number) => void }) {
   const x = w(locale);
-  const [prizes, setPrizes] = useState<{ week: string; kind: string; amount: number }[]>([]);
+  const [prizes, setPrizes] = useState<{ week: string; kind: string; amount: number; place?: number }[]>([]);
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     if (!online) return;
@@ -94,7 +94,7 @@ export function WeekPrizePopup({ locale, online, onHearts }: { locale: string; o
     <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 p-4">
       <div role="dialog" aria-modal="true" className="w-full max-w-[340px] rounded-3xl bg-[linear-gradient(#fff,#fff6d6)] p-6 text-center text-[#3b1d6e] shadow-2xl">
         <div className="text-5xl">🏆</div>
-        <p className="mt-1 text-base font-bold">{x.won}</p>
+        <p className="mt-1 text-base font-bold">{(first.place ?? 1) > 1 ? x.placeWon.replace("{n}", String(first.place)) : x.won}</p>
         <p className="text-xs">{x[first.kind] ?? ""}</p>
         <p className="my-2 text-4xl font-extrabold text-[#e11d48]">+{first.amount.toLocaleString("ru-RU")} ❤</p>
         <p className="text-sm font-extrabold">{x.congrats}</p>
