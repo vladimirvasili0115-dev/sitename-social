@@ -675,6 +675,10 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   };
   // Coming (back) to a table: the gifts that sit on the others' photos are read from the server (not from the other screens) and put in place without flying.
   const restoreGifts = useRef<(list: BottleSeatGift[], me: string) => void>(() => {});
+  // The table whose photos are on screen (set after the "new table clears the photos" step below has run), and gifts read from the
+  // server that came back before that step: they are put on the photos right after it, so the clearing does not wipe them (page reload on a slow phone).
+  const photosTable = useRef<number | null>(null);
+  const pendingRestore = useRef<{ table: number; list: BottleSeatGift[]; me: string } | null>(null);
   restoreGifts.current = (list, me) => {
     const newestRand: Record<string, number> = {};
     for (const item of list) if (typeof item.seed === "number" && planLanding(item.gift, item.seed).spot?.kind === "rand") newestRand[item.to] = item.cid;
@@ -1421,7 +1425,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         if (entered || counting || sig !== netSig.current.sig || Date.now() - netSig.current.at > 4000) { netSig.current = { sig, at: Date.now() }; setNet(data); }
         if (entered) {
           const tableAtEntry = data.table;
-          void bottleTableGifts(lastChat.current).then((list) => { if (list && alive && syncTable.current === tableAtEntry) restoreGifts.current(list, data!.me); });
+          void bottleTableGifts(lastChat.current).then((list) => { if (!list || !alive || syncTable.current !== tableAtEntry) return; if (photosTable.current === tableAtEntry) restoreGifts.current(list, data!.me); else pendingRestore.current = { table: tableAtEntry, list, me: data!.me }; });
           // Coming (back) into a table: the last 20 chat rows (messages, songs, who gave whom a gift) are shown; a gift storm counts as one row.
           const meAtEntry = data.me;
           void Promise.resolve(supabase?.rpc("bottle_chat_history", { p_limit: 300 })).then(async (res) => {
@@ -1853,7 +1857,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   useEffect(() => { if (!liveTable) return; const id = liveTable; const timer = window.setTimeout(() => setStayed((list) => { const next = { ...list, [id]: Date.now() + 6 * 3600 * 1000 }; try { window.localStorage.setItem("bottle-stayed", JSON.stringify(next)); } catch { /* storage is blocked */ } return next; }), 180000); return () => window.clearTimeout(timer); }, [liveTable]);
   // A new table or room starts clean: gifts that sat on the photos at the old table do not come along.
   // Every table has its own music: moving to another table stops the song of the old one and plays the new table's song (if any).
-  useEffect(() => { tableGen.current += 1; setFlying([]); setBursts([]); setShows([]); setStickers({}); setSpots({}); setPiles({}); setScatters([]); setVideo(null); setAudio(null); trackAt.current = 0; }, [liveTable]);
+  useEffect(() => { tableGen.current += 1; setFlying([]); setBursts([]); setShows([]); setStickers({}); setSpots({}); setPiles({}); setScatters([]); setVideo(null); setAudio(null); trackAt.current = 0; photosTable.current = liveTable ?? null; const waiting = pendingRestore.current; if (waiting && waiting.table === liveTable) { pendingRestore.current = null; restoreGifts.current(waiting.list, waiting.me); } }, [liveTable]);
   useEffect(() => {
     if (!liveTable) return;
     try {
