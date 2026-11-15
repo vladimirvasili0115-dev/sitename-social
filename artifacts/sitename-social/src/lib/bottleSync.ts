@@ -4,13 +4,14 @@ import { flashRefusal } from "./flash";
 
 // Live tables of the bottle game. The database owns the game: seats, turns, where the bottle stops, answers and kisses.
 export type BottleSeat = { seat: number; id: string; name: string | null; avatar: string | null; gender: string | null; kisses: number; total?: number; smiles?: number; songs?: number; zodiac?: number | null; age: number | null; status?: string | null; frame?: number; pass?: boolean; top?: boolean; vip_badge?: boolean; kicked?: { by: string; at: number }; muted?: boolean | null; admirer?: { id: string; name: string | null; avatar: string | null; amount: number } | null };
-export type BottleChat = { id: number; from: string | null; to: string | null; kind: "text" | "kiss" | "wheel" | "song" | "gift" | "admire" | "admire_lost" | "kick" | "saved" | "kicked" | "compliment" | "bottle" | "gesture" | "booster" | "muted" | "unmuted" | "fresh" | "staff_bonus"; body: string | null; seed?: number | null; role?: "owner" | "mod" | null; fname?: string | null; favatar?: string | null; tname?: string | null };
+export type BottleChat = { id: number; from: string | null; to: string | null; kind: "text" | "kiss" | "wheel" | "song" | "gift" | "admire" | "admire_lost" | "kick" | "saved" | "kicked" | "compliment" | "bottle" | "gesture" | "booster" | "muted" | "unmuted" | "fresh" | "staff_bonus" | "staff_mute"; body: string | null; seed?: number | null; role?: "owner" | "mod" | null; fname?: string | null; favatar?: string | null; tname?: string | null };
 export type BottleState = {
   session?: string | null;
   table: number; me: string; now: number; hearts: number; chances?: number; winner?: { name: string | null; amount: number } | null;
   phase: "waiting" | "spinning" | "choice" | "result"; phase_at: number;
   turn: string | null; target: string | null; spinner_answer: boolean | null; target_answer: boolean | null; round: number;
   seats: BottleSeat[]; chat: BottleChat[];
+  chat_ban?: number | null; // (paket-KG) muted in the chat by the owner / a moderator until this time (ms)
   hidden?: boolean; // (paket-KC) I sit at this table hidden (owner / moderator): no seat, nobody sees me
   wheel?: boolean; skin?: number; track?: BottleTrack | null; vip?: boolean; frames?: number[]; active?: { secs: number; claimed: number } | null; compliments?: number; room?: { name: string; capacity: number; owner: string }; plus?: { owner: string; color: string | null; locked: boolean } | null; is_plus?: boolean; muted?: boolean | null;
 };
@@ -148,6 +149,8 @@ export const bottleYtPut = (q: string, list: BottleYtTrack[]) => call<null>("bot
 export const bottleGetAccept = () => call<boolean>("bottle_get_accept");
 // Hidden mode for the owner and moderators (paket-KC): watch a table without taking a seat. full: the table has no free seat to show up again.
 export const bottleSetHidden = (on: boolean) => call<{ hidden: boolean; full?: boolean }>("bottle_set_hidden", { p_on: on });
+// The owner / a moderator mutes a player in the chat of every table (paket-KG): 15, 600 or 1440 minutes; 0 lifts it.
+export const bottleStaffMute = (user: string, minutes: 0 | 15 | 600 | 1440) => call<{ ok?: boolean; error?: string }>("bottle_staff_mute", { p_user: user, p_minutes: minutes });
 export const bottleSetAccept = (accept: boolean) => call<boolean>("bottle_set_accept", { p_accept: accept });
 
 // VIP and TOP ribbons of a player who is not at my table (the card of an admirer or of someone from the ratings).

@@ -44,7 +44,7 @@ import { useSettings } from "@/components/settings/useSettings";
 import { ensureMessagesLoaded, openRemoteChat, remoteChats, sendRemoteMessage } from "@/lib/messagesSync";
 import { uploadBlob } from "@/lib/media";
 import { refreshGifts } from "@/lib/giftsSync";
-import { bottleFresh, bottleSetHidden, bottleSeek, bottleLogIp, bottleAdminIpLookup, type BottleIpRow, bottleAnswer, bottleRoundReset, bottleAchSync, bottleAchView, bottleGesture, bottleSmiles, bottleBuyHearts, bottleGiftAllow, bottleBuySmiles, bottleProgress, bottleGesturesOpen, bottleSkin, bottleBadges, bottleGetAccept, bottleSetAccept, bottleBuyChances, bottleJoin, bottleMove, bottleMoveWaitStart, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleProfile, type BottleProfile, bottleDaily, bottleItems, bottleItemBuy, bottleBooster, bottleTutorial, bottleAdminIds, type BottleItems, bottleLeagueInfo, bottleLeagueClaim, type BottleLeague, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleKickPrice, bottleKickDefendPrice, bottlePlusCreate, bottlePlusPass, bottlePlusNumColor, bottlePlusNameColor, bottlePlusMute, bottleUnmuteSelf, bottleGift, bottleGiftMany, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, bottleClaim, type BottleState, type BottleSeat, bottleEffectOf, bottleYtGet, bottleYtPut, bottleTableGifts, type BottleSeatGift } from "@/lib/bottleSync";
+import { bottleFresh, bottleSetHidden, bottleStaffMute, bottleSeek, bottleLogIp, bottleAdminIpLookup, type BottleIpRow, bottleAnswer, bottleRoundReset, bottleAchSync, bottleAchView, bottleGesture, bottleSmiles, bottleBuyHearts, bottleGiftAllow, bottleBuySmiles, bottleProgress, bottleGesturesOpen, bottleSkin, bottleBadges, bottleGetAccept, bottleSetAccept, bottleBuyChances, bottleJoin, bottleMove, bottleMoveWaitStart, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleProfile, type BottleProfile, bottleDaily, bottleItems, bottleItemBuy, bottleBooster, bottleTutorial, bottleAdminIds, type BottleItems, bottleLeagueInfo, bottleLeagueClaim, type BottleLeague, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleKickPrice, bottleKickDefendPrice, bottlePlusCreate, bottlePlusPass, bottlePlusNumColor, bottlePlusNameColor, bottlePlusMute, bottleUnmuteSelf, bottleGift, bottleGiftMany, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, bottleClaim, type BottleState, type BottleSeat, bottleEffectOf, bottleYtGet, bottleYtPut, bottleTableGifts, type BottleSeatGift } from "@/lib/bottleSync";
 import { ytHint, ytReason } from "./ytHints";
 import { WeeklyPanel, WeekPrizePopup } from "./WeeklyTop";
 import { BonusMarket, EnigmaEffect, arrivalLabel, marketLabel } from "./BonusMarket";
@@ -54,7 +54,7 @@ type Phase = "waiting" | "spinning" | "choice" | "kissed" | "declined";
 type Track = { id: string; title: string; duration?: string };
 const stored = (key: string): Track[] => { try { return JSON.parse(window.localStorage.getItem(key) ?? "[]") as Track[]; } catch { return []; } };
 const keep = (key: string, list: Track[]) => { try { window.localStorage.setItem(key, JSON.stringify(list.slice(0, 40))); } catch { /* storage is full or blocked */ } };
-type Line = { id: number; from: string; role?: "owner" | "mod"; staff?: { role: "owner" | "mod"; to: string }; to?: string; tos?: string[]; per?: Record<string, number>; gesture?: string; gestures?: string[]; count?: number; bottle?: { a: number; b: number }; text?: string; gift?: string; song?: string; admire?: { amount?: number; by?: string; avatar?: string; target?: string; old?: string | null; self?: boolean; lost?: boolean }; event?: { kind: "kick" | "saved" | "kicked" | "muted" | "unmuted" | "restored"; a: string; b: string }; boost?: { kind: "kiss_fire" | "refuse_slap"; a: string; b: string } };
+type Line = { id: number; from: string; smute?: { name: string; minutes: number }; role?: "owner" | "mod"; staff?: { role: "owner" | "mod"; to: string }; to?: string; tos?: string[]; per?: Record<string, number>; gesture?: string; gestures?: string[]; count?: number; bottle?: { a: number; b: number }; text?: string; gift?: string; song?: string; admire?: { amount?: number; by?: string; avatar?: string; target?: string; old?: string | null; self?: boolean; lost?: boolean }; event?: { kind: "kick" | "saved" | "kicked" | "muted" | "unmuted" | "restored"; a: string; b: string }; boost?: { kind: "kiss_fire" | "refuse_slap"; a: string; b: string } };
 // A gift tile stands for a whole family (e.g. the five kinds of kiss lips): in the chat they all count as the same gift.
 let familyOf: Map<string, string> | null = null;
 function giftFamily(gift: string) {
@@ -945,6 +945,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [dmDraft, setDmDraft] = useState("");
   const [dms, setDms] = useState<Record<string, { mine: boolean; text: string }[]>>({});
   const [cardNote, setCardNote] = useState<string | null>(null);
+  // The owner / a moderator picks how long a player is muted in the chat (paket-KG).
+  const [staffMute, setStaffMute] = useState<{ id: string; name: string } | null>(null);
   const [suitors, setSuitors] = useState<Record<string, { by: string; amount: number }>>(() => Object.fromEntries(bots.map((bot, index) => [bot.id, { by: bots[(index + 3) % bots.length].id, amount: 4 + ((index * 37) % 40) }])));
   const [volume, setVolumeLevel] = useState(80);
   const [music, setMusic] = useState(60);
@@ -1421,7 +1423,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         const fresh = entered ? [] : all.filter((item) => item.kind !== "fresh" && item.kind !== "compliment" && (item.kind !== "admire_lost" || item.to === data!.me) && (item.kind !== "gift" || (first && item.from !== data!.me)));
         if (all.length) lastChat.current = all[all.length - 1].id;
         if (fresh.length) {
-          setLines((list) => mergeLines(list.slice(-CHAT_KEEP), fresh.map((item) => (item.kind === "staff_bonus" ? { id: item.id, from: who(item.from), staff: { role: item.role === "owner" ? "owner" as const : "mod" as const, to: item.tname || nameOf(item.to) } } : item.kind === "kiss" ? { id: item.id, from: who(item.from), to: who(item.to) } : item.kind === "gift" ? { id: item.id, from: who(item.from), to: who(item.to), gift: item.body ?? "" } : item.kind === "admire" || item.kind === "admire_lost" ? { id: item.id, from: who(item.from), to: item.kind === "admire" ? who(item.to) : undefined, admire: { ...(() => { try { return JSON.parse(item.body ?? "{}") as AdmireNote; } catch { return {}; } })(), lost: item.kind === "admire_lost" } } : item.kind === "song" ? { id: item.id, from: who(item.from), to: item.to ? who(item.to) : undefined, song: item.body || "♪" } : item.kind === "kick" || item.kind === "saved" || item.kind === "kicked" ? { id: item.id, from: who(item.from), event: { kind: item.kind, a: nameOf(item.from), b: nameOf(item.to) } } : item.kind === "muted" || item.kind === "unmuted" ? { id: item.id, from: who(item.from), event: { kind: item.kind === "unmuted" && item.body === "self" ? "restored" as const : item.kind, a: nameOf(item.from), b: nameOf(item.to) } } : item.kind === "gesture" ? { id: item.id, from: who(item.from), gesture: item.body ?? "" } : item.kind === "booster" ? { id: item.id, from: who(item.from), boost: { kind: item.body === "refuse_slap" ? "refuse_slap" : "kiss_fire", a: nameOf(item.from), b: nameOf(item.to) } } : item.kind === "bottle" ? { id: item.id, from: who(item.from), bottle: { a: Number((item.body ?? "0:0").split(":")[0]) || 0, b: Number((item.body ?? "0:0").split(":")[1]) || 0 } } : { id: item.id, from: who(item.from), text: item.body ?? "", ...(item.role ? { role: item.role } : {}) }))).slice(-80));
+          setLines((list) => mergeLines(list.slice(-CHAT_KEEP), fresh.map((item) => (item.kind === "staff_mute" ? { id: item.id, from: who(item.from), smute: { name: item.tname || nameOf(item.to), minutes: Number(item.body) || 0 } } : item.kind === "staff_bonus" ? { id: item.id, from: who(item.from), staff: { role: item.role === "owner" ? "owner" as const : "mod" as const, to: item.tname || nameOf(item.to) } } : item.kind === "kiss" ? { id: item.id, from: who(item.from), to: who(item.to) } : item.kind === "gift" ? { id: item.id, from: who(item.from), to: who(item.to), gift: item.body ?? "" } : item.kind === "admire" || item.kind === "admire_lost" ? { id: item.id, from: who(item.from), to: item.kind === "admire" ? who(item.to) : undefined, admire: { ...(() => { try { return JSON.parse(item.body ?? "{}") as AdmireNote; } catch { return {}; } })(), lost: item.kind === "admire_lost" } } : item.kind === "song" ? { id: item.id, from: who(item.from), to: item.to ? who(item.to) : undefined, song: item.body || "♪" } : item.kind === "kick" || item.kind === "saved" || item.kind === "kicked" ? { id: item.id, from: who(item.from), event: { kind: item.kind, a: nameOf(item.from), b: nameOf(item.to) } } : item.kind === "muted" || item.kind === "unmuted" ? { id: item.id, from: who(item.from), event: { kind: item.kind === "unmuted" && item.body === "self" ? "restored" as const : item.kind, a: nameOf(item.from), b: nameOf(item.to) } } : item.kind === "gesture" ? { id: item.id, from: who(item.from), gesture: item.body ?? "" } : item.kind === "booster" ? { id: item.id, from: who(item.from), boost: { kind: item.body === "refuse_slap" ? "refuse_slap" : "kiss_fire", a: nameOf(item.from), b: nameOf(item.to) } } : item.kind === "bottle" ? { id: item.id, from: who(item.from), bottle: { a: Number((item.body ?? "0:0").split(":")[0]) || 0, b: Number((item.body ?? "0:0").split(":")[1]) || 0 } } : { id: item.id, from: who(item.from), text: item.body ?? "", ...(item.role ? { role: item.role } : {}) }))).slice(-80));
         }
         // Nothing changed and nothing counts down: skip the full re-render (the clock is refreshed at least every 4 seconds).
         const sig = JSON.stringify({ ...data, now: 0 });
@@ -2431,7 +2433,10 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     { key: "boosters", label: t("bottle.boosters"), go: () => { setPayNote(false); setPanel("boosters"); }, icon: <span className="block h-6 w-6 bg-center bg-no-repeat" style={{ backgroundImage: "url(/custom/orig/misc_menu_boosters.svg)", backgroundSize: "24px 24px" }} /> },
     { key: "rules", label: t("bottle.rules"), go: () => setPanel("rules"), icon: <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[linear-gradient(180deg,#7CD35B,#3FA62B)]"><BookOpen size={15} className="text-white" strokeWidth={2.4} /></span> },
   ];
-  const iMuted = Boolean(online && net?.muted);
+  // Muted by the owner / a moderator (paket-KG): no chat on any table until the time is over.
+  const staffBanLeft = online && net?.chat_ban ? Math.max(0, net.chat_ban - net.now) : 0;
+  const staffBanText = staffBanLeft > 0 ? (() => { const mins = Math.ceil(staffBanLeft / 60000); const left = mins >= 60 ? `${Math.floor(mins / 60)} saat ${mins % 60} dəq` : `${mins} dəq`; return locale === "az" ? `Moderator tərəfindən susdurulmusan · ${left} qalıb` : `Muted by a moderator · ${left} left`; })() : "";
+  const iMuted = Boolean(online && (net?.muted || staffBanLeft > 0));
   function handleChat(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!draft.trim() || iMuted) return;
@@ -3277,6 +3282,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           const actions = [
             ...(player.me || outside ? [] : [{ key: "kick", label: t("bottle.kick"), bg: "rgb(255,97,66)", icon: "act_kick.svg", size: !small ? "42px 35px" : "38px 32px", go: () => askKick(player) }]),
             ...(net && online && net.is_plus && net.plus?.owner === net.me && !player.me && !outside ? (() => { const seatMuted = Boolean(net.seats.find((seat) => seat.id === player.id)?.muted); return [{ key: "mute", label: seatMuted ? t("bottle.plusUnmute") : t("bottle.plusMute"), bg: "rgb(107,114,128)", icon: "", size: "", emoji: seatMuted ? "🔊" : "🔇", go: () => { setCard(false); void bottlePlusMute(player.id, !seatMuted).then(() => pullRef.current()); } }]; })() : []),
+            ...(iAmAdmin && online && !player.me && !outside && !adminIds.includes(player.id) ? [{ key: "smute", label: locale === "az" ? "Çatda sustur" : "Mute in chat", bg: "rgb(17,24,39)", icon: "", size: "", emoji: "🤐", go: () => { setCard(false); setStaffMute({ id: player.id, name: player.name }); } }] : []),
             ...(profileHref ? [{ key: "social", label: t("bottle.openProfile"), bg: "rgb(241,138,0)", icon: "", size: "", go: () => { window.open(profileHref, "_blank"); } }] : []),
             player.me
               ? { key: "music", label: t("bottle.statSongs"), bg: "rgb(177,89,137)", icon: "act_music.svg", size: !small ? "28px 28px" : "26px 26px", go: () => { setCard(false); openSong(meIndex); } }
@@ -3555,6 +3561,18 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           </div>
         ) : null}
 
+        {staffMute ? (
+          <div className="absolute inset-0 z-[60] flex items-center justify-center bg-black/45" onClick={() => setStaffMute(null)}>
+            <div role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()} className="w-[min(300px,80cqmin)] rounded-2xl bg-white p-4 text-center text-[#1F2937] shadow-2xl">
+              <p className="text-sm font-bold">🤐 {locale === "az" ? <><b>{staffMute.name}</b> çatda susdurulsun</> : <>Mute <b>{staffMute.name}</b> in the chat</>}</p>
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                {([[15, locale === "az" ? "15 dəq" : "15 min"], [600, locale === "az" ? "10 saat" : "10 h"], [1440, locale === "az" ? "24 saat" : "24 h"]] as const).map(([mins, label]) => <button key={mins} type="button" onClick={() => { const who = staffMute; setStaffMute(null); void bottleStaffMute(who.id, mins).then(() => pullRef.current()); }} className="rounded-xl bg-[#111827] py-2 text-sm font-bold text-white hover:brightness-125">{label}</button>)}
+              </div>
+              <button type="button" onClick={() => { const who = staffMute; setStaffMute(null); void bottleStaffMute(who.id, 0).then(() => pullRef.current()); }} className="mt-2 w-full rounded-xl border border-[#D1D5DB] py-2 text-sm font-semibold">{locale === "az" ? "Susdurmanı aç" : "Lift the mute"}</button>
+              <button type="button" onClick={() => setStaffMute(null)} className="mt-1 w-full py-1.5 text-xs text-[#6B7280]">{locale === "az" ? "Bağla" : "Close"}</button>
+            </div>
+          </div>
+        ) : null}
         {online && net?.hidden ? <div className="pointer-events-none absolute z-20 flex -translate-x-1/2 flex-col items-center gap-[0.4cqmin]" style={{ left: `${CENTER_X}%`, top: `calc(${STAGE_Y}% + 11cqmin)` }}><img src={user?.avatar || NO_PHOTO} alt="" className="h-[7cqmin] w-[7cqmin] rounded-full border-2 border-dashed border-white object-cover opacity-85" /><span className="whitespace-nowrap rounded-full bg-black/45 px-[1.2cqmin] text-[2cqmin] text-white">{locale === "az" ? "Sən (görünməz)" : "You (hidden)"}</span></div> : null}
         {waitNote && !myTurn && !staged ? <p role="status" className="pointer-events-none absolute z-30 -translate-x-1/2 whitespace-nowrap rounded-full bg-black/75 px-[2.4cqmin] py-[0.8cqmin] text-[2.6cqmin] font-bold text-white" style={{ left: `${CENTER_X}%`, top: `calc(${STAGE_Y}% + 17cqmin)` }}>{t("bottle.waitTurn")}</p> : null}
         {phase === "waiting" && !myTurn ? <p className="pointer-events-none absolute w-[40cqmin] -translate-x-1/2 -translate-y-1/2 text-center text-[3.4cqmin] font-bold leading-tight text-white [text-shadow:0_2px_6px_rgba(0,0,0,0.85)]" style={{ left: `${CENTER_X}%`, top: `${STAGE_Y}%` }}>{t(enoughGirls ? "bottle.waitingSpin" : net?.room ? "bottle.needPair" : "bottle.waitingSpin") /* "2 girls needed" is not shown any more (the rule itself stays) */}</p> : null}
@@ -4548,6 +4566,16 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             return lines.filter((line) => !line.text || !muted.includes(line.from)).map((line) => {
             const from = lineWho(line.from);
             const to = line.to ? lineWho(line.to) : null;
+            if (line.smute) {
+              const m = line.smute.minutes;
+              const span = m >= 60 ? `${m / 60} saatlıq` : `${m} dəqiqəlik`;
+              return (
+                <div key={line.id} className={cn(info, "gap-2")}>
+                  <span aria-hidden="true" className="shrink-0 text-[18px] leading-none">{m ? "🤐" : "🔊"}</span>
+                  <span className="min-w-0 leading-[15px] text-[#424242]">{locale === "az" ? (m ? <><b>{line.smute.name}</b> Moderator tərəfindən {span} susduruldu</> : <><b>{line.smute.name}</b> üçün susdurma ləğv edildi</>) : (m ? <><b>{line.smute.name}</b> was muted by a moderator for {m >= 60 ? `${m / 60} h` : `${m} min`}</> : <><b>{line.smute.name}</b> can write again</>)}</span>
+                </div>
+              );
+            }
             if (line.staff) return (
               <div key={line.id} className={cn(info, "gap-2")}>
                 <span className={cn("shrink-0 rounded px-1.5 py-px text-[10px] font-bold text-white", line.staff.role === "owner" ? "bg-[#B8860B]" : "bg-[#111827]")}>{line.staff.role === "owner" ? "♛ Admin" : "Moderator"}</span>
@@ -4667,8 +4695,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           })()}
         </div>
         <form onSubmit={handleChat} className={cn("relative flex h-[39px] shrink-0 items-center bg-white shadow-[0_0_4px_rgba(0,0,0,0.07)]", picked !== null && "hidden")}>
-          {iMuted && net?.is_plus ? <button type="button" onClick={() => void bottleUnmuteSelf().then((result) => { if (result === "hearts") flashRefusal(t("bottle.noHearts")); pullRef.current(); })} className="ml-2 h-[27px] shrink-0 rounded-full bg-[#7C3AED] px-3 text-[12px] font-bold text-white">{t("bottle.plusRestore")}</button> : null}
-          <input ref={chatRef} data-hint="chat-input" value={draft} onChange={(event) => setDraft(event.target.value)} maxLength={200} aria-label={t("messages.placeholder")} placeholder={iMuted ? t("bottle.plusMuted") : t("messages.placeholder")} disabled={iMuted} autoComplete="off" className={cn(tour === 5 && "ring-4 ring-[#FFD84D]", "ml-[13px] h-full min-w-[100px] flex-1 border-0 bg-transparent text-[14px] text-black outline-none placeholder:text-[#CFCFCF]")} />
+          {iMuted && !staffBanLeft && net?.is_plus ? <button type="button" onClick={() => void bottleUnmuteSelf().then((result) => { if (result === "hearts") flashRefusal(t("bottle.noHearts")); pullRef.current(); })} className="ml-2 h-[27px] shrink-0 rounded-full bg-[#7C3AED] px-3 text-[12px] font-bold text-white">{t("bottle.plusRestore")}</button> : null}
+          <input ref={chatRef} data-hint="chat-input" value={draft} onChange={(event) => setDraft(event.target.value)} maxLength={200} aria-label={t("messages.placeholder")} placeholder={staffBanText || (iMuted ? t("bottle.plusMuted") : t("messages.placeholder"))} disabled={iMuted} autoComplete="off" className={cn(tour === 5 && "ring-4 ring-[#FFD84D]", "ml-[13px] h-full min-w-[100px] flex-1 border-0 bg-transparent text-[14px] text-black outline-none placeholder:text-[#CFCFCF]")} />
           <button type="button" onClick={() => setEmojiOpen((value) => !value)} aria-expanded={emojiOpen} aria-label={t("messages.placeholder")} title="😊" className="ml-1 mr-1.5 h-[26px] w-[26px] shrink-0 rounded-full bg-contain bg-center bg-no-repeat active:brightness-75" style={{ backgroundImage: "url(/custom/orig/chat_btn_emoji.svg)" }} />
           {emojiOpen ? (
             <>
