@@ -178,7 +178,6 @@ export function AdminUsers({ owner }: { owner: boolean }) {
       <GesturesOpenCard />
       <RoomPassCard />
       <PlusTablesCard />
-      <SpendCard />
       <DeletedCard />
       <BannedCard />
       {owner ? <BroadcastCard /> : null}
