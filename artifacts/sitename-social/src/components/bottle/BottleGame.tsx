@@ -2137,14 +2137,14 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   };
   useEffect(() => {
     pullAch.current();
-    const timer = window.setInterval(() => pullAch.current(), 60000);
+    const timer = window.setInterval(() => pullAch.current(), 300000); // every 5 min (was 60 s): the check was the heaviest query on the DB
     return () => window.clearInterval(timer);
   }, [online]);
   useEffect(() => { if (achOpen) pullAch.current(); }, [achOpen]);
   // While the achievements window is open the counters follow along live (gifts, kisses... sent meanwhile).
   useEffect(() => {
     if (!achOpen) return;
-    const timer = window.setInterval(() => { pullAch.current(); setStatsTick((n) => n + 1); }, 2000);
+    const timer = window.setInterval(() => { pullAch.current(); setStatsTick((n) => n + 1); }, 15000); // every 15 s while open (was 2 s)
     return () => window.clearInterval(timer);
   }, [achOpen]);
   // What the player has reached for unlocking gifts and smileys (kisses, songs, friends, smileys sent, VIP).
