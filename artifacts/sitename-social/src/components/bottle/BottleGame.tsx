@@ -683,6 +683,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const photosTable = useRef<number | null>(null);
   const pendingRestore = useRef<{ table: number; list: BottleSeatGift[]; me: string } | null>(null);
   restoreGifts.current = (list, me) => {
+    for (const item of list) if (item.seed) seenSeeds.current.add(item.seed); // a restored gift does not fly in again with a later sync
     const newestRand: Record<string, number> = {};
     for (const item of list) if (typeof item.seed === "number" && planLanding(item.gift, item.seed).spot?.kind === "rand") newestRand[item.to] = item.cid;
     list.forEach((item, n) => {
@@ -1436,7 +1437,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         if (entered || counting || sig !== netSig.current.sig || Date.now() - netSig.current.at > 4000) { netSig.current = { sig, at: Date.now() }; setNet(data); }
         if (entered) {
           const tableAtEntry = data.table;
-          void bottleTableGifts(lastChat.current).then((list) => { if (!list || !alive || syncTable.current !== tableAtEntry) return; if (photosTable.current === tableAtEntry) restoreGifts.current(list, data!.me); else pendingRestore.current = { table: tableAtEntry, list, me: data!.me }; });
+          // lastChat is still 0 when nothing was said at the table in the last moments (the first sync brings only fresh rows): then every gift is asked for,
+          // not none (that is why the gifts on the photos sometimes did not come back after a page reload).
+          void bottleTableGifts(lastChat.current || Number.MAX_SAFE_INTEGER).then((list) => { if (!list || !alive || syncTable.current !== tableAtEntry) return; if (photosTable.current === tableAtEntry) restoreGifts.current(list, data!.me); else pendingRestore.current = { table: tableAtEntry, list, me: data!.me }; });
           // Coming (back) into a table: the last 20 chat rows (messages, songs, who gave whom a gift) are shown; a gift storm counts as one row.
           const meAtEntry = data.me;
           void Promise.resolve(supabase?.rpc("bottle_chat_history", { p_limit: 300 })).then(async (res) => {
