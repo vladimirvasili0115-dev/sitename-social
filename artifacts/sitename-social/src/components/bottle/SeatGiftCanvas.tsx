@@ -110,7 +110,8 @@ export function SeatGiftCanvas({ data }: { data: MutableRefObject<SeatGiftData> 
           if (fade <= 0) continue;
           put(p.gift, p.x, p.y, p.s, p.r, fade, scale, null);
         }
-        for (const s of spots) {
+        // random gifts first, so the corner gifts always stay on top of them
+        for (const s of [...spots.filter((x) => x.kind === "rand"), ...spots.filter((x) => x.kind !== "rand")]) {
           if (s.kind === "behind") continue;
           const age = s.t ? wall - s.t : 9999;
           const corner = s.x + s.s / 2 < 45 ? "l" : "r";
