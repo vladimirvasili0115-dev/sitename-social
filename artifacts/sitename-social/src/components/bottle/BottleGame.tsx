@@ -4005,13 +4005,14 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   {passNote ? <p role="status" className="absolute inset-x-3 bottom-3 z-10 rounded-xl bg-[#111827]/85 px-3 py-2 text-center text-sm font-bold text-white">{passNote}</p> : null}
                 </>
               ) : panel === "active" ? (
-                <ActivePanel secs={activeSecs} claimed={net?.active?.claimed ?? 0} live={online} onClaim={async (level) => {
+                <ActivePanel secs={activeSecs} claimed={net?.active?.claimed ?? 0} live={online} onClaim={async () => {
                   // One more try when the request did not get through; the status is read again after every answer.
-                  let left = await bottleActiveClaim(level);
-                  if (left === null) left = await bottleActiveClaim(level);
+                  // Level 5 = the hourly bonus (paket-KQ): -2 all 12 taken today, -3 the next full hour is not there yet.
+                  let left = await bottleActiveClaim(5);
+                  if (left === null) left = await bottleActiveClaim(5);
                   pullRef.current();
                   if (left !== null && left >= 0) { heartsRef.current = left; setHearts(left); return "ok"; }
-                  return left === null ? "net" : left === -2 ? "day" : left === -3 ? "time" : left === -4 ? "got" : "net";
+                  return left === null ? "net" : left === -2 ? "got" : left === -3 ? "time" : "net";
                 }} />
               ) : panel === "invite" ? (
                 <InvitePanel link={online && net ? `${window.location.origin}/register?ref=${net.me}` : null} invited={refInfo.invited} done={refInfo.done} />

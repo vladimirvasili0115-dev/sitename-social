@@ -48,7 +48,11 @@ function SaleBanner({ locale, onEnd }: { locale: string; onEnd: () => void }) {
 
 // Active play rewards: minutes of play today → hearts.
 // [minutes, hearts, level number sent to the server]. The 1 hour level is number 4 (bit 8) so the claims already made today by the 4/8/12 hour levels (bits 1, 2, 4) stay valid.
-export const activeLevels: [number, number, number][] = [[60, 350, 4], [240, 1000, 1], [480, 2000, 2], [720, 3000, 3]];
+// Activity bonus (paket-KQ): 250 hearts for every full hour played today, at most 12 times a day; hours not taken yet stay to be taken.
+export const ACTIVE_HOUR_PRIZE = 250;
+export const ACTIVE_HOUR_MAX = 12;
+// How many hourly bonuses are taken today: the count sits above the 4 old bits; the old 1-hour bonus (bit 8) counts as the first one.
+export const activeTaken = (claimed: number) => Math.max(claimed >> 4, claimed & 8 ? 1 : 0);
 export const formatActive = (secs: number, t: (key: TranslationKey) => string) => `${Math.floor(secs / 3600)}${t("bottle.hourShort")} ${Math.floor((secs % 3600) / 60)}${t("bottle.minShort")}`;
 
 // The original bank (bottle-html5 BankDialog + bank CSS): a pink window with the heart pattern on top and
@@ -109,35 +113,33 @@ export function ShopPanel({ hearts, coins, activeSecs, payNote, onActive, onVip,
 // What came back from taking an activity bonus: "ok", or why it was not given.
 export type ActiveClaimResult = "ok" | "day" | "time" | "got" | "net";
 const ACTIVE_FAIL: Record<Exclude<ActiveClaimResult, "ok">, TranslationKey> = { day: "bottle.activeFailDay", time: "bottle.activeFailTime", got: "bottle.activeFailGot", net: "bottle.activeFailNet" };
-export function ActivePanel({ secs, claimed, live, onClaim }: { secs: number; claimed: number; live: boolean; onClaim: (level: number) => Promise<ActiveClaimResult> }) {
+export function ActivePanel({ secs, claimed, live, onClaim }: { secs: number; claimed: number; live: boolean; onClaim: () => Promise<ActiveClaimResult> }) {
   const { t } = useTranslation();
   // While a request is on its way the button is locked (no double taps); when the bonus was not given, the reason is shown.
-  const [busy, setBusy] = useState<number | null>(null);
+  const [busy, setBusy] = useState(false);
   const [fail, setFail] = useState<Exclude<ActiveClaimResult, "ok"> | null>(null);
   useEffect(() => { if (!fail) return; const timer = window.setTimeout(() => setFail(null), 5000); return () => window.clearTimeout(timer); }, [fail]);
-  const take = (level: number) => {
-    if (busy !== null) return;
-    setBusy(level); setFail(null);
-    void onClaim(level).then((result) => { if (result !== "ok") setFail(result); }).catch(() => setFail("net")).finally(() => setBusy(null));
+  const taken = activeTaken(claimed);
+  const done = taken >= ACTIVE_HOUR_MAX;
+  const ready = Math.max(0, Math.min(ACTIVE_HOUR_MAX, Math.floor(secs / 3600)) - taken); // full hours not taken yet
+  const next = (taken + 1) * 3600; // played seconds the next bonus needs
+  const take = () => {
+    if (busy) return;
+    setBusy(true); setFail(null);
+    void onClaim().then((result) => { if (result !== "ok") setFail(result); }).catch(() => setFail("net")).finally(() => setBusy(false));
   };
   return (
     <div className="max-h-[calc(100cqh-56px)] overflow-y-auto overscroll-contain text-[#1F2937] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       <div className="flex flex-col items-center"><Pic e="⏰" className="h-11 w-11" /><p className="text-sm text-[#6B7280]">{t("bottle.activeToday")}</p><p className="text-2xl font-black tabular-nums text-[#7C3AED]">{formatActive(secs, t)}</p></div>
-      <div className="my-2 h-2.5 overflow-hidden rounded-full bg-[#EDE9FE]"><span className="block h-full rounded-full bg-[linear-gradient(90deg,#A16BFF,#7C3AED)]" style={{ width: `${Math.min(100, (secs / 43200) * 100)}%` }} /></div>
-      <ul className="space-y-1.5">
-        {activeLevels.map(([minutes, prize, level]) => {
-          const got = (claimed & (1 << (level - 1))) !== 0;
-          const ready = secs >= minutes * 60;
-          return (
-            <li key={minutes} className={cn("flex items-center gap-3 rounded-xl border p-2", got ? "border-[#BBF7D0] bg-[#F0FDF4]" : "border-[#E5E7EB] bg-white")}>
-              <span className="w-16 shrink-0 text-sm font-bold">{minutes >= 60 ? `${minutes / 60} ${t("bottle.hourLong")}` : `${minutes} ${t("bottle.minLong")}`}</span>
-              <span className="flex flex-1 items-center gap-1 text-base font-black text-[#E8352B]"><H size={16} />{prize}</span>
-              {got ? <span className="flex items-center gap-1 text-xs font-bold text-[#16A34A]"><Check size={15} strokeWidth={3} />{t("bottle.claimed")}</span>
-                : <button disabled={!ready || !live || busy !== null} onClick={() => take(level)} className="flex h-8 items-center gap-1 rounded-lg bg-[linear-gradient(180deg,#9BD65A,#6DB33F)] px-3 text-xs font-bold text-white shadow disabled:bg-none disabled:bg-[#E5E7EB] disabled:text-[#9CA3AF] disabled:shadow-none">{ready ? t("bottle.claim") : <><Lock size={12} />{formatActive(minutes * 60 - secs, t)}</>}</button>}
-            </li>
-          );
-        })}
-      </ul>
+      {/* the bar fills up towards the next full hour */}
+      <div className="my-2 h-2.5 overflow-hidden rounded-full bg-[#EDE9FE]"><span className="block h-full rounded-full bg-[linear-gradient(90deg,#A16BFF,#7C3AED)]" style={{ width: `${done || ready ? 100 : Math.min(100, ((secs - taken * 3600) / 3600) * 100)}%` }} /></div>
+      <div className={cn("flex items-center gap-3 rounded-xl border p-2", done ? "border-[#BBF7D0] bg-[#F0FDF4]" : "border-[#E5E7EB] bg-white")}>
+        <span className="w-16 shrink-0 text-sm font-bold">1 {t("bottle.hourLong")}</span>
+        <span className="flex flex-1 items-center gap-1 text-base font-black text-[#E8352B]"><H size={16} />{ACTIVE_HOUR_PRIZE}</span>
+        {done ? <span className="flex items-center gap-1 text-xs font-bold text-[#16A34A]"><Check size={15} strokeWidth={3} />{t("bottle.claimed")}</span>
+          : <button disabled={!ready || !live || busy} onClick={take} className="flex h-8 items-center gap-1 rounded-lg bg-[linear-gradient(180deg,#9BD65A,#6DB33F)] px-3 text-xs font-bold text-white shadow disabled:bg-none disabled:bg-[#E5E7EB] disabled:text-[#9CA3AF] disabled:shadow-none">{ready ? <>{t("bottle.claim")}{ready > 1 ? ` (${ready})` : ""}</> : <><Lock size={12} />{formatActive(Math.max(0, next - secs), t)}</>}</button>}
+      </div>
+      <p className="mt-1.5 text-center text-xs font-bold tabular-nums text-[#6B7280]">{t("bottle.claimed")}: {taken} / {ACTIVE_HOUR_MAX}</p>
       {fail ? <p role="status" className="mt-2 rounded-lg bg-[#FEF2F2] p-2 text-center text-xs font-semibold text-[#B91C1C]">{t(ACTIVE_FAIL[fail])}</p> : null}
       <p className="mt-2 text-center text-[11px] text-[#6B7280]">{t(live ? "bottle.activeHint" : "bottle.liveOnly")}</p>
     </div>
