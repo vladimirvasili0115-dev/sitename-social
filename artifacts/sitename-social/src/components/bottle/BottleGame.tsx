@@ -3312,7 +3312,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           const outVip = outside && online && outBadges?.id === player.id && outBadges.vip;
           const showTop = topIds.has(player.id) || outTop;
           // The owner and the moderators wear their own ribbon instead of VIP (ADMIN for the owner, MOD for a moderator), also under TOP.
-          const staffLabel = online && isAdminPlayer(player) ? "label_admin.svg" : null;
+          const staffLabel = online && isAdminPlayer(player) ? "label_admin_blue.svg" : null;
           const labels = [showTop ? "label_top_gold.svg" : null, staffLabel ?? (!showTop && ((online ? seat?.vip_badge : player.me && vip) || outVip) ? "label_vip.svg" : null)].filter((item): item is string => Boolean(item));
           return (
             <div className={cn("inset-0 flex items-center justify-center p-3", wide ? cn("absolute bg-black/10", panel ? "z-[60]" : "z-[45]") : panel ? "fixed z-[100] bg-black/50" : "fixed z-[90] bg-black/50")} onClick={(event) => { event.stopPropagation(); setCard(false); }}>

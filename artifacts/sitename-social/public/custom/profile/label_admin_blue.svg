@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 43">
+<defs>
+<linearGradient id="t" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b2a5b"/><stop offset="1" stop-color="#0a1f44"/></linearGradient>
+<linearGradient id="m" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1e3a8a"/><stop offset="0.5" stop-color="#0f2b6b"/><stop offset="1" stop-color="#1d4ed8"/></linearGradient>
+<linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7dd3fc"/><stop offset="1" stop-color="#38bdf8"/></linearGradient>
+<filter id="g" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="0.6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<g transform="translate(4 2)">
+<path fill="url(#t)" d="M5.7,29C2.6,29,0,31.7,0,35s2.6,6,5.7,6H15V29H5.7z"/>
+<path fill="url(#m)" d="M5.5,0C2.5,0,0,2.4,0,5.5v29.8c0-3,2.5-5.5,5.5-5.5h51.2L53,15l3.7-15H5.5z"/>
+<g filter="url(#g)">
+<path fill="url(#s)" d="M4.6,18.2h8.8l1.1-8.6l-2.9,2.6l-2.2-4.1l-2.2,4.1l-2.9-2.6z"/>
+<circle cx="9.4" cy="7.4" r="0.9" fill="#7dd3fc"/>
+<text x="34" y="19.6" text-anchor="middle" font-family="Arial Black, Arial, Helvetica, sans-serif" font-weight="900" font-size="9.6" fill="#ffffff" letter-spacing="0.2">ADMIN</text>
+</g>
+</g>
+</svg>
