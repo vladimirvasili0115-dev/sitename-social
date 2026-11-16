@@ -127,17 +127,21 @@ function decodeClip(name: string) {
 // A gift stream can ask for dozens of sounds a second: only a few play at the same time, the rest are skipped (no noise heap).
 const MAX_VOICES = 5;
 let voices = 0;
-function playClip(name: string, fallback: () => void) {
+// quiet: while the recording is still loading nothing plays (gift streams: the synthesized stand-in sounded like "tak tak tak" on iPhone).
+function playClip(name: string, fallback: () => void, quiet = false) {
   const ctx = audio();
   if (!ctx) return;
   const buffer = decoded.get(name);
-  if (buffer === undefined) { loadClip(name); decodeClip(name); return fallback(); }
-  if (buffer === null) return fallback();
+  if (buffer === undefined) { loadClip(name); decodeClip(name); return quiet ? undefined : fallback(); }
+  if (buffer === null) return voices >= MAX_VOICES ? undefined : fallback();
   if (voices >= MAX_VOICES) return;
   const source = ctx.createBufferSource();
   const gain = ctx.createGain();
   source.buffer = buffer;
-  gain.gain.value = level;
+  // a 5 ms fade-in, so a recording never starts with a click
+  const at = ctx.currentTime;
+  gain.gain.setValueAtTime(0, at);
+  gain.gain.linearRampToValueAtTime(level, at + 0.005);
   source.connect(gain).connect(output());
   voices += 1;
   source.onended = () => { voices = Math.max(0, voices - 1); };
@@ -269,9 +273,11 @@ export function playGiftSound(gift: string, moment: "send" | "land") {
     const list = sfx ? sfx[moment === "send" ? 0 : 1] : [];
     if (list.length) {
       const name = pick(list);
-      if (moment === "send") list.forEach((item) => loadClip(`sfx/${item}`));
-      return playClip(`sfx/${name}`, moment === "send" ? () => noise(0, 0.35, 500, 0.1, 2400) : isDrink(gift) ? pourSynth : sounds.pop);
+      // every flight and landing variant of this gift is fetched at once, so the next one already plays the real recording
+      if (sfx) [...sfx[0], ...sfx[1]].forEach((item) => loadClip(`sfx/${item}`));
+      return playClip(`sfx/${name}`, moment === "send" ? () => noise(0, 0.35, 500, 0.1, 2400) : isDrink(gift) ? pourSynth : sounds.pop, true);
     }
+    if (voices >= MAX_VOICES) return;
     if (moment === "send") return noise(0, 0.35, 500, 0.1, 2400);
     sounds.pop();
   } catch {
