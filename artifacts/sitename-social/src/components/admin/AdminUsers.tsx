@@ -65,7 +65,7 @@ export function AdminUsers({ owner }: { owner: boolean }) {
       bad: "Login düzgün deyil.",
       admin: "Admin/moderatorun loginini dəyişmək olmaz.",
       no_user: "Belə hesab tapılmadı.",
-      not_owner: "Bunu yalnız sahib edə bilər.",
+      not_owner: "Bunu yalnız sahib və moderator edə bilər.",
     };
     setLoginNote(res ? notes[res] ?? "Alınmadı." : "Alınmadı. paket-HY.sql işlədilib?");
   }
@@ -215,7 +215,7 @@ export function AdminUsers({ owner }: { owner: boolean }) {
                     <button disabled={locked} onClick={() => setGameFor(gameFor === user.id ? null : user.id)} aria-expanded={gameFor === user.id} className={action}><Gamepad2 size={14} />{t("admin.game")}</button>
                     <button disabled={locked} onClick={() => setColorFor(colorFor === user.id ? null : user.id)} aria-expanded={colorFor === user.id} className={action}><Palette size={14} /><span className={nameColorClass(nameColors[user.id])}>{t("admin.nameColor")}</span></button>
                     {user.email && supabase ? <button disabled={locked || resetSent[user.id]} onClick={() => { if (!supabase || !user.email) return; void supabase.auth.resetPasswordForEmail(user.email, { redirectTo: `${window.location.origin}/reset-password` }).then(({ error }) => setResetSent((value) => ({ ...value, [user.id]: !error }))); }} title={t("admin.resetHint")} className={action}><KeyRound size={14} />{t(resetSent[user.id] ? "admin.resetSent" : "admin.resetPass")}</button> : null}
-                    {owner ? <button disabled={locked} onClick={() => { setPwFor(pwFor === user.id ? null : user.id); setPwText(""); setPwNote(""); setLoginText(""); setLoginNote(""); }} aria-expanded={pwFor === user.id} className={action}><KeyRound size={14} />Şifrə təyin et</button> : null}
+                    {<button disabled={locked} onClick={() => { setPwFor(pwFor === user.id ? null : user.id); setPwText(""); setPwNote(""); setLoginText(""); setLoginNote(""); }} aria-expanded={pwFor === user.id} className={action}><KeyRound size={14} />Şifrə təyin et</button>}
                     {user.moderator ? null : user.banned
                       ? <button disabled={locked} onClick={() => void run(user.id, () => banUser(user.id, -1, ""))} className={action}><Undo2 size={14} />{t("settings.blkUnblock")}</button>
                       : <button disabled={locked} onClick={() => { setBanFor(banFor === user.id ? null : user.id); setBanDays(7); setReason(""); }} className={cn(danger, "text-danger hover:bg-surface-2")}><Ban size={14} />{t("admin.ban")}</button>}
@@ -224,7 +224,7 @@ export function AdminUsers({ owner }: { owner: boolean }) {
                     {user.moderator || !owner ? null : <button disabled={locked} onClick={() => (asking ? void run(user.id, () => deleteUser(user.id)) : setConfirm(user.id))} className={cn(danger, asking ? "bg-danger text-bg" : "text-danger hover:bg-surface-2")}><Trash2 size={14} />{t(asking ? "admin.confirm" : "settings.accDelete")}</button>}
                     <button onClick={() => toggleDetail(user.id)} aria-expanded={openId === user.id} className={cn(action, "ml-auto")}>{t("admin.details")}<ChevronDown size={14} className={openId === user.id ? "rotate-180" : ""} /></button>
                   </div>
-                  {owner && pwFor === user.id ? (
+                  {pwFor === user.id ? (
                     <form onSubmit={(event) => { event.preventDefault(); if (pwText.length < 8) return setPwNote("Şifrə ən azı 8 simvol olmalıdır."); void setUserPassword(user.id, pwText).then((ok) => setPwNote(ok ? `Şifrə dəyişdi: ${pwText} — bunu adama göndər, o girəndən sonra Ayarlar → Təhlükəsizlik-də özü dəyişsin.` : "Alınmadı. paket-EC.sql işlədilib? (adminə dəyişmək olmur)")); }} className="mt-3 space-y-2">
                       <div className="flex flex-wrap gap-2">
                         <input value={pwText} onChange={(event) => setPwText(event.target.value)} minLength={8} maxLength={72} aria-label="Yeni şifrə" placeholder="Yeni şifrə (ən azı 8 simvol)" autoComplete="off" className="h-10 min-w-0 flex-1 rounded-xl border border-border bg-surface px-3 text-sm outline-none focus:border-accent" />
@@ -234,7 +234,7 @@ export function AdminUsers({ owner }: { owner: boolean }) {
                       {pwNote ? <p role="status" className="text-xs font-semibold text-accent">{pwNote}</p> : null}
                     </form>
                   ) : null}
-                  {owner && pwFor === user.id ? (
+                  {pwFor === user.id ? (
                     <form onSubmit={(event) => { event.preventDefault(); void saveLogin(user.id); }} className="mt-2 space-y-2">
                       <div className="flex flex-wrap gap-2">
                         <input value={loginText} onChange={(event) => { setLoginText(event.target.value); setLoginNote(""); }} maxLength={200} aria-label="Yeni login" placeholder="Yeni login: e-poçt və ya telefon" autoComplete="off" className="h-10 min-w-0 flex-1 rounded-xl border border-border bg-surface px-3 text-sm outline-none focus:border-accent" />
