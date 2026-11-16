@@ -264,8 +264,8 @@ function PackNote({ note, locale }: { note: { kind: "wait" | "ok" | "balance" | 
 }
 // Auto-clicker guard: at most this many gifts a second from one device (enough for fast tapping at a full table of 12).
 const GIFT_BUCKET = 120;
-// Defending yourself from a kick always costs the standard 50 hearts (paket-JC); saving somebody else stays half of their kick price.
-const SELF_DEFEND_PRICE = 50;
+// Defending yourself from a kick always costs 300 hearts (paket-KH, was 50); saving somebody else stays half of their kick price.
+const SELF_DEFEND_PRICE = 300;
 // These corner gifts are smaller than the other ones (whiskey glass 1.4x, wine glass 1.3x, joystick 1.4x); they still stand on the right frame line (flush) and the bottom line.
 const CORNER_SHRINK: Record<string, number> = { whiskey: 1.4, wine: 1.3, joystick: 1.4, martini: 1.3, mobile: 1.3, nokia: 1.3, heartlock: 1.3, snakepot: 2, beer: 1.3, milk: 1.2 * 1.1, vodka: 1.5, love: 1.3, mineralka: 1.25, teddybear: 1.15 }; // milk: 1.2x, then 1.1x more; love (the pink cocktail): 1.3x // the snake in the pot 2x smaller, the beer mug 1.3x smaller (and 3 mm further right, below)
 const BIGGER_CORNER = /^(cherry|makarov|revolver)$/;
