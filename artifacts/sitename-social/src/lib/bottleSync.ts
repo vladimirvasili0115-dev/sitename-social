@@ -101,6 +101,7 @@ export const bottleItemBuy = (kind: keyof BottleItems) => call<number>("bottle_i
 export const bottleBooster = (kind: keyof BottleItems) => call<number>("bottle_booster", { p_kind: kind });
 export const bottleTutorial = (finish: boolean) => call<{ done?: boolean; bonus?: number; total?: number }>("bottle_tutorial", { p_finish: finish });
 export const bottleAdminIds = () => call<string[]>("bottle_admin_ids");
+export const bottleOwnerIds = () => call<string[]>("bottle_owner_ids"); // paket-KN: which of the admins is the owner (ADMIN ribbon instead of MOD)
 export const bottleAdmire = (to: string) => call<number>("bottle_admire", { p_to: to });
 export const bottleAdmireLeave = (to: string) => call<number>("bottle_admire_leave", { p_to: to });
 export type BottleRoom = { id: number; name: string; capacity: number; locked: boolean; mine: boolean; owner: { name: string | null; avatar: string | null } | null; boys: number; girls: number };

@@ -44,7 +44,7 @@ import { useSettings } from "@/components/settings/useSettings";
 import { ensureMessagesLoaded, openRemoteChat, remoteChats, sendRemoteMessage } from "@/lib/messagesSync";
 import { uploadBlob } from "@/lib/media";
 import { refreshGifts } from "@/lib/giftsSync";
-import { bottleFresh, bottleSetHidden, bottleStaffMute, bottleSeek, bottleLogIp, bottleAdminIpLookup, type BottleIpRow, bottleAnswer, bottleRoundReset, bottleAchSync, bottleAchView, bottleGesture, bottleSmiles, bottleBuyHearts, bottleGiftAllow, bottleBuySmiles, bottleProgress, bottleGesturesOpen, bottleSkin, bottleBadges, bottleGetAccept, bottleSetAccept, bottleBuyChances, bottleJoin, bottleMove, bottleMoveWaitStart, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleProfile, type BottleProfile, bottleDaily, bottleItems, bottleItemBuy, bottleBooster, bottleTutorial, bottleAdminIds, type BottleItems, bottleLeagueInfo, bottleLeagueClaim, type BottleLeague, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleKickPrice, bottleKickDefendPrice, bottlePlusCreate, bottlePlusPass, bottlePlusNumColor, bottlePlusNameColor, bottlePlusMute, bottleUnmuteSelf, bottleGift, bottleGiftMany, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, bottleClaim, type BottleState, type BottleSeat, bottleEffectOf, bottleYtGet, bottleYtPut, bottleTableGifts, type BottleSeatGift } from "@/lib/bottleSync";
+import { bottleFresh, bottleSetHidden, bottleStaffMute, bottleSeek, bottleLogIp, bottleAdminIpLookup, type BottleIpRow, bottleAnswer, bottleRoundReset, bottleAchSync, bottleAchView, bottleGesture, bottleSmiles, bottleBuyHearts, bottleGiftAllow, bottleBuySmiles, bottleProgress, bottleGesturesOpen, bottleSkin, bottleBadges, bottleGetAccept, bottleSetAccept, bottleBuyChances, bottleJoin, bottleMove, bottleMoveWaitStart, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleProfile, type BottleProfile, bottleDaily, bottleItems, bottleItemBuy, bottleBooster, bottleTutorial, bottleAdminIds, bottleOwnerIds, type BottleItems, bottleLeagueInfo, bottleLeagueClaim, type BottleLeague, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleKickPrice, bottleKickDefendPrice, bottlePlusCreate, bottlePlusPass, bottlePlusNumColor, bottlePlusNameColor, bottlePlusMute, bottleUnmuteSelf, bottleGift, bottleGiftMany, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, bottleClaim, type BottleState, type BottleSeat, bottleEffectOf, bottleYtGet, bottleYtPut, bottleTableGifts, type BottleSeatGift } from "@/lib/bottleSync";
 import { ytHint, ytReason } from "./ytHints";
 import { WeeklyPanel, WeekPrizePopup } from "./WeeklyTop";
 import { BonusMarket, EnigmaEffect, arrivalLabel, marketLabel } from "./BonusMarket";
@@ -904,6 +904,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
 
   const [adminIds, setAdminIds] = useState<string[]>([]);
   useEffect(() => { if (online) void bottleAdminIds().then((ids) => { if (Array.isArray(ids)) setAdminIds(ids); }); }, [online]);
+  const [ownerIds, setOwnerIds] = useState<string[]>([]);
+  useEffect(() => { if (online) void bottleOwnerIds().then((ids) => { if (Array.isArray(ids)) setOwnerIds(ids); }); }, [online]);
   const [doubleUntil, setDoubleUntil] = useState(0);
   const doubleRef = useRef(0);
   const jumpRef = useRef(false);
@@ -3306,7 +3308,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           const outTop = outside && online && autoTop.has(player.id);
           const outVip = outside && online && outBadges?.id === player.id && outBadges.vip;
           const showTop = topIds.has(player.id) || outTop;
-          const labels = [showTop ? "label_top_gold.svg" : null, !showTop && ((online ? seat?.vip_badge : player.me && vip) || outVip) ? "label_vip.svg" : null].filter((item): item is string => Boolean(item));
+          // The owner and the moderators wear their own ribbon instead of VIP (ADMIN for the owner, MOD for a moderator), also under TOP.
+          const staffLabel = online && isAdminPlayer(player) ? (ownerIds.includes(player.me ? net?.me ?? "" : player.id) ? "label_admin.svg" : "label_mod.svg") : null;
+          const labels = [showTop ? "label_top_gold.svg" : null, staffLabel ?? (!showTop && ((online ? seat?.vip_badge : player.me && vip) || outVip) ? "label_vip.svg" : null)].filter((item): item is string => Boolean(item));
           return (
             <div className={cn("inset-0 flex items-center justify-center p-3", wide ? cn("absolute bg-black/10", panel ? "z-[60]" : "z-[45]") : panel ? "fixed z-[100] bg-black/50" : "fixed z-[90] bg-black/50")} onClick={(event) => { event.stopPropagation(); setCard(false); }}>
               <div role="dialog" aria-modal="true" aria-label={`${player.name}, ${player.age}`} onClick={(event) => event.stopPropagation()} className={cn("relative shadow-[0_18px_50px_rgba(0,0,0,0.45)]", land ? "h-[400px] max-h-[80vh] max-w-[91%]" : "w-[400px] max-w-[80vw]")} style={{ borderRadius: 17, maxHeight: land ? undefined : "calc(94% - env(safe-area-inset-top))" }}>
