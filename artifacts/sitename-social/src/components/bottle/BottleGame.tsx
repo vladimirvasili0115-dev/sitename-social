@@ -54,7 +54,7 @@ type Phase = "waiting" | "spinning" | "choice" | "kissed" | "declined";
 type Track = { id: string; title: string; duration?: string };
 const stored = (key: string): Track[] => { try { return JSON.parse(window.localStorage.getItem(key) ?? "[]") as Track[]; } catch { return []; } };
 const keep = (key: string, list: Track[]) => { try { window.localStorage.setItem(key, JSON.stringify(list.slice(0, 40))); } catch { /* storage is full or blocked */ } };
-type Line = { id: number; from: string; smute?: { name: string; minutes: number }; role?: "owner" | "mod"; staff?: { role: "owner" | "mod"; to: string }; to?: string; tos?: string[]; per?: Record<string, number>; gesture?: string; gestures?: string[]; count?: number; bottle?: { a: number; b: number }; text?: string; gift?: string; song?: string; admire?: { amount?: number; by?: string; avatar?: string; target?: string; old?: string | null; self?: boolean; lost?: boolean }; event?: { kind: "kick" | "saved" | "kicked" | "muted" | "unmuted" | "restored"; a: string; b: string }; boost?: { kind: "kiss_fire" | "refuse_slap"; a: string; b: string } };
+type Line = { id: number; from: string; smute?: { name: string; minutes: number }; role?: "owner" | "mod"; staff?: { role: "owner" | "mod"; to: string; amount: number }; to?: string; tos?: string[]; per?: Record<string, number>; gesture?: string; gestures?: string[]; count?: number; bottle?: { a: number; b: number }; text?: string; gift?: string; song?: string; admire?: { amount?: number; by?: string; avatar?: string; target?: string; old?: string | null; self?: boolean; lost?: boolean }; event?: { kind: "kick" | "saved" | "kicked" | "muted" | "unmuted" | "restored"; a: string; b: string }; boost?: { kind: "kiss_fire" | "refuse_slap"; a: string; b: string } };
 // A gift tile stands for a whole family (e.g. the five kinds of kiss lips): in the chat they all count as the same gift.
 let familyOf: Map<string, string> | null = null;
 function giftFamily(gift: string) {
@@ -64,6 +64,8 @@ function giftFamily(gift: string) {
 }
 // The same gift sent again and again by the same person makes one chat line "🌹 ×5 » receivers" instead of many lines.
 const CHAT_KEEP = 40;
+// Bonus hearts only the owner and moderators can send: the receiver gets this many hearts (paket-LC).
+const BONUS: Record<string, number> = { "c:heart100": 100, "c:heart250": 250, "c:heart500": 500, "c:heart1000": 1000 };
 function mergeLines(list: Line[], fresh: Line[]) {
   const out = [...list];
   for (const line of fresh) {
@@ -1426,7 +1428,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         const fresh = entered ? [] : all.filter((item) => item.kind !== "fresh" && item.kind !== "compliment" && (item.kind !== "admire_lost" || item.to === data!.me) && (item.kind !== "gift" || (first && item.from !== data!.me)));
         if (all.length) lastChat.current = all[all.length - 1].id;
         if (fresh.length) {
-          setLines((list) => mergeLines(list.slice(-CHAT_KEEP), fresh.map((item) => (item.kind === "staff_mute" ? { id: item.id, from: who(item.from), smute: { name: item.tname || nameOf(item.to), minutes: Number(item.body) || 0 } } : item.kind === "staff_bonus" ? { id: item.id, from: who(item.from), staff: { role: item.role === "owner" ? "owner" as const : "mod" as const, to: item.tname || nameOf(item.to) } } : item.kind === "kiss" ? { id: item.id, from: who(item.from), to: who(item.to) } : item.kind === "gift" ? { id: item.id, from: who(item.from), to: who(item.to), gift: item.body ?? "" } : item.kind === "admire" || item.kind === "admire_lost" ? { id: item.id, from: who(item.from), to: item.kind === "admire" ? who(item.to) : undefined, admire: { ...(() => { try { return JSON.parse(item.body ?? "{}") as AdmireNote; } catch { return {}; } })(), lost: item.kind === "admire_lost" } } : item.kind === "song" ? { id: item.id, from: who(item.from), to: item.to ? who(item.to) : undefined, song: item.body || "♪" } : item.kind === "kick" || item.kind === "saved" || item.kind === "kicked" ? { id: item.id, from: who(item.from), event: { kind: item.kind, a: nameOf(item.from), b: nameOf(item.to) } } : item.kind === "muted" || item.kind === "unmuted" ? { id: item.id, from: who(item.from), event: { kind: item.kind === "unmuted" && item.body === "self" ? "restored" as const : item.kind, a: nameOf(item.from), b: nameOf(item.to) } } : item.kind === "gesture" ? { id: item.id, from: who(item.from), gesture: item.body ?? "" } : item.kind === "booster" ? { id: item.id, from: who(item.from), boost: { kind: item.body === "refuse_slap" ? "refuse_slap" : "kiss_fire", a: nameOf(item.from), b: nameOf(item.to) } } : item.kind === "bottle" ? { id: item.id, from: who(item.from), bottle: { a: Number((item.body ?? "0:0").split(":")[0]) || 0, b: Number((item.body ?? "0:0").split(":")[1]) || 0 } } : { id: item.id, from: who(item.from), text: item.body ?? "", ...(item.role ? { role: item.role } : {}) }))).slice(-80));
+          setLines((list) => mergeLines(list.slice(-CHAT_KEEP), fresh.map((item) => (item.kind === "staff_mute" ? { id: item.id, from: who(item.from), smute: { name: item.tname || nameOf(item.to), minutes: Number(item.body) || 0 } } : item.kind === "staff_bonus" ? { id: item.id, from: who(item.from), staff: { role: item.role === "owner" ? "owner" as const : "mod" as const, to: item.tname || nameOf(item.to), amount: Number(item.body) || 1000 } } : item.kind === "kiss" ? { id: item.id, from: who(item.from), to: who(item.to) } : item.kind === "gift" ? { id: item.id, from: who(item.from), to: who(item.to), gift: item.body ?? "" } : item.kind === "admire" || item.kind === "admire_lost" ? { id: item.id, from: who(item.from), to: item.kind === "admire" ? who(item.to) : undefined, admire: { ...(() => { try { return JSON.parse(item.body ?? "{}") as AdmireNote; } catch { return {}; } })(), lost: item.kind === "admire_lost" } } : item.kind === "song" ? { id: item.id, from: who(item.from), to: item.to ? who(item.to) : undefined, song: item.body || "♪" } : item.kind === "kick" || item.kind === "saved" || item.kind === "kicked" ? { id: item.id, from: who(item.from), event: { kind: item.kind, a: nameOf(item.from), b: nameOf(item.to) } } : item.kind === "muted" || item.kind === "unmuted" ? { id: item.id, from: who(item.from), event: { kind: item.kind === "unmuted" && item.body === "self" ? "restored" as const : item.kind, a: nameOf(item.from), b: nameOf(item.to) } } : item.kind === "gesture" ? { id: item.id, from: who(item.from), gesture: item.body ?? "" } : item.kind === "booster" ? { id: item.id, from: who(item.from), boost: { kind: item.body === "refuse_slap" ? "refuse_slap" : "kiss_fire", a: nameOf(item.from), b: nameOf(item.to) } } : item.kind === "bottle" ? { id: item.id, from: who(item.from), bottle: { a: Number((item.body ?? "0:0").split(":")[0]) || 0, b: Number((item.body ?? "0:0").split(":")[1]) || 0 } } : { id: item.id, from: who(item.from), text: item.body ?? "", ...(item.role ? { role: item.role } : {}) }))).slice(-80));
         }
         // Nothing changed and nothing counts down: skip the full re-render (the clock is refreshed at least every 4 seconds).
         const sig = JSON.stringify({ ...data, now: 0 });
@@ -2751,7 +2753,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // Expensive gifts (100 hearts and up) end with fireworks over the receiver; pricier gifts get a bigger show.
   function fireworks(key: number, to: number, price: number, from = -1, gift = "") {
     const { min, pct } = giftShare.current;
-    if (gift !== "c:heart1000" && to >= 0 && from !== to && pct > 0 && price >= min) heartBurst(key + 0.5, to, Math.max(1, Math.floor((price * pct) / 100)));
+    if (!BONUS[gift] && to >= 0 && from !== to && pct > 0 && price >= min) heartBurst(key + 0.5, to, Math.max(1, Math.floor((price * pct) / 100)));
     const level = fireworksLevel(price);
     if (!level || to < 0 || liteRef.current) return;
     if (showsRef.current >= 2) return; // at most two shows at once, so a flood of gifts does not freeze the page
@@ -2990,7 +2992,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     if (!player || player.empty) return false;
     // Hidden owner / moderator (paket-KC): only the 1000 ❤ bonus, nothing flies — the chat says who got it.
     if (online && net?.hidden) {
-      if (gift !== "c:heart1000") { setGiftNote(locale === "az" ? "Görünməz rejimdə yalnız 1000 ❤ bonus göndərmək olar" : "Hidden mode: only the 1000 ❤ bonus"); return false; }
+      if (!BONUS[gift]) { setGiftNote(locale === "az" ? "Görünməz rejimdə yalnız ❤ bonus göndərmək olar" : "Hidden mode: only the ❤ bonus"); return false; }
       if (heartsRef.current < price) return false;
       heartsRef.current -= price;
       giftSpendAt.current = Date.now();
@@ -3026,7 +3028,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       if (gen !== tableGen.current || playersRef.current[index]?.id !== player.id || (freshAt.current[player.id] ?? 0) > startedAt) return;
       giftSound(gift, "land");
       // (paket-IN) a cocktail no longer gives the receiver a heart: no "+1" burst any more
-      if (gift === "c:heart1000") heartBurst(key + 0.5, index, 1000);
+      if (BONUS[gift]) heartBurst(key + 0.5, index, BONUS[gift]);
       fireworks(key, index, price, meIndex, gift);
       landGift(key, player.id, plan);
     }, ms + 100);
@@ -3062,7 +3064,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       if (gen !== tableGen.current || playersRef.current[toAt]?.id !== toId || (freshAt.current[toId] ?? 0) > startedAt) return;
       giftSound(gift, "land");
       // (paket-IN) a cocktail no longer gives the receiver a heart: no "+1" burst any more
-      if (gift === "c:heart1000") heartBurst(key + 0.5, toAt, 1000);
+      if (BONUS[gift]) heartBurst(key + 0.5, toAt, BONUS[gift]);
       fireworks(key, toAt, priceOf(gift), fromAt, gift);
       landGift(key, toId, plan);
     }, ms + 100);
@@ -4525,10 +4527,10 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
               {(() => {
                 // Like the original gift list: the gifts you can send first, then the ones still locked
                 // (by kisses, from the nearest to the farthest, and the VIP ones last). Locked gifts are grey with a lock.
-                const all = [...(iAmAdmin ? [["c:heart1000", 1000, 0] as [string, number, number]] : []), ...giftChoices.slice(0, 2), ...customGiftNames(art).filter((name) => !name.startsWith("ges_") && name !== "heart1000" && !giftHidden(name)).map((name) => [`c:${name}`, GIFT_PRICES[name] ?? customPrice(name), missing(GIFT_RULES[`c:${name}`], progress)] as [string, number, number]), ...giftChoices.slice(2), ...lockedGifts.map(([gift, price, need]) => [gift, price, Math.max(0, need - progress.kisses)] as [string, number, number])]
+                const all = [...(iAmAdmin ? Object.entries(BONUS).map(([id, amount]) => [id, amount, 0] as [string, number, number]) : []), ...giftChoices.slice(0, 2), ...customGiftNames(art).filter((name) => !name.startsWith("ges_") && !BONUS[`c:${name}`] && !giftHidden(name)).map((name) => [`c:${name}`, GIFT_PRICES[name] ?? customPrice(name), missing(GIFT_RULES[`c:${name}`], progress)] as [string, number, number]), ...giftChoices.slice(2), ...lockedGifts.map(([gift, price, need]) => [gift, price, Math.max(0, need - progress.kisses)] as [string, number, number])]
                   .map(([gift, price, need]) => [gift, price, need ?? 0] as [string, number, number]);
                 const isLocked = (need: number) => (need === -1 ? !vip : need === -2 ? true : need > 0);
-                const rankOf = (id: string, index: number) => GIFT_PINNED_RANK.get(id) ?? GIFT_SHOP_RANK[id] ?? (id === "c:heart1000" || giftChoices.slice(0, 2).some(([g]) => g === id) ? index - 1e3 : 1e6 + index);
+                const rankOf = (id: string, index: number) => GIFT_PINNED_RANK.get(id) ?? GIFT_SHOP_RANK[id] ?? (BONUS[id] || giftChoices.slice(0, 2).some(([g]) => g === id) ? index - 1e3 : 1e6 + index);
                 const byShop = (list: [string, number, number][]) => list.map((item, index) => ({ item, index })).sort((x, y) => rankOf(x.item[0], x.index) - rankOf(y.item[0], y.index)).map(({ item }) => item);
                 const open = byShop(all.filter(([, , need]) => !isLocked(need)));
                 const locked = byShop(all.filter(([, , need]) => isLocked(need)).sort((x, y) => (x[2] === -2 ? 2e12 : x[2] === -1 ? 1e12 : x[2]) - (y[2] === -2 ? 2e12 : y[2] === -1 ? 1e12 : y[2])));
@@ -4587,7 +4589,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             if (line.staff) return (
               <div key={line.id} className={cn(info, "gap-2")}>
                 <span className={cn("shrink-0 rounded px-1.5 py-px text-[10px] font-bold text-white", line.staff.role === "owner" ? "bg-[#B8860B]" : "bg-[#111827]")}>{line.staff.role === "owner" ? "♛ Admin" : "Moderator"}</span>
-                <span className={cn("min-w-0 leading-[15px]", nameColorClass(line.staff.role === "owner" ? "gold" : "rainbow"))}>{locale === "az" ? <><b>{line.staff.to}</b> adlı istifadəçiyə 1000 bonus verdi</> : <>gave <b>{line.staff.to}</b> a 1000 bonus</>}</span>
+                <span className={cn("min-w-0 leading-[15px]", nameColorClass(line.staff.role === "owner" ? "gold" : "rainbow"))}>{locale === "az" ? <><b>{line.staff.to}</b> adlı istifadəçiyə {line.staff.amount} bonus verdi</> : <>gave <b>{line.staff.to}</b> a {line.staff.amount} bonus</>}</span>
               </div>
             );
             if (line.boost) return (
