@@ -216,7 +216,7 @@ const HAT_TURN: Record<string, number> = { pharaoh2: -30 };
 // Every cap (supermecap, kingcap, bosscap ... and the two baseball caps) sits 10% (about 5 mm) further in, so it sits on the corner of the photo and not mostly beside it.
 const CAP_NAME = /^(\w*cap|baseballa\w)$/;
 const CAP_NUDGE = 10;
-const HAT_NUDGE: Record<string, [number, number]> = { colander: [6, 6], cowboy: [6, 6], springwreath: [14, 14], pharaoh2: [7, 7], ushanka: [8, 8], noteshatw: [8, 8], noteshatb: [8, 8], rabbitcap: [5, 5], cappy: [8, 8] }; // the rabbit cap: its first place (centre on the corner) was almost right, so only 5% (about 2.5 mm) instead of the 10% of the other caps
+const HAT_NUDGE: Record<string, [number, number]> = { colander: [6, 6], cowboy: [6, 6], springwreath: [14, 14], pharaoh2: [7, 7], ushanka: [8, 8], noteshatw: [8, 8], noteshatb: [8, 8], rabbitcap: [5, 5], cappy: [8, 8], bezkoz: [10, 10] }; // the rabbit cap: its first place (centre on the corner) was almost right, so only 5% (about 2.5 mm) instead of the 10% of the other caps
 // The turn of a gift that goes to the top-left corner (head or ears) as it sits on the photo, or null for the other gifts.
 // The flight uses it from the start, so the gift does not fly straight and then suddenly turn when it lands.
 function headTurn(land: string): number | null {
