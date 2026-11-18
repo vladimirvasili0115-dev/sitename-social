@@ -269,7 +269,7 @@ const GIFT_BUCKET = 120;
 // Defending yourself from a kick always costs 300 hearts (paket-KH, was 50); saving somebody else stays half of their kick price.
 const SELF_DEFEND_PRICE = 300;
 // These corner gifts are smaller than the other ones (whiskey glass 1.4x, wine glass 1.3x, joystick 1.4x); they still stand on the right frame line (flush) and the bottom line.
-const CORNER_SHRINK: Record<string, number> = { whiskey: 1.4, wine: 1.3, joystick: 1.4, martini: 1.3, mobile: 1.3, nokia: 1.3, heartlock: 1.3, snakepot: 2, beer: 1.3, milk: 1.2 * 1.1, vodka: 1.5, love: 1.3, mineralka: 1.25, teddybear: 1.15 }; // milk: 1.2x, then 1.1x more; love (the pink cocktail): 1.3x // the snake in the pot 2x smaller, the beer mug 1.3x smaller (and 3 mm further right, below)
+const CORNER_SHRINK: Record<string, number> = { whiskey: 1.4, wine: 1.3, joystick: 1.4, martini: 1.3, mobile: 1.3, nokia: 1.3, heartlock: 1.3, snakepot: 2, beer: 1.3, milk: 1.2 * 1.1, vodka: 1.5, love: 1.3, mineralka: 1.25, teddybear: 1.15, eggplant: 1.3 }; // milk: 1.2x, then 1.1x more; love (the pink cocktail): 1.3x // the snake in the pot 2x smaller, the beer mug 1.3x smaller (and 3 mm further right, below)
 const BIGGER_CORNER = /^(cherry|makarov|revolver)$/;
 const BIGGER_BY = 1.2;
 const CORNER_ALL_BY = 1.7; // every other gift on the bottom-right corner is 1.7x bigger (they looked tiny next to the photo)
@@ -331,6 +331,8 @@ function planLanding(gift: string, seed: number = Math.random() * 1e9) {
     if (name !== "catdress") spot = { ...spot, x: spot.x - (flushed ? 0 : CORNER_SHIFT_LEFT) - (/^(makarov|revolver)$/.test(name) ? 4 : 0) + (HEART_TRIO.test(name) ? HEART_SHIFT_RIGHT : 0) + (name === "surprizebox" ? SURPRISE_SHIFT_RIGHT : name === "teddybear" || name === "beer" ? 6 : 0) }; // the teddy bear stands 3 mm (6%) further right (the flight reads this same spot) // the pistol: another 2 mm (4%) to the left // flightTo reads this same spot, so the flight ends exactly where the gift stays
     }
   }
+  // The eggplant on the photo is its lying picture (gifts/eggplant.webp, bottom at 126/200), but its place is worked out from the standing first animation frame (bottom at 149/200): it goes down by the difference so it sits on the bottom line of the frame.
+  if (spot && name === "eggplant" && spot.kind === "corner") spot = { ...spot, y: spot.y + spot.s * (23 / 200) };
   // Every gift on the bottom-right corner sits CORNER_EXTRA_RIGHT further right (same size, same height); the flight reads this same spot.
   // Not the hats, the gifts anywhere on the photo, the left corner or the rooster that covers the whole photo.
   if (spot && (spot.kind === "corner" || spot.kind === "balloon") && spot.x + spot.s / 2 >= 45 && land !== "e:🐓") spot = { ...spot, x: spot.x + CORNER_EXTRA_RIGHT };
