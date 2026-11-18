@@ -269,7 +269,7 @@ const GIFT_BUCKET = 120;
 // Defending yourself from a kick always costs 300 hearts (paket-KH, was 50); saving somebody else stays half of their kick price.
 const SELF_DEFEND_PRICE = 300;
 // These corner gifts are smaller than the other ones (whiskey glass 1.4x, wine glass 1.3x, joystick 1.4x); they still stand on the right frame line (flush) and the bottom line.
-const CORNER_SHRINK: Record<string, number> = { whiskey: 1.4, wine: 1.3, joystick: 1.4, martini: 1.3, mobile: 1.3, nokia: 1.3, heartlock: 1.3, snakepot: 2, beer: 1.3, milk: 1.2 * 1.1, vodka: 1.5, love: 1.3, mineralka: 1.25, teddybear: 1.15, eggplant: 1.3 }; // milk: 1.2x, then 1.1x more; love (the pink cocktail): 1.3x // the snake in the pot 2x smaller, the beer mug 1.3x smaller (and 3 mm further right, below)
+const CORNER_SHRINK: Record<string, number> = { whiskey: 1.4, wine: 1.3, joystick: 1.4, martini: 1.3, mobile: 1.3, nokia: 1.3, heartlock: 1.3, snakepot: 2, beer: 1.3, milk: 1.2 * 1.1, vodka: 1.5, love: 1.3, mineralka: 1.25, teddybear: 1.15, eggplant: 1.3, gascan_1: 2, gascan_2: 2, gascan_3: 2 }; // milk: 1.2x, then 1.1x more; love (the pink cocktail): 1.3x // the snake in the pot 2x smaller, the beer mug 1.3x smaller (and 3 mm further right, below)
 const BIGGER_CORNER = /^(cherry|makarov|revolver)$/;
 const BIGGER_BY = 1.2;
 const CORNER_ALL_BY = 1.7; // every other gift on the bottom-right corner is 1.7x bigger (they looked tiny next to the photo)
