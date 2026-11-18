@@ -227,14 +227,19 @@ function headTurn(land: string): number | null {
   if (at === "head") return hatSpot(land.startsWith("c:") ? land.slice(2) : giftFileName(land)).a;
   return null;
 }
+// These top-left gifts (picked one by one from the preview) are another 1.1x smaller and sit 2 mm (4%) further in, toward the middle of the photo.
+const HAT_TRIM = new Set(["blackcrown", "bosscap", "bow_1", "bow_2", "bow_4", "cappy", "carnivalmask1", "carnivalmask2", "clown", "cowboy", "crown2", "crown3", "cylinder", "cylinderw", "ears3_2", "ears4_2", "ears5_2", "ears6_2", "ears7_2", "ears9a", "icecrown", "indianhat", "kingcap", "knight", "kokoshnik", "ledglasses", "migalka", "minerhat", "monomachhat", "musketeer", "napoleon", "noteshatb", "noteshatw", "nurse", "ololosh", "pharaoh2", "pilotka", "pirat", "rasta", "rubyglasses2", "sombrero", "sparta", "strawhat", "sultan", "ushanka", "viking"]);
+const HAT_TRIM_BY = 1.1, HAT_TRIM_IN = 4;
 function hatSpot(name: string): { x: number; y: number; s: number; a: number } {
-  const size = HAT_SIZE * (HAT_BIGGER[name] ?? 1);
+  const trim = HAT_TRIM.has(name);
+  const size = (HAT_SIZE * (HAT_BIGGER[name] ?? 1)) / (trim ? HAT_TRIM_BY : 1);
   const box = artBox(name, false);
   const dx = box ? ((box.l + box.r) / 2 - 0.5) * size : 0, dy = box ? ((box.t + box.b) / 2 - 0.5) * size : 0;
   const a = -45 + (HAT_TURN[name] ?? 0), rad = (a * Math.PI) / 180;
   const rx = dx * Math.cos(rad) - dy * Math.sin(rad), ry = dx * Math.sin(rad) + dy * Math.cos(rad); // where that middle ends up after the turn (-45° for the other hats)
   const nudge = HAT_NUDGE[name] ?? (CAP_NAME.test(name) ? [CAP_NUDGE, CAP_NUDGE] : [0, 0]);
-  return { x: -rx - size / 2 + nudge[0], y: -ry - size / 2 + nudge[1], s: size, a };
+  const inward = trim ? HAT_TRIM_IN : 0;
+  return { x: -rx - size / 2 + nudge[0] + inward, y: -ry - size / 2 + nudge[1] + inward, s: size, a };
 }
 // Drinks and other corner gifts stand on the bottom-right edge of the frame: the picture's left edge is 10% inside the frame, its bottom just below it.
 // The visible art is at most CORNER_ART_H% of the photo high and CORNER_ART_W% wide (not the empty picture box), so big pictures stay small on the corner.
