@@ -211,14 +211,14 @@ function artBox(name: string, pinned: boolean) {
 // Hats sit on the top-left corner of the frame: the middle of the hat is on the corner itself, the hat turned -45°.
 const HAT_SCALE = 1.4; // every gift on the top-left corner is 1.4x bigger; the middle of the art stays on the corner itself (hatSpot works from the size)
 const HAT_SIZE = 48 * HAT_SCALE;
-const HAT_BIGGER: Record<string, number> = { spaghetti: (1.7 * 1.4) / 1.5, clown: 1.2, cowboy: 1.3 / 1.2 / 1.1, ushanka: (1.3 * 1.2) / 1.1, crown1: 1 / 1.2, crown4: 1 / 1.2, bowidle: 1 / 1.3, taxi: 1 / 1.3 }; // cowboy is 1.3x/1.2 = 1.083x bigger (was 1.3x, made 1.2x smaller); the star fur hat is another 1.3x bigger (on top of HAT_SCALE; the fur hat 1.2x more, then 1.1x smaller again); two crowns (hearts, blue stone) are 1.2x smaller
+const HAT_BIGGER: Record<string, number> = { spaghetti: (1.7 * 1.4) / 1.5, clown: 1.2, cowboy: 1.3 / 1.2 / 1.1, ushanka: (1.3 * 1.2) / 1.1, crown1: 1 / 1.2, crown4: 1 / 1.2, bowidle: 1 / 1.3, taxi: 1 / 1.3, pharaoh2: 1 / 1.2 }; // cowboy is 1.3x/1.2 = 1.083x bigger (was 1.3x, made 1.2x smaller); the star fur hat is another 1.3x bigger (on top of HAT_SCALE; the fur hat 1.2x more, then 1.1x smaller again); two crowns (hearts, blue stone) are 1.2x smaller
 // The pharaoh headdress is drawn already tilted about 30° clockwise, so it is turned 30° more the other way to sit symmetric on the corner diagonal, its opening facing the middle of the photo.
 const HAT_TURN: Record<string, number> = { pharaoh2: -30 };
 // The spring wreath and the pharaoh headdress sit further in, toward the middle of the photo (right and down): 7% is about 3.5 mm.
 // Every cap (supermecap, kingcap, bosscap ... and the two baseball caps) sits 10% (about 5 mm) further in, so it sits on the corner of the photo and not mostly beside it.
 const CAP_NAME = /^(\w*cap|baseballa\w)$/;
 const CAP_NUDGE = 10;
-const HAT_NUDGE: Record<string, [number, number]> = { colander: [6, 6], cowboy: [6, 6], springwreath: [14, 14], pharaoh2: [7, 7], ushanka: [8, 8], noteshatw: [8, 8], noteshatb: [8, 8], rabbitcap: [5, 5], cappy: [8, 8], bezkoz: [10, 10], bowidle: [8, 8], taxi: [8, 8] }; // the rabbit cap: its first place (centre on the corner) was almost right, so only 5% (about 2.5 mm) instead of the 10% of the other caps
+const HAT_NUDGE: Record<string, [number, number]> = { colander: [6, 6], cowboy: [6, 6], springwreath: [14, 14], pharaoh2: [15, 15], ushanka: [8, 8], noteshatw: [8, 8], noteshatb: [8, 8], rabbitcap: [5, 5], cappy: [8, 8], bezkoz: [10, 10], bowidle: [8, 8], taxi: [8, 8] }; // the rabbit cap: its first place (centre on the corner) was almost right, so only 5% (about 2.5 mm) instead of the 10% of the other caps
 // The turn of a gift that goes to the top-left corner (head or ears) as it sits on the photo, or null for the other gifts.
 // The flight uses it from the start, so the gift does not fly straight and then suddenly turn when it lands.
 function headTurn(land: string): number | null {
@@ -269,7 +269,7 @@ const GIFT_BUCKET = 120;
 // Defending yourself from a kick always costs 300 hearts (paket-KH, was 50); saving somebody else stays half of their kick price.
 const SELF_DEFEND_PRICE = 300;
 // These corner gifts are smaller than the other ones (whiskey glass 1.4x, wine glass 1.3x, joystick 1.4x); they still stand on the right frame line (flush) and the bottom line.
-const CORNER_SHRINK: Record<string, number> = { whiskey: 1.4, wine: 1.3, joystick: 1.4, martini: 1.3, mobile: 1.3, nokia: 1.3, heartlock: 1.3, snakepot: 2, beer: 1.3, milk: 1.2 * 1.1, vodka: 1.5, love: 1.3, mineralka: 1.25, teddybear: 1.15, eggplant: 1.3, gascan_1: 2, gascan_2: 2, gascan_3: 2 }; // milk: 1.2x, then 1.1x more; love (the pink cocktail): 1.3x // the snake in the pot 2x smaller, the beer mug 1.3x smaller (and 3 mm further right, below)
+const CORNER_SHRINK: Record<string, number> = { whiskey: 1.4, wine: 1.3, joystick: 1.4, martini: 1.3, mobile: 1.3, nokia: 1.3, heartlock: 1.3, snakepot: 2, beer: 1.3, milk: 1.2 * 1.1, vodka: 1.5, love: 1.3, mineralka: 1.25, teddybear: 1.15, eggplant: 1.3, gascan_1: 2, gascan_2: 2, gascan_3: 2, goldenapple: 1.2 }; // milk: 1.2x, then 1.1x more; love (the pink cocktail): 1.3x // the snake in the pot 2x smaller, the beer mug 1.3x smaller (and 3 mm further right, below)
 const BIGGER_CORNER = /^(cherry|makarov|revolver)$/;
 const BIGGER_BY = 1.2;
 const CORNER_ALL_BY = 1.7; // every other gift on the bottom-right corner is 1.7x bigger (they looked tiny next to the photo)
