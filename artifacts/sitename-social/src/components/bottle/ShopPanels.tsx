@@ -172,7 +172,7 @@ export function InvitePanel({ link, invited, done }: { link: string | null; invi
 export const complimentKinds: { emoji: string; tone: string; src?: string }[] = [
   { emoji: "😊", tone: "#FDE68A" }, { emoji: "👀", tone: "#FDE68A" }, { emoji: "✋", tone: "#E9D5FF" }, { emoji: "👍", tone: "#A7F3D0" }, { emoji: "😴", tone: "#F5DEB3" }, { emoji: "💪", tone: "#A7F3D0" },
   { emoji: "🎨", tone: "#E9D5FF" }, { emoji: "😂", tone: "#FDE68A" }, { emoji: "💼", tone: "#FBCFE8" }, { emoji: "🗣️", tone: "#FCA5A5" }, { emoji: "🐱", tone: "#FCA5A5" }, { emoji: "✨", tone: "#FBCFE8" },
-  { emoji: "👠", tone: "#FBCFE8", src: "/custom/ui/cmp-legs.webp" }, { emoji: "😍", tone: "#E9D5FF" }, { emoji: "🐵", tone: "#F5DEB3" },
+  { emoji: "👠", tone: "#FBCFE8", src: "/custom/ui/cmp-legs2.webp" }, { emoji: "😍", tone: "#E9D5FF" }, { emoji: "🐵", tone: "#F5DEB3" },
 ];
 export const ComplimentPill = ({ kind, onClick, big }: { kind: number; onClick?: () => void; big?: boolean }) => {
   const { t } = useTranslation();
