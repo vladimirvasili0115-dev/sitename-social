@@ -168,10 +168,11 @@ export function InvitePanel({ link, invited, done }: { link: string | null; invi
   );
 }
 
-// Compliments: 12 kinds, each with a picture and a colour (a few are playful teasing).
-export const complimentKinds: { emoji: string; tone: string }[] = [
+// Compliments: 15 kinds, each with a picture and a colour (a few are playful teasing).
+export const complimentKinds: { emoji: string; tone: string; src?: string }[] = [
   { emoji: "😊", tone: "#FDE68A" }, { emoji: "👀", tone: "#FDE68A" }, { emoji: "✋", tone: "#E9D5FF" }, { emoji: "👍", tone: "#A7F3D0" }, { emoji: "😴", tone: "#F5DEB3" }, { emoji: "💪", tone: "#A7F3D0" },
   { emoji: "🎨", tone: "#E9D5FF" }, { emoji: "😂", tone: "#FDE68A" }, { emoji: "💼", tone: "#FBCFE8" }, { emoji: "🗣️", tone: "#FCA5A5" }, { emoji: "🐱", tone: "#FCA5A5" }, { emoji: "✨", tone: "#FBCFE8" },
+  { emoji: "👠", tone: "#FBCFE8", src: "/custom/ui/cmp-legs.webp" }, { emoji: "😍", tone: "#E9D5FF" }, { emoji: "🐵", tone: "#F5DEB3" },
 ];
 export const ComplimentPill = ({ kind, onClick, big }: { kind: number; onClick?: () => void; big?: boolean }) => {
   const { t } = useTranslation();
@@ -179,7 +180,7 @@ export const ComplimentPill = ({ kind, onClick, big }: { kind: number; onClick?:
   if (!item) return null;
   return (
     <button type="button" onClick={onClick} disabled={!onClick} className={cn("flex w-full items-center gap-2 rounded-xl border-b-[3px] border-black/10 px-2.5 text-left font-bold text-[#3F3F46] shadow-sm transition-transform enabled:hover:-translate-y-0.5", big ? "h-12 justify-center text-base" : "h-11 text-[13px]")} style={{ background: item.tone }}>
-      <Pic e={item.emoji} className="h-6 w-6 shrink-0" /><span className="min-w-0 truncate">{t(`bottle.cmp${kind}` as TranslationKey)}</span>
+      {item.src ? <img src={item.src} alt="" draggable={false} className="h-6 w-6 shrink-0 select-none object-contain" /> : <Pic e={item.emoji} className="h-6 w-6 shrink-0" />}<span className="min-w-0 truncate">{t(`bottle.cmp${kind}` as TranslationKey)}</span>
     </button>
   );
 };
@@ -203,6 +204,7 @@ export function ComplimentsPanel({ people, left, onSend }: { people: { id: strin
     const result = await onSend(person.id, kind);
     setBusy(false);
     if (result === "again") { setNote(t("bottle.cmpAgain")); setSkip((list) => [...list, person.id]); return; }
+    if (result?.startsWith("wait:")) return setNote(`${t("bottle.cmpWait")} ${result.slice(5)} ${t("bottle.minLong")}`);
     if (result === "bad") return setNote(t("bottle.cmpFail"));
     setNote(result === "bonus" ? t("bottle.cmpBonus") : null);
     setSkip((list) => [...list, person.id]);

@@ -44,7 +44,7 @@ import { useSettings } from "@/components/settings/useSettings";
 import { ensureMessagesLoaded, openRemoteChat, remoteChats, sendRemoteMessage } from "@/lib/messagesSync";
 import { uploadBlob } from "@/lib/media";
 import { refreshGifts } from "@/lib/giftsSync";
-import { bottleFresh, bottleSetHidden, bottleStaffMute, bottleSeek, bottleLogIp, bottleAdminIpLookup, type BottleIpRow, bottleAnswer, bottleRoundReset, bottleAchSync, bottleAchView, bottleGesture, bottleSmiles, bottleBuyHearts, bottleGiftAllow, bottleBuySmiles, bottleProgress, bottleGesturesOpen, bottleSkin, bottleBadges, bottleGetAccept, bottleSetAccept, bottleBuyChances, bottleJoin, bottleMove, bottleMoveWaitStart, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleProfile, type BottleProfile, bottleDaily, bottleItems, bottleItemBuy, bottleBooster, bottleTutorial, bottleAdminIds, bottleOwnerIds, type BottleItems, bottleLeagueInfo, bottleLeagueClaim, type BottleLeague, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleKickPrice, bottleKickDefendPrice, bottlePlusCreate, bottlePlusPass, bottlePlusNumColor, bottlePlusNameColor, bottlePlusMute, bottleUnmuteSelf, bottleGift, bottleGiftMany, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, bottleClaim, type BottleState, type BottleSeat, bottleEffectOf, bottleYtGet, bottleYtPut, bottleTableGifts, type BottleSeatGift } from "@/lib/bottleSync";
+import { bottleFresh, bottleSetHidden, bottleStaffMute, bottleSeek, bottleLogIp, bottleAdminIpLookup, type BottleIpRow, bottleAnswer, bottleRoundReset, bottleAchSync, bottleAchView, bottleGesture, bottleSmiles, bottleBuyHearts, bottleGiftAllow, bottleBuySmiles, bottleProgress, bottleGesturesOpen, bottleSkin, bottleBadges, bottleGetAccept, bottleSetAccept, bottleBuyChances, bottleJoin, bottleMove, bottleMoveWaitStart, bottleRejoin, bottleQueueLeave, bottleActiveClaim, bottleAdmire, bottleProfile, type BottleProfile, bottleDaily, bottleItems, bottleItemBuy, bottleBooster, bottleTutorial, bottleAdminIds, bottleOwnerIds, type BottleItems, bottleLeagueInfo, bottleLeagueClaim, type BottleLeague, bottleGiftShare, bottlePass, bottlePassBuy, bottlePassChest, bottlePassClaim, bottleCompliment, bottleComplimentPeople, bottleFrame, bottleKick, bottleRefSet, bottleRefStatus, bottleSave, bottleKickPrice, bottleKickDefendPrice, bottlePlusCreate, bottlePlusPass, bottlePlusNumColor, bottlePlusNameColor, bottlePlusMute, bottleUnmuteSelf, bottleGift, bottleGiftMany, bottlePlay, bottleRoomCreate, bottleRoomDelete, bottleRoomJoin, bottleRoomsList, type BottleRooms, bottleTables, bottleTop, type BottleTop, bottleWheel, type BottleTables, bottleLeave, bottleSay, bottleSpend, bottleSpin, bottleSync, bottleClaim, type BottleState, type BottleSeat, bottleEffectOf, bottleYtGet, bottleYtPut, bottleTableGifts, type BottleSeatGift } from "@/lib/bottleSync";
 import { ytHint, ytReason } from "./ytHints";
 import { WeeklyPanel, WeekPrizePopup } from "./WeeklyTop";
 import { BonusMarket, EnigmaEffect, arrivalLabel, marketLabel } from "./BonusMarket";
@@ -1417,7 +1417,13 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         if (!first) gifts.forEach((item, order) => window.setTimeout(() => { if (syncTable.current !== giftTable) return; remoteGift.current(who(item.from), who(item.to), item.body ?? "", gifts.length > 1 ? 1800 : 3600, item.seed ?? item.id); }, order * Math.min(150, 900 / gifts.length))); // a big batch still starts within a second
         for (const seat of data.seats) names.current[seat.id] = { name: gameName(seat.name) || "?", avatar: seat.avatar ?? "" };
         const nameOf = (id: string | null) => names.current[id ?? ""]?.name ?? "?"; // own name too, not "you"
-        if (!first) all.filter((item) => item.kind === "compliment" && item.to === data!.me).forEach((item) => setComplimentIn({ name: names.current[item.from ?? ""]?.name ?? "?", avatar: names.current[item.from ?? ""]?.avatar || NO_PHOTO, kind: Number(item.body) || 1 }));
+        // A compliment can come from another table (paket-LE): then the sender's name and photo are read from the profile.
+        if (!first) all.filter((item) => item.kind === "compliment" && item.to === data!.me).forEach((item) => {
+          const kind = Number(item.body) || 1;
+          const known = names.current[item.from ?? ""];
+          if (known || !item.from || !supabase) return setComplimentIn({ name: known?.name ?? "?", avatar: known?.avatar || NO_PHOTO, kind });
+          void Promise.resolve(supabase.from("profiles").select("name,avatar_url").eq("id", item.from).maybeSingle()).then((res) => { const row = res?.data as { name: string | null; avatar_url: string | null } | null; setComplimentIn({ name: gameName(row?.name) || "?", avatar: row?.avatar_url || NO_PHOTO, kind }); }, () => setComplimentIn({ name: "?", avatar: NO_PHOTO, kind }));
+        });
         if (!first && all.some((item) => item.kind === "kick" && item.to === data!.me)) setKickedToast(true);
         // Somebody wrote to me by name ("Aylin, ..."): a ding and a note.
         if (!first) {
@@ -1936,6 +1942,15 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const hasPass = (player: Player) => (online ? Boolean(net?.seats.find((seat) => seat.id === (player.me ? net.me : player.id))?.pass) : false);
   const activeSecs = online ? net?.active?.secs ?? 0 : Math.floor((Date.now() - localActive) / 1000);
   const [localCompliments, setLocalCompliments] = useState(0);
+  // Compliments go to anybody in the game (paket-LE), not only to my table: the list is asked from the server when the panel opens.
+  const [complimentPeople, setComplimentPeople] = useState<{ id: string; name: string; avatar: string }[] | null>(null);
+  useEffect(() => {
+    if (panel !== "compliments" || !online) return;
+    let alive = true;
+    setComplimentPeople(null);
+    void bottleComplimentPeople().then((list) => { if (alive && Array.isArray(list)) setComplimentPeople(list.map((row) => ({ id: row.id, name: gameName(row.name) || "?", avatar: row.avatar || NO_PHOTO }))); });
+    return () => { alive = false; };
+  }, [panel, online]);
   // Season pass: levels from play, free and premium rewards (server only).
   function openPass() {
     setPassNote(null);
@@ -1959,6 +1974,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     bumpStat("chat");
     if (!online) { const next = (localCompliments + 1) % 10; setLocalCompliments(next); if (!next) { heartsRef.current += 10; setHearts(heartsRef.current); return "bonus"; } return null; }
     const result = await bottleCompliment(to, kind);
+    if (result?.error === "wait") return `wait:${result.mins ?? 60}`; // after the bonus of 10 there is an hour of rest (paket-LE)
     if (!result || result.error) return result?.error ?? "bad";
     if (typeof result.hearts === "number") { heartsRef.current = result.hearts; setHearts(result.hearts); }
     pullRef.current();
@@ -4031,7 +4047,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
               ) : panel === "invite" ? (
                 <InvitePanel link={online && net ? `${window.location.origin}/register?ref=${net.me}` : null} invited={refInfo.invited} done={refInfo.done} />
               ) : panel === "compliments" ? (
-                <ComplimentsPanel people={seated.filter((player) => !player.me).map((player) => ({ id: player.id, name: player.name, avatar: player.avatar }))} left={10 - (net?.compliments ?? localCompliments)} onSend={sendCompliment} />
+                <ComplimentsPanel key={complimentPeople ? "all" : "table"} people={complimentPeople ?? seated.filter((player) => !player.me).map((player) => ({ id: player.id, name: player.name, avatar: player.avatar }))} left={10 - (net?.compliments ?? localCompliments)} onSend={sendCompliment} />
               ) : panel === "kick" && kickFor ? (
                 // The original kick window (bottle-html5 KickoutDialog + kickout CSS).
                 <div className="flex flex-col text-[#424242]">

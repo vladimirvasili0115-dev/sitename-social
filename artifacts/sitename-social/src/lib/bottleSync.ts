@@ -125,7 +125,8 @@ export const bottleKickPrice = (user?: string) => call<number>("bottle_kick_pric
 // What the kicked player pays to defend himself: the price of the kick that hit him.
 export const bottleKickDefendPrice = (to: string) => call<number>("bottle_kick_defend_price", { p_to: to });
 export const bottleSave = (to: string) => call<boolean>("bottle_save", { p_to: to });
-export const bottleCompliment = (to: string, kind: number) => call<{ count?: number; hearts?: number; bonus?: boolean; error?: "bad" | "again" }>("bottle_compliment", { p_to: to, p_kind: kind });
+export const bottleComplimentPeople = () => call<{ id: string; name: string | null; avatar: string | null; here: boolean }[]>("bottle_compliment_people");
+export const bottleCompliment = (to: string, kind: number) => call<{ count?: number; hearts?: number; bonus?: boolean; error?: "bad" | "again" | "wait"; mins?: number }>("bottle_compliment", { p_to: to, p_kind: kind });
 export const bottleActiveClaim = (level: number) => call<number>("bottle_active_claim", { p_level: level });
 export const bottleRefSet = (inviter: string) => call<boolean>("bottle_ref_set", { p_inviter: inviter });
 export const bottleRefStatus = () => call<{ invited: number; done: number; paid: number; hearts: number }>("bottle_ref_status");
