@@ -25,7 +25,7 @@ export const customPrice = (name: string) => (drinkNames.test(name) ? 2 : prices
 export const customPlace = (name: string): Place =>
   /^(ears|horns)/.test(name) ? "ears"
     : /^(prankcake_\w+2|tomato[23])$/.test(name) ? "face"
-    : name === "magichat" ? "body" // the rabbit-in-a-hat gift stands on the bottom-right corner, not on the head
+    : name === "magichat" || name === "pirateparrot" ? "body" // the pirate parrot stands on the bottom-right corner (its name has "pirat" in it, which would put it on the head) // the rabbit-in-a-hat gift stands on the bottom-right corner, not on the head
     : /(cap|crown|hat|cylinder|cowboy|napoleon|musketeer|nurse|clown|bezkoz|indianhat|carnivalmask|horsehead|knight|bow|pharaoh|pilotka|pirat|rasta|sombrero|sparta|sultan|ushanka|viking|glasses)/.test(name) || original.get(name)?.point === "h" ? "head"
     : "body";
 // The order the pictures appear in the gift list (the rest follow in name order).
@@ -77,10 +77,11 @@ export const giftGroups: Record<string, string[]> = {
   valenok: ["valenok", "valenok2", "valenok3"],
   candy1: ["candy1", "candy2", "candy3", "candy4", "candy5", "candy6"],
   candy7: ["candy7", "candy8", "candy9", "candy10"],
+  prankcake_blue1: ["prankcake_blue1", "prankcake_choko1", "prankcake_yellow1"],
 };
 const grouped = new Set(Object.entries(giftGroups).flatMap(([tile, list]) => list.filter((name) => name !== tile)));
 // Colour families that go one colour per tap, in order (1st tap colour 1, 2nd tap colour 2 ...), without changing colour in flight.
-export const colorSteps = new Set(["air_kiss1", "gem1", "loveis1", "strawberry1", "valentine2", "redbull", "nipple1", "partyhat1", "noteshatb", "maracas1", "astronaut", "baloon1", "drinkam", "bouquet", "gascan_1", "kinder2", "sweet1", "valenok", "candy1", "candy7"]);
+export const colorSteps = new Set(["air_kiss1", "gem1", "loveis1", "strawberry1", "valentine2", "redbull", "nipple1", "partyhat1", "noteshatb", "maracas1", "astronaut", "baloon1", "drinkam", "bouquet", "gascan_1", "kinder2", "sweet1", "valenok", "candy1", "candy7", "prankcake_blue1"]);
 const stepAt: Record<string, number> = {};
 export function nextColor(name: string) {
   const group = giftGroups[name];
