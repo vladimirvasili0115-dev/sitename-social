@@ -185,13 +185,15 @@ const LIVE_TABLE_CHANNEL = false;
 // A RANDOM gift that has to go (pushed out by new ones) stays 5 s, then fades out in 0.9 s.
 const LEAVE_MS = 5000;
 const LEAVE_FADE = 900;
-const RANDOM_SPOT = /^(air_kiss\d|gem\d|flower\d+|loveis\d|iloveyou|bear\d+|egg\d|strawberry\d|valentine\d)$/;
+const RANDOM_SPOT = /^(air_kiss\d|gem\d|flower\d+|loveis\d|iloveyou|bear\d+|egg\d|strawberry\d|valentine\d|pants\d|bra\d|furhandcuffs|leatherbra)$/;
+// The panties, the bras, the fur handcuffs and the leather set stand at the very end of the gift list, in this order.
+const GIFT_LAST = new Map<string, number>(["c:pants2", "c:bra1", "c:furhandcuffs", "c:leathermousehat", "c:leathershoes", "c:leathercathat", "c:leatherbra", "c:leatherzipmask"].map((id, index) => [id, 9e6 + index]));
 // Caps and hats sit on the top-left or the top-right corner of the photo, tilted towards it.
-const HAT_SPOT = /^(\w*cap|cappy|cowboy|cylinderw?|indianhat|napoleon|musketeer|nurse|bezkoz|monomachhat|noteshat\w|partyhat\d|clown|carnivalmask\d|horseheadhat2|baseballa\w)$/;
+const HAT_SPOT = /^(\w*cap|cappy|cowboy|cylinderw?|indianhat|napoleon|musketeer|nurse|bezkoz|monomachhat|noteshat\w|partyhat\d|clown|carnivalmask\d|horseheadhat2|baseballa\w|leathermousehat|leathercathat|leatherzipmask)$/;
 // These spin a full turn on the way; kisses and gems fly a little smaller.
 const SPIN_FLIGHT = /^c:(bear\d+|labubu1|wholeegg)$/;
 // Gifts that sound like another gift (the yellow SUV has the engine sound of the Bugatti).
-const SOUND_LIKE: Record<string, string> = { "c:hummer": "c:bugatti" };
+const SOUND_LIKE: Record<string, string> = { "c:hummer": "c:bugatti", "c:furhandcuffs": "c:handcuffs" };
 const SMALL_FLIGHT = new Set(["c:air_kiss1", "c:gem1"]);
 const SCATTER = new Set(["c:wholeegg"]);
 // These gifts fly as the whole picture (egg, tomato) and only break when they reach the photo.
@@ -320,7 +322,7 @@ function planLanding(gift: string, seed: number = Math.random() * 1e9) {
   if (name && (HAT_SPOT.test(name) || /^(ears|bow_)/.test(name))) { const hat = hatSpot(name); const near = /^bow_/.test(name) ? 4 : 0; spot = at(hat.s, hat.x + near, hat.y + near, "hatL"); } // bows sit 4% (about 2 mm) closer to the photo, so they do not hang over the frame // the original "hat": sitting right on the top-left (90°) corner, turned -45°
   else if (name && (RANDOM_SPOT.test(name) || onPhoto(name) || name === "fairy")) {
     // The original "ava": a random point anywhere on the photo and a random angle (0–360°), the same on every screen.
-    const size = name === "handcuffs" ? 80 : name === "blackrose" ? 56 : name === "voodoo" ? 68 * 1.4 : /^valentine\d$/.test(name) ? 40 * 1.6 : name === "frog" ? 40 * 1.3 : /^valenok\d*$/.test(name) ? 40 * 2 : /^notes\d$/.test(name) ? 40 * 1.9 : /^sponge_(green|violet)$/.test(name) ? 40 * 1.8 : /^gem[1-4]$/.test(name) ? 40 / 1.4 : name === "gem5" ? 40 / 1.3 : 40; // gems 1-4 are 1.4x and gem5 (the ruby heart) 1.3x smaller, in flight and on the photo (a random gift flies at the size it lands at) // handcuffs: twice as big; the black rose 1.4x, the voodoo doll 1.7x then 1.4x more, the winged love letters (valentine2-5) 1.6x, the frog 1.3x, the felt boots (valenok*) 2x, the music notes (notes1-4) 1.9x, the green and violet sponges 1.8x (the centre stays at the same random point; it flies at this same size)
+    const size = name === "handcuffs" || name === "furhandcuffs" ? 80 : name === "blackrose" ? 56 : name === "voodoo" ? 68 * 1.4 : /^valentine\d$/.test(name) ? 40 * 1.6 : name === "frog" ? 40 * 1.3 : /^valenok\d*$/.test(name) ? 40 * 2 : /^notes\d$/.test(name) ? 40 * 1.9 : /^sponge_(green|violet)$/.test(name) ? 40 * 1.8 : /^gem[1-4]$/.test(name) ? 40 / 1.4 : name === "gem5" ? 40 / 1.3 : 40; // gems 1-4 are 1.4x and gem5 (the ruby heart) 1.3x smaller, in flight and on the photo (a random gift flies at the size it lands at) // handcuffs: twice as big; the black rose 1.4x, the voodoo doll 1.7x then 1.4x more, the winged love letters (valentine2-5) 1.6x, the frog 1.3x, the felt boots (valenok*) 2x, the music notes (notes1-4) 1.9x, the green and violet sponges 1.8x (the centre stays at the same random point; it flies at this same size)
     const x = rnd() * 100 - size / 2, y = rnd() * 100 - size / 2;
     spot = { ...at(size, x, y, "rand"), r: Math.round(rnd() * 360) }; }
   else if (land === "e:🐓") spot = at(100, 0, 0, "corner"); // the rooster covers the whole photo
@@ -4565,7 +4567,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 const all = [...(iAmAdmin ? Object.entries(BONUS).map(([id, amount]) => [id, amount, 0] as [string, number, number]) : []), ...giftChoices.slice(0, 2), ...customGiftNames(art).filter((name) => !name.startsWith("ges_") && !BONUS[`c:${name}`] && !giftHidden(name)).map((name) => [`c:${name}`, GIFT_PRICES[name] ?? customPrice(name), missing(GIFT_RULES[`c:${name}`], progress)] as [string, number, number]), ...giftChoices.slice(2), ...lockedGifts.map(([gift, price, need]) => [gift, price, Math.max(0, need - progress.kisses)] as [string, number, number])]
                   .map(([gift, price, need]) => [gift, price, need ?? 0] as [string, number, number]);
                 const isLocked = (need: number) => (need === -1 ? !vip : need === -2 ? true : need > 0);
-                const rankOf = (id: string, index: number) => GIFT_PINNED_RANK.get(id) ?? GIFT_SHOP_RANK[id] ?? (BONUS[id] || giftChoices.slice(0, 2).some(([g]) => g === id) ? index - 1e3 : 1e6 + index);
+                const rankOf = (id: string, index: number) => GIFT_LAST.get(id) ?? GIFT_PINNED_RANK.get(id) ?? GIFT_SHOP_RANK[id] ?? (BONUS[id] || giftChoices.slice(0, 2).some(([g]) => g === id) ? index - 1e3 : 1e6 + index);
                 const byShop = (list: [string, number, number][]) => list.map((item, index) => ({ item, index })).sort((x, y) => rankOf(x.item[0], x.index) - rankOf(y.item[0], y.index)).map(({ item }) => item);
                 const open = byShop(all.filter(([, , need]) => !isLocked(need)));
                 const locked = byShop(all.filter(([, , need]) => isLocked(need)).sort((x, y) => (x[2] === -2 ? 2e12 : x[2] === -1 ? 1e12 : x[2]) - (y[2] === -2 ? 2e12 : y[2] === -1 ? 1e12 : y[2])));
