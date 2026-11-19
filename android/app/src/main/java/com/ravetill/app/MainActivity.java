@@ -45,8 +45,12 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         web = new WebView(this);
         web.setBackgroundColor(Color.BLACK);
-        setContentView(web);
-        keepClearOfSystemBars(web);
+        // A WebView ignores its own padding, so it sits in a frame and the frame keeps clear of the system bars.
+        android.widget.FrameLayout frame = new android.widget.FrameLayout(this);
+        frame.setBackgroundColor(Color.BLACK);
+        frame.addView(web, new android.widget.FrameLayout.LayoutParams(android.widget.FrameLayout.LayoutParams.MATCH_PARENT, android.widget.FrameLayout.LayoutParams.MATCH_PARENT));
+        setContentView(frame);
+        keepClearOfSystemBars(frame);
 
         WebSettings s = web.getSettings();
         s.setJavaScriptEnabled(true);
@@ -123,11 +127,13 @@ public class MainActivity extends Activity {
         }
     }
 
-    // With Android 15+ the app draws under the status and navigation bars: keep the page (and the keyboard) clear of them.
+    // With Android 15+ the app draws under the status and navigation bars: keep the page clear of them.
+    // The keyboard is left out on purpose: like in Chrome, the page keeps its size and the window slides up
+    // (adjustPan), so the Butulka table does not shrink while typing.
     private void keepClearOfSystemBars(View view) {
         if (Build.VERSION.SDK_INT < 30) return;
         view.setOnApplyWindowInsetsListener((v, insets) -> {
-            android.graphics.Insets bars = insets.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.ime() | WindowInsets.Type.displayCutout());
+            android.graphics.Insets bars = insets.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
             v.setPadding(bars.left, bars.top, bars.right, bars.bottom);
             return WindowInsets.CONSUMED;
         });

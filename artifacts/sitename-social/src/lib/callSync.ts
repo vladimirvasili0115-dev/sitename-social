@@ -402,6 +402,33 @@ export function hangUp() {
   if (state.phase === "idle" || state.phase === "ended") return;
   finish("ended", true);
 }
+// TEMPORARY (video shows black): what the connection to one member is doing, as one short line.
+export async function callStats(peerId: string): Promise<string> {
+  const link = links.get(peerId);
+  if (!link) return "";
+  try {
+    const report = await link.pc.getStats();
+    type Stat = Record<string, unknown> & { type: string; id: string };
+    let inV: Stat | null = null, outV: Stat | null = null, pair: Stat | null = null;
+    report.forEach((item: Stat) => {
+      if (item.type === "inbound-rtp" && item.kind === "video") inV = item;
+      if (item.type === "outbound-rtp" && item.kind === "video") outV = item;
+      if (item.type === "candidate-pair" && item.state === "succeeded" && (item.nominated || !pair)) pair = item;
+    });
+    const get = (id: unknown) => (typeof id === "string" ? (report.get(id) as Stat | undefined) : undefined);
+    const i = inV as Stat | null, o = outV as Stat | null, p = pair as Stat | null;
+    const codec = i ? String(get(i.codecId)?.mimeType ?? "?").replace("video/", "") : "-";
+    const down = i ? `↓${codec} ${Number(i.framesDecoded ?? 0)}k ${Number(i.frameWidth ?? 0)}x${Number(i.frameHeight ?? 0)} ${Math.round(Number(i.bytesReceived ?? 0) / 1024)}KB` : "↓yox";
+    const upCodec = o ? String(get(o.codecId)?.mimeType ?? "?").replace("video/", "") : "-";
+    const up = o ? `↑${upCodec} ${Number(o.framesSent ?? 0)}k ${Math.round(Number(o.bytesSent ?? 0) / 1024)}KB` : "↑yox";
+    const net = p ? `${String(get(p.localCandidateId)?.candidateType ?? "?")}/${String(get(p.remoteCandidateId)?.candidateType ?? "?")}` : "?";
+    const tracks = `t${link.remote.getVideoTracks().map((track) => (track.muted ? "m" : "") + track.readyState[0]).join(",") || "0"}`;
+    return `${down} · ${up} · ${net} · ${tracks}`;
+  } catch (error) {
+    return "stats: " + (error instanceof Error ? error.message : String(error));
+  }
+}
+
 export function toggleMute() {
   const muted = !state.muted;
   state.local?.getAudioTracks().forEach((track) => { track.enabled = !muted; });

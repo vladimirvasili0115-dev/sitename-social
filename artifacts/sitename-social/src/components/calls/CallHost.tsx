@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { Ear, Mic, MicOff, Phone, PhoneOff, Search, UserPlus, Video, VideoOff, Volume2, X } from "lucide-react";
-import { acceptCall, CALL_LIMIT, callLimit, callSelf, callStore, declineCall, enableVideo, hangUp, inviteToCall, toggleCamera, toggleMute, type CallMember, type CallPeer } from "@/lib/callSync";
+import { acceptCall, CALL_LIMIT, callLimit, callSelf, callStats, callStore, declineCall, enableVideo, hangUp, inviteToCall, toggleCamera, toggleMute, type CallMember, type CallPeer } from "@/lib/callSync";
 import { ensureFriendsLoaded, remoteFriends } from "@/lib/friendsSync";
 import { ensureMessagesLoaded, remoteChats } from "@/lib/messagesSync";
 import { initialsAvatar } from "@/lib/avatar";
@@ -22,6 +22,25 @@ function Sound({ stream, sinkId }: { stream: MediaStream | null; sinkId: string 
   useEffect(() => { if (ref.current && ref.current.srcObject !== stream) { ref.current.srcObject = stream; void ref.current.play().catch(() => {}); } }, [stream]);
   useEffect(() => { if (ref.current?.setSinkId && sinkId !== null) void ref.current.setSinkId(sinkId).catch(() => {}); }, [sinkId, stream]);
   return <audio ref={ref} autoPlay playsInline className="hidden" />;
+}
+// TEMPORARY: one line about the picture of one member (frames received/sent, codec, network, what the screen got),
+// so a black video can be explained from a screenshot. Remove once video works.
+function Diag({ peerId, full }: { peerId: string; full: boolean }) {
+  const [text, setText] = useState("");
+  const ref = useRef<HTMLParagraphElement>(null);
+  useEffect(() => {
+    let alive = true;
+    const read = async () => {
+      const line = await callStats(peerId);
+      const video = ref.current?.parentElement?.querySelector("video");
+      const screen = video ? ` · ekran ${video.videoWidth}x${video.videoHeight} r${video.readyState}${video.paused ? " dayanıb" : ""}` : " · ekran yox";
+      if (alive) setText(line + screen);
+    };
+    void read();
+    const timer = window.setInterval(() => void read(), 2000);
+    return () => { alive = false; window.clearInterval(timer); };
+  }, [peerId]);
+  return <p ref={ref} className={cn("pointer-events-none absolute inset-x-1 z-30 break-all rounded bg-black/60 px-1 font-mono text-[10px] leading-3 text-[#7CFC9A]", full ? "top-28" : "top-1")}>{text}</p>;
 }
 function Clock({ from }: { from: number }) {
   const [now, setNow] = useState(Date.now());
@@ -245,6 +264,7 @@ export function CallHost() {
             <img src={photoOf(member.peer)} alt="" className={cn("rounded-full object-cover ring-4 ring-white/15", full ? "h-32 w-32" : "h-20 w-20", member.status === "ringing" && "animate-pulse opacity-60")} />
           </div>
         )}
+        <Diag peerId={member.peer.id} full={full} />
         {!full ? <p className="absolute bottom-2 left-2 max-w-[90%] truncate rounded-full bg-black/50 px-2 py-0.5 text-xs">{member.peer.name}</p> : null}
       </div>
     );
