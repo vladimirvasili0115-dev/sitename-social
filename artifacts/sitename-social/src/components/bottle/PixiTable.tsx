@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { isScrambled, unscramble } from "./scrambled";
 
 // Test (owner and moderators only): the table itself on a WebGL (PixiJS) layer UNDER the seats.
 // It paints the wooden background (on the wide table; on the phone the wood also runs behind the header, so it stays HTML there)
@@ -40,6 +41,8 @@ export function PixiTable({ wood, onFail }: { wood: string | null; onFail?: () =
         const have = textures.get(url);
         if (have !== undefined) return have;
         textures.set(url, null);
+        // A shuffled picture (scrambled.tsx) is put back together on a canvas first.
+        if (isScrambled(url)) { void unscramble(url).then((whole) => { if (!dead && whole) { textures.set(url, PIXI.Texture.from(whole)); dirty = true; } }); return null; }
         const img = new Image(); img.decoding = "async"; img.crossOrigin = "anonymous";
         img.onload = () => { if (!dead) { textures.set(url, PIXI.Texture.from(img)); dirty = true; } };
         img.onerror = () => { /* stays empty; the HTML photo is behind nothing, so the seat shows its frame only */ };
@@ -59,7 +62,7 @@ export function PixiTable({ wood, onFail }: { wood: string | null; onFail?: () =
       const seats = new Map<string, Seat>();
 
       let raf = 0, last = "";
-      const touched = new Set<HTMLImageElement>();
+      const touched = new Set<HTMLElement>();
       const touchedBtn = new Set<HTMLElement>();
       const frame = () => {
         raf = requestAnimationFrame(frame);
@@ -78,8 +81,8 @@ export function PixiTable({ wood, onFail }: { wood: string | null; onFail?: () =
           const k = Math.max(w / woodTex.width, h / woodTex.height);
           bg.scale.set(k); bg.position.set((w - woodTex.width * k) / 2, (h - woodTex.height * k) / 2);
         } else bg.visible = false;
-        const underImg = root.querySelector<HTMLImageElement>("img[data-under]");
-        const underUrl = underImg ? underImg.currentSrc || underImg.src : "";
+        const underImg = root.querySelector<HTMLElement>("[data-under]");
+        const underUrl = underImg ? underImg.dataset.src ?? (underImg as HTMLImageElement).currentSrc ?? "" : "";
         const underTex = underUrl ? texture(underUrl) : null;
         if (underImg && underTex) {
           const r = underImg.getBoundingClientRect();

@@ -1,3 +1,5 @@
+import { ScrambledPic, isScrambled } from "./scrambled";
+
 // Original artwork for the game: a clear sea-green glass bottle (no brand marks); the table shows through the glass.
 export function BottleSvg({ className }: { className?: string }) {
   const body = "M27 6h12v4c0 2 1 3 1 6v28c0 14 18 22 18 46v92c0 8-5 13-13 13H21c-8 0-13-5-13-13V90c0-24 18-32 18-46V16c0-3 1-4 1-6z";
@@ -53,6 +55,7 @@ export function WaterBottleSvg({ className }: { className?: string }) {
 
 // The table top: a real-looking honey wood texture (public/bottle/table2.jpg), lighter in the middle.
 export function WoodTable({ className, src = "/bottle/table2.jpg" }: { className?: string; src?: string }) {
+  if (isScrambled(src)) return <div aria-hidden="true" className={className} style={{ backgroundColor: "#D2924C" }}><ScrambledPic src={src} cover className="block h-full w-full" /></div>;
   return <div aria-hidden="true" className={className} style={{ backgroundColor: "#D2924C", backgroundImage: `url(${src})`, backgroundSize: "cover", backgroundPosition: "center" }} />;
 }
 
