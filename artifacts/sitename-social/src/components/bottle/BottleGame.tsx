@@ -677,8 +677,6 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         setSpots((value) => { const rest = keepSpots(value, place); return { ...rest, [toId]: [...(rest[toId] ?? []), spot] }; });
       }
       setStickers((value) => keepStickers(value, place));
-      // Pacifiers only stay on the photo for about forty seconds (twice as long as before).
-      if (/^c:nipple/.test(plan.land)) window.setTimeout(() => setSpots((value) => ({ ...value, [toId]: (value[toId] ?? []).filter((item) => item.key !== key) })), 40000);
     } else {
       const place = stickerPlace(plan.land);
       setStickers((value) => { const rest = keepStickers(value, place); return { ...rest, [toId]: [...(rest[toId] ?? []), plan.land] }; });
@@ -704,7 +702,6 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       if (typeof item.seed !== "number") return;
       const plan = planLanding(item.gift, item.seed);
       if (plan.spot?.kind === "rand" && item.age > RAND_KEEP_MS && newestRand[item.to] !== item.cid) return; // old random gifts have faded away, the newest stays
-      if (/^c:nipple/.test(plan.land) && item.age > 40000) return; // a pacifier stays about 40 seconds
       landGift(-(2000000 + n), item.to === me ? "me" : item.to, { ...plan, scatter: null });
     });
   };

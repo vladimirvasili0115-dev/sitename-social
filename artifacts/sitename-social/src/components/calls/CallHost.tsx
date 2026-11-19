@@ -35,6 +35,10 @@ const photoOf = (peer: CallPeer) => peer.avatar || initialsAvatar(peer.name || "
 // Loudspeaker or earpiece. A web page cannot read the proximity sensor, and most phone browsers do not list the
 // earpiece as an output; where one is listed (setSinkId), the sound really moves to it. Otherwise "ear" mode only
 // blacks out the screen so the cheek does not press buttons.
+// Inside the Ravetill Android app (android/ folder) the app itself switches the sound to the earpiece and turns the
+// screen off at the ear (proximity sensor).
+type NativeCall = { callStart: () => void; callEnd: () => void; setSpeaker: (on: boolean) => void; hasProximity?: () => boolean };
+const nativeCall = () => (typeof window === "undefined" ? undefined : (window as unknown as { RavetillNative?: NativeCall }).RavetillNative);
 type Outputs = { ear: string | null; speaker: string | null };
 function useOutputs(active: boolean): Outputs {
   const [outputs, setOutputs] = useState<Outputs>({ ear: null, speaker: null });
@@ -127,6 +131,12 @@ export function CallHost() {
   const [touch, setTouch] = useState(false);
   useEffect(() => { setTouch(typeof window !== "undefined" && window.matchMedia?.("(pointer: coarse)").matches); }, []);
   useEffect(() => { if (!live) { setRoute("speaker"); setPocket(false); setAdding(false); } }, [live]);
+  useEffect(() => {
+    const native = nativeCall();
+    if (!native || !live) return;
+    try { native.callStart(); } catch { /* old app */ }
+    return () => { try { native.callEnd(); } catch { /* old app */ } };
+  }, [live]);
   if (call.phase === "idle" || !call.peer) return null;
   const peer = call.peer;
   const members = call.members;
@@ -143,9 +153,19 @@ export function CallHost() {
     : call.phase === "connecting" ? t("call.connecting")
     : call.phase === "ended" ? t(`call.end_${call.reason ?? "ended"}` as "call.end_ended")
     : null;
+  const native = nativeCall();
   const switchRoute = () => {
-    if (route === "ear") { setRoute("speaker"); setPocket(false); }
-    else { setRoute("ear"); setPocket(true); }
+    const next = route === "ear" ? "speaker" : "ear";
+    setRoute(next);
+    if (native) {
+      try { native.setSpeaker(next === "speaker"); } catch { /* old app */ }
+      // The app turns the screen off at the ear by itself; the black screen is only for phones without that sensor.
+      let sensor = false;
+      try { sensor = Boolean(native.hasProximity?.()); } catch { /* old app */ }
+      setPocket(next === "ear" && !sensor);
+      return;
+    }
+    setPocket(next === "ear");
   };
   const sounds = members.map((member) => <Sound key={member.peer.id} stream={member.remote} sinkId={sinkId} />);
   const extras = (
@@ -155,7 +175,7 @@ export function CallHost() {
       {adding && canAdd ? <AddPeople members={members} onClose={() => setAdding(false)} /> : null}
     </>
   );
-  const routeButton = (size: "sm" | "lg") => (touch || outputs.ear) ? (
+  const routeButton = (size: "sm" | "lg") => (touch || outputs.ear || native) ? (
     <button onClick={switchRoute} aria-label={t(route === "ear" ? "call.speaker" : "call.ear")} title={t(route === "ear" ? "call.speaker" : "call.ear")}
       className={size === "sm" ? cn("flex h-10 w-10 items-center justify-center rounded-full", route === "ear" ? "bg-white text-[#0B1220]" : "bg-white/15") : cn(round, route === "ear" ? "bg-white text-[#0B1220]" : "bg-white/20")}>
       {route === "ear" ? <Ear size={size === "sm" ? 18 : 22} /> : <Volume2 size={size === "sm" ? 18 : 22} />}

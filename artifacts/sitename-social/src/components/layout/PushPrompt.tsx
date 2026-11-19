@@ -50,6 +50,8 @@ export function PushPrompt() {
   const [hidden, setHidden] = useState(false);
 
   const check = useCallback(async () => {
+    // The Ravetill Android test app gets its notifications another way (Firebase, coming next): no warning there.
+    if ("RavetillNative" in window) { setState("ok"); return; }
     const lost = missing();
     if (lost.length) { setState({ problem: "Bu tətbiq/brauzer push bildirişini dəstəkləmir (yoxdur: " + lost.join(", ") + ")" }); return; }
     if (Notification.permission === "denied") { setState({ problem: "Bildiriş icazəsi rədd edilib. Telefon ayarlarından Ravetill (və ya Chrome) üçün bildirişləri aç." }); return; }
