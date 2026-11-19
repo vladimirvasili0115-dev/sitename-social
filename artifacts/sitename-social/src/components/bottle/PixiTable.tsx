@@ -49,6 +49,10 @@ export function PixiTable({ wood, onFail }: { wood: string | null; onFail?: () =
 
       const bg = new PIXI.Sprite();
       app.stage.addChild(bg);
+      // A picture lying on the wood (the carved pattern under the bottle, <img data-under>): painted here between the wood and
+      // the photos, or the HTML one would cover the photos that come to the middle for the kiss.
+      const under = new PIXI.Sprite();
+      app.stage.addChild(under);
       const photos = new PIXI.Container();
       app.stage.addChild(photos);
       type Seat = { box: import("pixi.js").Container; pic: import("pixi.js").Sprite; mask: import("pixi.js").Graphics; key: string };
@@ -74,6 +78,17 @@ export function PixiTable({ wood, onFail }: { wood: string | null; onFail?: () =
           const k = Math.max(w / woodTex.width, h / woodTex.height);
           bg.scale.set(k); bg.position.set((w - woodTex.width * k) / 2, (h - woodTex.height * k) / 2);
         } else bg.visible = false;
+        const underImg = root.querySelector<HTMLImageElement>("img[data-under]");
+        const underUrl = underImg ? underImg.currentSrc || underImg.src : "";
+        const underTex = underUrl ? texture(underUrl) : null;
+        if (underImg && underTex) {
+          const r = underImg.getBoundingClientRect();
+          under.texture = underTex; under.visible = true;
+          under.width = r.width; under.height = r.height; under.position.set(r.left - base.left, r.top - base.top);
+          sig += `|u:${underUrl}:${r.left.toFixed(1)},${r.top.toFixed(1)},${r.width.toFixed(1)}`;
+          if (underImg.style.opacity !== "0") underImg.style.opacity = "0";
+          touched.add(underImg);
+        } else under.visible = false;
         const seen = new Set<string>();
         root.querySelectorAll<HTMLElement>("[data-seat]").forEach((btn) => {
           const id = btn.dataset.seat ?? "";
