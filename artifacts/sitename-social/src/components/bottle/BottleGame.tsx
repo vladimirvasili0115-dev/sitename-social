@@ -900,10 +900,10 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [vip, setVip] = useState(false);
   // Admins: everything in the game is open for them (to test it), and their seat and card look different.
   const iAmAdmin = useIsAdmin() === true;
-  // Test: the new table background (/bottle/table7.jpg) is shown only to the owner for now; everybody else keeps table2.jpg.
+  // Test: the new table background (/bottle/table8.webp, plain wood) and the carved pattern under the bottle are shown only to the owner for now; everybody else keeps table2.jpg.
   const [ownerWood, setOwnerWood] = useState(false);
   useEffect(() => { if (iAmAdmin) void fetchIsOwner().then(setOwnerWood); }, [iAmAdmin]);
-  const woodSrc = ownerWood ? "/bottle/table7.jpg" : undefined;
+  const woodSrc = ownerWood ? "/bottle/table8.webp" : undefined;
   // The cherry cocktail is hidden for accounts the admin did not allow (the server refuses it too).
   const [giftAllow, setGiftAllow] = useState<string[]>([]);
   useEffect(() => {
@@ -3582,6 +3582,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           {!wide && !full ? <button onClick={onLeave} aria-label={t("photos.close")} title={t("photos.close")} className={cn(tool, "bg-[#E5484D]/90 hover:bg-[#E5484D] sm:hidden")}><X size={19} strokeWidth={3} /></button> : null}
         </div>
 
+        {/* The carved pattern is pinned to the bottle's centre (not baked into the wood, which is cropped differently on every screen). */}
+        {ownerWood ? <img src="/bottle/naxis1.webp" alt="" aria-hidden="true" draggable={false} className="pointer-events-none absolute h-[44cqmin] w-[44cqmin] max-w-none -translate-x-1/2 -translate-y-1/2 select-none" style={{ left: `${CENTER_X}%`, top: `${STAGE_Y}%` }} /> : null}
         <button type="button" disabled={staged} onClick={(event) => { event.stopPropagation(); if (myTurn) { bumpStat("spins"); return online ? void bottleSpin().then(pullRef.current) : spin(); } setWaitNote(true); window.setTimeout(() => setWaitNote(false), 1800); }} aria-label={t("bottle.spin")} className={cn(tour === 1 && "rounded-full ring-[1cqmin] ring-[#FFD84D] motion-safe:animate-pulse", "absolute h-[30cqmin] transition-transform duration-[4500ms] ease-[cubic-bezier(0.15,0.6,0.2,1)] motion-reduce:duration-0", staged ? "pointer-events-none" : myTurn ? "z-20 cursor-pointer" : "cursor-default")} style={{ left: `${CENTER_X}%`, top: `${STAGE_Y}%`, transform: `translate(-50%, -50%) rotate(${rotation}deg)`, filter: skinFilter(skin) }}>
           <span key={rotation} className="block h-full motion-safe:animate-[bottle-kick_0.35s_ease-out]"><SkinBottle className={cn("h-full drop-shadow-[0_6px_10px_rgba(0,0,0,0.45)] transition-opacity duration-700", staged && "opacity-0")} /></span>
         </button>
