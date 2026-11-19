@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { Ear, Mic, MicOff, Phone, PhoneOff, Search, UserPlus, Video, VideoOff, Volume2, X } from "lucide-react";
-import { acceptCall, CALL_LIMIT, callLimit, callSelf, callStats, callStore, declineCall, enableVideo, hangUp, inviteToCall, toggleCamera, toggleMute, type CallMember, type CallPeer } from "@/lib/callSync";
+import { acceptCall, CALL_LIMIT, callLimit, callSelf, callStore, declineCall, enableVideo, hangUp, inviteToCall, toggleCamera, toggleMute, type CallMember, type CallPeer } from "@/lib/callSync";
 import { ensureFriendsLoaded, remoteFriends } from "@/lib/friendsSync";
 import { ensureMessagesLoaded, remoteChats } from "@/lib/messagesSync";
 import { initialsAvatar } from "@/lib/avatar";
@@ -23,32 +23,13 @@ function Sound({ stream, sinkId }: { stream: MediaStream | null; sinkId: string 
   useEffect(() => { if (ref.current?.setSinkId && sinkId !== null) void ref.current.setSinkId(sinkId).catch(() => {}); }, [sinkId, stream]);
   return <audio ref={ref} autoPlay playsInline className="hidden" />;
 }
-// TEMPORARY: one line about the picture of one member (frames received/sent, codec, network, what the screen got),
-// so a black video can be explained from a screenshot. Remove once video works.
-function Diag({ peerId, full }: { peerId: string; full: boolean }) {
-  const [text, setText] = useState("");
-  const ref = useRef<HTMLParagraphElement>(null);
-  useEffect(() => {
-    let alive = true;
-    const read = async () => {
-      const line = await callStats(peerId);
-      const video = ref.current?.parentElement?.querySelector("video");
-      const screen = video ? ` · ekran ${video.videoWidth}x${video.videoHeight} r${video.readyState}${video.paused ? " dayanıb" : ""}` : " · ekran yox";
-      if (alive) setText(line + screen);
-    };
-    void read();
-    const timer = window.setInterval(() => void read(), 2000);
-    return () => { alive = false; window.clearInterval(timer); };
-  }, [peerId]);
-  return <p ref={ref} className={cn("pointer-events-none absolute inset-x-1 z-30 break-all rounded bg-black/60 px-1 font-mono text-[10px] leading-3 text-[#7CFC9A]", full ? "top-28" : "top-1")}>{text}</p>;
-}
 function Clock({ from }: { from: number }) {
   const [now, setNow] = useState(Date.now());
   useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 1000); return () => window.clearInterval(timer); }, []);
   const secs = Math.max(0, Math.floor((now - from) / 1000));
   return <span className="tabular-nums">{Math.floor(secs / 60)}:{String(secs % 60).padStart(2, "0")}</span>;
 }
-const round = "flex h-14 w-14 items-center justify-center rounded-full text-white shadow-lg transition active:scale-95";
+const round = "flex h-14 w-14 items-center justify-center rounded-full shadow-lg transition active:scale-95";
 const photoOf = (peer: CallPeer) => peer.avatar || initialsAvatar(peer.name || "?");
 
 // Loudspeaker or earpiece. A web page cannot read the proximity sensor, and most phone browsers do not list the
@@ -196,12 +177,12 @@ export function CallHost() {
   );
   const routeButton = (size: "sm" | "lg") => (touch || outputs.ear || native) ? (
     <button onClick={switchRoute} aria-label={t(route === "ear" ? "call.speaker" : "call.ear")} title={t(route === "ear" ? "call.speaker" : "call.ear")}
-      className={size === "sm" ? cn("flex h-10 w-10 items-center justify-center rounded-full", route === "ear" ? "bg-white text-[#0B1220]" : "bg-white/15") : cn(round, route === "ear" ? "bg-white text-[#0B1220]" : "bg-white/20")}>
+      className={size === "sm" ? cn("flex h-10 w-10 items-center justify-center rounded-full", route === "ear" ? "bg-white text-[#0B1220]" : "bg-white/15") : cn(round, route === "ear" ? "bg-white text-[#0B1220]" : "bg-white/20 text-white")}>
       {route === "ear" ? <Ear size={size === "sm" ? 18 : 22} /> : <Volume2 size={size === "sm" ? 18 : 22} />}
     </button>
   ) : null;
   const addButton = (size: "sm" | "lg") => canAdd ? (
-    <button onClick={() => setAdding(true)} aria-label={t("call.add")} title={t("call.add")} className={size === "sm" ? "flex h-10 w-10 items-center justify-center rounded-full bg-white/15" : cn(round, "bg-white/20")}>
+    <button onClick={() => setAdding(true)} aria-label={t("call.add")} title={t("call.add")} className={size === "sm" ? "flex h-10 w-10 items-center justify-center rounded-full bg-white/15" : cn(round, "bg-white/20 text-white")}>
       <UserPlus size={size === "sm" ? 18 : 22} />
     </button>
   ) : null;
@@ -220,8 +201,8 @@ export function CallHost() {
           </div>
         </div>
         <div className="mt-4 flex justify-around">
-          <button onClick={declineCall} aria-label={t("call.decline")} className={cn(round, "bg-[#E53935]")}><PhoneOff size={24} /></button>
-          <button onClick={() => void acceptCall()} aria-label={t("call.accept")} className={cn(round, "bg-[#22C55E]")}>{call.video ? <Video size={24} /> : <Phone size={24} />}</button>
+          <button onClick={declineCall} aria-label={t("call.decline")} className={cn(round, "bg-[#E53935] text-white")}><PhoneOff size={24} /></button>
+          <button onClick={() => void acceptCall()} aria-label={t("call.accept")} className={cn(round, "bg-[#22C55E] text-white")}>{call.video ? <Video size={24} /> : <Phone size={24} />}</button>
         </div>
       </div>
     );
@@ -258,13 +239,12 @@ export function CallHost() {
   const tile = (member: CallMember, full: boolean) => {
     const hasVideo = Boolean(member.remote?.getVideoTracks().length);
     return (
-      <div key={member.peer.id} className={cn("relative overflow-hidden bg-[#0B1220]", full ? "absolute inset-0" : "min-h-0 rounded-2xl")}>
+      <div key={member.peer.id} className={cn("overflow-hidden bg-[#0B1220]", full ? "absolute inset-0" : "relative min-h-0 rounded-2xl")}>
         {hasVideo ? <Stream stream={member.remote} className="absolute inset-0 h-full w-full bg-black object-cover" /> : (
           <div className="flex h-full w-full items-center justify-center">
             <img src={photoOf(member.peer)} alt="" className={cn("rounded-full object-cover ring-4 ring-white/15", full ? "h-32 w-32" : "h-20 w-20", member.status === "ringing" && "animate-pulse opacity-60")} />
           </div>
         )}
-        <Diag peerId={member.peer.id} full={full} />
         {!full ? <p className="absolute bottom-2 left-2 max-w-[90%] truncate rounded-full bg-black/50 px-2 py-0.5 text-xs">{member.peer.name}</p> : null}
       </div>
     );
@@ -289,9 +269,9 @@ export function CallHost() {
           <div className="relative z-10 flex flex-wrap items-center justify-center gap-4 pb-10 pt-4">
             {addButton("lg")}
             {routeButton("lg")}
-            <button onClick={toggleMute} aria-label={t(call.muted ? "call.unmute" : "call.mute")} className={cn(round, call.muted ? "bg-white text-[#0B1220]" : "bg-white/20")}>{call.muted ? <MicOff size={22} /> : <Mic size={22} />}</button>
-            <button onClick={toggleCamera} aria-label={t(call.camOff || !hasCam ? "call.camOn" : "call.camOff")} className={cn(round, call.camOff || !hasCam ? "bg-white text-[#0B1220]" : "bg-white/20")}>{call.camOff || !hasCam ? <VideoOff size={22} /> : <Video size={22} />}</button>
-            <button onClick={hangUp} aria-label={t("call.hangup")} className={cn(round, "h-16 w-16 bg-[#E53935]")}><PhoneOff size={26} /></button>
+            <button onClick={toggleMute} aria-label={t(call.muted ? "call.unmute" : "call.mute")} className={cn(round, call.muted ? "bg-white text-[#0B1220]" : "bg-white/20 text-white")}>{call.muted ? <MicOff size={22} /> : <Mic size={22} />}</button>
+            <button onClick={toggleCamera} aria-label={t(call.camOff || !hasCam ? "call.camOn" : "call.camOff")} className={cn(round, call.camOff || !hasCam ? "bg-white text-[#0B1220]" : "bg-white/20 text-white")}>{call.camOff || !hasCam ? <VideoOff size={22} /> : <Video size={22} />}</button>
+            <button onClick={hangUp} aria-label={t("call.hangup")} className={cn(round, "!h-16 !w-16 bg-[#E53935] text-white")}><PhoneOff size={26} /></button>
           </div>
         ) : <div className="pb-16" />}
       </div>
