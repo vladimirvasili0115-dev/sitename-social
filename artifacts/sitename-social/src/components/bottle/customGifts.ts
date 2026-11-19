@@ -26,7 +26,7 @@ export const customPrice = (name: string) => (drinkNames.test(name) ? 2 : prices
 export const customPlace = (name: string): Place =>
   /^(ears|horns)/.test(name) ? "ears"
     : /^(prankcake_\w+2|tomato[23])$/.test(name) ? "face"
-    : name === "magichat" || name === "pirateparrot" ? "body" // the pirate parrot stands on the bottom-right corner (its name has "pirat" in it, which would put it on the head) // the rabbit-in-a-hat gift stands on the bottom-right corner, not on the head
+    : name === "magichat" || name === "pirateparrot" || name === "pirateswords" ? "body" // the pirate swords stand on the bottom-right corner too // the pirate parrot stands on the bottom-right corner (its name has "pirat" in it, which would put it on the head) // the rabbit-in-a-hat gift stands on the bottom-right corner, not on the head
     : name === "leatherzipmask" ? "head" // the leather zip mask sits on the top-left corner like the hats
     : /(cap|crown|hat|cylinder|cowboy|napoleon|musketeer|nurse|clown|bezkoz|indianhat|carnivalmask|horsehead|knight|bow|pharaoh|pilotka|pirat|rasta|sombrero|sparta|sultan|ushanka|viking|glasses)/.test(name) || original.get(name)?.point === "h" ? "head"
     : "body";

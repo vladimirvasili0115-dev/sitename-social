@@ -228,7 +228,7 @@ const soundOf: [string, string][] = [
   ["bite", "🍓 🍒 🍎 🍋 🍉 🥒 🍔 🌭 🍟 🌶️ 🥥 🫒 nar"], ["pop", "🍬 🍭 🍦 🍰 🎂 🧁 🍫 🍧 🍨 🍯 paxlava shekerbura 🎁 🎈"],
   ["strum", "tar 🎸 🪕"], ["piano", "🎹 🎼"], ["drum", "🥁"], ["shake", "🪇"], ["violin", "🎻"], ["trumpet", "🎺 🪈"], ["mic", "🎤 🎙️"], ["radio", "📻 🎛️ 📟"],
   ["boom", "🧨"], ["fire", "flame 🔥 😈 🕯️"], ["car", "🚗 🚙 🚜"], ["moto", "🏍️"], ["plane", "✈️"], ["chopper", "🚁"], ["rocket", "🚀"], ["horn", "🛥️ ⚓"], ["ufo", "👽 🛸"],
-  ["spooky", "💀 🕸️ 🎭 🧙"], ["rattle", "🎲 🃏 🧩 🎯"], ["tick", "⌚ ⏰ 🕰️ ⏱️ ⏲️ ⏳"], ["ring", "☎️ 📱"], ["toot", "💩"], ["whip", "🤺 ⚔️ 🏹 🪁 whip1"],
+  ["spooky", "💀 🕸️ 🎭 🧙"], ["rattle", "🎲 🃏 🧩 🎯"], ["tick", "⌚ ⏰ 🕰️ ⏱️ ⏲️ ⏳"], ["ring", "☎️ 📱"], ["toot", "💩"], ["whip", "🤺 ⚔️ 🏹 🪁 whip1"], ["wolf", "pants2 pants3 pants4 bra1 bra2 bra3 bra4"],
   ["boing", "⛑️ 🤠 🎩 👒 🧢 🎓 🪖 👳 🕶️ 😎 🥸 👢 👠 👡 🥾 🥿 🧣 🧤 👜 🧳 👘 🤵 🕴️"],
 ];
 // The original game sounds (public/sounds/sfx/<name>.mp3). Every gift has a sound when it is sent and one when it
@@ -250,7 +250,7 @@ const kindSfx: Record<string, [string[], string[]]> = {
   trumpet: [["trumpet"], ["tick"]], mic: [["goldenmic"], ["tick"]], radio: [["note1", "note2", "note3", "note4"], ["tick"]], boom: [["boom1", "boom2"], ["tick"]],
   car: [["engine"], ["tick"]], moto: [["engine"], ["tick"]], plane: [["engine"], ["tick"]], chopper: [["engine"], ["tick"]], rocket: [["astro"], ["tick"]],
   horn: [["ship_horn"], ["tick"]], ufo: [["astro"], ["tick"]], spooky: [["ghost", "witch_laughter_1"], ["tick"]], ring: [["nokia"], ["tick"]],
-  toot: [["fart"], ["tick"]], whip: [["whip"], ["tick"]], boing: [["spring2"], ["tick"]], tick: [["cuckoo"], ["tick"]],
+  toot: [["fart"], ["tick"]], whip: [["whip"], ["tick"]], wolf: [["whistle"], ["whistle"]], // panties and bras: the "fiyu-fiyu" whistle when sent and when they land boing: [["spring2"], ["tick"]], tick: [["cuckoo"], ["tick"]],
 };
 const pick = (list: string[]) => list[Math.floor(Math.random() * list.length)];
 // Plays one original sound by name (nothing happens when the file is missing).
