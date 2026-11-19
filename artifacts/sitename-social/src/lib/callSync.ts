@@ -5,22 +5,35 @@ import { supabase } from "./supabase";
 import { callLogText } from "./callLog";
 import { sendRemoteMessage } from "./messagesSync";
 
-// Voice and video calls between two people (WebRTC). The two browsers talk directly; Supabase Realtime only
-// carries the short "signalling" notes (offer, answer, network candidates, hang-up) on each user's own channel.
+// Voice and video calls (WebRTC). The browsers talk directly; Supabase Realtime only carries the short
+// "signalling" notes (offer, answer, network candidates, hang-up) on each user's own channel.
+// Group calls are a mesh: every member has its own connection to every other member. Someone in the call
+// invites a new person; when that person accepts, they connect to everyone else who is already in the call.
 export type CallPeer = { id: string; name: string; avatar: string };
 export type CallPhase = "idle" | "outgoing" | "incoming" | "connecting" | "active" | "ended";
 export type CallEnd = "ended" | "declined" | "busy" | "missed" | "failed" | "nomic";
+export type CallMember = { peer: CallPeer; remote: MediaStream | null; status: "ringing" | "connecting" | "active" };
 export type CallState = {
-  phase: CallPhase; peer: CallPeer | null; video: boolean; local: MediaStream | null; remote: MediaStream | null;
+  phase: CallPhase; peer: CallPeer | null; video: boolean; local: MediaStream | null; members: CallMember[];
+  // Others already in the call that an incoming invitation comes from (shown as "Name +2").
+  group: CallPeer[];
   muted: boolean; camOff: boolean; startedAt: number; reason: CallEnd | null;
 };
 type Signal =
-  | { type: "offer"; callId: string; from: CallPeer; video: boolean; sdp: RTCSessionDescriptionInit }
-  | { type: "answer"; callId: string; sdp: RTCSessionDescriptionInit }
-  | { type: "ice"; callId: string; candidate: RTCIceCandidateInit }
-  | { type: "decline" | "busy" | "hangup"; callId: string };
+  | { type: "offer"; callId: string; from: CallPeer; video: boolean; sdp: RTCSessionDescriptionInit; group?: CallPeer[]; join?: boolean }
+  | { type: "answer"; callId: string; from?: string; sdp: RTCSessionDescriptionInit }
+  | { type: "ice"; callId: string; from?: string; candidate: RTCIceCandidateInit }
+  | { type: "roster"; callId: string; from: string; members: CallPeer[] }
+  // A camera switched on during the call: the connection is set up again with the picture added.
+  | { type: "reoffer"; callId: string; from: string; video: boolean; sdp: RTCSessionDescriptionInit }
+  | { type: "reanswer"; callId: string; from: string; sdp: RTCSessionDescriptionInit }
+  | { type: "decline" | "busy" | "hangup"; callId: string; from?: string };
 
-const idle: CallState = { phase: "idle", peer: null, video: false, local: null, remote: null, muted: false, camOff: false, startedAt: 0, reason: null };
+// Each member sends its sound (and picture) to every other member, so a phone can carry only a few people.
+export const CALL_LIMIT = { voice: 6, video: 4 };
+export const callLimit = (video: boolean) => (video ? CALL_LIMIT.video : CALL_LIMIT.voice);
+
+const idle: CallState = { phase: "idle", peer: null, video: false, local: null, members: [], group: [], muted: false, camOff: false, startedAt: 0, reason: null };
 let state: CallState = idle;
 const listeners = new Set<() => void>();
 const set = (patch: Partial<CallState>) => { state = { ...state, ...patch }; listeners.forEach((listener) => listener()); };
@@ -38,17 +51,25 @@ function iceServers(): RTCIceServer[] {
   return list;
 }
 
+type Link = { peer: CallPeer; pc: RTCPeerConnection; remote: MediaStream; status: CallMember["status"]; waitingIce: RTCIceCandidateInit[]; timer: number; invitedByMe: boolean; again: boolean };
+type Box = { channel: RealtimeChannel; ready: boolean; queue: Signal[] };
+
 let me: CallPeer | null = null;
 let inbox: RealtimeChannel | null = null;
-let outbox: { peerId: string; channel: RealtimeChannel; ready: boolean; queue: Signal[] } | null = null;
-let pc: RTCPeerConnection | null = null;
+const outboxes = new Map<string, Box>();
+const links = new Map<string, Link>();
+const strayIce = new Map<string, RTCIceCandidateInit[]>();
+// People whose site already knows the newer notes (they say who a note is from). Older versions would end the call
+// on a note they do not know, so the camera is only added for these people.
+const modern = new Set<string>();
 let callId = "";
 let offer: RTCSessionDescriptionInit | null = null;
-let waitingIce: RTCIceCandidateInit[] = [];
 let ringTimer = 0;
 let endTimer = 0;
 let musicWasOn = false;
-let iAmCaller = false;
+let logPeer: CallPeer | null = null;
+
+export const callSelf = () => me;
 
 // ---- music: everything that plays stops during a call and comes back afterwards ----
 function quietMusic(on: boolean) {
@@ -92,19 +113,25 @@ function ring(kind: "in" | "out" | null) {
 // ---- signalling ----
 function send(peerId: string, signal: Signal) {
   if (!supabase) return;
-  if (!outbox || outbox.peerId !== peerId) {
-    if (outbox) void supabase.removeChannel(outbox.channel);
+  let box = outboxes.get(peerId);
+  if (!box) {
     const channel = supabase.channel(`call-${peerId}`, { config: { broadcast: { self: false, ack: false } } });
-    const box = { peerId, channel, ready: false, queue: [] as Signal[] };
-    outbox = box;
+    const created: Box = { channel, ready: false, queue: [] };
+    box = created;
+    outboxes.set(peerId, created);
     channel.subscribe((status) => {
-      if (status !== "SUBSCRIBED" || outbox !== box) return;
-      box.ready = true;
-      box.queue.splice(0).forEach((item) => void channel.send({ type: "broadcast", event: "signal", payload: item }));
+      if (status !== "SUBSCRIBED" || outboxes.get(peerId) !== created) return;
+      created.ready = true;
+      created.queue.splice(0).forEach((item) => void channel.send({ type: "broadcast", event: "signal", payload: item }));
     });
   }
-  if (outbox.ready) void outbox.channel.send({ type: "broadcast", event: "signal", payload: signal });
-  else outbox.queue.push(signal);
+  if (box.ready) void box.channel.send({ type: "broadcast", event: "signal", payload: signal });
+  else box.queue.push(signal);
+}
+function closeOutboxes() {
+  if (!supabase) return;
+  for (const box of outboxes.values()) void supabase.removeChannel(box.channel);
+  outboxes.clear();
 }
 
 export function startCallService(user: CallPeer) {
@@ -118,35 +145,100 @@ export function startCallService(user: CallPeer) {
 }
 export function updateCallSelf(user: CallPeer) { if (me && me.id === user.id) me = user; }
 
+// Read again after an await: another note may have changed the call meanwhile.
+const phaseNow = (): CallPhase => state.phase;
+const inCall = () => state.phase === "outgoing" || state.phase === "connecting" || state.phase === "active";
+const publish = () => set({ members: [...links.values()].map((link) => ({ peer: link.peer, remote: link.remote, status: link.status })) });
+
 async function handle(signal: Signal) {
   if (signal.type === "offer") {
-    if (state.phase !== "idle" && state.phase !== "ended") { send(signal.from.id, { type: "busy", callId: signal.callId }); return; }
+    // Someone who just joined our call connects to us: answer at once, no ringing.
+    if (signal.join && signal.callId === callId && inCall() && me) {
+      modern.add(signal.from.id);
+      if (links.has(signal.from.id) || links.size + 1 >= callLimit(state.video)) { send(signal.from.id, { type: "busy", callId: signal.callId, from: me.id }); return; }
+      const link = makeLink(signal.from, false);
+      link.status = "connecting";
+      publish();
+      await link.pc.setRemoteDescription(signal.sdp);
+      for (const candidate of link.waitingIce.splice(0)) await link.pc.addIceCandidate(candidate).catch(() => {});
+      const answer = await link.pc.createAnswer();
+      await link.pc.setLocalDescription(answer);
+      send(signal.from.id, { type: "answer", callId, from: me.id, sdp: { type: answer.type, sdp: answer.sdp } });
+      return;
+    }
+    if (state.phase !== "idle" && state.phase !== "ended") { send(signal.from.id, { type: "busy", callId: signal.callId, from: me?.id }); return; }
     window.clearTimeout(endTimer);
     callId = signal.callId;
     offer = signal.sdp;
-    waitingIce = [];
-    iAmCaller = false;
-    set({ ...idle, phase: "incoming", peer: signal.from, video: signal.video });
+    strayIce.clear();
+    modern.clear();
+    if (signal.group) modern.add(signal.from.id);
+    logPeer = null;
+    set({ ...idle, phase: "incoming", peer: signal.from, video: signal.video, group: (signal.group ?? []).filter((peer) => peer.id !== me?.id && peer.id !== signal.from.id) });
     ring("in");
     window.clearTimeout(ringTimer);
     ringTimer = window.setTimeout(() => { if (state.phase === "incoming" && callId === signal.callId) finish("missed", false); }, 45000);
     return;
   }
   if (signal.callId !== callId) return;
-  if (signal.type === "answer") {
-    if (!pc) return;
-    await pc.setRemoteDescription(signal.sdp);
-    for (const candidate of waitingIce.splice(0)) await pc.addIceCandidate(candidate).catch(() => {});
-    ring(null);
-    set({ phase: "connecting" });
+  // A site version from before group calls does not say who a note is from: only trust it in a two-person call.
+  if (!signal.from && links.size > 1) return;
+  const fromId = signal.from ?? state.peer?.id ?? "";
+  if (signal.from) modern.add(signal.from);
+  // The caller gave up before I answered.
+  if (state.phase === "incoming") {
+    if (signal.type === "ice") { strayIce.set(fromId, [...(strayIce.get(fromId) ?? []), signal.candidate]); return; }
+    if (signal.type === "hangup" && fromId === state.peer?.id) finish("missed", false);
     return;
   }
+  const link = links.get(fromId);
   if (signal.type === "ice") {
-    if (pc && pc.remoteDescription) await pc.addIceCandidate(signal.candidate).catch(() => {});
-    else waitingIce.push(signal.candidate);
+    if (!link) { strayIce.set(fromId, [...(strayIce.get(fromId) ?? []), signal.candidate]); return; }
+    if (link.pc.remoteDescription) await link.pc.addIceCandidate(signal.candidate).catch(() => {});
+    else link.waitingIce.push(signal.candidate);
     return;
   }
-  finish(signal.type === "decline" ? "declined" : signal.type === "busy" ? "busy" : state.phase === "incoming" ? "missed" : "ended", false);
+  if (signal.type === "roster") {
+    // Who else is in the call I just joined (people may have come in after I was invited).
+    for (const peer of signal.members) if (peer.id !== me?.id && !links.has(peer.id) && links.size + 1 < callLimit(state.video)) void joinPeer(peer);
+    return;
+  }
+  if (!link) return;
+  if (signal.type === "answer") {
+    await link.pc.setRemoteDescription(signal.sdp);
+    for (const candidate of link.waitingIce.splice(0)) await link.pc.addIceCandidate(candidate).catch(() => {});
+    window.clearTimeout(link.timer);
+    link.status = "connecting";
+    if (state.phase === "outgoing") { ring(null); set({ phase: "connecting" }); }
+    publish();
+    // The call turned into a video call while this person was still being rung: send them the picture too.
+    if (addVideoTo(link)) void renegotiate(link);
+    // I invited this person into a running call: tell them who else is here so they connect to everyone.
+    if (link.invitedByMe && me) {
+      const others = [...links.values()].filter((item) => item.peer.id !== fromId && item.status !== "ringing").map((item) => item.peer);
+      if (others.length) send(fromId, { type: "roster", callId, from: me.id, members: others });
+    }
+    return;
+  }
+  if (signal.type === "reoffer") {
+    const mine = link.pc.signalingState !== "stable";
+    // Both switched the camera on at the same moment: the one with the smaller id keeps its own offer.
+    if (mine && me && me.id < fromId) return;
+    await link.pc.setRemoteDescription(signal.sdp);
+    const answer = await link.pc.createAnswer();
+    await link.pc.setLocalDescription(answer);
+    send(fromId, { type: "reanswer", callId, from: me?.id ?? "", sdp: { type: answer.type, sdp: answer.sdp } });
+    if (signal.video && !state.video) set({ video: true, camOff: !state.local?.getVideoTracks().length });
+    if (mine) link.again = true;
+    if (link.again) void renegotiate(link);
+    return;
+  }
+  if (signal.type === "reanswer") {
+    if (link.pc.signalingState === "have-local-offer") await link.pc.setRemoteDescription(signal.sdp).catch(() => {});
+    if (link.again) void renegotiate(link);
+    return;
+  }
+  drop(fromId, signal.type === "decline" ? "declined" : signal.type === "busy" ? "busy" : "ended");
 }
 
 async function media(video: boolean) {
@@ -156,63 +248,154 @@ async function media(video: boolean) {
     return null;
   }
 }
-function connection(peerId: string) {
-  const conn = new RTCPeerConnection({ iceServers: iceServers() });
+function makeLink(peer: CallPeer, invitedByMe: boolean) {
+  const old = links.get(peer.id);
+  if (old) { window.clearTimeout(old.timer); old.pc.close(); }
+  const pc = new RTCPeerConnection({ iceServers: iceServers() });
   const remote = new MediaStream();
-  conn.ontrack = (event) => { event.streams[0]?.getTracks().forEach((track) => { if (!remote.getTracks().includes(track)) remote.addTrack(track); }); if (!event.streams[0]) remote.addTrack(event.track); set({ remote }); };
-  conn.onicecandidate = (event) => { if (event.candidate) send(peerId, { type: "ice", callId, candidate: event.candidate.toJSON() }); };
-  conn.onconnectionstatechange = () => {
-    if (conn !== pc) return;
-    if (conn.connectionState === "connected") { ring(null); set({ phase: "active", startedAt: Date.now() }); }
-    if (conn.connectionState === "failed") finish("failed", true);
+  const link: Link = { peer, pc, remote, status: "ringing", waitingIce: strayIce.get(peer.id) ?? [], timer: 0, invitedByMe, again: false };
+  strayIce.delete(peer.id);
+  links.set(peer.id, link);
+  state.local?.getTracks().forEach((track) => pc.addTrack(track, state.local!));
+  pc.ontrack = (event) => {
+    event.streams[0]?.getTracks().forEach((track) => { if (!remote.getTracks().includes(track)) remote.addTrack(track); });
+    if (!event.streams[0] && !remote.getTracks().includes(event.track)) remote.addTrack(event.track);
+    publish();
   };
-  set({ remote });
-  return conn;
+  pc.onicecandidate = (event) => { if (event.candidate) send(peer.id, { type: "ice", callId, from: me?.id, candidate: event.candidate.toJSON() }); };
+  pc.onconnectionstatechange = () => {
+    if (links.get(peer.id) !== link) return;
+    if (pc.connectionState === "connected") {
+      window.clearTimeout(link.timer);
+      link.status = "active";
+      ring(null);
+      if (state.phase !== "active") set({ phase: "active", startedAt: state.startedAt || Date.now() });
+      publish();
+    }
+    if (pc.connectionState === "failed") drop(peer.id, "failed", true);
+  };
+  return link;
+}
+// One person leaves (or never came): the call goes on while someone else is still in it.
+function drop(peerId: string, reason: CallEnd, tell = false) {
+  const link = links.get(peerId);
+  if (!link) return;
+  if (tell) send(peerId, { type: "hangup", callId, from: me?.id });
+  window.clearTimeout(link.timer);
+  link.pc.close();
+  links.delete(peerId);
+  if (links.size === 0) { finish(reason, false); return; }
+  if (state.peer?.id === peerId) set({ peer: links.values().next().value!.peer });
+  publish();
+}
+
+// ---- turning a voice call into a video call ----
+function addVideoTo(link: Link) {
+  const local = state.local;
+  const track = local?.getVideoTracks()[0];
+  if (!local || !track || !modern.has(link.peer.id) || link.pc.getSenders().some((sender) => sender.track === track)) return false;
+  link.pc.addTrack(track, local);
+  return true;
+}
+async function renegotiate(link: Link) {
+  if (!me || links.get(link.peer.id) !== link || link.status === "ringing" || !modern.has(link.peer.id)) return;
+  if (link.pc.signalingState !== "stable") { link.again = true; return; }
+  link.again = false;
+  const description = await link.pc.createOffer();
+  await link.pc.setLocalDescription(description);
+  send(link.peer.id, { type: "reoffer", callId, from: me.id, video: true, sdp: { type: description.type, sdp: description.sdp } });
+}
+// The camera button: switches my camera on in a running call without hanging up. The others see me at once;
+// their own camera stays off until they press the button too.
+export async function enableVideo() {
+  if (!me || !state.local || (state.phase !== "active" && state.phase !== "connecting")) return;
+  if (state.local.getVideoTracks().length || links.size + 1 > CALL_LIMIT.video) return;
+  const id = callId;
+  let track: MediaStreamTrack | undefined;
+  try {
+    track = (await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } } })).getVideoTracks()[0];
+  } catch { return; }
+  const local = state.local;
+  if (!track || !local || callId !== id || (phaseNow() !== "active" && phaseNow() !== "connecting")) { track?.stop(); return; }
+  local.addTrack(track);
+  set({ video: true, camOff: false, local });
+  for (const link of links.values()) if (addVideoTo(link)) void renegotiate(link);
 }
 
 export async function startCall(peer: CallPeer, video: boolean) {
   if (!me || !supabase || (state.phase !== "idle" && state.phase !== "ended")) return;
   window.clearTimeout(endTimer);
+  closeOutboxes();
+  links.clear();
+  strayIce.clear();
+  modern.clear();
   callId = `${me.id.slice(0, 8)}-${Date.now().toString(36)}`;
-  waitingIce = [];
-  iAmCaller = true;
+  logPeer = peer;
   set({ ...idle, phase: "outgoing", peer, video });
   quietMusic(true);
   const local = await media(video);
   if (!local) { finish("nomic", false); return; }
+  if (phaseNow() !== "outgoing") { local.getTracks().forEach((track) => track.stop()); return; }
   set({ local });
-  pc = connection(peer.id);
-  local.getTracks().forEach((track) => pc!.addTrack(track, local));
-  const description = await pc.createOffer();
-  await pc.setLocalDescription(description);
+  const link = makeLink(peer, false);
+  publish();
+  const description = await link.pc.createOffer();
+  await link.pc.setLocalDescription(description);
   send(peer.id, { type: "offer", callId, from: me, video, sdp: { type: description.type, sdp: description.sdp } });
   ring("out");
-  window.clearTimeout(ringTimer);
-  const id = callId;
-  ringTimer = window.setTimeout(() => { if (callId === id && state.phase === "outgoing") finish("missed", true); }, 45000);
+  link.timer = window.setTimeout(() => { if (links.get(peer.id) === link && link.status === "ringing") drop(peer.id, "missed", true); }, 45000);
+}
+
+// "Add to call": ring one more person; the others already in the call are listed so the newcomer can reach them.
+export async function inviteToCall(peer: CallPeer) {
+  if (!me || !supabase || !state.local || (state.phase !== "active" && state.phase !== "connecting")) return;
+  if (peer.id === me.id || links.has(peer.id) || links.size + 1 >= callLimit(state.video)) return;
+  const group = [...links.values()].filter((item) => item.status !== "ringing").map((item) => item.peer);
+  const link = makeLink(peer, true);
+  publish();
+  const description = await link.pc.createOffer();
+  await link.pc.setLocalDescription(description);
+  send(peer.id, { type: "offer", callId, from: me, video: state.video, sdp: { type: description.type, sdp: description.sdp }, group });
+  link.timer = window.setTimeout(() => { if (links.get(peer.id) === link && link.status === "ringing") drop(peer.id, "missed", true); }, 45000);
+}
+// I joined a group call: connect to one of the people already in it.
+async function joinPeer(peer: CallPeer) {
+  if (!me || !state.local) return;
+  const link = makeLink(peer, false);
+  link.status = "connecting";
+  publish();
+  const description = await link.pc.createOffer();
+  await link.pc.setLocalDescription(description);
+  send(peer.id, { type: "offer", callId, from: me, video: state.video, sdp: { type: description.type, sdp: description.sdp }, join: true });
+  link.timer = window.setTimeout(() => { if (links.get(peer.id) === link && link.status !== "active") drop(peer.id, "failed", true); }, 30000);
 }
 
 export async function acceptCall() {
-  if (state.phase !== "incoming" || !state.peer || !offer) return;
+  if (state.phase !== "incoming" || !state.peer || !offer || !me) return;
   window.clearTimeout(ringTimer);
   ring(null);
   const peer = state.peer;
+  const group = state.group;
+  const id = callId;
   set({ phase: "connecting" });
   quietMusic(true);
   const local = await media(state.video);
-  if (!local) { send(peer.id, { type: "decline", callId }); finish("nomic", false); return; }
+  if (!local) { send(peer.id, { type: "decline", callId, from: me.id }); finish("nomic", false); return; }
+  if (callId !== id || phaseNow() !== "connecting") { local.getTracks().forEach((track) => track.stop()); return; }
   set({ local });
-  pc = connection(peer.id);
-  local.getTracks().forEach((track) => pc!.addTrack(track, local));
-  await pc.setRemoteDescription(offer);
-  for (const candidate of waitingIce.splice(0)) await pc.addIceCandidate(candidate).catch(() => {});
-  const answer = await pc.createAnswer();
-  await pc.setLocalDescription(answer);
-  send(peer.id, { type: "answer", callId, sdp: { type: answer.type, sdp: answer.sdp } });
+  const link = makeLink(peer, false);
+  link.status = "connecting";
+  publish();
+  await link.pc.setRemoteDescription(offer);
+  for (const candidate of link.waitingIce.splice(0)) await link.pc.addIceCandidate(candidate).catch(() => {});
+  const answer = await link.pc.createAnswer();
+  await link.pc.setLocalDescription(answer);
+  send(peer.id, { type: "answer", callId, from: me.id, sdp: { type: answer.type, sdp: answer.sdp } });
+  for (const other of group) if (!links.has(other.id) && links.size + 1 < callLimit(state.video)) void joinPeer(other);
 }
 export function declineCall() {
   if (state.phase !== "incoming" || !state.peer) return;
-  send(state.peer.id, { type: "decline", callId });
+  send(state.peer.id, { type: "decline", callId, from: me?.id });
   finish("declined", false);
 }
 export function hangUp() {
@@ -225,6 +408,7 @@ export function toggleMute() {
   set({ muted });
 }
 export function toggleCamera() {
+  if (!state.local?.getVideoTracks().length) { void enableVideo(); return; }
   const camOff = !state.camOff;
   state.local?.getVideoTracks().forEach((track) => { track.enabled = !camOff; });
   set({ camOff });
@@ -233,24 +417,29 @@ export function toggleCamera() {
 function finish(reason: CallEnd, tell: boolean) {
   window.clearTimeout(ringTimer);
   ring(null);
-  if (tell && state.peer) send(state.peer.id, { type: "hangup", callId });
+  if (tell) {
+    for (const id of links.keys()) send(id, { type: "hangup", callId, from: me?.id });
+    if (!links.size && state.peer) send(state.peer.id, { type: "hangup", callId, from: me?.id });
+  }
   const hadMusic = state.phase !== "incoming";
-  // The caller writes one line about the call into the private chat (both sides see it).
-  if (iAmCaller && state.peer && reason !== "nomic") {
+  // The one who started the call writes one line about it into the private chat with the first person called.
+  if (logPeer && reason !== "nomic") {
     const talked = state.startedAt ? (Date.now() - state.startedAt) / 1000 : 0;
     const kind = talked ? "done" : reason === "declined" ? "declined" : reason === "busy" ? "busy" : reason === "missed" ? "missed" : reason === "failed" ? "failed" : "cancelled";
-    void sendRemoteMessage(state.peer.id, { text: callLogText(kind, talked) });
+    void sendRemoteMessage(logPeer.id, { text: callLogText(kind, talked) });
   }
-  iAmCaller = false;
-  pc?.close();
-  pc = null;
+  logPeer = null;
+  for (const link of links.values()) { window.clearTimeout(link.timer); link.pc.close(); }
+  links.clear();
+  strayIce.clear();
+  modern.clear();
   offer = null;
   state.local?.getTracks().forEach((track) => track.stop());
-  set({ phase: "ended", reason, local: null, remote: null });
+  set({ phase: "ended", reason, local: null, members: [] });
   if (hadMusic) quietMusic(false);
   window.clearTimeout(endTimer);
   endTimer = window.setTimeout(() => {
     if (state.phase === "ended") set(idle);
-    if (outbox && supabase) { void supabase.removeChannel(outbox.channel); outbox = null; }
+    closeOutboxes();
   }, 2500);
 }
