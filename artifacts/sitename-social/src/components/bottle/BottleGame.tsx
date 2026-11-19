@@ -185,9 +185,9 @@ const LIVE_TABLE_CHANNEL = false;
 // A RANDOM gift that has to go (pushed out by new ones) stays 5 s, then fades out in 0.9 s.
 const LEAVE_MS = 5000;
 const LEAVE_FADE = 900;
-const RANDOM_SPOT = /^(air_kiss\d|gem\d|flower\d+|loveis\d|iloveyou|bear\d+|egg\d|strawberry\d|valentine\d|pants\d|bra\d|furhandcuffs|leatherbra)$/;
+const RANDOM_SPOT = /^(air_kiss\d|gem\d|flower\d+|loveis\d|iloveyou|bear\d+|egg\d|strawberry\d|valentine\d|pants\d|bra\d|furhandcuffs|leatherbra|leathergag\d|autumnleaf\d|whip1)$/;
 // The panties, the bras, the fur handcuffs and the leather set stand at the very end of the gift list, in this order.
-const GIFT_LAST = new Map<string, number>(["c:pants2", "c:bra1", "c:furhandcuffs", "c:leathermousehat", "c:leathershoes", "c:leathercathat", "c:leatherbra", "c:leatherzipmask"].map((id, index) => [id, 9e6 + index]));
+const GIFT_LAST = new Map<string, number>(["c:pants2", "c:bra1", "c:furhandcuffs", "c:leathermousehat", "c:leathershoes", "c:leathercathat", "c:leatherbra", "c:leatherzipmask", "c:leathergag1", "c:autumnleaf1", "c:whip1"].map((id, index) => [id, 9e6 + index]));
 // Caps and hats sit on the top-left or the top-right corner of the photo, tilted towards it.
 const HAT_SPOT = /^(\w*cap|cappy|cowboy|cylinderw?|indianhat|napoleon|musketeer|nurse|bezkoz|monomachhat|noteshat\w|partyhat\d|clown|carnivalmask\d|horseheadhat2|baseballa\w|leathermousehat|leathercathat|leatherzipmask)$/;
 // These spin a full turn on the way; kisses and gems fly a little smaller.

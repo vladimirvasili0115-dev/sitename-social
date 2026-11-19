@@ -228,7 +228,7 @@ const soundOf: [string, string][] = [
   ["bite", "🍓 🍒 🍎 🍋 🍉 🥒 🍔 🌭 🍟 🌶️ 🥥 🫒 nar"], ["pop", "🍬 🍭 🍦 🍰 🎂 🧁 🍫 🍧 🍨 🍯 paxlava shekerbura 🎁 🎈"],
   ["strum", "tar 🎸 🪕"], ["piano", "🎹 🎼"], ["drum", "🥁"], ["shake", "🪇"], ["violin", "🎻"], ["trumpet", "🎺 🪈"], ["mic", "🎤 🎙️"], ["radio", "📻 🎛️ 📟"],
   ["boom", "🧨"], ["fire", "flame 🔥 😈 🕯️"], ["car", "🚗 🚙 🚜"], ["moto", "🏍️"], ["plane", "✈️"], ["chopper", "🚁"], ["rocket", "🚀"], ["horn", "🛥️ ⚓"], ["ufo", "👽 🛸"],
-  ["spooky", "💀 🕸️ 🎭 🧙"], ["rattle", "🎲 🃏 🧩 🎯"], ["tick", "⌚ ⏰ 🕰️ ⏱️ ⏲️ ⏳"], ["ring", "☎️ 📱"], ["toot", "💩"], ["whip", "🤺 ⚔️ 🏹 🪁"],
+  ["spooky", "💀 🕸️ 🎭 🧙"], ["rattle", "🎲 🃏 🧩 🎯"], ["tick", "⌚ ⏰ 🕰️ ⏱️ ⏲️ ⏳"], ["ring", "☎️ 📱"], ["toot", "💩"], ["whip", "🤺 ⚔️ 🏹 🪁 whip1"],
   ["boing", "⛑️ 🤠 🎩 👒 🧢 🎓 🪖 👳 🕶️ 😎 🥸 👢 👠 👡 🥾 🥿 🧣 🧤 👜 🧳 👘 🤵 🕴️"],
 ];
 // The original game sounds (public/sounds/sfx/<name>.mp3). Every gift has a sound when it is sent and one when it
