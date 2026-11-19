@@ -43,9 +43,10 @@ export const bottleRoundReset = () => call<boolean>("bottle_round_reset");
 // Moving again at the same table (paket-JJ): my gifts are wiped on the server and the others see a "fresh" row and wipe them too.
 export const bottleFresh = () => call<boolean>("bottle_fresh");
 // A line in the table chat. A refused line (for example one with a website address) shows the short notice at the bottom.
-export async function bottleSay(text: string): Promise<null> {
+// `to`: the player whose name was tapped (paket-LF), so only that player gets the ding, not everybody with the same name.
+export async function bottleSay(text: string, to?: string | null): Promise<null> {
   if (!supabase) return null;
-  const { error } = await supabase.rpc("bottle_say", { p_text: text });
+  const { error } = await supabase.rpc("bottle_say", to ? { p_text: text, p_to: to } : { p_text: text });
   if (error) flashRefusal(error.message);
   return null;
 }
