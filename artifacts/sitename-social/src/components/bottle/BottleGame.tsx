@@ -2627,9 +2627,10 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   function orderTrack(track: Track, music = false) {
     if (songBusy()) return;
     const count = Math.max(1, songTo().length);
-    if (heartsRef.current < SONG_PRICE.video * count) return setGiftNote(t("bottle.noHearts"));
+    // MP3 tab songs (music mode) cost 5 like an own MP3; the server (bottle_play, p_music) takes 5 too. YouTube videos stay 9.
+    if (heartsRef.current < SONG_PRICE[music ? "mp3" : "video"] * count) return setGiftNote(t("bottle.noHearts"));
     if (online) playLive("youtube", track.id, music ? `♫ ${cleanSong(track.title)}` : cleanSong(track.title), durationSeconds(track.duration) || 0, music);
-    else for (let n = 0; n < count; n++) paySong("video");
+    else for (let n = 0; n < count; n++) paySong(music ? "mp3" : "video");
     songClock.current = { pos: 0, at: Date.now() };
     setAudio(null);
     setVideo(track.id);
@@ -3752,7 +3753,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   {tabs.map(([tab, Icon]) => <button key={tab} type="button" role="tab" aria-selected={songTab === tab} aria-label={t(`bottle.song${tab[0].toUpperCase()}${tab.slice(1)}` as "bottle.songPopular")} title={t(`bottle.song${tab[0].toUpperCase()}${tab.slice(1)}` as "bottle.songPopular")} onClick={() => { setSongTab(tab); if (tab === "popular") void loadTracks(""); if (tab === "search") { setTracks([]); setTrackState("idle"); } }} className={cn("flex h-10 w-10 items-center justify-center rounded-full", songTab === tab ? "bg-[#FFEDD5] text-[#EA580C]" : "text-[#9CA3AF] hover:bg-black/5")}><Icon size={22} fill={songTab === tab && (tab === "popular" || tab === "fav") ? "currentColor" : "none"} /></button>)}
                   <button type="button" role="tab" aria-selected={songTab === "mp3"} onClick={() => { setSongTab("mp3"); if (!tracks.length) void loadTracks(""); }} className={cn("h-10 rounded-full px-3 text-xs font-bold", songTab === "mp3" ? "bg-[#FFEDD5] text-[#EA580C]" : "text-[#9CA3AF] hover:bg-black/5")}>MP3</button>
                 </div>
-                <p className="mb-2 mt-1 flex items-center gap-2 text-xs font-bold text-[#6B7280]"><img src={players[songFor].avatar} alt="" className="h-6 w-6 rounded object-cover" /><span className="min-w-0 flex-1 truncate">{t("bottle.dedicateTo")} {songTo().map((index) => players[index].name).join(", ")}</span><span className="flex shrink-0 items-center gap-0.5 text-[#EA580C]"><Heart size={11} fill="currentColor" stroke="none" />{SONG_PRICE.video * Math.max(1, songTo().length)}</span></p>
+                <p className="mb-2 mt-1 flex items-center gap-2 text-xs font-bold text-[#6B7280]"><img src={players[songFor].avatar} alt="" className="h-6 w-6 rounded object-cover" /><span className="min-w-0 flex-1 truncate">{t("bottle.dedicateTo")} {songTo().map((index) => players[index].name).join(", ")}</span><span className="flex shrink-0 items-center gap-0.5 text-[#EA580C]"><Heart size={11} fill="currentColor" stroke="none" />{SONG_PRICE[songTab === "mp3" ? "mp3" : "video"] * Math.max(1, songTo().length)}</span></p>
                 {songTab === "search" ? (
                   <form onSubmit={searchTracks} className="mb-2 flex gap-1.5">
                     <input value={query} onChange={(event) => setQuery(event.target.value)} maxLength={120} aria-label={t("bottle.songSearch")} placeholder={t("bottle.songSearchHint")} autoComplete="off" className="h-10 min-w-0 flex-1 rounded-lg border border-[#D1D5DB] bg-white px-3 text-sm outline-none focus:border-[#EE8A2B]" />
@@ -3831,7 +3832,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                     <p className="mt-3 text-[15px] leading-snug">
                       {(() => {
                         const [before, after] = t("bottle.songAskText").replace("{title}", cleanSong(songAsk.track.title)).split("{n}");
-                        const price = <span className="inline-flex items-center gap-1 align-middle font-bold"><Heart size={18} fill="#F97316" stroke="#F97316" />{SONG_PRICE.video * Math.max(1, songTo().length)}</span>;
+                        const price = <span className="inline-flex items-center gap-1 align-middle font-bold"><Heart size={18} fill="#F97316" stroke="#F97316" />{SONG_PRICE[songAsk.music ? "mp3" : "video"] * Math.max(1, songTo().length)}</span>;
                         return <>{before}{after !== undefined ? <>{price}{after}</> : null}</>;
                       })()}
                     </p>
