@@ -11,9 +11,10 @@ import { AdminUsers } from "@/components/admin/AdminUsers";
 import { AdminBalances, AdminPlayers } from "@/components/admin/AdminPlayers";
 import { AdminSettings } from "@/components/admin/AdminSettings";
 import { AdminLog } from "@/components/admin/AdminLog";
+import { AdminGrants } from "@/components/admin/AdminGrants";
 import { useIsAdmin } from "@/components/report/useIsAdmin";
 
-type AdminTab = "overview" | "reports" | "users" | "players" | "balances" | "content" | "settings" | "log";
+type AdminTab = "overview" | "reports" | "users" | "players" | "balances" | "content" | "settings" | "log" | "grants";
 
 export default function AdminPage() {
   const { t } = useTranslation();
@@ -31,7 +32,7 @@ export default function AdminPage() {
       <Tabs<AdminTab> active={tab} onChange={setTab} tabs={[
         { id: "overview", label: t("admin.tabOverview") }, { id: "reports", label: t("admin.tabReports") },
         { id: "users", label: t("admin.tabUsers") }, { id: "players", label: "Oyunçular" }, { id: "balances", label: "Balanslar" }, { id: "content", label: t("admin.tabContent") },
-        ...(owner ? [{ id: "settings" as const, label: t("admin.tabSettings") }, { id: "log" as const, label: t("admin.tabLog") }] : []),
+        ...(owner ? [{ id: "settings" as const, label: t("admin.tabSettings") }, { id: "log" as const, label: t("admin.tabLog") }, { id: "grants" as const, label: "Yükləmələr" }] : []),
       ]} />
       {tab === "overview" ? <AdminDashboard /> : null}
       {tab === "reports" ? <AdminReports /> : null}
@@ -41,6 +42,7 @@ export default function AdminPage() {
       {tab === "content" ? <AdminContent /> : null}
       {tab === "settings" && owner ? <AdminSettings /> : null}
       {tab === "log" && owner ? <AdminLog /> : null}
+      {tab === "grants" && owner ? <AdminGrants /> : null}
       {owner ? null : <p className="mt-6 px-1 text-xs leading-5 text-muted">{t("admin.moderatorNote")}</p>}
     </div>
   );

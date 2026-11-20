@@ -176,3 +176,15 @@ export const pageAllowSet = (id: string, on: boolean) => call<boolean>("admin_pa
 export type BroadcastBatch = { sent: number; skipped: number; last: string | null; done: boolean };
 export const broadcastCount = () => call<number>("admin_broadcast_count");
 export const broadcastSend = (text: string, after: string | null) => call<BroadcastBatch>("admin_broadcast", { p_text: text, p_after: after, p_limit: 300 });
+
+// Owner only: what each moderator gave to whom on one day (Baku time). Coins are in coins (100 = 1 ₼). Needs paket-LM.sql.
+export type GrantReportRow = { adminId: string; admin: string; targetId: string | null; target: string; heartsPlus: number; heartsMinus: number; coinsPlus: number; coinsMinus: number; times: number; lastAt: number };
+type GrantReportDbRow = { admin_id: string; admin_name: string | null; target_id: string | null; target_name: string | null; hearts_plus: number; hearts_minus: number; coins_plus: number; coins_minus: number; times: number; last_at: string };
+export async function fetchGrantReport(day: string): Promise<GrantReportRow[] | null> {
+  const rows = await call<GrantReportDbRow[]>("admin_grant_report", { p_day: day });
+  if (!Array.isArray(rows)) return null;
+  return rows.map((row) => ({
+    adminId: row.admin_id, admin: row.admin_name ?? "", targetId: row.target_id, target: row.target_name ?? "", heartsPlus: Number(row.hearts_plus), heartsMinus: Number(row.hearts_minus),
+    coinsPlus: Number(row.coins_plus), coinsMinus: Number(row.coins_minus), times: Number(row.times), lastAt: Date.parse(row.last_at),
+  }));
+}
