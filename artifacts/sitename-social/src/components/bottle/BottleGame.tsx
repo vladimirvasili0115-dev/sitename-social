@@ -1198,6 +1198,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   }, []);
   // Songs from the MP3 tab play in "music mode": a small square player with the title, no big video.
   const [musicMode, setMusicMode] = useState(false);
+  // The YouTube song waiting for "Play" in the confirm window (null: no window).
+  const [songAsk, setSongAsk] = useState<{ track: Track; music: boolean } | null>(null);
   const [tune, setTune] = useState({ playing: false, cur: 0, dur: 0 });
   useEffect(() => {
     setTune({ playing: false, cur: 0, dur: 0 });
@@ -1223,7 +1225,6 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     const timer = window.setTimeout(() => setVideo((current) => (current === video ? null : current)), wait * 1000);
     return () => window.clearTimeout(timer);
   }, [video, tune.dur, tune.cur, tune.playing]);
-  const lastSongLine = lines.filter((line) => line.song).at(-1)?.id;
   const clock = (sec: number) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, "0")}`;
   const [videoTitle, setVideoTitle] = useState("");
   const [badLink, setBadLink] = useState(false);
@@ -3773,7 +3774,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                           const [artist, title] = track.title.includes(" - ") ? [track.title.split(" - ")[0], track.title.split(" - ").slice(1).join(" - ")] : ["", track.title];
                           return (
                             <li key={track.id}>
-                              <button type="button" onClick={() => orderTrack(track, true)} className="group flex w-full items-center gap-2.5 rounded-lg p-1.5 text-left text-white hover:bg-white/10">
+                              <button type="button" onClick={() => setSongAsk({ track, music: true })} className="group flex w-full items-center gap-2.5 rounded-lg p-1.5 text-left text-white hover:bg-white/10">
                                 <span className="relative h-11 w-11 shrink-0 overflow-hidden rounded-full border-2 border-white/20 bg-black"><img src={`https://i.ytimg.com/vi/${track.id}/mqdefault.jpg`} alt="" loading="lazy" className="h-full w-full scale-150 object-cover" /><span className="absolute left-1/2 top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#1E1B3A] ring-2 ring-white/40" /></span>
                                 <span className="min-w-0 flex-1"><span className="block truncate text-[13px] font-semibold">{title}</span>{artist ? <span className="block truncate text-[11px] text-white/60">{artist}</span> : null}</span>
                                 {track.duration ? <span className="shrink-0 text-[11px] tabular-nums text-white/50">{track.duration}</span> : null}
@@ -3808,7 +3809,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                     <ul className="grid grid-cols-2 gap-2">
                       {shown.map((track) => (
                         <li key={track.id} className="relative">
-                          <button type="button" onClick={() => orderTrack(track)} className="block w-full text-left">
+                          <button type="button" onClick={() => setSongAsk({ track, music: false })} className="block w-full text-left">
                             <span className="relative block aspect-video overflow-hidden rounded-md bg-[#111827]"><img src={`https://i.ytimg.com/vi/${track.id}/mqdefault.jpg`} alt="" loading="lazy" className="h-full w-full object-cover" />{track.duration ? <span className="absolute bottom-0.5 right-0.5 rounded bg-black/75 px-1 text-[10px] font-semibold tabular-nums text-white">{track.duration}</span> : null}</span>
                             <span className="mt-0.5 line-clamp-2 text-[11px] font-semibold leading-tight">{track.title}</span>
                           </button>
@@ -3820,6 +3821,27 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 )}
                 {giftNote ? <p role="status" className="mt-2 text-xs font-semibold text-[#B91C1C]">{giftNote}</p> : null}
               </div>
+              {songAsk ? (
+                // A YouTube song is not played at once: first "play it for everyone for N hearts?".
+                <div className="absolute inset-0 z-[60] flex items-center justify-center bg-black/25 p-3" onClick={(event) => { event.stopPropagation(); setSongAsk(null); }}>
+                  <div role="alertdialog" aria-modal="true" aria-label={t("bottle.songAskTitle")} onClick={(event) => event.stopPropagation()} className="relative w-full max-w-[380px] rounded-3xl bg-white p-4 text-center text-[#1F2937] shadow-2xl">
+                    <button type="button" onClick={() => setSongAsk(null)} aria-label={t("photos.close")} title={t("photos.close")} className="absolute -right-2 -top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#8CC63F] bg-white text-[#8CC63F] shadow"><X size={18} strokeWidth={3} /></button>
+                    <p className="text-base font-semibold text-[#9CA3AF]">{t("bottle.songAskTitle")}</p>
+                    <span className="relative mt-3 block aspect-video overflow-hidden rounded-md bg-[#111827]"><img src={`https://i.ytimg.com/vi/${songAsk.track.id}/hqdefault.jpg`} alt="" className="h-full w-full object-cover" /><span aria-hidden="true" className="absolute left-1/2 top-1/2 flex h-11 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-xl bg-[#FF0000]/90 text-xl text-white">▶</span></span>
+                    <p className="mt-3 text-[15px] leading-snug">
+                      {(() => {
+                        const [before, after] = t("bottle.songAskText").replace("{title}", cleanSong(songAsk.track.title)).split("{n}");
+                        const price = <span className="inline-flex items-center gap-1 align-middle font-bold"><Heart size={18} fill="#F97316" stroke="#F97316" />{SONG_PRICE.video * Math.max(1, songTo().length)}</span>;
+                        return <>{before}{after !== undefined ? <>{price}{after}</> : null}</>;
+                      })()}
+                    </p>
+                    <div className="mt-4 flex justify-center gap-3">
+                      <button type="button" onClick={() => setSongAsk(null)} className="min-w-[120px] rounded-xl border-2 border-[#8CC63F] bg-white px-4 py-2 font-semibold text-[#8CC63F]">{t("common.cancel")}</button>
+                      <button type="button" onClick={() => { const ask = songAsk; setSongAsk(null); orderTrack(ask.track, ask.music); }} className="min-w-[120px] rounded-xl bg-[#8CC63F] px-4 py-2 font-semibold text-white">{t("bottle.songAskPlay")}</button>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
             </div>
           );
         })() : null}
@@ -4706,7 +4728,6 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 {from.me ? null : <button type="button" onClick={() => { (mentionRef.current = { id: from.id, name: from.name }, setDraft(`${from.name}, `)); chatRef.current?.focus(); }} aria-label={t("bottle.reply")} title={t("bottle.reply")} className="h-[22px] w-[30px] shrink-0 self-center bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url(${O}chat_btn_reply.svg)` }} />}
               </div>
             );
-            if (line.song && (line.id !== lastSongLine || !(video || audio))) return null; // only the song that is playing now stays in the chat
             if (line.song) { const song = songInfo(line.song); return (
               <div key={line.id} className={info} title={song.title}>
                 {photo(from)}
