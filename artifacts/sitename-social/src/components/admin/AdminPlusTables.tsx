@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { Crown, Lock, LockOpen } from "lucide-react";
+import { ChevronDown, Crown, Lock, LockOpen } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { adminPlusTableDelete, adminPlusTablePass, adminPlusTables, type AdminPlusTable } from "@/lib/adminSync";
 import { formatDay } from "@/lib/datetime";
@@ -15,6 +15,7 @@ export function PlusTablesCard() {
   const [busy, setBusy] = useState<number | null>(null);
   const [sure, setSure] = useState<number | null>(null);
   const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
+  const [open, setOpen] = useState(false);
   const load = useCallback(() => void adminPlusTables().then((value) => { if (Array.isArray(value)) setTables(value); }), []);
   useEffect(() => { load(); }, [load]);
   async function setPass(table: AdminPlusTable, password: string) {
@@ -37,13 +38,16 @@ export function PlusTablesCard() {
   return (
     <Card className="mb-4 p-4">
       <div className="flex items-start gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-2 text-[#7C3AED]"><Crown size={20} /></span>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold">VIP+ masalar</p>
-          <p className="mt-0.5 text-xs leading-5 text-muted">VIP+ ilə açılan masalar sahibin VIP+ müddəti bitənədək serverdə qalır (boş olsa da). Burada parolu unudulmuş masaya yeni parol qoya və ya masanı silə bilərsən.</p>
-        </div>
-        <button type="button" onClick={load} className="h-8 shrink-0 rounded-lg border border-border px-2.5 text-xs font-medium text-muted hover:text-text">Yenilə</button>
+        <button type="button" onClick={() => setOpen((value) => !value)} aria-expanded={open} className="flex min-w-0 flex-1 items-start gap-3 text-left">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-2 text-[#7C3AED]"><Crown size={20} /></span>
+          <div className="min-w-0 flex-1">
+            <p className="flex items-center gap-1 text-sm font-semibold">VIP+ masalar<ChevronDown size={16} className={cn("shrink-0 text-muted transition-transform", open && "rotate-180")} /></p>
+            <p className="mt-0.5 text-xs leading-5 text-muted">VIP+ ilə açılan masalar sahibin VIP+ müddəti bitənədək serverdə qalır (boş olsa da). Burada parolu unudulmuş masaya yeni parol qoya və ya masanı silə bilərsən.</p>
+          </div>
+        </button>
+        {open ? <button type="button" onClick={load} className="h-8 shrink-0 rounded-lg border border-border px-2.5 text-xs font-medium text-muted hover:text-text">Yenilə</button> : null}
       </div>
+      {open ? <>
       {tables && !tables.length ? <p className="mt-3 text-xs text-muted">VIP+ masası yoxdur.</p> : null}
       <div className="mt-3 space-y-2">
         {(tables ?? []).map((table) => (
@@ -64,6 +68,7 @@ export function PlusTablesCard() {
         ))}
       </div>
       {note ? <p role="status" className={cn("mt-2 text-xs font-semibold", note.ok ? "text-accent" : "text-danger")}>{note.text}</p> : null}
+      </> : null}
     </Card>
   );
 }

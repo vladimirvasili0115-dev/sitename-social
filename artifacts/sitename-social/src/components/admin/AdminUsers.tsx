@@ -474,6 +474,7 @@ function RoomPassCard() {
   const [drafts, setDrafts] = useState<Record<number, string>>({});
   const [busy, setBusy] = useState<number | null>(null);
   const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
+  const [open, setOpen] = useState(false);
   const load = useCallback(() => void adminRooms().then((value) => { if (Array.isArray(value)) setRooms(value); }), []);
   useEffect(() => { load(); }, [load]);
   async function save(room: AdminRoom, password: string) {
@@ -487,13 +488,16 @@ function RoomPassCard() {
   return (
     <Card className="mb-4 p-4">
       <div className="flex items-start gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-2 text-accent"><KeyRound size={20} /></span>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold">{w.title}</p>
-          <p className="mt-0.5 text-xs leading-5 text-muted">{w.text}</p>
-        </div>
-        <button type="button" onClick={load} className="h-8 shrink-0 rounded-lg border border-border px-2.5 text-xs font-medium text-muted hover:text-text">{w.refresh}</button>
+        <button type="button" onClick={() => setOpen((value) => !value)} aria-expanded={open} className="flex min-w-0 flex-1 items-start gap-3 text-left">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-2 text-accent"><KeyRound size={20} /></span>
+          <div className="min-w-0 flex-1">
+            <p className="flex items-center gap-1 text-sm font-semibold">{w.title}<ChevronDown size={16} className={cn("shrink-0 text-muted transition-transform", open && "rotate-180")} /></p>
+            <p className="mt-0.5 text-xs leading-5 text-muted">{w.text}</p>
+          </div>
+        </button>
+        {open ? <button type="button" onClick={load} className="h-8 shrink-0 rounded-lg border border-border px-2.5 text-xs font-medium text-muted hover:text-text">{w.refresh}</button> : null}
       </div>
+      {open ? <>
       {rooms && !rooms.length ? <p className="mt-3 text-xs text-muted">{w.none}</p> : null}
       <div className="mt-3 space-y-2">
         {(rooms ?? []).map((room) => (
@@ -513,6 +517,7 @@ function RoomPassCard() {
         ))}
       </div>
       {note ? <p role="status" className={cn("mt-2 text-xs font-semibold", note.ok ? "text-accent" : "text-danger")}>{note.text}</p> : null}
+      </> : null}
     </Card>
   );
 }
