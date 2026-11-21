@@ -129,8 +129,13 @@ export function CallHost() {
   const [pocket, setPocket] = useState(false);
   const [adding, setAdding] = useState(false);
   const [touch, setTouch] = useState(false);
+  // The voice bar folds into a round bubble (one tap) that can be dragged to the left or right edge; one tap opens it again.
+  const [mini, setMini] = useState(false);
+  const [dock, setDock] = useState<{ side: "left" | "right"; y: number }>({ side: "right", y: 96 });
+  const [drag, setDrag] = useState<{ x: number; y: number } | null>(null);
+  const grab = useRef<{ x: number; y: number; moved: boolean } | null>(null);
   useEffect(() => { setTouch(typeof window !== "undefined" && window.matchMedia?.("(pointer: coarse)").matches); }, []);
-  useEffect(() => { if (!live) { setRoute("speaker"); setPocket(false); setAdding(false); } }, [live]);
+  useEffect(() => { if (!live) { setRoute("speaker"); setPocket(false); setAdding(false); setMini(false); setDrag(null); } }, [live]);
   useEffect(() => {
     const native = nativeCall();
     if (!native || !live) return;
@@ -208,11 +213,50 @@ export function CallHost() {
     );
   }
   // A voice call is a compact bar at the top of the screen; the site stays usable underneath (like WhatsApp Web).
+  if (!call.video && mini && call.phase !== "ended") {
+    const size = 56;
+    const fitY = (y: number) => Math.min(window.innerHeight - size - 8, Math.max(8, y));
+    const place = drag ? { left: drag.x - size / 2, top: fitY(drag.y - size / 2) } : { [dock.side]: 8, top: fitY(dock.y) };
+    return (
+      <>
+        {extras}
+        <button
+          type="button"
+          aria-label={title}
+          title={title}
+          style={place}
+          onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); grab.current = { x: event.clientX, y: event.clientY, moved: false }; }}
+          onPointerMove={(event) => {
+            const start = grab.current;
+            if (!start) return;
+            if (!start.moved && Math.hypot(event.clientX - start.x, event.clientY - start.y) < 6) return;
+            start.moved = true;
+            setDrag({ x: event.clientX, y: event.clientY });
+          }}
+          onPointerUp={(event) => {
+            const start = grab.current;
+            grab.current = null;
+            if (!start) return;
+            if (start.moved) { setDock({ side: event.clientX < window.innerWidth / 2 ? "left" : "right", y: fitY(event.clientY - size / 2) }); setDrag(null); }
+            else setMini(false);
+          }}
+          onPointerCancel={() => { grab.current = null; setDrag(null); }}
+          className="fixed z-[200] h-14 w-14 touch-none select-none rounded-full bg-[#0B1220] p-0.5 shadow-2xl ring-2 ring-white/20"
+        >
+          <img src={photoOf(shown[0].peer)} alt="" draggable={false} className={cn("pointer-events-none h-full w-full rounded-full object-cover", call.phase !== "active" && "animate-pulse opacity-70")} />
+          {call.phase === "active" ? <span className="absolute bottom-0.5 right-0.5 h-3.5 w-3.5 rounded-full bg-[#22C55E] ring-2 ring-[#0B1220]" /> : null}
+          {call.muted ? <span className="absolute -left-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-white text-[#0B1220]"><MicOff size={12} /></span> : null}
+          {shown.length > 1 ? <span className="absolute -right-1 -top-1 rounded-full bg-white/90 px-1 text-[10px] font-bold text-[#0B1220]">+{shown.length - 1}</span> : null}
+        </button>
+      </>
+    );
+  }
   if (!call.video) {
     return (
       <>
         {extras}
         <div role="dialog" aria-label={title} className="fixed inset-x-3 top-3 z-[200] mx-auto flex max-w-md items-center gap-3 rounded-2xl bg-[#0B1220] px-3 py-2.5 text-white shadow-2xl ring-1 ring-white/10">
+          <button type="button" onClick={() => { if (call.phase !== "ended") setMini(true); }} className="flex min-w-0 flex-1 items-center gap-3 text-left">
           <div className="flex shrink-0 -space-x-3">
             {shown.slice(0, 3).map((member) => (
               <img key={member.peer.id} src={photoOf(member.peer)} alt="" title={member.peer.name} className={cn("h-11 w-11 rounded-full object-cover ring-2 ring-[#0B1220]", member.status === "ringing" && "animate-pulse opacity-60")} />
@@ -222,6 +266,7 @@ export function CallHost() {
             <p className="truncate text-sm font-semibold">{title}{shown.length > 3 ? ` +${shown.length - 3}` : ""}</p>
             <p className="truncate text-xs text-white/70">{call.phase === "active" ? <><span className="mr-1 inline-block h-2 w-2 rounded-full bg-[#22C55E] align-middle" /><Clock from={call.startedAt} />{members.some((member) => member.status === "ringing") && joined.length ? ` · ${t("call.calling")}` : ""}</> : status}</p>
           </div>
+          </button>
           {call.phase !== "ended" ? (
             <>
               {addButton("sm")}
