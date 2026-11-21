@@ -2501,6 +2501,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     const mention = mentionRef.current;
     mentionRef.current = null;
     const sendTo = mention && mention.id !== "me" && draft.trim().startsWith(`${mention.name},`) ? mention.id : null;
+    if (sendTo) metNow.current.add(sendTo);
     if (online) void bottleSay(draft.trim().slice(0, 200), sendTo).then(pullRef.current);
     else say({ from: "me", text: draft.trim().slice(0, 200) });
     setDraft("");
@@ -3010,8 +3011,12 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   }, [online, liveTableId]); // eslint-disable-line react-hooks/exhaustive-deps
   // Gifts go to the server in small batches (one request every 0.3 s), so a long stream is a handful of requests, not hundreds.
   const giftQueue = useRef<{ to: string; gift: string; price: number; seed: number }[]>([]);
+  // People I sent a gift to or wrote to by name in THIS visit: they stay in "Friends and acquaintances" until a reload / leaving the game,
+  // even without an answer (paket-LO: the server marks such one-sided people "mutual: false").
+  const metNow = useRef(new Set<string>());
   const giftTimer = useRef(0);
   function queueGift(item: { to: string; gift: string; price: number; seed: number }) {
+    if (item.to && item.to !== net?.me) metNow.current.add(item.to);
     giftQueue.current.push(item);
     if (giftTimer.current) return;
     giftTimer.current = window.setTimeout(() => {
@@ -3936,7 +3941,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 let recent: number[] = [];
                 try { recent = JSON.parse(window.localStorage.getItem("bottle-tables") ?? "[]") as number[]; } catch { /* storage is blocked */ }
                 const list = rooms?.tables ?? [];
-                const ordered = list.filter((room) => room.boys + room.girls > 0 || room.plus || room.id === net?.table || (stayed[room.id] ?? 0) > Date.now()).sort((a, b) => (recent.indexOf(a.id) < 0 ? 99 : recent.indexOf(a.id)) - (recent.indexOf(b.id) < 0 ? 99 : recent.indexOf(b.id)) || shownTable(a.id) - shownTable(b.id) || a.id - b.id);
+                // Friends and mutual acquaintances always; one-sided ones (I gave / wrote, no answer) only during this visit. An old server without "mutual" shows everybody as before.
+                const shownFriends = (rooms?.friends ?? []).filter((friend) => friend.friend || friend.mutual !== false || metNow.current.has(friend.id));
+                const ordered =list.filter((room) => room.boys + room.girls > 0 || room.plus || room.id === net?.table || (stayed[room.id] ?? 0) > Date.now()).sort((a, b) => (recent.indexOf(a.id) < 0 ? 99 : recent.indexOf(a.id)) - (recent.indexOf(b.id) < 0 ? 99 : recent.indexOf(b.id)) || shownTable(a.id) - shownTable(b.id) || a.id - b.id);
                 const counts = (id: number) => { const room = list.find((item) => item.id === id); return room ? <span className="flex shrink-0 items-center gap-2 text-xs tabular-nums text-[#6B7280]"><span title={t("auth.male")} className="flex items-center gap-1"><img src="/custom/ui/sex-male.webp" alt="" aria-hidden="true" draggable={false} className="h-[15px] w-auto" />{room.boys}</span><span title={t("auth.female")} className="flex items-center gap-1"><img src="/custom/ui/sex-female.webp" alt="" aria-hidden="true" draggable={false} className="h-[15px] w-auto" />{room.girls}</span></span> : null; };
                 return (
                   <div className={cn("overflow-y-auto text-[#1F2937]", tablesSplit ? "min-h-0 flex-1" : "max-h-[80cqmin]")}>
@@ -3959,9 +3966,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                     <button onClick={randomTable} className="h-11 w-full rounded-xl bg-[#EE8A2B] bg-[url(/custom/ui/table-btn-bg.svg)] bg-cover bg-center text-sm font-bold text-white hover:brightness-110">{t("bottle.roomRandom")}</button>
                     {net?.is_plus ? <button onClick={() => { setPlusNote(null); setPanel("plus"); }} className="mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-xl border-2 border-[#7C3AED] bg-white text-sm font-bold text-[#7C3AED] hover:bg-[#F5F3FF]">👑 {net.plus?.owner === net.me ? t("bottle.plusManage") : t("bottle.plusNew")}</button> : null}
                     <p className="mb-1 mt-3 text-xs font-semibold text-[#9CA3AF]">{t("bottle.roomFriendsKnown")}</p>
-                    {rooms && !rooms.friends.length ? <p className="py-1 text-xs text-[#6B7280]">{t("bottle.roomNoFriends")}</p> : null}
+                    {rooms && !shownFriends.length ? <p className="py-1 text-xs text-[#6B7280]">{t("bottle.roomNoFriends")}</p> : null}
                     <ul>
-                      {(rooms?.friends ?? []).map((friend) => (
+                      {shownFriends.map((friend) => (
                         <li key={friend.id}><button onClick={() => void moveTo(friend.table)} className="flex min-h-11 w-full items-center gap-2 rounded-lg px-1 text-left text-sm hover:bg-black/5 disabled:opacity-50">
                           <img src={friend.avatar || NO_PHOTO} alt="" className="h-9 w-9 shrink-0 rounded-md object-cover" /><span className="min-w-0 flex-1 truncate font-semibold">{gameName(friend.name)}</span>{counts(friend.table)}
                         </button></li>
