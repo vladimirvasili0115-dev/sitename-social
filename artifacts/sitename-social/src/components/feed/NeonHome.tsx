@@ -7,11 +7,11 @@ import { useSiteCounts } from "./siteCounts";
 // The home page's top part: the big banner (the bottle picture with hearts floating up on both sides), the live strip
 // (people online now and registered) and the game cards. It does not touch the games: the cards only open their pages.
 const words = {
-  az: { badge: "Dostlarla daha əyləncəli", title: "Bu axşam kim ilə oynayırsan", sub: "Butulka, Mafiya, Domino — hamısı bir yerdə", play: "Oyuna gir", all: "Hamısına bax", get: "Yüklə", online: "İndi onlayn", registered: "Qeydiyyatdan keçən", people: "nəfər", pick: "Bir oyun seç, söhbət başlasın", go: "Oyna", soon: "Tezliklə" },
-  en: { badge: "More fun with friends", title: "Who are you playing with tonight", sub: "Bottle, Mafia, Domino — all in one place", play: "Play Spin the Bottle", all: "All games", get: "Install app", online: "Online now", registered: "Registered", people: "people", pick: "Pick a game, start a chat", go: "Play", soon: "Coming soon" },
-  ru: { badge: "С друзьями веселее", title: "С кем играешь сегодня вечером", sub: "Бутылочка, Мафия, Домино — всё в одном месте", play: "Играть в бутылочку", all: "Все игры", get: "Скачать", online: "Сейчас онлайн", registered: "Зарегистрировано", people: "чел.", pick: "Выбери игру — начни общение", go: "Играть", soon: "Скоро" },
-  tr: { badge: "Arkadaşlarla daha eğlenceli", title: "Bu akşam kiminle oynuyorsun", sub: "Şişe çevirme, Mafya, Domino — hepsi bir arada", play: "Şişe çevirmeye gir", all: "Tüm oyunlar", get: "Yükle", online: "Şu an çevrimiçi", registered: "Kayıtlı üye", people: "kişi", pick: "Bir oyun seç, sohbet başlasın", go: "Oyna", soon: "Yakında" },
-  ka: { badge: "მეგობრებთან უფრო მხიარულია", title: "ვისთან თამაშობ ამ საღამოს", sub: "ბოთლი, მაფია, დომინო — ყველაფერი ერთ ადგილას", play: "ბოთლის თამაში", all: "ყველა თამაში", get: "ჩამოტვირთვა", online: "ახლა ონლაინ", registered: "რეგისტრირებული", people: "ადამიანი", pick: "აირჩიე თამაში, დაიწყე საუბარი", go: "თამაში", soon: "მალე" },
+  az: { badge: "Dostlarla daha əyləncəli", title: "Bu axşam kim ilə oynayırsan", sub: "Butulka, Mafiya, Domino — hamısı bir yerdə", play: "Oyuna gir", all: "Hamısına bax", get: "Yüklə", online: "İndi onlayn", registered: "Qeydiyyatdan keçən", people: "nəfər", pick: "Bir oyun seç, söhbət başlasın", go: "Oyna", soon: "Tezliklə", old: "Telefonda köhnə Ravetill tətbiqi varsa, əvvəl onu sil" },
+  en: { badge: "More fun with friends", title: "Who are you playing with tonight", sub: "Bottle, Mafia, Domino — all in one place", play: "Play Spin the Bottle", all: "All games", get: "Install app", online: "Online now", registered: "Registered", people: "people", pick: "Pick a game, start a chat", go: "Play", soon: "Coming soon", old: "If an old Ravetill app is on your phone, remove it first" },
+  ru: { badge: "С друзьями веселее", title: "С кем играешь сегодня вечером", sub: "Бутылочка, Мафия, Домино — всё в одном месте", play: "Играть в бутылочку", all: "Все игры", get: "Скачать", online: "Сейчас онлайн", registered: "Зарегистрировано", people: "чел.", pick: "Выбери игру — начни общение", go: "Играть", soon: "Скоро", old: "Если на телефоне есть старое приложение Ravetill, сначала удалите его" },
+  tr: { badge: "Arkadaşlarla daha eğlenceli", title: "Bu akşam kiminle oynuyorsun", sub: "Şişe çevirme, Mafya, Domino — hepsi bir arada", play: "Şişe çevirmeye gir", all: "Tüm oyunlar", get: "Yükle", online: "Şu an çevrimiçi", registered: "Kayıtlı üye", people: "kişi", pick: "Bir oyun seç, sohbet başlasın", go: "Oyna", soon: "Yakında", old: "Telefonda eski Ravetill uygulaması varsa önce onu sil" },
+  ka: { badge: "მეგობრებთან უფრო მხიარულია", title: "ვისთან თამაშობ ამ საღამოს", sub: "ბოთლი, მაფია, დომინო — ყველაფერი ერთ ადგილას", play: "ბოთლის თამაში", all: "ყველა თამაში", get: "ჩამოტვირთვა", online: "ახლა ონლაინ", registered: "რეგისტრირებული", people: "ადამიანი", pick: "აირჩიე თამაში, დაიწყე საუბარი", go: "თამაში", soon: "მალე", old: "თუ ტელეფონზე ძველი Ravetill აპია, ჯერ ის წაშალე" },
 } as const;
 
 // Games with their own logo open their page; the others say "coming soon" and cannot be opened yet.
@@ -53,7 +53,7 @@ export function NeonHome({ name }: { name: string }) {
   const [canInstall, setCanInstall] = useState(false);
   useEffect(() => {
     try {
-      const inApp = document.referrer.startsWith("android-app://") || window.matchMedia("(display-mode: fullscreen)").matches || window.matchMedia("(display-mode: standalone)").matches;
+      const inApp = "RavetillNative" in window || document.referrer.startsWith("android-app://") || window.matchMedia("(display-mode: fullscreen)").matches || window.matchMedia("(display-mode: standalone)").matches;
       setCanInstall(!inApp && !/iPhone|iPad|iPod/i.test(navigator.userAgent));
     } catch { setCanInstall(false); }
   }, []);
@@ -76,6 +76,7 @@ export function NeonHome({ name }: { name: string }) {
           ? <a href="/ravetill.apk" download="Ravetill.apk" className="rounded-xl border border-white/40 bg-white/15 px-5 py-2.5 text-sm font-bold text-white">📲 {w.get}</a>
           : <Link href="/games" className="rounded-xl border border-white/40 bg-white/15 px-5 py-2.5 text-sm font-bold text-white">{w.all}</Link>}
       </div>
+      {canInstall ? <p className="relative mt-2 text-xs text-white/75">{w.old}</p> : null}
     </section>
     <div className="mb-4 flex items-center justify-between gap-2 px-1 text-xs">
       <span className="flex min-w-0 items-center gap-2 font-semibold text-text">
