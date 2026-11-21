@@ -128,14 +128,48 @@ public class MainActivity extends Activity {
     }
 
     // With Android 15+ the app draws under the status and navigation bars: keep the page clear of them.
-    // The keyboard is left out on purpose: like in Chrome, the page keeps its size and the window slides up
-    // (adjustPan), so the Butulka table does not shrink while typing.
+    // The keyboard does not shrink the page (so the Butulka table keeps its size); like in Chrome, the page only
+    // slides up as far as needed for the field being typed in to sit just above the keyboard.
+    // (Android 15+ no longer does this sliding by itself for an app that draws under the bars.)
+    private int keyboard = 0;
+    private int slideAsk = 0;
+
     private void keepClearOfSystemBars(View view) {
         if (Build.VERSION.SDK_INT < 30) return;
+        getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         view.setOnApplyWindowInsetsListener((v, insets) -> {
             android.graphics.Insets bars = insets.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
             v.setPadding(bars.left, bars.top, bars.right, bars.bottom);
+            int ime = insets.getInsets(WindowInsets.Type.ime()).bottom;
+            if (ime != keyboard) {
+                keyboard = ime;
+                slideForKeyboard(v);
+            }
             return WindowInsets.CONSUMED;
+        });
+    }
+
+    private void slideForKeyboard(View frame) {
+        int ask = ++slideAsk;
+        if (keyboard <= 0) {
+            web.setTranslationY(0);
+            return;
+        }
+        // Where the field being typed in ends (in page pixels); -1 when nothing is focused.
+        web.evaluateJavascript("(function(){var e=document.activeElement;if(!e||e===document.body||e===document.documentElement)return -1;return e.getBoundingClientRect().bottom;})()", value -> {
+            if (ask != slideAsk || keyboard <= 0) return;
+            float bottom;
+            try {
+                bottom = Float.parseFloat(value);
+            } catch (NumberFormatException e) {
+                return;
+            }
+            if (bottom < 0) return;
+            float density = getResources().getDisplayMetrics().density;
+            // The page area still visible above the keyboard, measured from the top of the page.
+            int visible = frame.getHeight() - keyboard - frame.getPaddingTop();
+            float need = bottom * density + 8 * density - visible;
+            web.setTranslationY(-Math.max(0, Math.min(need, keyboard)));
         });
     }
 
