@@ -3956,7 +3956,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                         </div>
                       </form>
                     ) : null}
-                    <button onClick={randomTable} className="sticky top-0 z-10 h-11 w-full rounded-xl bg-[#EE8A2B] bg-[url(/custom/ui/table-btn-bg.svg)] bg-cover bg-center text-sm font-bold text-white hover:brightness-110">{t("bottle.roomRandom")}</button>
+                    <button onClick={randomTable} className="h-11 w-full rounded-xl bg-[#EE8A2B] bg-[url(/custom/ui/table-btn-bg.svg)] bg-cover bg-center text-sm font-bold text-white hover:brightness-110">{t("bottle.roomRandom")}</button>
                     {net?.is_plus ? <button onClick={() => { setPlusNote(null); setPanel("plus"); }} className="mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-xl border-2 border-[#7C3AED] bg-white text-sm font-bold text-[#7C3AED] hover:bg-[#F5F3FF]">👑 {net.plus?.owner === net.me ? t("bottle.plusManage") : t("bottle.plusNew")}</button> : null}
                     <p className="mb-1 mt-3 text-xs font-semibold text-[#9CA3AF]">{t("bottle.roomFriendsKnown")}</p>
                     {rooms && !rooms.friends.length ? <p className="py-1 text-xs text-[#6B7280]">{t("bottle.roomNoFriends")}</p> : null}
