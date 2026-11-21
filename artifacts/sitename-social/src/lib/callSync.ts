@@ -17,6 +17,8 @@ export type CallState = {
   phase: CallPhase; peer: CallPeer | null; video: boolean; local: MediaStream | null; members: CallMember[];
   // Others already in the call that an incoming invitation comes from (shown as "Name +2").
   group: CallPeer[];
+  // People who were talking in this call and left it (so the others can see it and invite them back).
+  left: { peer: CallPeer; at: number }[];
   muted: boolean; camOff: boolean; startedAt: number; reason: CallEnd | null;
 };
 type Signal =
@@ -33,7 +35,7 @@ type Signal =
 export const CALL_LIMIT = { voice: 6, video: 4 };
 export const callLimit = (video: boolean) => (video ? CALL_LIMIT.video : CALL_LIMIT.voice);
 
-const idle: CallState = { phase: "idle", peer: null, video: false, local: null, members: [], group: [], muted: false, camOff: false, startedAt: 0, reason: null };
+const idle: CallState = { phase: "idle", peer: null, video: false, local: null, members: [], group: [], left: [], muted: false, camOff: false, startedAt: 0, reason: null };
 let state: CallState = idle;
 const listeners = new Set<() => void>();
 const set = (patch: Partial<CallState>) => { state = { ...state, ...patch }; listeners.forEach((listener) => listener()); };
@@ -269,6 +271,8 @@ function makeLink(peer: CallPeer, invitedByMe: boolean) {
       window.clearTimeout(link.timer);
       link.status = "active";
       ring(null);
+      // Back in the call: no longer "left" (someone who left and is being rung again stays in that list until they answer).
+      if (state.left.some((item) => item.peer.id === peer.id)) set({ left: state.left.filter((item) => item.peer.id !== peer.id) });
       if (state.phase !== "active") set({ phase: "active", startedAt: state.startedAt || Date.now() });
       publish();
     }
@@ -285,6 +289,7 @@ function drop(peerId: string, reason: CallEnd, tell = false) {
   link.pc.close();
   links.delete(peerId);
   if (links.size === 0) { finish(reason, false); return; }
+  if (link.status !== "ringing") set({ left: [...state.left.filter((item) => item.peer.id !== peerId), { peer: link.peer, at: Date.now() }] });
   if (state.peer?.id === peerId) set({ peer: links.values().next().value!.peer });
   publish();
 }

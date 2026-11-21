@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { Ear, Mic, MicOff, Phone, PhoneOff, Search, UserPlus, Video, VideoOff, Volume2, X } from "lucide-react";
+import { Ear, Mic, MicOff, Phone, PhoneOff, Search, UserPlus, Users, Video, VideoOff, Volume2, X } from "lucide-react";
 import { acceptCall, CALL_LIMIT, callLimit, callSelf, callStore, declineCall, enableVideo, hangUp, inviteToCall, toggleCamera, toggleMute, type CallMember, type CallPeer } from "@/lib/callSync";
 import { ensureFriendsLoaded, remoteFriends } from "@/lib/friendsSync";
 import { ensureMessagesLoaded, remoteChats } from "@/lib/messagesSync";
@@ -75,7 +75,7 @@ function Pocket({ onClose }: { onClose: () => void }) {
 }
 
 // "Add to call": friends and people from my chats, online ones first.
-function AddPeople({ members, onClose }: { members: CallMember[]; onClose: () => void }) {
+function AddPeople({ members, left, onClose }: { members: CallMember[]; left: CallPeer[]; onClose: () => void }) {
   const { t } = useTranslation();
   const friends = useSyncExternalStore(remoteFriends.subscribe, remoteFriends.get, remoteFriends.getServer);
   const chats = useSyncExternalStore(remoteChats.subscribe, remoteChats.get, remoteChats.getServer);
@@ -84,14 +84,15 @@ function AddPeople({ members, onClose }: { members: CallMember[]; onClose: () =>
   const people = useMemo(() => {
     const taken = new Set([callSelf()?.id, ...members.map((member) => member.peer.id)]);
     const seen = new Map<string, { id: string; name: string; avatar: string; online: boolean }>();
+    for (const peer of left) if (!taken.has(peer.id)) seen.set(peer.id, { ...peer, online: true });
     for (const person of [...chats.map((chat) => chat.person), ...friends.friends]) {
       const user = person.user;
       if (!user?.id || taken.has(user.id) || seen.has(user.id)) continue;
       seen.set(user.id, { id: user.id, name: user.name, avatar: user.avatar, online: Boolean(user.online) });
     }
     const needle = query.trim().toLocaleLowerCase();
-    return [...seen.values()].filter((person) => !needle || person.name.toLocaleLowerCase().includes(needle)).sort((a, b) => Number(b.online) - Number(a.online));
-  }, [friends, chats, members, query]);
+    return [...seen.values()].filter((person) => !needle || person.name.toLocaleLowerCase().includes(needle)).sort((a, b) => Number(left.some((peer) => peer.id === b.id)) - Number(left.some((peer) => peer.id === a.id)) || Number(b.online) - Number(a.online));
+  }, [friends, chats, members, left, query]);
   return (
     <div className="fixed inset-0 z-[250] flex items-end justify-center bg-black/50 sm:items-center" onClick={onClose}>
       <div role="dialog" aria-label={t("call.add")} className="flex max-h-[80vh] w-full max-w-md flex-col rounded-t-3xl bg-surface text-foreground shadow-2xl sm:rounded-3xl" onClick={(event) => event.stopPropagation()}>
@@ -120,6 +121,42 @@ function AddPeople({ members, onClose }: { members: CallMember[]; onClose: () =>
   );
 }
 
+// Group call: who is talking, who is still being rung, who left (anyone still in the call can ring them again).
+function Roster({ members, left, canAdd, onClose }: { members: CallMember[]; left: CallPeer[]; canAdd: boolean; onClose: () => void }) {
+  const { t } = useTranslation();
+  const self = callSelf();
+  const row = (peer: CallPeer, note: string, dim: boolean, action?: React.ReactNode) => (
+    <div key={peer.id} className="flex items-center gap-3 rounded-2xl px-2 py-2">
+      <img src={photoOf(peer)} alt="" className={cn("h-11 w-11 shrink-0 rounded-full object-cover", dim && "opacity-50 grayscale")} />
+      <span className="min-w-0 flex-1">
+        <span className="block truncate font-medium">{peer.name}</span>
+        <span className="block truncate text-xs text-muted">{note}</span>
+      </span>
+      {action}
+    </div>
+  );
+  const talking = members.filter((member) => member.status !== "ringing");
+  const ringing = members.filter((member) => member.status === "ringing");
+  return (
+    <div className="fixed inset-0 z-[250] flex items-end justify-center bg-black/50 sm:items-center" onClick={onClose}>
+      <div role="dialog" aria-label={t("call.people")} className="flex max-h-[80vh] w-full max-w-md flex-col rounded-t-3xl bg-surface text-foreground shadow-2xl sm:rounded-3xl" onClick={(event) => event.stopPropagation()}>
+        <div className="flex items-center gap-2 p-4 pb-2">
+          <p className="flex-1 font-semibold">{t("call.people")}</p>
+          <button onClick={onClose} aria-label={t("call.close")} className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-black/5"><X size={18} /></button>
+        </div>
+        <div className="flex-1 overflow-y-auto px-2 pb-4">
+          {self ? row(self, `${t("call.you")} · ${t("call.inCall")}`, false) : null}
+          {talking.map((member) => row(member.peer, t("call.inCall"), false, <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-[#22C55E]" />))}
+          {ringing.map((member) => row(member.peer, t("call.calling"), true, <span className="h-2.5 w-2.5 shrink-0 animate-pulse rounded-full bg-[#F59E0B]" />))}
+          {left.filter((peer) => !members.some((member) => member.peer.id === peer.id)).map((peer) => row(peer, t("call.left"), true, canAdd ? (
+            <button onClick={() => { void inviteToCall(peer); onClose(); }} className="flex shrink-0 items-center gap-1 rounded-full bg-[#22C55E] px-3 py-1.5 text-xs font-semibold text-white"><UserPlus size={14} />{t("call.reinvite")}</button>
+          ) : null))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function CallHost() {
   const { t } = useTranslation();
   const call = useSyncExternalStore(callStore.subscribe, callStore.get, callStore.getServer);
@@ -134,8 +171,20 @@ export function CallHost() {
   const [dock, setDock] = useState<{ side: "left" | "right"; y: number }>({ side: "right", y: 96 });
   const [drag, setDrag] = useState<{ x: number; y: number } | null>(null);
   const grab = useRef<{ x: number; y: number; moved: boolean } | null>(null);
+  const [roster, setRoster] = useState(false);
+  // "Name left the call" for a few seconds, for whoever is still in it.
+  const [gone, setGone] = useState<string | null>(null);
+  const lastLeft = useRef(0);
+  useEffect(() => {
+    const latest = call.left[call.left.length - 1];
+    if (!latest || latest.at <= lastLeft.current) return;
+    lastLeft.current = latest.at;
+    setGone(latest.peer.name);
+    const timer = window.setTimeout(() => setGone(null), 4000);
+    return () => window.clearTimeout(timer);
+  }, [call.left]);
   useEffect(() => { setTouch(typeof window !== "undefined" && window.matchMedia?.("(pointer: coarse)").matches); }, []);
-  useEffect(() => { if (!live) { setRoute("speaker"); setPocket(false); setAdding(false); setMini(false); setDrag(null); } }, [live]);
+  useEffect(() => { if (!live) { setRoute("speaker"); setPocket(false); setAdding(false); setMini(false); setDrag(null); setRoster(false); setGone(null); } }, [live]);
   useEffect(() => {
     const native = nativeCall();
     if (!native || !live) return;
@@ -173,13 +222,23 @@ export function CallHost() {
     setPocket(next === "ear");
   };
   const sounds = members.map((member) => <Sound key={member.peer.id} stream={member.remote} sinkId={sinkId} />);
+  // A group call: more than one other person, or someone already left.
+  const group = members.length > 1 || call.left.length > 0;
   const extras = (
     <>
       {sounds}
       {pocket && live ? <Pocket onClose={() => setPocket(false)} /> : null}
-      {adding && canAdd ? <AddPeople members={members} onClose={() => setAdding(false)} /> : null}
+      {adding && canAdd ? <AddPeople members={members} left={call.left.map((item) => item.peer)} onClose={() => setAdding(false)} /> : null}
+      {roster && group && call.phase !== "ended" ? <Roster members={members} left={call.left.map((item) => item.peer)} canAdd={canAdd} onClose={() => setRoster(false)} /> : null}
+      {gone && live ? <div role="status" className="pointer-events-none fixed inset-x-0 top-24 z-[210] mx-auto w-fit max-w-[90vw] truncate rounded-full bg-black/80 px-4 py-2 text-sm text-white shadow-xl">{t("call.leftToast").replace("{name}", gone)}</div> : null}
     </>
   );
+  const peopleButton = (size: "sm" | "lg") => group ? (
+    <button onClick={() => setRoster(true)} aria-label={t("call.people")} title={t("call.people")} className={size === "sm" ? "relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/15" : cn(round, "relative bg-white/20 text-white")}>
+      <Users size={size === "sm" ? 18 : 22} />
+      <span className="absolute -right-1 -top-1 min-w-[18px] rounded-full bg-[#22C55E] px-1 text-center text-[10px] font-bold leading-[18px] text-white">{members.filter((member) => member.status !== "ringing").length + 1}</span>
+    </button>
+  ) : null;
   const routeButton = (size: "sm" | "lg") => (touch || outputs.ear || native) ? (
     <button onClick={switchRoute} aria-label={t(route === "ear" ? "call.speaker" : "call.ear")} title={t(route === "ear" ? "call.speaker" : "call.ear")}
       className={size === "sm" ? cn("flex h-10 w-10 items-center justify-center rounded-full", route === "ear" ? "bg-white text-[#0B1220]" : "bg-white/15") : cn(round, route === "ear" ? "bg-white text-[#0B1220]" : "bg-white/20 text-white")}>
@@ -269,6 +328,7 @@ export function CallHost() {
           </button>
           {call.phase !== "ended" ? (
             <>
+              {peopleButton("sm")}
               {addButton("sm")}
               {canVideo ? <button onClick={() => void enableVideo()} aria-label={t("call.camOn")} title={t("call.camOn")} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/15"><Video size={18} /></button> : null}
               {routeButton("sm")}
@@ -312,6 +372,7 @@ export function CallHost() {
         {call.local && hasCam ? <Stream stream={call.local} className={cn("absolute bottom-28 right-4 z-20 h-40 w-28 rounded-2xl bg-black object-cover shadow-xl ring-2 ring-white/30 [transform:scaleX(-1)]", call.camOff && "opacity-30")} /> : null}
         {call.phase !== "ended" ? (
           <div className="relative z-10 flex flex-wrap items-center justify-center gap-4 pb-10 pt-4">
+            {peopleButton("lg")}
             {addButton("lg")}
             {routeButton("lg")}
             <button onClick={toggleMute} aria-label={t(call.muted ? "call.unmute" : "call.mute")} className={cn(round, call.muted ? "bg-white text-[#0B1220]" : "bg-white/20 text-white")}>{call.muted ? <MicOff size={22} /> : <Mic size={22} />}</button>
