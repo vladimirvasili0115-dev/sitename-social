@@ -1,5 +1,6 @@
 "use client";
-import { startTransition, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type FormEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import { startTransition, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type FormEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { Phone, AtSign, ChevronDown, ChevronLeft, LifeBuoy, Pause, Play, Clock, Flame, Search, Star, Ban, Flag, Mail, Gift as GiftIcon, Drama as DramaIcon, Heart, Home, Maximize, ArrowUpRight, BadgeCheck, Crown, DoorOpen, Eye, EyeOff, KeyRound, Lock, Mars, Trash2, Venus, BookOpen, MessageSquare, Check, Menu, UserRound, Minimize, Music, Plus, UserCheck, Music2, RefreshCw, SendHorizontal, Settings, Trophy, UserPlus, UserRoundCog, Users, Volume2, X } from "lucide-react";
 import type { GiftId } from "@/types";
@@ -974,6 +975,24 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     void bottleGetAccept().then((value) => { if (typeof value === "boolean") setAccept(value); });
   }, [online, net]);
   const [panel, setPanel] = useState<"gestures" | "settings" | "top" | "rules" | "shop" | "menu" | "vip" | "bottles" | "frames" | "achievements" | "boosters" | "wheel" | "chances" | "tables" | "rooms" | "active" | "invite" | "compliments" | "kick" | "pass" | "league" | "market" | "smiles" | "plus" | "plusbuy" | null>(null);
+  // "Change table" on a phone: the window is centred on the line between the table and the chat, so it is drawn over both (outside the table box).
+  const boardRef = useRef<HTMLDivElement>(null);
+  const [tablesLine, setTablesLine] = useState<{ y: number; h: number } | null>(null);
+  useLayoutEffect(() => {
+    if (panel !== "tables" || wide) { setTablesLine(null); return; }
+    const measure = () => { const box = boardRef.current?.getBoundingClientRect(); setTablesLine(box ? { y: box.bottom, h: window.innerHeight } : null); };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [panel, wide]);
+  const tablesSplit = tablesLine !== null && panel === "tables" && !wide;
+  // Padding that puts the middle of the free space on the line (kept between 30% and 70% of the screen so the window always has room).
+  const tablesPad = (() => {
+    if (!tablesLine) return undefined;
+    const h = tablesLine.h; const y = Math.min(h * 0.7, Math.max(h * 0.3, tablesLine.y));
+    return 2 * y > h ? { paddingTop: 2 * y - h + 12, paddingBottom: 12 } : { paddingTop: 12, paddingBottom: h - 2 * y + 12 };
+  })();
+  const panelHost = (node: ReactNode) => (tablesSplit && typeof document !== "undefined" ? createPortal(node, document.body) : node);
   // The home page's "Activity bonus" card opens the game as /bottle?panel=active: the bonus window opens at once (the address is cleaned).
   useEffect(() => { try { const url = new URL(window.location.href); if (url.searchParams.get("panel") === "active") { setPanel("active"); url.searchParams.delete("panel"); window.history.replaceState(window.history.state, "", url.toString()); } } catch { /* no query */ } }, []);
   // Panels drop down from the top like a hanging sign and go back up when closed.
@@ -3554,7 +3573,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
       <div className={cn("relative shrink-0", wide ? "h-full w-[54%]" : "mx-auto w-full max-w-[64dvh]")}>
       {wide ? null : <WoodTable src={woodSrc} className="pointer-events-none absolute inset-0 h-full w-full" />}
       {wide ? null : header}
-      <div className={cn("relative shrink-0 overflow-hidden [container-type:size]", wide ? "h-full w-full bg-[#E0A04E]" : "aspect-[9/10] w-full")} onClick={() => { setPicked(null); if (dedicate) chooseMode(false); }}>
+      <div ref={boardRef} className={cn("relative shrink-0 overflow-hidden [container-type:size]", wide ? "h-full w-full bg-[#E0A04E]" : "aspect-[9/10] w-full")} onClick={() => { setPicked(null); if (dedicate) chooseMode(false); }}>
         {wide && !pixiOn ? <WoodTable src={woodSrc} className="pointer-events-none absolute inset-0 h-full w-full" /> : null}
         {/* Pixi test (owner and moderators): the wood (wide table) and the photos are painted by a WebGL layer under the seats. */}
         {pixiOn ? <PixiTable wood={wide ? woodSrc ?? "/bottle/table2.jpg" : null} onFail={pixiFail} /> : null}
@@ -3850,8 +3869,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
         {weekOpen ? <WeeklyPanel locale={locale} onClose={() => setWeekOpen(false)} /> : null}
         <WeekPrizePopup locale={locale} online={online} onHearts={(value) => { heartsRef.current = value; setHearts(value); }} />
 
-        {panel ? (
-          <div className={cn(panel === "top" && !wide ? "fixed inset-0 z-[90]" : "absolute inset-0 z-50", "flex items-center justify-center overflow-hidden bg-black/35 p-3", closing ? "animate-[panel-fade_0.28s_ease-in_reverse_forwards]" : "animate-[panel-fade_0.25s_ease-out]")} onClick={(event) => { event.stopPropagation(); closePanel(); }}>
+        {panel ? panelHost(
+          <div style={tablesSplit ? tablesPad : undefined} className={cn((panel === "top" && !wide) || tablesSplit ? "fixed inset-0 z-[90]" : "absolute inset-0 z-50", "flex items-center justify-center overflow-hidden bg-black/35 p-3", closing ? "animate-[panel-fade_0.28s_ease-in_reverse_forwards]" : "animate-[panel-fade_0.25s_ease-out]")} onClick={(event) => { event.stopPropagation(); closePanel(); }}>
             <div role="dialog" aria-modal="true" aria-label={panel === "market" ? marketLabel(locale) : panel === "smiles" ? smileText.title : t(`bottle.${panel}`)} onClick={(event) => event.stopPropagation()} className={cn("relative max-h-full origin-top rounded-2xl shadow-2xl motion-reduce:animate-none", panel !== "top" && panel !== "shop" && panel !== "league" && panel !== "kick" && panel !== "pass" && "p-3", panel === "shop" ? "w-auto" : "w-full", closing ? "animate-[panel-up_0.28s_ease-in_forwards]" : "animate-[panel-drop_0.7s_cubic-bezier(0.22,1,0.36,1)]", panel === "shop" ? "flex max-h-[94%] max-w-[93%] flex-col rounded-[17px] bg-[#FFF0F0]" : panel === "wheel" || panel === "chances" || panel === "smiles" ? "max-w-[380px] bg-[linear-gradient(180deg,#12998C,#7FD8C8)]" : panel === "top" ? "flex h-[93%] max-w-[420px] flex-col rounded-[17px] bg-white p-0" : panel === "league" ? "flex max-h-[90%] max-w-[420px] flex-col rounded-[17px] bg-white" : panel === "kick" ? "max-w-[360px] rounded-[17px] bg-white" : panel === "achievements" ? "max-w-[400px] bg-white" : panel === "frames" ? "max-w-[440px] bg-[#F7F7F8]" : panel === "pass" ? "flex h-[90%] max-w-[420px] flex-col rounded-[17px] bg-white" : panel === "rooms" ? "max-w-[400px] border border-[#F5C451]/30 bg-[linear-gradient(165deg,#2B1D4E,#4E2D7C)]" : "max-w-[340px] bg-white")}>
               <button onClick={() => closePanel()} aria-label={t("photos.close")} title={t("photos.close")} className={cn("absolute -right-2 -top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 bg-white shadow", panel === "shop" ? "z-20 h-8 w-8 border-0 bg-[url(/custom/orig/popup_btn_close.svg)] bg-[length:16px_16px] bg-center bg-no-repeat text-transparent shadow-[0_4px_8px_rgba(0,0,0,0.2)] [&>svg]:hidden" : panel === "wheel" || panel === "chances" || panel === "smiles" ? "border-[#0E8478] text-[#0E8478]" : panel === "top" || panel === "pass" || (panel === "league" && leagueHead === "up") ? "border-0 text-transparent [&>svg]:hidden bg-[url(/custom/orig/popup_btn_close_league_up.svg)] bg-[length:16px_16px] bg-center bg-no-repeat" : panel === "league" && leagueHead === "down" ? "border-0 text-transparent [&>svg]:hidden bg-[url(/custom/orig/popup_btn_close_league_down.svg)] bg-[length:16px_16px] bg-center bg-no-repeat" : panel === "league" || panel === "kick" ? "border-0 text-transparent [&>svg]:hidden bg-[url(/custom/orig/popup_btn_close.svg)] bg-[length:16px_16px] bg-center bg-no-repeat" : panel === "rooms" ? "border-[#F5C451] text-[#C08A12]" : "border-[#8CC63F] text-[#8CC63F]")}><X size={18} strokeWidth={3} /></button>
               <p className={cn("mb-1 text-center text-sm font-bold", panel === "wheel" || panel === "chances" || panel === "smiles" || panel === "rooms" ? "mb-2 text-white" : "text-[#9CA3AF]", (panel === "top" || panel === "achievements" || panel === "league" || panel === "shop" || panel === "kick" || panel === "pass") && "sr-only")}>{panel === "market" ? marketLabel(locale) : panel === "smiles" ? smileText.title : t(`bottle.${panel}`)}</p>
@@ -3937,7 +3956,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                         </div>
                       </form>
                     ) : null}
-                    <button onClick={randomTable} className="h-11 w-full rounded-xl bg-[#EE8A2B] text-sm font-bold text-white hover:brightness-110">{t("bottle.roomRandom")}</button>
+                    <button onClick={randomTable} className="h-11 w-full rounded-xl bg-[#EE8A2B] bg-[url(/custom/ui/table-btn-bg.svg)] bg-cover bg-center text-sm font-bold text-white hover:brightness-110">{t("bottle.roomRandom")}</button>
                     {net?.is_plus ? <button onClick={() => { setPlusNote(null); setPanel("plus"); }} className="mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-xl border-2 border-[#7C3AED] bg-white text-sm font-bold text-[#7C3AED] hover:bg-[#F5F3FF]">👑 {net.plus?.owner === net.me ? t("bottle.plusManage") : t("bottle.plusNew")}</button> : null}
                     <p className="mb-1 mt-3 text-xs font-semibold text-[#9CA3AF]">{t("bottle.roomFriendsKnown")}</p>
                     {rooms && !rooms.friends.length ? <p className="py-1 text-xs text-[#6B7280]">{t("bottle.roomNoFriends")}</p> : null}
@@ -3953,7 +3972,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                     <ul>
                       {ordered.map((room) => (
                         <li key={room.id}><button onClick={() => void moveTo(room.id)} className="flex min-h-11 w-full items-center gap-2 rounded-lg px-1 text-left text-sm hover:bg-black/5 disabled:opacity-50">
-                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-[#E9A957]">{/* the bottle that is on that table (paket-JU); an old server without it shows the first one */}<span className="flex h-7 rotate-[28deg] items-center" style={{ filter: skinFilter((room.skin ?? 0) < SKIN_COUNT ? room.skin ?? 0 : 0) }}><SkinArt set={art} n={((room.skin ?? 0) < SKIN_COUNT ? room.skin ?? 0 : 0) + 1} className="h-7" /></span></span><span className={cn("min-w-0 flex-1 font-semibold tabular-nums", room.plus && room.color ? nameColorClass(room.color) : "")}>{room.plus ? <span className="mr-1 rounded bg-[#7C3AED] px-1 py-px align-[1px] text-[10px] font-extrabold text-white">VIP+</span> : null}#{tableLabel(room.id)}{room.lock ? " 🔒" : ""}{room.id === net?.table ? ` · ${t("bottle.roomHere")}` : room.boys + room.girls >= 12 ? ` · ${t("bottle.roomFullTag")}` : ""}{room.ban && room.ban > 0 ? <span className="mt-0.5 block text-[11px] font-semibold text-[#DC2626]">{t("bottle.banLeft").replace("{n}", String(Math.ceil(room.ban / 60)))}</span> : null}</span>{counts(room.id)}
+                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-[#E9A957] bg-[url(/custom/ui/table-bottle-bg.svg)] bg-cover bg-center">{/* the bottle that is on that table (paket-JU); an old server without it shows the first one */}<span className="flex h-7 rotate-[28deg] items-center" style={{ filter: skinFilter((room.skin ?? 0) < SKIN_COUNT ? room.skin ?? 0 : 0) }}><SkinArt set={art} n={((room.skin ?? 0) < SKIN_COUNT ? room.skin ?? 0 : 0) + 1} className="h-7" /></span></span><span className={cn("min-w-0 flex-1 font-semibold tabular-nums", room.plus && room.color ? nameColorClass(room.color) : "")}>{room.plus ? <span className="mr-1 rounded bg-[#7C3AED] px-1 py-px align-[1px] text-[10px] font-extrabold text-white">VIP+</span> : null}#{tableLabel(room.id)}{room.lock ? " 🔒" : ""}{room.id === net?.table ? ` · ${t("bottle.roomHere")}` : room.boys + room.girls >= 12 ? ` · ${t("bottle.roomFullTag")}` : ""}{room.ban && room.ban > 0 ? <span className="mt-0.5 block text-[11px] font-semibold text-[#DC2626]">{t("bottle.banLeft").replace("{n}", String(Math.ceil(room.ban / 60)))}</span> : null}</span>{counts(room.id)}
                         </button></li>
                       ))}
                     </ul>
