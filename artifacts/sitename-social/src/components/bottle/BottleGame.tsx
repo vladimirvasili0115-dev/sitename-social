@@ -1017,20 +1017,23 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   // "Change table" on a phone: the window is centred on the line between the table and the chat, so it is drawn over both (outside the table box).
   const boardRef = useRef<HTMLDivElement>(null);
   const [tablesLine, setTablesLine] = useState<{ y: number; h: number } | null>(null);
+  // The heart shop ("Ürəklər satın al") opens the same way, ~70px (1–2 cm) taller than the tables window.
+  const splitPanel = panel === "tables" || panel === "shop";
   useLayoutEffect(() => {
-    if (panel !== "tables" || wide) { setTablesLine(null); return; }
+    if (!splitPanel || wide) { setTablesLine(null); return; }
     const measure = () => { const box = boardRef.current?.getBoundingClientRect(); setTablesLine(box ? { y: box.bottom, h: window.innerHeight } : null); };
     measure();
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
-  }, [panel, wide]);
+  }, [splitPanel, wide]);
   // While waiting in a queue the window stays inside the table box, so the green "No free seats" screen is not hidden under it.
-  const tablesSplit = tablesLine !== null && panel === "tables" && !wide && !waitFor;
+  const tablesSplit = tablesLine !== null && splitPanel && !wide && !waitFor;
   // Padding that leaves a box of 60% of the screen with its middle on the line (moved in when the line is too near an edge); the list scrolls inside.
   const tablesPad = (() => {
     if (!tablesLine) return undefined;
     const h = tablesLine.h; const half = h * 0.3; const y = Math.min(h - half - 12, Math.max(half + 12, tablesLine.y));
-    return { paddingTop: Math.max(12, y - half - 70), paddingBottom: h - y - half }; // the top starts ~70px (1–2 cm) higher, so the window is a bit taller
+    const more = panel === "shop" ? 35 : 0; // the shop: 35px more at the top and at the bottom
+    return { paddingTop: Math.max(12, y - half - 70 - more), paddingBottom: Math.max(12, h - y - half - more) }; // the top starts ~70px (1–2 cm) higher, so the window is a bit taller
   })();
   const panelHost = (node: ReactNode) => (tablesSplit && typeof document !== "undefined" ? createPortal(node, document.body) : node);
   // While I stand in the queue of another (full) table I am in no table at all: the sync finds no seat, and this must not throw me back into some table.
