@@ -33,6 +33,7 @@ public class MainActivity extends Activity {
     private static final String HOME = "https://ravetill.com/";
     private static final int REQ_MEDIA = 1;
     private static final int REQ_FILE = 2;
+    private static final int REQ_NOTIFY = 3;
 
     private WebView web;
     private CallBridge bridge;
@@ -105,6 +106,8 @@ public class MainActivity extends Activity {
             getOnBackInvokedDispatcher().registerOnBackInvokedCallback(OnBackInvokedDispatcher.PRIORITY_DEFAULT, this::goBack);
         }
 
+        setUpNotifications();
+
         if (savedInstanceState != null) web.restoreState(savedInstanceState);
         else web.loadUrl(startUrl(getIntent()));
     }
@@ -171,6 +174,20 @@ public class MainActivity extends Activity {
             float need = bottom * density + 8 * density - visible;
             web.setTranslationY(-Math.max(0, Math.min(need, keyboard)));
         });
+    }
+
+    // ---- notifications (Firebase): ask once on Android 13+, and keep this phone's address for the site ----
+    private void setUpNotifications() {
+        PushService.makeChannel(this);
+        if (Build.VERSION.SDK_INT >= 33 && !has(Manifest.permission.POST_NOTIFICATIONS)) {
+            requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, REQ_NOTIFY);
+        }
+        try {
+            com.google.firebase.messaging.FirebaseMessaging.getInstance().getToken()
+                .addOnSuccessListener(token -> { if (token != null) PushService.saveToken(this, token); });
+        } catch (RuntimeException ignored) {
+            // Firebase not available on this phone: the app works without notifications
+        }
     }
 
     // ---- microphone and camera for calls ----

@@ -34,6 +34,27 @@ async function register(): Promise<string | null> {
   }
 }
 
+// The Ravetill Android app (1.3+) gets notifications through Firebase: the app gives this phone's address and the site saves it.
+type NativePush = { pushToken?: () => string; pushAllowed?: () => boolean };
+async function registerApp(native: NativePush): Promise<string | null> {
+  if (!supabase) return "Server qoşulmayıb";
+  try {
+    if (native.pushAllowed && !native.pushAllowed()) return "Bildirişlər tətbiq üçün bağlıdır. Telefon ayarları → Tətbiqlər → Ravetill → Bildirişlər, aç.";
+    // Firebase may need a few seconds to give the address on the first start.
+    let token = "";
+    for (let i = 0; i < 5 && !token; i += 1) {
+      token = native.pushToken?.() ?? "";
+      if (!token) await new Promise((resolve) => window.setTimeout(resolve, 2000));
+    }
+    if (!token) return "Tətbiq bildiriş ünvanını hələ almayıb. Tətbiqi bağlayıb yenidən aç.";
+    const { data, error } = await supabase.rpc("push_subscribe_app", { p_token: token });
+    if (error) return "Server qəbul etmədi: " + error.message;
+    return data === false ? "Server ünvanı qəbul etmədi" : null;
+  } catch (error) {
+    return "Qeydiyyat alınmadı: " + (error instanceof Error ? error.message : String(error));
+  }
+}
+
 function missing() {
   const lost: string[] = [];
   if (!("serviceWorker" in navigator)) lost.push("serviceWorker");
@@ -50,8 +71,14 @@ export function PushPrompt() {
   const [hidden, setHidden] = useState(false);
 
   const check = useCallback(async () => {
-    // The Ravetill Android test app gets its notifications another way (Firebase, coming next): no warning there.
-    if ("RavetillNative" in window) { setState("ok"); return; }
+    // The Ravetill Android app: Firebase (1.3+); older test apps have no notifications, so no warning there.
+    if ("RavetillNative" in window) {
+      const native = (window as unknown as { RavetillNative: NativePush }).RavetillNative;
+      if (typeof native.pushToken !== "function") { setState("ok"); return; }
+      const reason = await registerApp(native);
+      setState(reason ? { problem: reason } : "ok");
+      return;
+    }
     const lost = missing();
     if (lost.length) { setState({ problem: "Bu tətbiq/brauzer push bildirişini dəstəkləmir (yoxdur: " + lost.join(", ") + ")" }); return; }
     if (Notification.permission === "denied") { setState({ problem: "Bildiriş icazəsi rədd edilib. Telefon ayarlarından Ravetill (və ya Chrome) üçün bildirişləri aç." }); return; }

@@ -15,6 +15,7 @@ import java.util.List;
  *  callStart()          — the call began: phone-call sound mode, loudspeaker first (as before).
  *  setSpeaker(boolean)  — true = loudspeaker; false = earpiece, and the screen turns off when the phone is at the ear.
  *  callEnd()            — back to normal.
+ *  pushToken(), pushAllowed() — this phone's notification address, and whether notifications are on.
  * Nothing here reads or sends any data.
  */
 public class CallBridge {
@@ -38,6 +39,19 @@ public class CallBridge {
     @JavascriptInterface
     public boolean isApp() {
         return true;
+    }
+
+    /** This phone's Firebase address for notifications ("" until Firebase has given one). The site saves it on the server. */
+    @JavascriptInterface
+    public String pushToken() {
+        return PushService.token(activity);
+    }
+
+    /** False when the player turned notifications off for the app (the site can then say so). */
+    @JavascriptInterface
+    public boolean pushAllowed() {
+        android.app.NotificationManager manager = activity.getSystemService(android.app.NotificationManager.class);
+        return manager == null || manager.areNotificationsEnabled();
     }
 
     /** True when the phone has a proximity sensor, so the screen can turn off at the ear. */

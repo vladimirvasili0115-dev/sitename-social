@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "615185068461",
+    "project_id": "ravetill",
+    "storage_bucket": "ravetill.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:615185068461:android:873d806f12608b74ad7124",
+        "android_client_info": {
+          "package_name": "com.ravetill.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDixFoRriYvO-iz0L4if1Qcmt7glsBF8sY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

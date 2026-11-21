@@ -2,4 +2,5 @@
 <resources>
     <string name="app_name">Ravetill</string>
     <string name="no_internet">İnternet bağlantısı yoxdur. Yenidən cəhd etmək üçün toxun.</string>
+    <string name="push_channel">Bildirişlər</string>
 </resources>
