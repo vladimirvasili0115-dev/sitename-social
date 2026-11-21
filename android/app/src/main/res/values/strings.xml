@@ -3,4 +3,7 @@
     <string name="app_name">Ravetill</string>
     <string name="no_internet">İnternet bağlantısı yoxdur. Yenidən cəhd etmək üçün toxun.</string>
     <string name="push_channel">Bildirişlər</string>
+    <string name="call_channel">Gələn zənglər</string>
+    <string name="call_answer">Qəbul et</string>
+    <string name="call_decline">Rədd et</string>
 </resources>

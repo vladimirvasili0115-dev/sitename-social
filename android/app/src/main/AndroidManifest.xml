@@ -10,6 +10,9 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <!-- Notifications (Android 13+ asks the player once). -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- An incoming call rings full screen, also on the lock screen (like WhatsApp). -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <uses-permission android:name="android.permission.VIBRATE" />
 
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
@@ -51,6 +54,10 @@
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
+        <!-- "Rədd et" on a ringing call notification. -->
+        <receiver
+            android:name=".CallDismiss"
+            android:exported="false" />
         <meta-data android:name="com.google.firebase.messaging.default_notification_icon" android:resource="@drawable/ic_notify" />
         <meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="ravetill" />
     </application>

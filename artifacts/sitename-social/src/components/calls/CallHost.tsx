@@ -37,7 +37,7 @@ const photoOf = (peer: CallPeer) => peer.avatar || initialsAvatar(peer.name || "
 // blacks out the screen so the cheek does not press buttons.
 // Inside the Ravetill Android app (android/ folder) the app itself switches the sound to the earpiece and turns the
 // screen off at the ear (proximity sensor).
-type NativeCall = { callStart: () => void; callEnd: () => void; setSpeaker: (on: boolean) => void; hasProximity?: () => boolean };
+type NativeCall = { callStart: () => void; callEnd: () => void; setSpeaker: (on: boolean) => void; hasProximity?: () => boolean; stopRinging?: () => void };
 const nativeCall = () => (typeof window === "undefined" ? undefined : (window as unknown as { RavetillNative?: NativeCall }).RavetillNative);
 type Outputs = { ear: string | null; speaker: string | null };
 function useOutputs(active: boolean): Outputs {
@@ -191,6 +191,15 @@ export function CallHost() {
     try { native.callStart(); } catch { /* old app */ }
     return () => { try { native.callEnd(); } catch { /* old app */ } };
   }, [live]);
+  // The app (1.4+) rang this call as a notification while it was closed: the site shows the call now, so that ringing stops.
+  // Only once the page is on screen: an app left open in the background keeps ringing as a notification.
+  useEffect(() => {
+    if (call.phase === "idle") return;
+    const stop = () => { if (document.visibilityState === "visible") { try { nativeCall()?.stopRinging?.(); } catch { /* old app */ } } };
+    stop();
+    document.addEventListener("visibilitychange", stop);
+    return () => document.removeEventListener("visibilitychange", stop);
+  }, [call.phase]);
   if (call.phase === "idle" || !call.peer) return null;
   const peer = call.peer;
   const members = call.members;

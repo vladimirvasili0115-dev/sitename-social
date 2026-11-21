@@ -53,7 +53,7 @@ function iceServers(): RTCIceServer[] {
   return list;
 }
 
-type Link = { peer: CallPeer; pc: RTCPeerConnection; remote: MediaStream; status: CallMember["status"]; waitingIce: RTCIceCandidateInit[]; timer: number; invitedByMe: boolean; again: boolean };
+type Link = { peer: CallPeer; pc: RTCPeerConnection; remote: MediaStream; status: CallMember["status"]; waitingIce: RTCIceCandidateInit[]; timer: number; invitedByMe: boolean; again: boolean; sentIce: RTCIceCandidateInit[] };
 type Box = { channel: RealtimeChannel; ready: boolean; queue: Signal[] };
 
 let me: CallPeer | null = null;
@@ -70,6 +70,31 @@ let ringTimer = 0;
 let endTimer = 0;
 let musicWasOn = false;
 let logPeer: CallPeer | null = null;
+// ---- ringing a phone that is closed (paket-LS.sql): the server sends a call notification ----
+// People I rang through the server and whose phone may still be ringing.
+const rung = new Set<string>();
+// Offers already handled here (the caller repeats its offer every few seconds until a closed app has opened).
+const seenOffers = new Set<string>();
+// Opened from a call notification ("Qəbul et"): pick that person's call up as soon as it rings here.
+let autoAnswer: { id: string; until: number } | null = null;
+function ringPhone(peer: CallPeer, video: boolean) {
+  if (!supabase) return;
+  rung.add(peer.id);
+  void supabase.rpc("call_ring", { p_to: peer.id, p_video: video }).then(() => undefined, () => undefined);
+}
+function stopRinging(peerId: string) {
+  if (!supabase || !rung.delete(peerId)) return;
+  void supabase.rpc("call_ring_stop", { p_to: peerId }).then(() => undefined, () => undefined);
+}
+// While a person is still being rung, the offer (and my network notes) go again every 3 seconds,
+// so a phone whose app was closed gets the call once the app has opened.
+function repeatOffer(link: Link, signal: Signal) {
+  const timer = window.setInterval(() => {
+    if (links.get(link.peer.id) !== link || link.status !== "ringing") { window.clearInterval(timer); return; }
+    send(link.peer.id, signal);
+    for (const candidate of link.sentIce) send(link.peer.id, { type: "ice", callId, from: me?.id, candidate });
+  }, 3000);
+}
 
 export const callSelf = () => me;
 
@@ -139,6 +164,15 @@ function closeOutboxes() {
 export function startCallService(user: CallPeer) {
   if (!supabase) return () => undefined;
   me = user;
+  try {
+    const url = new URL(window.location.href);
+    const answer = url.searchParams.get("answer");
+    if (answer) {
+      autoAnswer = { id: answer, until: Date.now() + 60000 };
+      url.searchParams.delete("answer");
+      window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
+    }
+  } catch { /* no address */ }
   const client = supabase;
   const channel = client.channel(`call-${user.id}`, { config: { broadcast: { self: false } } });
   channel.on("broadcast", { event: "signal" }, (message) => { const payload = (message as { payload?: Signal }).payload; if (payload) void handle(payload); }).subscribe();
@@ -168,6 +202,11 @@ async function handle(signal: Signal) {
       send(signal.from.id, { type: "answer", callId, from: me.id, sdp: { type: answer.type, sdp: answer.sdp } });
       return;
     }
+    // The same offer again (the caller repeats it while ringing): already ringing here, answered or declined.
+    const seenKey = signal.callId + "|" + signal.from.id + "|" + (signal.sdp.sdp ?? "").length + "|" + (signal.sdp.sdp ?? "").slice(-64);
+    if (seenOffers.has(seenKey)) return;
+    seenOffers.add(seenKey);
+    if (seenOffers.size > 50) seenOffers.delete(seenOffers.values().next().value!);
     if (state.phase !== "idle" && state.phase !== "ended") { send(signal.from.id, { type: "busy", callId: signal.callId, from: me?.id }); return; }
     window.clearTimeout(endTimer);
     callId = signal.callId;
@@ -180,6 +219,7 @@ async function handle(signal: Signal) {
     ring("in");
     window.clearTimeout(ringTimer);
     ringTimer = window.setTimeout(() => { if (state.phase === "incoming" && callId === signal.callId) finish("missed", false); }, 45000);
+    if (autoAnswer && autoAnswer.id === signal.from.id && Date.now() < autoAnswer.until) { autoAnswer = null; void acceptCall(); }
     return;
   }
   if (signal.callId !== callId) return;
@@ -211,6 +251,7 @@ async function handle(signal: Signal) {
     for (const candidate of link.waitingIce.splice(0)) await link.pc.addIceCandidate(candidate).catch(() => {});
     window.clearTimeout(link.timer);
     link.status = "connecting";
+    stopRinging(fromId);
     if (state.phase === "outgoing") { ring(null); set({ phase: "connecting" }); }
     publish();
     // The call turned into a video call while this person was still being rung: send them the picture too.
@@ -255,7 +296,7 @@ function makeLink(peer: CallPeer, invitedByMe: boolean) {
   if (old) { window.clearTimeout(old.timer); old.pc.close(); }
   const pc = new RTCPeerConnection({ iceServers: iceServers() });
   const remote = new MediaStream();
-  const link: Link = { peer, pc, remote, status: "ringing", waitingIce: strayIce.get(peer.id) ?? [], timer: 0, invitedByMe, again: false };
+  const link: Link = { peer, pc, remote, status: "ringing", waitingIce: strayIce.get(peer.id) ?? [], timer: 0, invitedByMe, again: false, sentIce: [] };
   strayIce.delete(peer.id);
   links.set(peer.id, link);
   state.local?.getTracks().forEach((track) => pc.addTrack(track, state.local!));
@@ -264,7 +305,12 @@ function makeLink(peer: CallPeer, invitedByMe: boolean) {
     if (!event.streams[0] && !remote.getTracks().includes(event.track)) remote.addTrack(event.track);
     publish();
   };
-  pc.onicecandidate = (event) => { if (event.candidate) send(peer.id, { type: "ice", callId, from: me?.id, candidate: event.candidate.toJSON() }); };
+  pc.onicecandidate = (event) => {
+    if (!event.candidate) return;
+    const candidate = event.candidate.toJSON();
+    if (link.status === "ringing") link.sentIce.push(candidate);
+    send(peer.id, { type: "ice", callId, from: me?.id, candidate });
+  };
   pc.onconnectionstatechange = () => {
     if (links.get(peer.id) !== link) return;
     if (pc.connectionState === "connected") {
@@ -285,6 +331,7 @@ function drop(peerId: string, reason: CallEnd, tell = false) {
   const link = links.get(peerId);
   if (!link) return;
   if (tell) send(peerId, { type: "hangup", callId, from: me?.id });
+  stopRinging(peerId);
   window.clearTimeout(link.timer);
   link.pc.close();
   links.delete(peerId);
@@ -346,7 +393,10 @@ export async function startCall(peer: CallPeer, video: boolean) {
   publish();
   const description = await link.pc.createOffer();
   await link.pc.setLocalDescription(description);
-  send(peer.id, { type: "offer", callId, from: me, video, sdp: { type: description.type, sdp: description.sdp } });
+  const first: Signal = { type: "offer", callId, from: me, video, sdp: { type: description.type, sdp: description.sdp } };
+  send(peer.id, first);
+  repeatOffer(link, first);
+  ringPhone(peer, video);
   ring("out");
   link.timer = window.setTimeout(() => { if (links.get(peer.id) === link && link.status === "ringing") drop(peer.id, "missed", true); }, 45000);
 }
@@ -360,7 +410,10 @@ export async function inviteToCall(peer: CallPeer) {
   publish();
   const description = await link.pc.createOffer();
   await link.pc.setLocalDescription(description);
-  send(peer.id, { type: "offer", callId, from: me, video: state.video, sdp: { type: description.type, sdp: description.sdp }, group });
+  const first: Signal = { type: "offer", callId, from: me, video: state.video, sdp: { type: description.type, sdp: description.sdp }, group };
+  send(peer.id, first);
+  repeatOffer(link, first);
+  ringPhone(peer, state.video);
   link.timer = window.setTimeout(() => { if (links.get(peer.id) === link && link.status === "ringing") drop(peer.id, "missed", true); }, 45000);
 }
 // I joined a group call: connect to one of the people already in it.
@@ -434,6 +487,7 @@ function finish(reason: CallEnd, tell: boolean) {
     void sendRemoteMessage(logPeer.id, { text: callLogText(kind, talked) });
   }
   logPeer = null;
+  for (const id of [...rung]) stopRinging(id);
   for (const link of links.values()) { window.clearTimeout(link.timer); link.pc.close(); }
   links.clear();
   strayIce.clear();

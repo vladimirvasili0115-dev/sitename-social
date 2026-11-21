@@ -34,6 +34,8 @@ public class MainActivity extends Activity {
     private static final int REQ_MEDIA = 1;
     private static final int REQ_FILE = 2;
     private static final int REQ_NOTIFY = 3;
+    static final String EXTRA_CALL = "ravetill.call";
+    static final String EXTRA_STOP_RING = "ravetill.stopRing";
 
     private WebView web;
     private CallBridge bridge;
@@ -44,6 +46,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        forCall(getIntent());
         web = new WebView(this);
         web.setBackgroundColor(Color.BLACK);
         // A WebView ignores its own padding, so it sits in a frame and the frame keeps clear of the system bars.
@@ -179,6 +182,20 @@ public class MainActivity extends Activity {
     // ---- notifications (Firebase): ask once on Android 13+, and keep this phone's address for the site ----
     private void setUpNotifications() {
         PushService.makeChannel(this);
+        PushService.makeCallChannel(this);
+        // Android 14+: full-screen calls need the player's OK once (Settings opens on that page, only the first time).
+        if (Build.VERSION.SDK_INT >= 34) {
+            android.app.NotificationManager manager = getSystemService(android.app.NotificationManager.class);
+            android.content.SharedPreferences prefs = getSharedPreferences(PushService.PREFS, MODE_PRIVATE);
+            if (manager != null && !manager.canUseFullScreenIntent() && !prefs.getBoolean("askedFullScreen", false)) {
+                prefs.edit().putBoolean("askedFullScreen", true).apply();
+                try {
+                    startActivity(new Intent(android.provider.Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT, Uri.parse("package:" + getPackageName())));
+                } catch (ActivityNotFoundException ignored) {
+                    // no such settings page on this phone
+                }
+            }
+        }
         if (Build.VERSION.SDK_INT >= 33 && !has(Manifest.permission.POST_NOTIFICATIONS)) {
             requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, REQ_NOTIFY);
         }
@@ -257,9 +274,20 @@ public class MainActivity extends Activity {
         goBack();
     }
 
+    // Opened by a ringing call: show over the lock screen and turn the screen on; "Qəbul et" also stops the ringing.
+    private void forCall(Intent intent) {
+        boolean call = intent != null && intent.getBooleanExtra(EXTRA_CALL, false);
+        if (Build.VERSION.SDK_INT >= 27) {
+            setShowWhenLocked(call);
+            setTurnScreenOn(call);
+        }
+        if (call && intent.getBooleanExtra(EXTRA_STOP_RING, false)) PushService.stopCalls(this);
+    }
+
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
+        forCall(intent);
         Uri data = intent.getData();
         if (data != null && isOurs(data)) web.loadUrl(data.toString());
     }

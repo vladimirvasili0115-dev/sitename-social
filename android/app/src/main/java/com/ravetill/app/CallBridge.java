@@ -16,6 +16,7 @@ import java.util.List;
  *  setSpeaker(boolean)  — true = loudspeaker; false = earpiece, and the screen turns off when the phone is at the ear.
  *  callEnd()            — back to normal.
  *  pushToken(), pushAllowed() — this phone's notification address, and whether notifications are on.
+ *  stopRinging()        — the site shows the incoming call itself: the call notification stops ringing.
  * Nothing here reads or sends any data.
  */
 public class CallBridge {
@@ -58,6 +59,12 @@ public class CallBridge {
     @JavascriptInterface
     public boolean hasProximity() {
         return proximity != null;
+    }
+
+    /** The site shows the incoming call itself now: the notification stops ringing. */
+    @JavascriptInterface
+    public void stopRinging() {
+        activity.runOnUiThread(() -> PushService.stopCalls(activity));
     }
 
     @JavascriptInterface
