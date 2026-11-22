@@ -263,17 +263,17 @@ function gameName(raw: string | null | undefined): string {
 }
 // The cherry cocktail and the Makarov pistol are shown 1.2 times bigger; they grow towards the photo (the right edge and the bottom stay where they were).
 const packWords: Record<string, { wait: string; ok: string; balance: string; fail: string; top: string }> = {
-  az: { wait: "…", ok: "❤ {n} hesabına əlavə olundu!", balance: "Sayt balansın kifayət etmir ({need} lazımdır).", fail: "Alınmadı. Bir az sonra yenidən yoxla.", top: "Balansı artır" },
-  tr: { wait: "…", ok: "❤ {n} hesabına eklendi!", balance: "Site bakiyen yetmiyor ({need} gerekli).", fail: "Satın alınamadı. Biraz sonra tekrar dene.", top: "Bakiyeyi artır" },
-  ru: { wait: "…", ok: "❤ {n} добавлено на счёт!", balance: "Баланса сайта не хватает (нужно {need}).", fail: "Не удалось купить. Попробуй позже.", top: "Пополнить баланс" },
-  en: { wait: "…", ok: "❤ {n} added to your account!", balance: "Your site balance is not enough ({need} needed).", fail: "Could not buy. Try again in a moment.", top: "Top up balance" },
+  az: { wait: "…", ok: "❤ {n} hesabına əlavə olundu!", balance: "Sayt balansın kifayət etmir ({need} lazımdır).", fail: "Alınmadı. Bir az sonra yenidən yoxla.", top: "Tezliklə" },
+  tr: { wait: "…", ok: "❤ {n} hesabına eklendi!", balance: "Site bakiyen yetmiyor ({need} gerekli).", fail: "Satın alınamadı. Biraz sonra tekrar dene.", top: "Yakında" },
+  ru: { wait: "…", ok: "❤ {n} добавлено на счёт!", balance: "Баланса сайта не хватает (нужно {need}).", fail: "Не удалось купить. Попробуй позже.", top: "Скоро" },
+  en: { wait: "…", ok: "❤ {n} added to your account!", balance: "Your site balance is not enough ({need} needed).", fail: "Could not buy. Try again in a moment.", top: "Coming soon" },
 };
 function PackNote({ note, locale }: { note: { kind: "wait" | "ok" | "balance" | "fail"; n?: number; need?: number }; locale: string }) {
   const w = packWords[locale] ?? packWords.en;
   if (note.kind === "wait") return <>{w.wait}</>;
   if (note.kind === "ok") return <>{w.ok.replace("{n}", (note.n ?? 0).toLocaleString("ru-RU"))}</>;
   if (note.kind === "fail") return <>{w.fail}</>;
-  return <>{w.balance.replace("{need}", note.need ? `${(note.need / 100).toLocaleString("ru-RU")} ₼` : "?")} <a href="/market/" target="_blank" rel="noopener" className="underline">{w.top}</a></>;
+  return <>{w.balance.replace("{need}", note.need ? `${(note.need / 100).toLocaleString("ru-RU")} ₼` : "?")} <span className="font-semibold">{w.top}</span></>; // topping up is closed for now ("Tezliklə"); was a link to /market/
 }
 // Auto-clicker guard: at most this many gifts a second from one device (enough for fast tapping at a full table of 12).
 const GIFT_BUCKET = 120;

@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Plus } from "lucide-react";
 import type { GiftCategory, GiftDef } from "@/types";
 import { giftCategories } from "@/data/gifts";
 import { usePrices } from "@/components/gifts/usePrices";
@@ -11,7 +10,6 @@ import { Tabs } from "@/components/ui/Tabs";
 import { cn } from "@/lib/utils";
 import { useFriends } from "@/components/friends/useFriends";
 import { useGifts } from "@/components/gifts/useGifts";
-import Link from "next/link";
 import { giftNames } from "@/components/gifts/GiftArt";
 import { formatDay } from "@/lib/datetime";
 import { GiftCard } from "@/components/gifts/GiftCard";
@@ -45,7 +43,7 @@ export default function GiftsPage() {
       <div className="mb-4 flex flex-wrap items-center gap-3 px-1">
         <h1 className="flex-1 text-[23px] font-semibold tracking-[-0.035em]">{t("nav.gifts")}</h1>
         <span className="flex h-11 items-center gap-2 rounded-xl border border-border bg-surface px-3.5 text-sm text-muted">{t("gifts.balance")}<Price value={balance} className="text-text" /></span>
-        <Link href="/market" className="flex h-11 items-center gap-1.5 rounded-xl bg-accent px-3.5 text-sm font-semibold text-bg hover:brightness-110"><Plus size={16} />{t("gifts.topUp")}</Link>
+        {/* "+ Balansı artır" (link to /market) is hidden until the owner says to bring it back. */}
       </div>
       {target ? <p className="mb-3 rounded-xl border border-border bg-surface px-3.5 py-2.5 text-sm text-muted">{t("gifts.to")}: <span className="font-semibold text-text">{target.user.name}</span></p> : null}
       <Tabs<GiftsTab> active={tab} onChange={setTab} tabs={[{ id: "store", label: t("gifts.tabStore"), count: giftCatalog.length }, { id: "received", label: t("gifts.tabReceived"), count: received.length }, { id: "sent", label: t("gifts.tabSent"), count: sent.length }, { id: "history", label: t("gifts.tabHistory") }]} />
