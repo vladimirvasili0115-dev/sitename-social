@@ -278,6 +278,8 @@ function PackNote({ note, locale }: { note: { kind: "wait" | "ok" | "balance" | 
 // Auto-clicker guard: at most this many gifts a second from one device (enough for fast tapping at a full table of 12).
 const GIFT_BUCKET = 120;
 // Defending yourself from a kick always costs 300 hearts (paket-KH, was 50); saving somebody else stays half of their kick price.
+// How long a kicked player has before leaving the table (the server removes them after this many seconds).
+const KICK_SECONDS = 60; // paket-LX: the server kicks after 60 s
 const SELF_DEFEND_PRICE = 500; // fallback only: defending yourself costs the price of the kick on you (25 … 500, paket-LD)
 // These corner gifts are smaller than the other ones (whiskey glass 1.4x, wine glass 1.3x, joystick 1.4x); they still stand on the right frame line (flush) and the bottom line.
 const CORNER_SHRINK: Record<string, number> = { whiskey: 1.4, wine: 1.3, joystick: 1.4, martini: 1.3, mobile: 1.3, nokia: 1.3, heartlock: 1.3, snakepot: 2, beer: 1.3, milk: 1.2 * 1.1, vodka: 1.5, love: 1.3, mineralka: 1.25, teddybear: 1.15, eggplant: 1.3, gascan_1: 2, gascan_2: 2, gascan_3: 2, goldenapple: 1.2 }; // milk: 1.2x, then 1.1x more; love (the pink cocktail): 1.3x // the snake in the pot 2x smaller, the beer mug 1.3x smaller (and 3 mm further right, below)
@@ -997,7 +999,10 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [refInfo, setRefInfo] = useState<{ invited: number; done: number }>({ invited: 0, done: 0 });
   const [localActive] = useState(() => Date.now());
   const names = useRef<Record<string, { name: string; avatar: string }>>({});
-  useEffect(() => { if (!kickedToast) return; const timer = window.setTimeout(() => setKickedToast(false), 12000); return () => window.clearTimeout(timer); }, [kickedToast]);
+  const [defendNote, setDefendNote] = useState<string | null>(null);
+  const [, setKickTick] = useState(0);
+  useEffect(() => { if (meKicked) setKickedToast(true); else { setKickedToast(false); setDefendNote(null); } }, [meKicked]);
+  useEffect(() => { if (!kickedToast) return; const timer = window.setInterval(() => setKickTick((n) => n + 1), 1000); return () => window.clearInterval(timer); }, [kickedToast]);
   // Private rooms (VIP opens them; anyone with the password can come in).
   const [roomsData, setRoomsData] = useState<BottleRooms | null>(null);
   const [roomSearch, setRoomSearch] = useState("");
@@ -3693,7 +3698,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
               {(() => {
                 const kick = online ? net?.seats.find((seat) => seat.id === (player.me ? net.me : player.id))?.kicked : null;
                 if (!kick || !net) return null;
-                const left = Math.max(0, Math.ceil(30 - (net.now - kick.at) / 1000));
+                const left = Math.max(0, Math.ceil(KICK_SECONDS - (net.now - kick.at) / 1000));
                 const self = Boolean(player.me);
                 const canSave = self || kick.by !== net.me;
                 return (
@@ -4961,13 +4966,32 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           <button onClick={() => setMentionToast(null)} aria-label={t("photos.close")} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#6B7280]"><X size={16} /></button>
         </div>
       ) : null}
-      {kickedToast ? (
-        <div role="alert" className="absolute left-1/2 top-3 z-[57] flex w-[min(360px,calc(100%-24px))] -translate-x-1/2 items-center gap-2 rounded-2xl border border-[#FCA5A5] bg-white p-2 text-[#1F2937] shadow-2xl">
-          <img src={emojiSrc("🦶")} alt="" className="h-9 w-9 shrink-0" />
-          <p className="min-w-0 flex-1 text-sm font-semibold">{t("bottle.kickedYou")}</p>
-          <button onClick={() => setKickedToast(false)} aria-label={t("photos.close")} title={t("photos.close")} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#6B7280] hover:text-[#111827]"><X size={16} /></button>
-        </div>
-      ) : null}
+      {kickedToast ? (() => {
+        const kick = online && net ? net.seats.find((seat) => seat.id === net.me)?.kicked : null;
+        const left = kick && net ? Math.max(0, Math.ceil(KICK_SECONDS - (net.now + Math.max(0, Date.now() - netSig.current.at) - kick.at) / 1000)) : null;
+        const price = defendPrice ?? SELF_DEFEND_PRICE;
+        const defend = () => {
+          if (!net) return;
+          if (heartsRef.current < price) { setDefendNote(`${t("bottle.noHearts")} (${price})`); return; }
+          setDefendNote(null);
+          void bottleSave(net.me).then((ok) => { if (ok === false) setDefendNote(t("bottle.noHearts")); pullRef.current(); });
+        };
+        return (
+          <div role="alert" className="absolute left-1/2 top-3 z-[57] w-[min(360px,calc(100%-24px))] -translate-x-1/2 rounded-2xl border-2 border-[#E24B4A] bg-white p-2.5 text-[#1F2937] shadow-2xl">
+            <div className="flex items-center gap-2">
+              <img src={emojiSrc("🦶")} alt="" className="h-8 w-8 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold text-[#791F1F]">{t("bottle.kickedTitle")}</p>
+                <p className="text-xs text-[#5F5E5A]">{left === null ? t("bottle.kickedYou") : t("bottle.kickedLeft").replace("{n}", String(left))}</p>
+              </div>
+              <button onClick={() => setKickedToast(false)} aria-label={t("photos.close")} title={t("photos.close")} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#6B7280] hover:text-[#111827]"><X size={16} /></button>
+            </div>
+            {left !== null ? <div className="mt-2 h-1 overflow-hidden rounded-full bg-[#F7C1C1]"><div className="h-full rounded-full bg-[#E24B4A] transition-[width] duration-1000 ease-linear" style={{ width: `${Math.min(100, (left / KICK_SECONDS) * 100)}%` }} /></div> : null}
+            {kick ? <button onClick={defend} className="mt-2.5 flex h-10 w-full items-center justify-center gap-1.5 rounded-full bg-[linear-gradient(180deg,#9BD65A,#5DB13A)] text-sm font-bold text-white shadow-md hover:brightness-105"><img src={emojiSrc("🛟")} alt="" className="h-5 w-5" />{t("bottle.kickDefend")} · {price} ❤</button> : null}
+            {defendNote ? <p className="mt-1.5 text-center text-xs font-semibold text-[#B91C1C]">{defendNote}</p> : null}
+          </div>
+        );
+      })() : null}
       {lostToast ? (
         <div role="status" className="absolute left-1/2 top-3 z-[57] flex w-[min(360px,calc(100%-24px))] -translate-x-1/2 items-center gap-2 rounded-2xl border border-[#F9A8C4] bg-white p-2 text-[#1F2937] shadow-2xl">
           <span aria-hidden="true" className="text-2xl">💔</span>
