@@ -1100,7 +1100,6 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const [topPeriod, setTopPeriod] = useState<"all" | "month" | "week" | "day">("all");
   const [topHelp, setTopHelp] = useState(false);
   const [topMenu, setTopMenu] = useState(false);
-  const topSwipe = useRef(0);
   const [topData, setTopData] = useState<BottleTop | null>(null);
   const [sent, setSent] = useState<Record<string, number>>({});
   const [skin, setSkin] = useState(0);
@@ -4192,7 +4191,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   </li>
                 );
                 return (
-                  <div className="flex h-full min-h-0 flex-col text-black" onTouchStart={(event) => { topSwipe.current = event.touches[0].clientX; }} onTouchEnd={(event) => { const dx = event.changedTouches[0].clientX - topSwipe.current; if (Math.abs(dx) > 60) go(dx < 0 ? 1 : -1); }}>
+                  <div className="flex h-full min-h-0 flex-col text-black">
                     <div className="relative flex shrink-0 flex-col items-center justify-center rounded-tl-[17px] rounded-tr-[17px] border-b border-black/[0.06] bg-[#83C7FF] px-[15px] pt-1.5">
                       <button onClick={() => setTopHelp(true)} aria-label={t("bottle.topHelp")} title={t("bottle.topHelp")} className="absolute left-0 top-0 h-[33px] w-[33px]"><span aria-hidden="true" className="absolute left-[11px] top-[9px] h-[15px] w-[11px] bg-contain bg-no-repeat" style={{ backgroundImage: `url(${O}league_manual_icon_up_down.svg)` }} /></button>
                       <div role="tablist" className="flex h-12 shrink-0 items-center justify-center">

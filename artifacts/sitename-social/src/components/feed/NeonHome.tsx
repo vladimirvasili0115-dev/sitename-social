@@ -1,17 +1,18 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useState, type CSSProperties } from "react";
+import { Fragment, useEffect, useState, type CSSProperties } from "react";
+import { Video } from "lucide-react";
 import { useTranslation } from "@/i18n/useTranslation";
 import { useSiteCounts } from "./siteCounts";
 
 // The home page's top part: the big banner (the bottle picture with hearts floating up on both sides), the live strip
 // (people online now and registered) and the game cards. It does not touch the games: the cards only open their pages.
 const words = {
-  az: { badge: "Dostlarla daha əyləncəli", title: "Bu axşam kim ilə oynayırsan", sub: "Butulka, Mafiya, Domino — hamısı bir yerdə", play: "Oyuna gir", all: "Hamısına bax", get: "Yüklə", online: "İndi onlayn", registered: "Qeydiyyatdan keçən", people: "nəfər", pick: "Bir oyun seç, söhbət başlasın", go: "Oyna", soon: "Tezliklə", old: "Telefonda köhnə Ravetill tətbiqi varsa, əvvəl onu sil" },
-  en: { badge: "More fun with friends", title: "Who are you playing with tonight", sub: "Bottle, Mafia, Domino — all in one place", play: "Play Spin the Bottle", all: "All games", get: "Install app", online: "Online now", registered: "Registered", people: "people", pick: "Pick a game, start a chat", go: "Play", soon: "Coming soon", old: "If an old Ravetill app is on your phone, remove it first" },
-  ru: { badge: "С друзьями веселее", title: "С кем играешь сегодня вечером", sub: "Бутылочка, Мафия, Домино — всё в одном месте", play: "Играть в бутылочку", all: "Все игры", get: "Скачать", online: "Сейчас онлайн", registered: "Зарегистрировано", people: "чел.", pick: "Выбери игру — начни общение", go: "Играть", soon: "Скоро", old: "Если на телефоне есть старое приложение Ravetill, сначала удалите его" },
-  tr: { badge: "Arkadaşlarla daha eğlenceli", title: "Bu akşam kiminle oynuyorsun", sub: "Şişe çevirme, Mafya, Domino — hepsi bir arada", play: "Şişe çevirmeye gir", all: "Tüm oyunlar", get: "Yükle", online: "Şu an çevrimiçi", registered: "Kayıtlı üye", people: "kişi", pick: "Bir oyun seç, sohbet başlasın", go: "Oyna", soon: "Yakında", old: "Telefonda eski Ravetill uygulaması varsa önce onu sil" },
-  ka: { badge: "მეგობრებთან უფრო მხიარულია", title: "ვისთან თამაშობ ამ საღამოს", sub: "ბოთლი, მაფია, დომინო — ყველაფერი ერთ ადგილას", play: "ბოთლის თამაში", all: "ყველა თამაში", get: "ჩამოტვირთვა", online: "ახლა ონლაინ", registered: "რეგისტრირებული", people: "ადამიანი", pick: "აირჩიე თამაში, დაიწყე საუბარი", go: "თამაში", soon: "მალე", old: "თუ ტელეფონზე ძველი Ravetill აპია, ჯერ ის წაშალე" },
+  az: { badge: "Dostlarla daha əyləncəli", title: "Bu axşam kim ilə oynayırsan", sub: "Butulka, Mafiya, Domino — hamısı bir yerdə", play: "Oyuna gir", all: "Hamısına bax", get: "Yüklə", online: "İndi onlayn", registered: "Qeydiyyatdan keçən", people: "nəfər", pick: "Bir oyun seç, söhbət başlasın", go: "Oyna", soon: "Tezliklə", video: "Video zəng", videoTag: "Üz-üzə tanış ol", old: "Telefonda köhnə Ravetill tətbiqi varsa, əvvəl onu sil" },
+  en: { badge: "More fun with friends", title: "Who are you playing with tonight", sub: "Bottle, Mafia, Domino — all in one place", play: "Play Spin the Bottle", all: "All games", get: "Install app", online: "Online now", registered: "Registered", people: "people", pick: "Pick a game, start a chat", go: "Play", soon: "Coming soon", video: "Video chat", videoTag: "Meet face to face", old: "If an old Ravetill app is on your phone, remove it first" },
+  ru: { badge: "С друзьями веселее", title: "С кем играешь сегодня вечером", sub: "Бутылочка, Мафия, Домино — всё в одном месте", play: "Играть в бутылочку", all: "Все игры", get: "Скачать", online: "Сейчас онлайн", registered: "Зарегистрировано", people: "чел.", pick: "Выбери игру — начни общение", go: "Играть", soon: "Скоро", video: "Видеочат", videoTag: "Знакомься лицом к лицу", old: "Если на телефоне есть старое приложение Ravetill, сначала удалите его" },
+  tr: { badge: "Arkadaşlarla daha eğlenceli", title: "Bu akşam kiminle oynuyorsun", sub: "Şişe çevirme, Mafya, Domino — hepsi bir arada", play: "Şişe çevirmeye gir", all: "Tüm oyunlar", get: "Yükle", online: "Şu an çevrimiçi", registered: "Kayıtlı üye", people: "kişi", pick: "Bir oyun seç, sohbet başlasın", go: "Oyna", soon: "Yakında", video: "Görüntülü sohbet", videoTag: "Yüz yüze tanış", old: "Telefonda eski Ravetill uygulaması varsa önce onu sil" },
+  ka: { badge: "მეგობრებთან უფრო მხიარულია", title: "ვისთან თამაშობ ამ საღამოს", sub: "ბოთლი, მაფია, დომინო — ყველაფერი ერთ ადგილას", play: "ბოთლის თამაში", all: "ყველა თამაში", get: "ჩამოტვირთვა", online: "ახლა ონლაინ", registered: "რეგისტრირებული", people: "ადამიანი", pick: "აირჩიე თამაში, დაიწყე საუბარი", go: "თამაში", soon: "მალე", video: "ვიდეო ზარი", videoTag: "გაიცანი პირისპირ", old: "თუ ტელეფონზე ძველი Ravetill აპია, ჯერ ის წაშალე" },
 } as const;
 
 // Games with their own logo open their page; the others say "coming soon" and cannot be opened yet.
@@ -32,6 +33,43 @@ function GameLogo({ img, emoji }: { img?: string; emoji: string }) {
   return img && ok
     ? <img src={img} alt="" onError={() => setOk(false)} className="h-full w-full object-cover" />
     : <span className="text-3xl" aria-hidden="true">{emoji}</span>;
+}
+
+// One person in a small video window (a soft silhouette over a colour), used twice on the video card.
+function VideoTile({ id, from, to, className, style }: { id: string; from: string; to: string; className: string; style: CSSProperties }) {
+  return <span aria-hidden="true" className={`vc-anim pointer-events-none absolute overflow-hidden rounded-xl border-2 border-white/80 shadow-[0_10px_20px_-6px_rgba(0,0,0,.55)] ${className}`} style={style}>
+    <svg viewBox="0 0 40 52" className="block h-full w-full">
+      <defs><linearGradient id={id} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor={from} /><stop offset="1" stopColor={to} /></linearGradient></defs>
+      <rect width="40" height="52" fill={`url(#${id})`} />
+      <circle cx="20" cy="21" r="8" fill="rgba(255,255,255,.88)" />
+      <path d="M5 52 C5 37 35 37 35 52Z" fill="rgba(255,255,255,.88)" />
+    </svg>
+    <span className="absolute left-1 top-1 flex items-center gap-0.5 rounded bg-black/45 px-1 text-[7px] font-black leading-[11px] text-white">
+      <span className="home-anim h-1.5 w-1.5 rounded-full bg-[#ff3b5c]" style={{ animation: "home-live 1.6s ease-in-out infinite" }} />LIVE
+    </span>
+  </span>;
+}
+
+// The video call card: not open yet ("coming soon"), but bright and moving on purpose, to draw people in.
+function VideoCallCard({ name, tag, soon }: { name: string; tag: string; soon: string }) {
+  return <div aria-disabled="true" className="relative min-h-[150px] overflow-hidden rounded-2xl border border-white/20 p-3.5 text-white shadow-[0_12px_28px_-12px_rgba(236,72,153,.7)] sm:p-4"
+    style={{ background: "radial-gradient(circle at 85% 15%, rgba(255,255,255,.22), transparent 40%), radial-gradient(circle at 10% 100%, rgba(56,189,248,.35), transparent 45%), linear-gradient(135deg,#ff2d75 0%,#a21caf 50%,#4c1d95 100%)" }}>
+    <VideoTile id="vc-a" from="#fb7185" to="#f59e0b" className="right-[8px] top-[8px] h-[54px] w-[42px] sm:right-[12px] sm:top-[10px] sm:h-[70px] sm:w-[54px]" style={{ "--r": "7deg", animation: "vc-float 4s ease-in-out infinite" } as CSSProperties} />
+    <VideoTile id="vc-b" from="#38bdf8" to="#6366f1" className="right-[44px] top-[22px] h-[46px] w-[36px] sm:right-[62px] sm:top-[30px] sm:h-[60px] sm:w-[46px]" style={{ "--r": "-8deg", animation: "vc-float 4s ease-in-out 2s infinite" } as CSSProperties} />
+    {[{ right: 30, bottom: 34, size: 14, delay: 0 }, { right: 8, bottom: 22, size: 11, delay: 1.8 }, { right: 50, bottom: 12, size: 10, delay: 3.2 }].map((h, i) => (
+      <span key={i} aria-hidden="true" className="home-anim pointer-events-none absolute text-[#ffd1dc]" style={{ right: h.right, bottom: h.bottom, fontSize: h.size, animation: `home-heart 4.5s ease-in ${h.delay}s infinite both`, filter: "drop-shadow(0 2px 4px rgba(0,0,0,.3))" }}>♥</span>
+    ))}
+    <span className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20 shadow-[0_4px_12px_-4px_rgba(0,0,0,.4)]">
+      <span aria-hidden="true" className="home-anim absolute inset-0 rounded-2xl border-2 border-white/70" style={{ animation: "vc-ring 2s ease-out infinite" }} />
+      <Video className="h-6 w-6" strokeWidth={2.4} aria-hidden="true" />
+    </span>
+    <span className="relative mt-3 block whitespace-nowrap text-lg font-black leading-tight">{name}</span>
+    <span className="relative mt-0.5 block text-[11px] font-semibold leading-tight text-white/85">{tag}</span>
+    <span className="relative mt-2 inline-flex items-center overflow-hidden rounded-lg border border-white/50 bg-white/20 px-3 py-1 text-xs font-bold">
+      <span aria-hidden="true" className="vc-anim pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/45 to-transparent" style={{ animation: "vc-shine 3s ease-in-out infinite" }} />
+      <span className="relative">⏳ {soon}</span>
+    </span>
+  </div>;
 }
 
 // Hearts floating up on the left and right side of the banner (they stand still when the phone asks for less motion).
@@ -100,9 +138,11 @@ export function NeonHome({ name }: { name: string }) {
             : <span className="relative mt-2 inline-flex items-center rounded-lg bg-black/25 px-3 py-1 text-xs font-bold">⏳ {w.soon}</span>}
         </>;
         const cls = "relative min-h-[150px] overflow-hidden rounded-2xl border border-white/10 p-3.5 text-white shadow-[0_10px_24px_-14px_rgba(0,0,0,.6)] sm:p-4";
-        return game.href
+        const card = game.href
           ? <Link key={game.name} href={game.href} className={`${cls} transition-transform hover:-translate-y-0.5 hover:brightness-110`} style={{ background: game.bg }}>{inner}</Link>
           : <div key={game.name} aria-disabled="true" className={`${cls} opacity-75 saturate-[.7]`} style={{ background: game.bg }}>{inner}</div>;
+        // The video call card comes right after Domino.
+        return game.name === "Domino" ? <Fragment key={game.name}>{card}<VideoCallCard name={w.video} tag={w.videoTag} soon={w.soon} /></Fragment> : card;
       })}
     </div>
   </>;

@@ -344,6 +344,11 @@ button { cursor: pointer; }
 @keyframes home-heart { 0% { transform: translateY(0) scale(0.7) rotate(-8deg); opacity: 0; } 15% { opacity: 0.9; } 100% { transform: translateY(-120px) scale(1.15) rotate(10deg); opacity: 0; } }
 @keyframes home-live { 0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.6); } 50% { opacity: 0.6; box-shadow: 0 0 0 5px rgba(52, 211, 153, 0); } }
 @media (prefers-reduced-motion: reduce) { .home-anim { animation: none !important; opacity: 0.7 !important; } }
+/* Video call card on the home page: the two video windows bob, a ring pulses from the camera, a shine runs over "coming soon". */
+@keyframes vc-float { 0%, 100% { transform: translateY(0) rotate(var(--r, 0deg)); } 50% { transform: translateY(-5px) rotate(var(--r, 0deg)); } }
+@keyframes vc-ring { 0% { transform: scale(1); opacity: 0.7; } 100% { transform: scale(1.6); opacity: 0; } }
+@keyframes vc-shine { 0% { transform: translateX(-120%) skewX(-20deg); } 60%, 100% { transform: translateX(260%) skewX(-20deg); } }
+@media (prefers-reduced-motion: reduce) { .vc-anim { animation: none !important; } }
 
 /* Stories card: the rings of new stories turn slowly, the "add" circle breathes, soft colour glows drift behind. */
 @keyframes story-spin { to { transform: rotate(360deg); } }
