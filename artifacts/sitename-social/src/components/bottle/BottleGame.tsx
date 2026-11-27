@@ -36,6 +36,7 @@ import { PassPanel, type PassData } from "./PassPanel";
 import { OnceImg } from "./OnceImg";
 import { PerfMeter } from "./PerfMeter";
 import { DeviceList } from "@/components/admin/DeviceList";
+import { PromoPopup } from "./PromoPopup";
 import { ActivePanel, ComplimentPill, ComplimentsPanel, InvitePanel, ShopPanel, emojiSrc } from "./ShopPanels";
 import { bumpStat, markVisit, readStats, syncStats } from "./achievements";
 import { BottleSvg, WaterBottleSvg, WoodTable } from "./BottleArt";
@@ -1134,6 +1135,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
     setCoins(typeof (data as { balance?: number } | null)?.balance === "number" ? (data as { balance: number }).balance : 0);
   }
   useEffect(() => { if (panel === "shop") void loadCoins(); }, [panel, net?.me]); // eslint-disable-line react-hooks/exhaustive-deps
+  // "Ayın son şansı" (until 30.11.2026): this player's ticket discount on heart packs, shown in the shop (the server applies it).
+  const [promo, setPromo] = useState<{ pct: number; end: number } | null>(null);
   async function buyHeartPack(pack: { hearts: number; price: number }) {
     if (!online) return setPayNote(true);
     setPayNote(false);
@@ -3885,6 +3888,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
 
         {weekOpen ? <WeeklyPanel locale={locale} onClose={() => setWeekOpen(false)} /> : null}
         <WeekPrizePopup locale={locale} online={online} onHearts={(value) => { heartsRef.current = value; setHearts(value); }} />
+        <PromoPopup locale={locale} online={online} wide={wide} onBuy={() => { setPayNote(false); setPanel("shop"); }} onPct={(pct, end) => setPromo(pct ? { pct, end } : null)} />
 
         {panel ? panelHost(
           <div style={tablesSplit ? tablesPad : undefined} className={cn((panel === "top" && !wide) || tablesSplit ? "fixed inset-0 z-[90]" : "absolute inset-0 z-50", "flex items-center justify-center overflow-hidden bg-black/35 p-3", closing ? "animate-[panel-fade_0.28s_ease-in_reverse_forwards]" : "animate-[panel-fade_0.25s_ease-out]")} onClick={(event) => { event.stopPropagation(); closePanel(); }}>
@@ -4098,7 +4102,7 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                   <button onClick={() => setPanel("wheel")} className="mt-2 w-full text-center text-xs font-bold text-white underline">{t("bottle.wheelBack")}</button>
                 </div>
               ) : panel === "shop" ? (
-                <ShopPanel hearts={hearts} coins={coins} activeSecs={activeSecs} payNote={payNote} onActive={() => setPanel("active")} onVip={() => { setPayNote(false); setPanel("vip"); }} onPlus={() => { setPayNote(false); setPanel("plusbuy"); }} onInvite={openInvite} onCompliments={() => setPanel("compliments")} onPack={(pack) => void buyHeartPack(pack)} packNote={packNote && packNote.kind !== "ok" ? <PackNote note={packNote} locale={locale} /> : null} onPass={openPass} />
+                <ShopPanel hearts={hearts} coins={coins} activeSecs={activeSecs} payNote={payNote} onActive={() => setPanel("active")} onVip={() => { setPayNote(false); setPanel("vip"); }} onPlus={() => { setPayNote(false); setPanel("plusbuy"); }} onInvite={openInvite} onCompliments={() => setPanel("compliments")} onPack={(pack) => void buyHeartPack(pack)} packNote={packNote && packNote.kind !== "ok" ? <PackNote note={packNote} locale={locale} /> : null} onPass={openPass} promoPct={promo && Date.now() < promo.end ? promo.pct : null} />
               ) : panel === "pass" ? (
                 <>
                   <PassPanel data={online ? passData : null} hearts={hearts} now={net?.now ?? Date.now()} onBuy={() => void passAction("buy")} onClaim={(level, premium) => void passAction({ level, premium })} onChest={() => void passAction("chest")} />

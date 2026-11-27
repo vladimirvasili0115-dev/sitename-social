@@ -57,6 +57,10 @@ export const bottleBuyChances = (pack: number) => call<{ hearts: number; chances
 export const bottleGiftAllow = () => call<string[]>("bottle_my_gift_allow");
 // A bank pack bought with the site balance (see the market page); the price is taken from the server's own table.
 export const bottleBuyHearts = (hearts: number) => call<{ hearts?: number; balance?: number; bought?: number; error?: "bad" | "balance"; need?: number }>("bottle_buy_hearts_pack", { p_hearts: hearts });
+// "Ayın son şansı" (until 30.11.2026): the lucky ticket and its discount on heart packs (paket-ME.sql). Null when the campaign is over.
+export type BottlePromo = { end: string; pct: number | null };
+export const bottlePromoState = () => call<BottlePromo>("bottle_promo_state");
+export const bottlePromoOpen = () => call<BottlePromo>("bottle_promo_open");
 export const bottleSmiles = () => call<number>("bottle_smiles");
 export const bottleBuySmiles = (pack: number) => call<{ hearts: number; smiles: number } | null>("bottle_buy_smiles", { p_pack: pack });
 export const bottleWheel = () => call<{ sector: number; hearts: number; chances: number }>("bottle_wheel_spin");

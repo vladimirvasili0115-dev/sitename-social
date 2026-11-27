@@ -58,13 +58,15 @@ export const formatActive = (secs: number, t: (key: TranslationKey) => string) =
 // The original bank (bottle-html5 BankDialog + bank CSS): a pink window with the heart pattern on top and
 // 90×146 white cards, each with a coloured stripe, a picture and a small button. Our own cards (active play,
 // season pass, channel, VIP, friends, compliments) are drawn the same way as the original's.
-export function ShopPanel({ hearts, coins, activeSecs, payNote, onActive, onVip, onPlus, onInvite, onCompliments, onPack, onPass, packNote }: {
-  hearts: number; coins?: number | null; activeSecs: number; payNote: boolean; packNote?: ReactNode; onActive: () => void; onVip: () => void; onPlus: () => void; onInvite: () => void; onCompliments: () => void; onPack: (pack: { hearts: number; price: number }) => void; onPass: () => void;
+export function ShopPanel({ hearts, coins, activeSecs, payNote, onActive, onVip, onPlus, onInvite, onCompliments, onPack, onPass, packNote, promoPct }: {
+  hearts: number; coins?: number | null; activeSecs: number; payNote: boolean; packNote?: ReactNode; onActive: () => void; onVip: () => void; onPlus: () => void; onInvite: () => void; onCompliments: () => void; onPack: (pack: { hearts: number; price: number }) => void; onPass: () => void; promoPct?: number | null;
 }) {
   const { t, locale } = useTranslation();
   const [saleOn, setSaleOn] = useState(() => Date.now() < SALE_END);
   const endSale = useCallback(() => setSaleOn(false), []);
   const priceOf = (price: number) => (saleOn ? price : price * 2);
+  // "Ayın son şansı" discount (until 30.11.2026): the same rounding as the server (whole coins, rounded up).
+  const promoOf = (price: number) => (promoPct ? Math.ceil((Math.round(priceOf(price) * 100) * (100 - promoPct)) / 100) / 100 : priceOf(price));
   const O = "/custom/orig/";
   const bg = (name: string) => ({ backgroundImage: `url(${O}${name}.svg)` });
   const heart = (n: number, big = false) => <span className={cn("whitespace-nowrap bg-no-repeat font-bold text-[rgb(255,62,0)]", big ? "pl-[18px] [background-position:left_-1px] [background-size:17px_18px]" : "pl-3 [background-position:left_1px] [background-size:11px_9px]")} style={bg("bank_heart")}>{n.toLocaleString("ru-RU")}</span>;
@@ -100,7 +102,7 @@ export function ShopPanel({ hearts, coins, activeSecs, payNote, onActive, onVip,
         {shopPacks.map((pack, i) => card(`p${pack.hearts}`, "bank_gold_bg",
           <><span className="pl-[18px] font-bold text-[rgb(255,62,0)] bg-no-repeat [background-position:left_-1px] [background-size:17px_18px]" style={bg("bank_heart")}>{pack.hearts.toLocaleString("ru-RU")}</span>{pack.bonus ? <span className="-mt-[3px] text-[11px] text-[rgb(255,143,0)]">{pack.bonus}% {t("bottle.bankBonus")}</span> : null}</>,
           <span className="relative block bg-contain bg-no-repeat" style={{ ...bg(`bank_opt_${shopPacks.length - i}`), ...[{ w: 50, h: 24 }, { w: 72, h: 33 }, { w: 55, h: 41 }, { w: 68, h: 42 }, { w: 63, h: 50 }, { w: 88, h: 52 }, { w: 86, h: 53 }].map(({ w, h }) => ({ width: w, height: h }))[Math.min(6, shopPacks.length - i - 1)] }} />,
-          <>{saleOn ? <s className="-mb-[10px] mt-0.5 text-[11px] font-bold tabular-nums leading-none text-[#7A6A6C] decoration-[#C8233F] decoration-2">{(pack.price * 2).toLocaleString("ru-RU")} ₼</s> : null}{btn(green, () => onPack(pack), <span className="tabular-nums">{priceOf(pack.price).toLocaleString("ru-RU")} ₼</span>)}</>,
+          <>{saleOn || promoPct ? <s className="-mb-[10px] mt-0.5 text-[11px] font-bold tabular-nums leading-none text-[#7A6A6C] decoration-[#C8233F] decoration-2">{(pack.price * 2).toLocaleString("ru-RU")} ₼</s> : null}{btn(green, () => onPack(pack), <span className="tabular-nums">{promoOf(pack.price).toLocaleString("ru-RU")} ₼</span>)}</>,
           pack.tag ? <span className="absolute -left-1 -right-1 -top-1 z-[1] mx-auto flex h-[18px] w-fit min-w-16 max-w-[98px] justify-center rounded-[3px] px-1.5 text-[8.5px] font-bold text-white shadow-[0_1px_2px_rgba(0,0,0,0.25)]" style={{ backgroundColor: pack.tag === "best" ? "#E6007E" : "#A24DC2" }}><span className="mt-[2px] whitespace-nowrap">{t(pack.tag === "best" ? "bottle.bankProfit" : "bottle.bankHit")}</span></span> : undefined))}
         {card("active", "bank_blue_bg", <span className={small}>{t("bottle.activeTitle")}<b className="mt-0.5 block text-[rgb(47,137,233)]">{formatActive(activeSecs, t)}</b></span>, <Pic e="⏰" className="h-10 w-10" />, btn(cyan, onActive, t("bottle.details")))}
       </ul>
