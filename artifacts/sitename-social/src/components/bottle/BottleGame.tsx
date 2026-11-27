@@ -3599,6 +3599,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           {/* Top row (phones / narrow window): these buttons share the room between the balance and the table number in equal gaps. */}
           <div className={wide ? "contents" : "flex min-w-0 flex-1 items-center justify-evenly"}>
           <button onClick={onToggleFull} aria-label={t("bottle.fullscreen")} title={t("bottle.fullscreen")} className={cn(tool, !wide && "max-sm:hidden")}>{full ? <Minimize size={17} /> : <Maximize size={17} />}</button>
+          {/* The "+" (song / dedicate) shows in the top row only while I sit alone at the table: there is no other player's photo to tap then. */}
+          {!wide && online && seated.length === 1 && seated[0].me ? <button onClick={() => chooseMode(!dedicate)} aria-pressed={dedicate} aria-label={t("bottle.dedicate")} title={t("bottle.dedicate")} className={cn(tool, dedicate && "bg-[#8CC63F]", !full && "sm:hidden")}><Plus size={19} strokeWidth={3} /></button> : null}
           <button onClick={openPrivate} aria-label={t("bottle.rooms")} title={t("bottle.rooms")} className={tool}><DoorOpen size={19} /></button>
           {!wide || (online && net && !net.wheel) ? null : <button onClick={() => { setWheelPrize(null); setPayNote(false); setPanel("wheel"); }} aria-label={t("bottle.wheel")} title={t("bottle.wheel")} className={tool}><LifeBuoy size={19} /></button>}
           <button onClick={() => setPanel("league")} aria-label={t("bottle.league")} title={t("bottle.league")} className={tool}><Trophy size={18} /></button>
