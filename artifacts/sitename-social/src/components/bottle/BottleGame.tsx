@@ -35,6 +35,7 @@ import { FIRST_ORIGINAL, FRAME_PRICE, FrameArt, ORIGINAL_FRAMES, frameLooks, fra
 import { PassPanel, type PassData } from "./PassPanel";
 import { OnceImg } from "./OnceImg";
 import { PerfMeter } from "./PerfMeter";
+import { DeviceList } from "@/components/admin/DeviceList";
 import { ActivePanel, ComplimentPill, ComplimentsPanel, InvitePanel, ShopPanel, emojiSrc } from "./ShopPanels";
 import { bumpStat, markVisit, readStats, syncStats } from "./achievements";
 import { BottleSvg, WaterBottleSvg, WoodTable } from "./BottleArt";
@@ -1621,16 +1622,16 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
   const ipLogged = useRef(false);
   useEffect(() => { if (online && myId && !ipLogged.current) { ipLogged.current = true; void bottleLogIp("join"); } }, [online, myId]);
   // Admins only: the IPs a player came from, and which other accounts used the same IPs (the server answers only to admins).
-  const [ipView, setIpView] = useState<{ name: string; loading: boolean; rows: BottleIpRow[]; others: Record<string, string[]> } | null>(null);
+  const [ipView, setIpView] = useState<{ id: string; name: string; loading: boolean; rows: BottleIpRow[]; others: Record<string, string[]> } | null>(null);
   const openIp = async (name: string, id: string) => {
-    setIpView({ name, loading: true, rows: [], others: {} });
+    setIpView({ id, name, loading: true, rows: [], others: {} });
     const rows = (await bottleAdminIpLookup(id, null)) ?? [];
     const others: Record<string, string[]> = {};
     for (const ip of [...new Set(rows.map((row) => row.ip))].slice(0, 5)) {
       const same = (await bottleAdminIpLookup(null, ip)) ?? [];
       others[ip] = [...new Set(same.filter((row) => row.user_id !== id).map((row) => row.name ?? row.user_id.slice(0, 8)))];
     }
-    setIpView({ name, loading: false, rows, others });
+    setIpView({ id, name, loading: false, rows, others });
   };
   useEffect(() => { if (online) ensureMessagesLoaded(myId); }, [online, myId]);
   useEffect(() => {
@@ -4959,6 +4960,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
                 ))}
               </ul>
             )}
+            {/* Owner and moderators: the devices of this account and the "block device" button. */}
+            <DeviceList userId={ipView.id} />
           </div>
         </div>
       ) : null}

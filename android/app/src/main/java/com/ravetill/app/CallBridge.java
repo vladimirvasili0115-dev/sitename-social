@@ -17,7 +17,7 @@ import java.util.List;
  *  callEnd()            — back to normal.
  *  pushToken(), pushAllowed() — this phone's notification address, and whether notifications are on.
  *  stopRinging()        — the site shows the incoming call itself: the call notification stops ringing.
- * Nothing here reads or sends any data.
+ * deviceId(), deviceModel() — this phone's Android ID and model, so a moderator can block the device.
  */
 public class CallBridge {
     private final Activity activity;
@@ -40,6 +40,19 @@ public class CallBridge {
     @JavascriptInterface
     public boolean isApp() {
         return true;
+    }
+
+    /** This phone's Android ID for this app (stays the same after reinstalling; changes only on a factory reset). Used to block a device. */
+    @JavascriptInterface
+    public String deviceId() {
+        String id = android.provider.Settings.Secure.getString(activity.getContentResolver(), android.provider.Settings.Secure.ANDROID_ID);
+        return id == null ? "" : id;
+    }
+
+    /** The phone's maker and model, e.g. "samsung SM-A515F". */
+    @JavascriptInterface
+    public String deviceModel() {
+        return (Build.MANUFACTURER + " " + Build.MODEL).trim();
     }
 
     /** This phone's Firebase address for notifications ("" until Firebase has given one). The site saves it on the server. */

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Palette, Eye, EyeOff, KeyRound, HeartOff, Lock, LockOpen, Wine, FileText, BadgeCheck, Ban, ChevronDown, Coins, Crown, Gamepad2, Heart, ShieldCheck, ShieldOff, Trash2, Undo2 } from "lucide-react";
 import { useSyncExternalStore } from "react";
 import { refreshVerified, verifiedStore } from "@/lib/verifiedSync";
+import { DeviceList } from "./DeviceList";
 import { setUserPassword, setUserLogin, banUser, deleteUser, fetchAdminUsers, fetchUserDetail, grantCoins, grantHearts, setModerator, setVerified, vipAll, vipCount, gesturesOpenGet, gesturesOpenSet, setNameColor, gameState, gameGrant, gameFlags, statFreezeGet, statFreezeSet, pageAllowGet, pageAllowSet, type PageAllow, giftAllowGet, giftAllowSet, type GiftAllow, type StatKind, type StatFreeze, type GameFlags, type GameState, type AdminUser, type UserDetail } from "@/lib/adminSync";
 import { adminBannedList, adminDeletedList, adminRoomPass, adminRooms, adminSpendOverview, adminSpendUser, broadcastCount, broadcastSend, type AdminRoom, type BannedAccount, type DeletedAccount, type SpendDetail, type SpendRow } from "@/lib/adminSync";
 import type { TranslationKey } from "@/i18n/LanguageProvider";
@@ -278,6 +279,8 @@ export function AdminUsers({ owner }: { owner: boolean }) {
                               </ul>
                             </>
                           ) : null}
+                          {/* The phones and browsers of this account and the "block device" button (same as the game's IP window). */}
+                          <div className="mt-3 rounded-xl bg-white px-2.5 pb-2.5 text-[#1F2937] [&>div]:mt-0 [&>div]:border-t-0"><DeviceList userId={user.id} /></div>
                         </>
                       ) : <p className="text-xs text-muted">…</p>}
                     </div>

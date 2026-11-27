@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { checkDevice } from "./deviceSync";
 
 export type BanInfo = { reason: string; until: string | null };
 let state: BanInfo | null = null;
@@ -38,6 +39,8 @@ export async function checkBan() {
       return;
     }
   }
+  // A blocked device (Ravetill app or browser) bans the account on the server first, so the check below already shows it.
+  try { await checkDevice(userId); } catch { /* the device check must never break the site */ }
   const { data, error } = await supabase.rpc("my_ban");
   if (error) return;
   const info = data as BanInfo | null;
