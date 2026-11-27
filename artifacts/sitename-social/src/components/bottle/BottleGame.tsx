@@ -3597,7 +3597,6 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
           </button>
           <span className="flex-1" />
           <button onClick={onToggleFull} aria-label={t("bottle.fullscreen")} title={t("bottle.fullscreen")} className={cn(tool, !wide && "max-sm:hidden")}>{full ? <Minimize size={17} /> : <Maximize size={17} />}</button>
-          {!wide ? <button onClick={() => chooseMode(!dedicate)} aria-pressed={dedicate} aria-label={t("bottle.dedicate")} title={t("bottle.dedicate")} className={cn(tool, dedicate && "bg-[#8CC63F]", !full && "sm:hidden")}><Plus size={19} strokeWidth={3} /></button> : null}
           <button onClick={openPrivate} aria-label={t("bottle.rooms")} title={t("bottle.rooms")} className={tool}><DoorOpen size={19} /></button>
           {online && net && !net.wheel ? null : <button onClick={() => { setWheelPrize(null); setPayNote(false); setPanel("wheel"); }} aria-label={t("bottle.wheel")} title={t("bottle.wheel")} className={cn(tool, !wide && "ml-[min(4mm,2cqw)]")}><LifeBuoy size={19} /></button>}
           <button onClick={() => setPanel("league")} aria-label={t("bottle.league")} title={t("bottle.league")} className={cn(tool, !wide && "ml-[min(4mm,2cqw)]")}><Trophy size={18} /></button>
@@ -3614,6 +3613,8 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             ) : null}
           </span>
           <button onClick={() => setPanel("settings")} aria-label={t("bottle.settings")} title={t("bottle.settings")} className={cn(tool, !wide && "ml-[min(4mm,2cqw)]")}><Settings size={18} /></button>
+          {/* The "+" (dedicate) button was removed from the top row; this empty place keeps the row one button further left. */}
+          {!wide ? <span aria-hidden="true" className={cn(tool, "invisible", !full && "sm:hidden")} /> : null}
           <span className="flex-1" />
           <span className={cn("text-center text-[max(8px,1.55cqmin)] font-bold leading-tight text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.7)]", wide && "order-last mt-1")}>{net?.room ? <><span aria-hidden="true">🔒</span><br /><span className="line-clamp-2 block max-w-[64px] break-words">{net.room.name}</span><button onClick={leaveRoom} aria-label={t("bottle.roomLeave")} title={t("bottle.roomLeave")} className="mx-auto mt-1 flex items-center gap-1 rounded-full bg-[#E5484D] px-2 py-0.5 text-[11px] font-bold text-white shadow hover:bg-[#D13438] [text-shadow:none]"><X size={12} strokeWidth={3} />{t("bottle.roomLeaveShort")}</button>{canDeleteRoom ? <button onClick={() => void deleteRoom()} aria-label={t("bottle.roomDelete")} title={t("bottle.roomDelete")} className="mx-auto mt-1 flex items-center gap-1 rounded-full bg-[#7C2D12] px-2 py-0.5 text-[11px] font-bold text-white shadow hover:bg-[#9A3412] [text-shadow:none]"><Trash2 size={12} strokeWidth={2.6} />{t("bottle.roomDeleteShort")}</button> : null}</> : <>{t("bottle.table")}<br />{online ? (net?.table != null ? tableLabel(net.table) : "…") : tableLabel(tableNo)}</>}</span>
           {myTurn
