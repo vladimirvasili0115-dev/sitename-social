@@ -3595,13 +3595,14 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
             <img src="/custom/orig/btn_gold_add_heart_up.svg" alt="" aria-hidden="true" draggable={false} className={cn("drop-shadow-[0_2px_3px_rgba(90,30,0,0.35)]", wide ? "h-[min(56px,10cqmin)] w-[min(62px,11cqmin)]" : "h-[8cqmin] max-h-10 w-[8.8cqmin] max-w-11")} />
             <span className={cn("font-bold tabular-nums leading-tight [text-shadow:0_1px_2px_rgba(0,0,0,0.45)]", wide ? "text-[min(20px,3.4cqmin)]" : "text-[max(12px,2.6cqmin)]")}>{online && !net ? "…" : hearts}</span>
           </button>
-          <span className="flex-1" />
+          {wide ? <span className="flex-1" /> : null}
+          {/* Top row (phones / narrow window): these buttons share the room between the balance and the table number in equal gaps. */}
+          <div className={wide ? "contents" : "flex min-w-0 flex-1 items-center justify-evenly"}>
           <button onClick={onToggleFull} aria-label={t("bottle.fullscreen")} title={t("bottle.fullscreen")} className={cn(tool, !wide && "max-sm:hidden")}>{full ? <Minimize size={17} /> : <Maximize size={17} />}</button>
           <button onClick={openPrivate} aria-label={t("bottle.rooms")} title={t("bottle.rooms")} className={tool}><DoorOpen size={19} /></button>
-          {online && net && !net.wheel ? null : <button onClick={() => { setWheelPrize(null); setPayNote(false); setPanel("wheel"); }} aria-label={t("bottle.wheel")} title={t("bottle.wheel")} className={cn(tool, !wide && "ml-[min(4mm,2cqw)]")}><LifeBuoy size={19} /></button>}
-          <button onClick={() => setPanel("league")} aria-label={t("bottle.league")} title={t("bottle.league")} className={cn(tool, !wide && "ml-[min(4mm,2cqw)]")}><Trophy size={18} /></button>
-          {/* In the top row (phones / narrow window) the room, wheel, trophy, menu and settings buttons stand 4 mm further apart (less on a narrow phone, so the whole row still fits). */}
-          <span className={cn("relative flex", !wide && "ml-[min(4mm,2cqw)]")}>
+          {!wide || (online && net && !net.wheel) ? null : <button onClick={() => { setWheelPrize(null); setPayNote(false); setPanel("wheel"); }} aria-label={t("bottle.wheel")} title={t("bottle.wheel")} className={tool}><LifeBuoy size={19} /></button>}
+          <button onClick={() => setPanel("league")} aria-label={t("bottle.league")} title={t("bottle.league")} className={tool}><Trophy size={18} /></button>
+          <span className="relative flex">
             <button onClick={() => setMenuOpen(!menuOpen)} aria-expanded={menuOpen} aria-label={t("bottle.menu")} title={t("bottle.menu")} className={tool}><Menu size={18} /></button>
             {menuOpen ? (
               <>
@@ -3612,10 +3613,9 @@ export function BottleGame({ wide, full, onToggleFull, onLeave, dedicate, onDedi
               </>
             ) : null}
           </span>
-          <button onClick={() => setPanel("settings")} aria-label={t("bottle.settings")} title={t("bottle.settings")} className={cn(tool, !wide && "ml-[min(4mm,2cqw)]")}><Settings size={18} /></button>
-          {/* The "+" (dedicate) button was removed from the top row; this empty place keeps the row one button further left. */}
-          {!wide ? <span aria-hidden="true" className={cn(tool, "invisible", !full && "sm:hidden")} /> : null}
-          <span className="flex-1" />
+          <button onClick={() => setPanel("settings")} aria-label={t("bottle.settings")} title={t("bottle.settings")} className={tool}><Settings size={18} /></button>
+          </div>
+          {wide ? <span className="flex-1" /> : null}
           <span className={cn("text-center text-[max(8px,1.55cqmin)] font-bold leading-tight text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.7)]", wide && "order-last mt-1")}>{net?.room ? <><span aria-hidden="true">🔒</span><br /><span className="line-clamp-2 block max-w-[64px] break-words">{net.room.name}</span><button onClick={leaveRoom} aria-label={t("bottle.roomLeave")} title={t("bottle.roomLeave")} className="mx-auto mt-1 flex items-center gap-1 rounded-full bg-[#E5484D] px-2 py-0.5 text-[11px] font-bold text-white shadow hover:bg-[#D13438] [text-shadow:none]"><X size={12} strokeWidth={3} />{t("bottle.roomLeaveShort")}</button>{canDeleteRoom ? <button onClick={() => void deleteRoom()} aria-label={t("bottle.roomDelete")} title={t("bottle.roomDelete")} className="mx-auto mt-1 flex items-center gap-1 rounded-full bg-[#7C2D12] px-2 py-0.5 text-[11px] font-bold text-white shadow hover:bg-[#9A3412] [text-shadow:none]"><Trash2 size={12} strokeWidth={2.6} />{t("bottle.roomDeleteShort")}</button> : null}</> : <>{t("bottle.table")}<br />{online ? (net?.table != null ? tableLabel(net.table) : "…") : tableLabel(tableNo)}</>}</span>
           {myTurn
             ? <span role="timer" className={cn(tool, "text-[max(14px,3cqmin)] font-bold tabular-nums")}><Countdown deadline={deadline} /></span>
